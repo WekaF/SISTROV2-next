@@ -1,0 +1,37 @@
+Successfully connected.
+
+Produk Columns:
+ - ID (varchar)
+ - Nama (varchar)
+ - Kode (varchar)
+ - denda (numeric)
+ - isSubsidi (bit)
+ - CreatedAt (datetime)
+
+Company Columns:
+ - Id (int)
+ - company_code (varchar)
+ - RegionId (int)
+ - company (varchar)
+ - groupcompany (varchar)
+ - urutan (int)
+ - has_security (bit)
+ - timbangan (bit)
+ - has_gudang (bit)
+ - CreatedAt (datetime)
+
+Gudang Columns:
+ - ID (varchar)
+ - Kabupaten (varchar)
+ - Tipe (int)
+ - Deskripsi (varchar)
+ - Wil (varchar)
+ - Alamat (varchar)
+ - KodeKecamatan (varchar)
+ - Kecamatan (varchar)
+ - KodeKabupaten (varchar)
+ - KodePropinsi (varchar)
+ - Propinsi (varchar)
+ - TextLongLat (varchar)
+ - Long (varchar)
+ - Lat (varchar)

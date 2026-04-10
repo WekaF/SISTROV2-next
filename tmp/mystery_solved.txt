@@ -1,0 +1,22 @@
+Connected.
+Object Metadata:
+
+Related Objects:
+ - Company (USER_TABLE)
+ - PK__Company__3214EC076ECD8FE9 (PRIMARY_KEY_CONSTRAINT)
+ - UQ__Company__F4E508EA2F23C634 (UNIQUE_CONSTRAINT)
+ - DF__Company__has_sec__30C33EC3 (DEFAULT_CONSTRAINT)
+ - DF__Company__timbang__31B762FC (DEFAULT_CONSTRAINT)
+ - DF__Company__has_gud__32AB8735 (DEFAULT_CONSTRAINT)
+ - DF__Company__Created__339FAB6E (DEFAULT_CONSTRAINT)
+ - FK_UserCompanies_Company (FOREIGN_KEY_CONSTRAINT)
+ - FK_KuotaHeader_Company (FOREIGN_KEY_CONSTRAINT)
+ - FK_Posto_Company (FOREIGN_KEY_CONSTRAINT)
+
+Produk Columns Details:
+ - ID (varchar)
+ - Nama (varchar)
+ - Kode (varchar)
+ - denda (numeric)
+ - isSubsidi (bit)
+ - CreatedAt (datetime)

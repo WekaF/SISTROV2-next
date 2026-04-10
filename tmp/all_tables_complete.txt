@@ -1,0 +1,16 @@
+Connected.
+All Tables (Schema.Table):
+ - dbo.Company
+ - dbo.Gudang
+ - dbo.Gudang_SPPT
+ - dbo.Kuota_Area
+ - dbo.Kuota_Header
+ - dbo.Kuota_Shift
+ - dbo.Kuota_Wilayah
+ - dbo.Posto
+ - dbo.Produk
+ - dbo.Regions
+ - dbo.Roles
+ - dbo.UserCompanies
+ - dbo.UserRoles
+ - dbo.Users

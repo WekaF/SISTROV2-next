@@ -1,0 +1,12 @@
+Connected.
+Mapping/Product/Plant Tables:
+ - Produk
+
+Gudang_SPPT Columns:
+ - idgud
+ - ID
+ - maxantrian
+ - antrian
+ - deskripsi
+ - tibadigudang
+ - company_code

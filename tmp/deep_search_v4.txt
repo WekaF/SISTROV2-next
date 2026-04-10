@@ -1,0 +1,68 @@
+Connected.
+M_ Tables:
+
+M_Wilayah Columns:
+
+Company Sample:
+[
+  {
+    "Id": 1,
+    "company_code": "PKC",
+    "RegionId": 1,
+    "company": "Pupuk Kujang",
+    "groupcompany": null,
+    "urutan": null,
+    "has_security": true,
+    "timbangan": true,
+    "has_gudang": true,
+    "CreatedAt": "2026-04-10T14:38:01.757Z"
+  },
+  {
+    "Id": 2,
+    "company_code": "PKG",
+    "RegionId": 2,
+    "company": "Petrokimia Gresik",
+    "groupcompany": null,
+    "urutan": null,
+    "has_security": true,
+    "timbangan": true,
+    "has_gudang": true,
+    "CreatedAt": "2026-04-10T14:38:01.757Z"
+  },
+  {
+    "Id": 3,
+    "company_code": "PLNT_A",
+    "RegionId": 2,
+    "company": "Plant Area A",
+    "groupcompany": null,
+    "urutan": null,
+    "has_security": true,
+    "timbangan": true,
+    "has_gudang": true,
+    "CreatedAt": "2026-04-10T14:38:02.120Z"
+  },
+  {
+    "Id": 4,
+    "company_code": "PLNT_B",
+    "RegionId": 1,
+    "company": "Plant Area B",
+    "groupcompany": null,
+    "urutan": null,
+    "has_security": true,
+    "timbangan": true,
+    "has_gudang": true,
+    "CreatedAt": "2026-04-10T14:38:02.123Z"
+  },
+  {
+    "Id": 5,
+    "company_code": "E234",
+    "RegionId": null,
+    "company": "Company E234 (Seed)",
+    "groupcompany": "SEED_GP",
+    "urutan": null,
+    "has_security": true,
+    "timbangan": true,
+    "has_gudang": true,
+    "CreatedAt": "2026-04-10T15:03:16.377Z"
+  }
+]

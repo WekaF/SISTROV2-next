@@ -1,0 +1,16 @@
+Successfully connected to the database.
+All Tables:
+ - Company
+ - Gudang
+ - Gudang_SPPT
+ - Kuota_Area
+ - Kuota_Header
+ - Kuota_Shift
+ - Kuota_Wilayah
+ - Posto
+ - Produk
+ - Regions
+ - Roles
+ - UserCompanies
+ - UserRoles
+ - Users

@@ -1,0 +1,18 @@
+Connected.
+Synonyms:
+
+Tables again:
+ - Company
+ - Roles
+ - Regions
+ - UserRoles
+ - UserCompanies
+ - Users
+ - Posto
+ - Produk
+ - Gudang
+ - Gudang_SPPT
+ - Kuota_Header
+ - Kuota_Wilayah
+ - Kuota_Area
+ - Kuota_Shift

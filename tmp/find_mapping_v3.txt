@@ -1,0 +1,4 @@
+Connected.
+Tables with Product references:
+ - Posto.Produk
+ - Kuota_Header.ProdukId
