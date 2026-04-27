@@ -11,14 +11,15 @@ import { ChevronLeft, Eye, EyeOff } from "lucide-react";
 
 export default function SignInForm() {
   const [showPassword, setShowPassword] = useState(false);
-  const [isChecked, setIsChecked] = useState(false);
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
+  const [isChecked, setIsChecked]       = useState(false);
+  const [username, setUsername]         = useState("");
+  const [password, setPassword]         = useState("");
+  const [companycode, setCompanycode]   = useState("");
+  const [error, setError]               = useState("");
+  const [isLoading, setIsLoading]       = useState(false);
+  const router       = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams?.get("callbackUrl") || "/";
+  const callbackUrl  = searchParams?.get("callbackUrl") || "/";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,18 +31,17 @@ export default function SignInForm() {
         redirect: false,
         username,
         password,
+        companycode,
         callbackUrl,
       });
 
       if (res?.error) {
         setError(res.error);
       } else if (res?.ok) {
-        // Clear debug override on fresh login to ensure we see the DB role first
-        localStorage.removeItem("debug_role_override");
         router.push(callbackUrl);
       }
-    } catch (err: any) {
-      setError("An unexpected error occurred. Please try again.");
+    } catch {
+      setError("Terjadi kesalahan. Silakan coba lagi.");
     } finally {
       setIsLoading(false);
     }
@@ -55,17 +55,17 @@ export default function SignInForm() {
           className="inline-flex items-center text-sm text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
         >
           <ChevronLeft className="mr-1 h-4 w-4" />
-          Back to home
+          Kembali
         </Link>
       </div>
 
       <div className="flex flex-col justify-center flex-1 w-full">
         <div className="mb-8">
           <h1 className="mb-2 text-2xl font-bold text-gray-800 dark:text-white sm:text-3xl">
-            Sign In
+            Masuk
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Enter your credentials to access SISTRO.
+            Masukkan kredensial Anda untuk mengakses SISTRO.
           </p>
         </div>
 
@@ -75,13 +75,28 @@ export default function SignInForm() {
               {error}
             </div>
           )}
+
           <div>
-            <Label>Username / NIK / Email</Label>
-            <Input 
-              type="text" 
+            <Label>Username / NIK</Label>
+            <Input
+              type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="admin@sistro.com" 
+              placeholder="username"
+              required
+            />
+          </div>
+
+          <div>
+            <Label>
+              Company Code{" "}
+              <span className="text-gray-400 font-normal text-xs">(opsional untuk rekanan)</span>
+            </Label>
+            <Input
+              type="text"
+              value={companycode}
+              onChange={(e) => setCompanycode(e.target.value.toUpperCase())}
+              placeholder="mis. B3B7"
             />
           </div>
 
@@ -93,6 +108,7 @@ export default function SignInForm() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
+                required
               />
               <button
                 type="button"
@@ -105,32 +121,26 @@ export default function SignInForm() {
           </div>
 
           <div className="flex items-center justify-between">
-            <Checkbox 
-              label="Keep me logged in" 
-              checked={isChecked} 
-              onChange={setIsChecked} 
+            <Checkbox
+              label="Tetap masuk"
+              checked={isChecked}
+              onChange={setIsChecked}
             />
-            <Link
-              href="/forgot-password"
-              className="text-sm font-medium text-brand-500 hover:text-brand-600 dark:text-brand-400"
-            >
-              Forgot password?
-            </Link>
           </div>
 
           <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? "Signing in..." : "Sign In"}
+            {isLoading ? "Masuk..." : "Masuk"}
           </Button>
         </form>
 
         <div className="mt-8 text-center sm:text-left">
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Don't have an account?{" "}
+            Belum punya akun?{" "}
             <Link
               href="/register"
               className="font-medium text-brand-500 hover:text-brand-600 dark:text-brand-400"
             >
-              Contact Admin
+              Hubungi Admin
             </Link>
           </p>
         </div>

@@ -1,126 +1,102 @@
 import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { query } from "@/lib/db";
-import bcrypt from "bcryptjs";
+
+const ASPNET_API_URL = process.env.ASPNET_API_URL || "http://localhost:5000";
 
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       name: "Credentials",
       credentials: {
-        username: { label: "Username / Email", type: "text" },
-        password: { label: "Password", type: "password" }
+        username:    { label: "Username", type: "text" },
+        password:    { label: "Password", type: "password" },
+        companycode: { label: "Company Code", type: "text" },
       },
       async authorize(credentials) {
         if (!credentials?.username || !credentials?.password) {
-          throw new Error("Missing username or password");
+          throw new Error("Username dan password wajib diisi");
         }
 
+        const params = new URLSearchParams({
+          grant_type: "password",
+          username:   credentials.username,
+          password:   credentials.password,
+        });
+        if (credentials.companycode) {
+          params.append("companycode", credentials.companycode);
+        }
+
+        let data: any;
         try {
-          const result = await query<{
-            id: string;
-            username: string;
-            fullname: string;
-            email: string;
-            passwordhash: string;
-            sapvendorcode: string;
-            bagian: string;
-            department: string;
-            isactive: boolean;
-            roles: string[];
-          }>(`
-            SELECT
-              u.id,
-              u.username,
-              u.fullname,
-              u.email,
-              u.passwordhash,
-              u.sapvendorcode,
-              u.bagian,
-              u.department,
-              u.isactive,
-              COALESCE(
-                ARRAY_AGG(r.code) FILTER (WHERE r.code IS NOT NULL),
-                ARRAY[]::varchar[]
-              ) AS roles
-            FROM users u
-            LEFT JOIN userroles  ur ON ur.userid = u.id
-            LEFT JOIN roles      r  ON r.id = ur.roleid
-            WHERE u.username = $1 OR u.email = $1
-            GROUP BY u.id
-          `, [credentials.username]);
+          const res = await fetch(`${ASPNET_API_URL}/Token`, {
+            method:  "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body:    params.toString(),
+          });
 
-          const user = result.rows[0];
+          data = await res.json();
 
-          if (!user) {
-            throw new Error("Username atau password salah");
+          if (!res.ok) {
+            throw new Error(data?.error_description || "Login gagal");
           }
-
-          if (!user.isactive) {
-            throw new Error("Akun tidak aktif, hubungi administrator");
-          }
-
-          const isValid = await bcrypt.compare(credentials.password, user.passwordhash);
-          if (!isValid) {
-            throw new Error("Username atau password salah");
-          }
-
-          const roles: string[] = user.roles?.length ? user.roles : ["viewer"];
-
-          // kompanies dari UserCompanies (multi-company support)
-          const compRes = await query<{ companycode: string }>(
-            `SELECT companycode FROM usercompanies WHERE userid = $1 LIMIT 1`,
-            [user.id]
-          );
-          const companyCode = compRes.rows[0]?.companycode || user.sapvendorcode || null;
-
-          return {
-            id: String(user.id),
-            name: user.fullname || user.username,
-            email: user.email,
-            role: roles[0],
-            roles,
-            companyCode,
-            bagian: user.bagian || null,
-            department: user.department || null,
-          };
-        } catch (error) {
-          console.error("Auth error:", error);
-          throw error;
+        } catch (err: any) {
+          throw new Error(err?.message || "Tidak dapat terhubung ke server");
         }
-      }
-    })
+
+        const roles: string[] = data.role
+          ? data.role.split(", ").map((r: string) => r.trim())
+          : [];
+
+        return {
+          id:            data.userid,
+          name:          data.fullname,
+          email:         data.email,
+          role:          roles[0] ?? "viewer",
+          roles,
+          companyCode:   data.companycode ?? null,
+          aspnetToken:   data.access_token,
+          username:      data.username,
+          transportCode: data.transportcode ?? null,
+        };
+      },
+    }),
   ],
+
   session: { strategy: "jwt" },
+
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.role       = (user as any).role;
-        token.roles      = (user as any).roles;
-        token.id         = (user as any).id;
-        token.companyCode= (user as any).companyCode;
-        token.bagian     = (user as any).bagian;
-        token.department = (user as any).department;
+        token.role          = (user as any).role;
+        token.roles         = (user as any).roles;
+        token.id            = (user as any).id;
+        token.companyCode   = (user as any).companyCode;
+        token.aspnetToken   = (user as any).aspnetToken;
+        token.username      = (user as any).username;
+        token.transportCode = (user as any).transportCode;
       }
       return token;
     },
     async session({ session, token }) {
       if (token && session.user) {
-        (session.user as any).role       = token.role;
-        (session.user as any).roles      = token.roles;
-        (session.user as any).id         = token.id;
-        (session.user as any).companyCode= token.companyCode;
-        (session.user as any).bagian     = token.bagian;
-        (session.user as any).department = token.department;
+        (session.user as any).role          = token.role;
+        (session.user as any).roles         = token.roles;
+        (session.user as any).id            = token.id;
+        (session.user as any).companyCode   = token.companyCode;
+        (session.user as any).aspnetToken   = token.aspnetToken;
+        (session.user as any).username      = token.username;
+        (session.user as any).transportCode = token.transportCode;
       }
       return session;
-    }
+    },
   },
+
   pages: {
-    signIn: '/login',
-    error: '/login',
+    signIn: "/login",
+    error:  "/login",
   },
-  secret: process.env.NEXTAUTH_SECRET || "SUPER_SECRET_CHANGE_ME_LATER"
+
+  secret: process.env.NEXTAUTH_SECRET,
 };
 
 const handler = NextAuth(authOptions);

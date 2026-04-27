@@ -5,7 +5,8 @@ import { ThemeProvider } from "@/context/ThemeContext";
 import { SidebarProvider } from "@/context/SidebarContext";
 import LayoutWrapper from "@/components/layout/LayoutWrapper";
 import AuthProvider from "@/components/auth/AuthProvider";
-import { AuthProvider as LegacyAuthProvider } from "@/context/auth-context";
+import { ToastProvider } from "@/components/ui/toast";
+import QueryProvider from "@/providers/QueryProvider";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -17,9 +18,6 @@ export const metadata: Metadata = {
   description: "Advanced Logistics and Inventory Management System",
 };
 
-import { ToastProvider } from "@/components/ui/toast";
-import QueryProvider from "@/providers/QueryProvider";
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -29,19 +27,17 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${outfit.variable} font-outfit antialiased`} suppressHydrationWarning>
         <AuthProvider>
-          <LegacyAuthProvider>
-            <ThemeProvider>
-              <SidebarProvider>
-                <QueryProvider>
-                  <ToastProvider>
-                    <LayoutWrapper>
-                      {children}
-                    </LayoutWrapper>
-                  </ToastProvider>
-                </QueryProvider>
-              </SidebarProvider>
-            </ThemeProvider>
-          </LegacyAuthProvider>
+          <ThemeProvider>
+            <SidebarProvider>
+              <QueryProvider>
+                <ToastProvider>
+                  <LayoutWrapper>
+                    {children}
+                  </LayoutWrapper>
+                </ToastProvider>
+              </QueryProvider>
+            </SidebarProvider>
+          </ThemeProvider>
         </AuthProvider>
       </body>
     </html>
