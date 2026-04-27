@@ -17,6 +17,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Badge from "@/components/ui/badge/Badge";
+import { useSession } from "next-auth/react";
 
 // Types for Lookup Data
 interface LookupItem {
@@ -26,6 +27,7 @@ interface LookupItem {
 }
 
 export default function NewQuotaWizard() {
+  const { data: session } = useSession();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -122,6 +124,18 @@ export default function NewQuotaWizard() {
           <p className="text-gray-500 font-medium italic animate-pulse">Initializing Setup...</p>
        </div>
      );
+  }
+
+  const activeRole = (session?.user as any)?.role?.toLowerCase() || "superadmin";
+  if (activeRole !== "pod" && activeRole !== "superadmin") {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
+        <AlertCircle className="h-16 w-16 text-red-500" />
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Akses Ditolak</h2>
+        <p className="text-gray-500">Hanya peran POD atau Superadmin yang diizinkan mengatur kuota.</p>
+        <Button variant="outline" onClick={() => window.history.back()}>Kembali</Button>
+      </div>
+    );
   }
 
   return (
@@ -390,9 +404,13 @@ export default function NewQuotaWizard() {
                   <ChevronRight className="h-4 w-4 ml-2" />
                </Button>
              ) : (
-               <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={() => window.location.href='/kuota/schedule'}>
-                  <Save className="h-4 w-4 mr-2" />
-                  Save Quota Schedule
+               <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={handleSave} disabled={saving || !validateStep()}>
+                  {saving ? (
+                    <div className="w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4 mr-2" />
+                  )}
+                  {saving ? "Menyimpan..." : "Save Quota Schedule"}
                </Button>
              )}
           </CardFooter>

@@ -21,6 +21,7 @@ import {
   Package,
   History,
   FileCheck,
+  CalendarCheck,
 } from "lucide-react"
 
 import {
@@ -151,6 +152,7 @@ const roleMenus: Record<Role, any[]> = {
     { title: "Stock", url: "/stock", icon: Box },
     { title: "Laporan", url: "/reports", icon: BarChart3 },
     { title: "Armada", url: "/armada", icon: Truck },
+    { title: "Penjadwalan Kuota", url: "/kuota/schedule", icon: CalendarCheck },
     { title: "Approver Pengajuan", url: "/approver/armada", icon: FileCheck },
   ],
   pkd: [

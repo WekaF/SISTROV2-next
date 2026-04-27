@@ -30,21 +30,31 @@ export default function QuotaSchedulePage() {
     totalRealization: 0
   });
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const res = await fetch('/api/pod/kuota');
-        const data = await res.json();
-        if (data.success) {
-          setQuotaData(data.data);
-          setMetrics(data.metrics);
-        }
-      } catch (error) {
-        console.error("Failed to fetch quota data", error);
-      } finally {
-        setLoading(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [deleteHover, setDeleteHover] = useState<number | null>(null);
+
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [viewLoading, setViewLoading] = useState(false);
+  const [viewData, setViewData] = useState<any>(null);
+
+  // Fetch logic abstracted so we can re-call it
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/pod/kuota');
+      const data = await res.json();
+      if (data.success) {
+        setQuotaData(data.data);
+        setMetrics(data.metrics);
       }
+    } catch (error) {
+      console.error("Failed to fetch quota data", error);
+    } finally {
+      setLoading(false);
     }
+  };
+
+  useEffect(() => {
     fetchData();
   }, []);
 
@@ -55,6 +65,46 @@ export default function QuotaSchedulePage() {
       case "Completed": return "success";
       case "Expired": return "error";
       default: return "light";
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm("Yakin ingin menghapus jadwal kuota ini? Semua kuota wilayah hingga shift akan ikut terhapus.")) return;
+    setDeletingId(id);
+    try {
+      const res = await fetch(`/api/pod/kuota/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        fetchData();
+      } else {
+        alert("Gagal menghapus kuota: " + data.error);
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Terjadi kesalahan sistem saat menghapus");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleView = async (id: number) => {
+    setViewModalOpen(true);
+    setViewLoading(true);
+    try {
+      const res = await fetch(`/api/pod/kuota/${id}`);
+      const data = await res.json();
+      if (data.success) {
+        setViewData(data.data);
+      } else {
+        alert("Gagal memuat detail: " + data.error);
+        setViewModalOpen(false);
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Terjadi kesalahan sistem saat memuat detail");
+      setViewModalOpen(false);
+    } finally {
+      setViewLoading(false);
     }
   };
 
@@ -203,13 +253,26 @@ export default function QuotaSchedulePage() {
                               {item.status || "Active"}
                            </Badge>
                         </td>
-                        <td className="px-6 py-4 text-right">
-                           <div className="flex items-center justify-end gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
-                             <Button variant="ghost" size="icon-sm" title="View Detail" className="hover:text-brand-500"><Eye className="h-4 w-4" /></Button>
-                             <Button variant="ghost" size="icon-sm" title="Edit Shift Allocation" className="hover:text-blue-500"><CalendarCheck className="h-4 w-4" /></Button>
-                             <Button variant="ghost" size="icon-sm" title="Delete" className="text-red-500 hover:bg-red-50 hover:text-red-600"><Trash2 className="h-4 w-4" /></Button>
-                           </div>
-                        </td>
+                         <td className="px-6 py-4 text-right">
+                            <div className="flex items-center justify-end gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button variant="ghost" size="icon-sm" title="View Detail" className="hover:text-brand-500" onClick={() => handleView(item.id)}>
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="icon-sm" title="Edit Shift Allocation" className="hover:text-blue-500" onClick={() => window.location.href=`/kuota/schedule/edit/${item.id}`}>
+                                <FileEdit className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon-sm" 
+                                title="Delete" 
+                                className="text-red-500 hover:bg-red-50 hover:text-red-600"
+                                onClick={() => handleDelete(item.id)}
+                                disabled={deletingId === item.id}
+                              >
+                                {deletingId === item.id ? <div className="h-4 w-4 rounded-full border-2 border-red-500 border-t-transparent animate-spin"/> : <Trash2 className="h-4 w-4" />}
+                              </Button>
+                            </div>
+                         </td>
                       </tr>
                     ))
                   )}
@@ -218,6 +281,82 @@ export default function QuotaSchedulePage() {
            </div>
         </CardContent>
       </Card>
+
+      {viewModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/50 backdrop-blur-sm px-4">
+          <div className="bg-white dark:bg-gray-950 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl border border-gray-100 dark:border-gray-800">
+            <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between font-outfit">
+              <h2 className="text-xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
+                <Eye className="h-5 w-5 text-brand-500" />
+                Detail Distribusi Kuota
+              </h2>
+              <Button variant="ghost" onClick={() => setViewModalOpen(false)}>Tutup</Button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto bg-gray-50 dark:bg-[#0a0a0a]">
+              {viewLoading ? (
+                <div className="flex flex-col justify-center items-center py-20 gap-3">
+                   <div className="w-10 h-10 border-4 border-brand-500 border-t-transparent rounded-full animate-spin" />
+                   <p className="text-gray-500 animate-pulse">Memuat rincian...</p>
+                </div>
+              ) : viewData ? (
+                <div className="space-y-6">
+                   <div className="p-4 bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div>
+                        <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Tanggal</p>
+                        <p className="font-bold">{viewData.header?.startDate}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Total Target</p>
+                        <p className="font-bold text-brand-500">{viewData.header?.totalQuota} Ton</p>
+                      </div>
+                   </div>
+
+                   <div className="space-y-4">
+                      <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest border-b pb-2 dark:border-gray-800">Alokasi ke Moda (Wilayah)</h3>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        {Object.entries(viewData.display?.wilayah || {}).map(([key, val]) => (
+                           <div key={key} className="bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-100 dark:border-gray-800 flex justify-between items-center">
+                              <span className="font-semibold text-gray-700 dark:text-gray-300">{key}</span>
+                              <Badge color="info" size="sm">{val as number} Ton</Badge>
+                           </div>
+                        ))}
+                      </div>
+                   </div>
+
+                   <div className="space-y-4">
+                      <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest border-b pb-2 dark:border-gray-800">Alokasi Area & Shift</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                         {Object.entries(viewData.display?.areas || {}).map(([aKey, aVal]) => (
+                            <div key={aKey} className="bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
+                               <div className="flex justify-between items-center mb-3">
+                                  <span className="font-bold text-brand-600 dark:text-brand-400 flex items-center gap-2">
+                                     <ArrowUpDown className="h-4 w-4" /> {aKey}
+                                  </span>
+                                  <Badge color="warning" variant="light" size="sm">{aVal as number} Ton</Badge>
+                               </div>
+                               
+                               <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-dashed dark:border-gray-800">
+                                  {[1,2,3].map(sNum => (
+                                     <div key={sNum} className="text-center bg-gray-50 dark:bg-white/5 rounded-lg p-2">
+                                        <p className="text-[10px] text-gray-400 uppercase font-black">Shift {sNum}</p>
+                                        <p className="font-bold text-gray-700 dark:text-gray-300">{viewData.display?.shifts?.[aKey]?.[sNum] || 0}</p>
+                                     </div>
+                                  ))}
+                               </div>
+                            </div>
+                         ))}
+                      </div>
+                   </div>
+
+                </div>
+              ) : (
+                <div className="text-center text-gray-500 py-12">Data tidak ditemukan</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

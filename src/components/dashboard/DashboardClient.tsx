@@ -13,14 +13,16 @@ export default function DashboardClient({ session, dbRole }: { session: any, dbR
   const router = useRouter();
 
   useEffect(() => {
-    const roles = (session?.user as any)?.roles || [];
-    const override = localStorage.getItem("debug_role_override");
-    
-    if (roles.length > 1 && !override) {
-      router.push("/auth/role-select");
-    } else if (override) {
+    const roles: string[] = (session?.user as any)?.roles || [];
+    const override = localStorage.getItem("active_role");
+
+    if (override && roles.includes(override)) {
       setRole(override);
-    } else if (dbRole) {
+    } else if (roles.length > 1) {
+      router.push("/auth/role-select");
+    } else if (roles.length === 1) {
+      setRole(roles[0]);
+    } else {
       setRole(dbRole);
     }
   }, [session, router, dbRole]);

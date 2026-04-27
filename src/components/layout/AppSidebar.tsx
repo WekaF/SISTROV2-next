@@ -154,11 +154,12 @@ const AppSidebar: React.FC = () => {
         name: "SETTING",
         subItems: [
           { name: "Konfigurasi Plant", path: "/superadmin/settings/plants" },
-          { name: "Sumbu Kendaraan", path: "/superadmin/settings/axles/global" },
+          { name: "Master Sumbu", path: "/superadmin/settings/sumbu" },
+          { name: "Master Percepatan", path: "/superadmin/settings/percepatan" },
           { name: "Konfigurasi Armada", path: "/superadmin/settings/fleet" },
           { name: "Produk & Mapping", path: "/superadmin/settings/products" },
           { name: "Gudang & Mapping", path: "/superadmin/settings/warehouses" },
-          { name: "Konfigurasi Rekanan", path: "/superadmin/settings/partners" },
+          { name: "Konfigurasi Rekanan", path: "/superadmin/settings/transport" },
         ],
       },
       {
@@ -199,13 +200,18 @@ const AppSidebar: React.FC = () => {
           { name: "Konfigurasi Plant", path: "/superadmin/settings/plants" },
           { name: "Tambah Plant", path: "/superadmin/settings/plants/new" },
           { name: "Konfigurasi All User", path: "/superadmin/settings/users" },
-          { name: "Sumbu All Company", path: "/superadmin/settings/axles/global" },
-          { name: "Sumbu Per Plant", path: "/superadmin/settings/axles/plant" },
+          { name: "Master Sumbu", path: "/superadmin/settings/sumbu" },
+          { name: "Master Percepatan", path: "/superadmin/settings/percepatan" },
           { name: "Konfigurasi Armada", path: "/superadmin/settings/fleet" },
           { name: "Produk & Mapping", path: "/superadmin/settings/products" },
           { name: "Gudang & Mapping", path: "/superadmin/settings/warehouses" },
-          { name: "Konfigurasi Rekanan", path: "/superadmin/settings/partners" },
+          { name: "Konfigurasi Rekanan", path: "/superadmin/settings/transport" },
         ],
+      },
+      {
+        icon: <BarChart3 className="h-5 w-5" />,
+        name: "Antrian",
+        path: "/antrian",
       },
       {
         icon: <ClipboardList className="h-5 w-5" />,
@@ -224,6 +230,11 @@ const AppSidebar: React.FC = () => {
         icon: <LayoutGrid className="h-5 w-5" />,
         name: "Dashboard",
         path: "/",
+      },
+      {
+        icon: <BarChart3 className="h-5 w-5" />,
+        name: "Antrian",
+        path: "/antrian",
       },
       {
         icon: <Package className="h-5 w-5" />,
@@ -254,7 +265,6 @@ const AppSidebar: React.FC = () => {
         icon: <TableProperties className="h-5 w-5" />,
         name: "Gudang",
         subItems: [
-          { name: "Antrian Gudang", path: "/antrian" },
           { name: "List Gudang", path: "/gudang/list" },
           { name: "Antrian Per Unit", path: "/gudang/unit-queue" },
           { name: "Gudang Tujuan", path: "/gudang/targets" },

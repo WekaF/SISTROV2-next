@@ -1,28 +1,42 @@
 import { NextResponse } from "next/server";
-import { getDbConnection } from "@/lib/db";
-import sql from "mssql";
+import { query } from "@/lib/db";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 export async function GET() {
   try {
-    const pool = await getDbConnection();
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-    // Fetch Products
-    const productsResult = await pool.request().query("SELECT ID as id, NamaProduk as name FROM Produk WHERE deleted = '0' OR deleted IS NULL");
-    
-    // Fetch Wilayah (Moda)
-    const wilayahResult = await pool.request().query("SELECT abbrev as id, nama as name FROM M_Wilayah");
+    const userId = (session.user as any).id;
 
-    // Fetch Areas (Areas/Clusters) - using M_Bagian as typically Areas map to Bagian in SISTRO
-    const areasResult = await pool.request().query("SELECT abbrev as id, nama as name, wilayah as wilayahId FROM M_Bagian");
+    const productsResult = await query<{ id: number; name: string; code: string }>(`
+      SELECT DISTINCT p.id, p.nama as name, p.kode as code
+      FROM produk p
+      JOIN produkmapping pm ON p.id = pm.produkid
+      WHERE pm.companycode IN (
+        SELECT companycode FROM usercompanies WHERE userid = $1
+      ) AND (p.deleted IS NULL OR p.deleted = false)
+    `, [userId]);
+
+    const wilayahResult = await query<{ id: string; name: string }>(
+      "SELECT abbrev as id, keterangan as name FROM m_wilayah ORDER BY abbrev"
+    );
+
+    const areasResult = await query<{ id: string; name: string; wilayahId: string }>(
+      `SELECT abbrev as id, keterangan as name, scope as "wilayahId" FROM m_bagian ORDER BY abbrev`
+    );
 
     return NextResponse.json({
       success: true,
-      products: productsResult.recordset,
-      wilayah: wilayahResult.recordset,
-      areas: areasResult.recordset
+      products: productsResult.rows,
+      wilayah: wilayahResult.rows,
+      areas: areasResult.rows
     });
   } catch (error: any) {
-    console.error("Lookup API Error:", error);
+    console.error("Lookup Error:", error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

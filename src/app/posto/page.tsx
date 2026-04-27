@@ -1,43 +1,170 @@
 "use client";
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { 
-  ClipboardList, 
   Search, 
-  Filter, 
   Plus, 
-  Download, 
   Eye, 
   FileEdit, 
   Trash2,
   Calendar,
   Package,
-  ArrowUpDown
+  ArrowUpDown,
+  Ticket
 } from "lucide-react";
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Badge from "@/components/ui/badge/Badge";
+import { useSession } from "next-auth/react";
+import Link from "next/link";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export default function PostoPage() {
-  const postoData = [
-    { id: "P-2026-04-001", transportir: "Siba Surya", product: "Urea Sub", qty: "500 Ton", date: "2026-04-10", status: "Active" },
-    { id: "P-2026-04-002", transportir: "Puninar", product: "NPK Phonska", qty: "250 Ton", date: "2026-04-10", status: "In Progress" },
-    { id: "P-2026-04-003", transportir: "TIKI Logistik", product: "ZA", qty: "120 Ton", date: "2026-04-09", status: "Completed" },
-    { id: "P-2026-04-004", transportir: "Pos Logistik", product: "Urea Non-Sub", qty: "800 Ton", date: "2026-04-09", status: "Active" },
-    { id: "P-2026-04-005", transportir: "Siba Surya", product: "SP-36", qty: "300 Ton", date: "2026-04-08", status: "Cancelled" },
-  ];
+  const [loading, setLoading] = useState(true);
+  const [postoData, setPostoData] = useState<any[]>([]);
+  const [search, setSearch] = useState("");
+  const [date, setDate] = useState("");
+  const { data: session } = useSession();
+  const role = (session?.user as any)?.role;
+  const isRekanan = role === 'rekanan';
+
+  // Modal States
+  const [selectedPosto, setSelectedPosto] = useState<any>(null);
+  const [isViewOpen, setIsViewOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Edit Form State
+  const [editForm, setEditForm] = useState({
+    date: "",
+    qty: 0,
+    expiryDate: ""
+  });
+
+  const fetchData = async (term = "", dt = "") => {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams();
+      if (term) params.append("search", term);
+      if (dt) params.append("date", dt);
+      
+      const res = await fetch(`/api/pod/posto?${params.toString()}`);
+      const data = await res.json();
+      if (data.success) {
+        setPostoData(data.data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch posto data", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    fetchData(search, date);
+  };
+
+  const handleDateChange = (newDate: string) => {
+    setDate(newDate);
+    fetchData(search, newDate);
+  };
+
+  // Actions
+  const handleView = async (id: string) => {
+    try {
+      const res = await fetch(`/api/pod/posto/${id}`);
+      const data = await res.json();
+      if (data.success) {
+        setSelectedPosto(data.data);
+        setIsViewOpen(true);
+      }
+    } catch (error) {
+       alert("Gagal memuat detail POSTO");
+    }
+  };
+
+  const handleEditInit = async (id: string) => {
+    try {
+      const res = await fetch(`/api/pod/posto/${id}`);
+      const data = await res.json();
+      if (data.success) {
+        setSelectedPosto(data.data);
+        setEditForm({
+          date: data.data.date,
+          qty: data.data.qty,
+          expiryDate: data.data.expiryDate || ""
+        });
+        setIsEditOpen(true);
+      }
+    } catch (error) {
+       alert("Gagal memuat data POSTO");
+    }
+  };
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedPosto) return;
+
+    try {
+      setIsSaving(true);
+      const res = await fetch(`/api/pod/posto/${selectedPosto.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editForm)
+      });
+      const data = await res.json();
+      if (data.success) {
+        setIsEditOpen(false);
+        fetchData(search, date);
+      } else {
+        alert("Gagal update: " + data.error);
+      }
+    } catch (error) {
+      alert("Error saat menyimpan perubahan");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm(`Apakah Anda yakin ingin menghapus POSTO ${id}?`)) return;
+
+    try {
+      const res = await fetch(`/api/pod/posto/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        fetchData(search, date);
+      } else {
+        alert("Gagal menghapus: " + data.error);
+      }
+    } catch (error) {
+      alert("Error saat menghapus data");
+    }
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">POSTO Management</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Monitor and manage all Distribution Orders (POSTO).</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Monitor and manage all Distribution Orders (POSTO) from Database.</p>
         </div>
         <div className="flex items-center gap-2">
-           <Button variant="outline" size="sm">
-              <Download className="h-4 w-4 mr-2" />
-              Export Data
+           <Button variant="outline" size="sm" onClick={() => fetchData(search, date)}>
+              <ArrowUpDown className="h-4 w-4 mr-2" />
+              Refresh
            </Button>
            <Button size="sm" onClick={() => window.location.href='/posto/upload'}>
               <Plus className="h-4 w-4 mr-2" />
@@ -49,84 +176,252 @@ export default function PostoPage() {
       <Card>
         <CardHeader>
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2 w-full md:w-auto">
+            <form onSubmit={handleSearch} className="flex items-center gap-2 w-full md:w-auto">
               <div className="relative flex-grow md:w-80">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input className="pl-10" placeholder="Search by POSTO ID or Transportir..." />
+                <Input 
+                  className="pl-10" 
+                  placeholder="Search No POSTO or Transportir..." 
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
               </div>
-              <Button variant="outline" size="icon">
-                <Filter className="h-4 w-4" />
-              </Button>
-            </div>
+              <Button type="submit" variant="secondary" size="sm">Search</Button>
+            </form>
             
             <div className="flex items-center gap-4">
                <div className="flex items-center gap-2 text-sm text-gray-500">
                  <Calendar className="h-4 w-4" />
-                 <span>Filter Date: Today</span>
+                 <Input 
+                   type="date" 
+                   className="h-8 w-40 text-xs" 
+                   value={date}
+                   onChange={(e) => handleDateChange(e.target.value)}
+                 />
+                 {date && (
+                   <Button variant="ghost" size="sm" className="h-8 px-2 text-red-500" onClick={() => handleDateChange("")}>X</Button>
+                 )}
                </div>
             </div>
           </div>
         </CardHeader>
         <CardContent>
-           <div className="border border-gray-100 dark:border-gray-800 rounded-xl overflow-hidden overflow-x-auto">
-             <table className="w-full text-left min-w-[800px]">
-               <thead className="bg-gray-50 dark:bg-white/[0.02]">
-                 <tr className="border-b border-gray-100 dark:border-gray-800">
-                   <th className="px-6 py-4 text-xs font-semibold uppercase text-gray-500">
-                      <div className="flex items-center gap-1 cursor-pointer hover:text-gray-900 transition-colors">
-                         POSTO ID <ArrowUpDown className="h-3 w-3" />
-                      </div>
-                   </th>
-                   <th className="px-6 py-4 text-xs font-semibold uppercase text-gray-500">Transportir</th>
-                   <th className="px-6 py-4 text-xs font-semibold uppercase text-gray-500">Product / Qty</th>
-                   <th className="px-6 py-4 text-xs font-semibold uppercase text-gray-500">Date</th>
-                   <th className="px-6 py-4 text-xs font-semibold uppercase text-gray-500">Status</th>
-                   <th className="px-6 py-4 text-xs font-semibold uppercase text-gray-500 text-right">Action</th>
-                 </tr>
-               </thead>
-               <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                 {postoData.map((posto) => (
-                   <tr key={posto.id} className="hover:bg-gray-50/50 dark:hover:bg-white/[0.01] transition-colors">
-                     <td className="px-6 py-4">
-                        <div className="font-bold text-gray-900 dark:text-white">{posto.id}</div>
-                     </td>
-                     <td className="px-6 py-4 text-sm font-medium">{posto.transportir}</td>
-                     <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                           <Package className="h-4 w-4 text-gray-400" />
-                           <div>
-                              <div className="text-sm font-bold">{posto.product}</div>
-                              <div className="text-xs text-gray-500">{posto.qty}</div>
+           <div className="border border-gray-100 dark:border-gray-800 rounded-xl overflow-hidden overflow-x-auto min-h-[400px]">
+             {loading ? (
+               <div className="flex flex-col items-center justify-center py-20 gap-4">
+                 <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-brand-500"></div>
+                 <p className="text-sm text-gray-500">Loading POSTO data...</p>
+               </div>
+             ) : (
+               <Table>
+                 <TableHeader>
+                   <TableRow>
+                     <TableHead>POSTO ID</TableHead>
+                     <TableHead>Date</TableHead>
+                     <TableHead>Transportir</TableHead>
+                     <TableHead>Product</TableHead>
+                     <TableHead className="text-right">Qty (Ton)</TableHead>
+                     <TableHead className="text-right">Realisasi</TableHead>
+                     <TableHead>Asal</TableHead>
+                     <TableHead>Tujuan</TableHead>
+                     <TableHead>Wilayah</TableHead>
+                     <TableHead>Bagian</TableHead>
+                     <TableHead className="text-center">Status</TableHead>
+                     <TableHead className="text-right">Action</TableHead>
+                   </TableRow>
+                 </TableHeader>
+                 <TableBody>
+                   {postoData.length === 0 ? (
+                     <TableRow>
+                       <TableCell colSpan={12} className="h-24 text-center text-gray-500 italic">
+                         Data tidak ditemukan.
+                       </TableCell>
+                     </TableRow>
+                   ) : postoData.map((posto) => (
+                     <TableRow key={posto.id}>
+                       <TableCell className="font-mono font-bold">{posto.id}</TableCell>
+                       <TableCell className="text-gray-500 font-mono">{posto.date}</TableCell>
+                       <TableCell>
+                          <div className="text-sm font-medium">{posto.transportir}</div>
+                          <div className="text-[10px] text-gray-400 font-mono">{posto.transportirId}</div>
+                       </TableCell>
+                       <TableCell>
+                          <div className="flex items-center gap-2">
+                             <Package className="h-4 w-4 text-brand-500" />
+                             <span className="text-sm font-bold">{posto.product}</span>
+                          </div>
+                       </TableCell>
+                       <TableCell className="text-right font-bold">
+                          {posto.qty.toLocaleString()}
+                       </TableCell>
+                       <TableCell className="text-right">
+                          <div className="text-sm font-bold text-emerald-600">{posto.realization.toLocaleString()}</div>
+                          <div className="text-[10px] text-gray-400 uppercase">Ton</div>
+                       </TableCell>
+                       <TableCell>{posto.asal || "-"}</TableCell>
+                       <TableCell>{posto.tujuan || "-"}</TableCell>
+                       <TableCell className="font-medium">{posto.wilayah || "-"}</TableCell>
+                       <TableCell>{posto.bagian || "-"}</TableCell>
+                       <TableCell className="text-center">
+                          <Badge 
+                             color={
+                                posto.status === "Active" ? "info" : 
+                                posto.status === "In Progress" ? "warning" : 
+                                posto.status === "Completed" ? "success" : 
+                                posto.status === "Cancelled" ? "error" : "default" as any
+                             } 
+                             size="sm"
+                          >
+                             {posto.status}
+                          </Badge>
+                       </TableCell>
+                        <TableCell className="text-right">
+                           <div className="flex items-center justify-end gap-2">
+                             {isRekanan ? (
+                               <Link href={`/tiket/booking?posto=${posto.id}`}>
+                                 <Button variant="outline" size="sm" className="bg-brand-50 text-brand-500 border-brand-200 hover:bg-brand-100">
+                                   <Ticket className="h-4 w-4 mr-1" />
+                                   Booking
+                                 </Button>
+                               </Link>
+                             ) : (
+                               <>
+                                 <Button variant="outline" size="sm" className="text-blue-500 border-blue-200 hover:bg-blue-50" onClick={() => handleView(posto.id)}>
+                                    <Eye className="h-4 w-4 mr-1" /> View
+                                 </Button>
+                                 <Button variant="outline" size="sm" className="text-amber-500 border-amber-200 hover:bg-amber-50" onClick={() => handleEditInit(posto.id)}>
+                                    <FileEdit className="h-4 w-4 mr-1" /> Edit
+                                 </Button>
+                                 <Button variant="outline" size="sm" className="text-red-500 border-red-200 hover:bg-red-50" onClick={() => handleDelete(posto.id)}>
+                                    <Trash2 className="h-4 w-4 mr-1" /> Hapus
+                                 </Button>
+                               </>
+                             )}
                            </div>
-                        </div>
-                     </td>
-                     <td className="px-6 py-4 text-sm text-gray-500 font-mono italic">{posto.date}</td>
-                     <td className="px-6 py-4">
-                        <Badge 
-                           color={
-                              posto.status === "Active" ? "info" : 
-                              posto.status === "In Progress" ? "warning" : 
-                              posto.status === "Completed" ? "success" : "error" as any
-                           } 
-                           size="sm"
-                        >
-                           {posto.status}
-                        </Badge>
-                     </td>
-                     <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <Button variant="ghost" size="icon-sm" title="View"><Eye className="h-4 w-4" /></Button>
-                          <Button variant="ghost" size="icon-sm" title="Edit"><FileEdit className="h-4 w-4" /></Button>
-                          <Button variant="ghost" size="icon-sm" title="Delete" className="text-red-500"><Trash2 className="h-4 w-4" /></Button>
-                        </div>
-                     </td>
-                   </tr>
-                 ))}
-               </tbody>
-             </table>
+                        </TableCell>
+                     </TableRow>
+                   ))}
+                 </TableBody>
+               </Table>
+             )}
            </div>
         </CardContent>
       </Card>
+
+      {/* View Modal */}
+      {isViewOpen && selectedPosto && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-900 border-none shadow-2xl">
+            <CardHeader className="border-b dark:border-white/10">
+              <div className="flex items-center justify-between">
+                <CardTitle>Detail POSTO: {selectedPosto.id}</CardTitle>
+                <Button variant="ghost" size="sm" onClick={() => setIsViewOpen(false)}>X</Button>
+              </div>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 <div className="space-y-4">
+                    <div>
+                       <p className="text-[10px] text-gray-400 uppercase font-black">Distribution Info</p>
+                       <div className="mt-2 space-y-2">
+                          <div className="flex justify-between text-sm"><span>No Posto</span><span className="font-bold">{selectedPosto.id}</span></div>
+                          <div className="flex justify-between text-sm"><span>Tanggal Posto</span><span className="font-bold">{selectedPosto.date}</span></div>
+                          <div className="flex justify-between text-sm"><span>Jatuh Tempo</span><span className="font-bold">{selectedPosto.expiryDate || "-"}</span></div>
+                          <div className="flex justify-between text-sm"><span>Status</span><Badge color="info" size="sm">{selectedPosto.status}</Badge></div>
+                       </div>
+                    </div>
+                    <div>
+                       <p className="text-[10px] text-gray-400 uppercase font-black">Area & Location</p>
+                       <div className="mt-2 space-y-2">
+                          <div className="flex justify-between text-sm"><span>Asal</span><span className="font-bold">{selectedPosto.asal || "-"}</span></div>
+                          <div className="flex justify-between text-sm"><span>Tujuan</span><span className="font-bold">{selectedPosto.tujuan || "-"}</span></div>
+                          <div className="flex justify-between text-sm"><span>Wilayah</span><span className="font-bold">{selectedPosto.wilayah || "-"}</span></div>
+                          <div className="flex justify-between text-sm"><span>Bagian</span><span className="font-bold">{selectedPosto.bagian || "-"}</span></div>
+                       </div>
+                    </div>
+                 </div>
+                 <div className="space-y-4">
+                    <div>
+                       <p className="text-[10px] text-gray-400 uppercase font-black">Transportir & Product</p>
+                       <div className="mt-2 space-y-2">
+                          <div className="text-sm border-b pb-1 font-bold text-brand-500">{selectedPosto.transportir}</div>
+                          <div className="text-[10px] text-gray-400">ID: {selectedPosto.transportirId}</div>
+                          <div className="mt-3 flex items-center gap-2">
+                             <Package className="h-5 w-5 text-brand-500" />
+                             <span className="text-sm font-bold">{selectedPosto.product}</span>
+                          </div>
+                       </div>
+                    </div>
+                    <div className="bg-gray-50 dark:bg-white/5 p-4 rounded-xl">
+                       <p className="text-[10px] text-gray-400 uppercase font-black">Quantity Summary</p>
+                       <div className="mt-3 grid grid-cols-2 gap-4">
+                          <div><p className="text-[10px] text-gray-500">Plan</p><p className="text-lg font-bold">{selectedPosto.qty.toLocaleString()} T</p></div>
+                          <div><p className="text-[10px] text-gray-500">Realization</p><p className="text-lg font-bold text-emerald-600">{selectedPosto.realization.toLocaleString()} T</p></div>
+                       </div>
+                    </div>
+                 </div>
+              </div>
+            </CardContent>
+            <CardHeader className="border-t pt-4">
+              <Button variant="secondary" className="w-full" onClick={() => setIsViewOpen(false)}>Close Detail</Button>
+            </CardHeader>
+          </Card>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {isEditOpen && selectedPosto && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <Card className="w-full max-w-md bg-white dark:bg-gray-900 border-none shadow-2xl">
+            <CardHeader className="border-b dark:border-white/10">
+              <CardTitle>Edit POSTO: {selectedPosto.id}</CardTitle>
+            </CardHeader>
+            <form onSubmit={handleUpdate}>
+              <CardContent className="p-6 space-y-4">
+                <div className="grid grid-cols-2 gap-4 text-xs bg-gray-50 dark:bg-white/10 p-3 rounded-lg border border-gray-100 dark:border-gray-800 italic">
+                   <div>Product: <strong>{selectedPosto.product}</strong></div>
+                   <div>Vendor: <strong>{selectedPosto.transportir}</strong></div>
+                </div>
+                
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-gray-500">Tanggal Posto</label>
+                  <Input 
+                    type="date" 
+                    value={editForm.date}
+                    onChange={(e) => setEditForm({...editForm, date: e.target.value})}
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-gray-500">Kuantitas (Ton)</label>
+                  <Input 
+                    type="number" 
+                    value={editForm.qty}
+                    onChange={(e) => setEditForm({...editForm, qty: Number(e.target.value)})}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-gray-500">Tanggal Jatuh Tempo</label>
+                  <Input 
+                    type="date" 
+                    value={editForm.expiryDate}
+                    onChange={(e) => setEditForm({...editForm, expiryDate: e.target.value})}
+                  />
+                </div>
+              </CardContent>
+              <CardHeader className="border-t pt-4 flex flex-row gap-2">
+                <Button type="button" variant="ghost" className="flex-1" onClick={() => setIsEditOpen(false)}>Batal</Button>
+                <Button type="submit" className="flex-1" disabled={isSaving}>
+                  {isSaving ? "Menyimpan..." : "Simpan Perubahan"}
+                </Button>
+              </CardHeader>
+            </form>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

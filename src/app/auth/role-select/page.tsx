@@ -75,9 +75,7 @@ export default function RoleSelectPage() {
   }, [session, router]);
 
   const handleRoleSelection = async (role: string) => {
-    // We update the localStorage override to ensure the UI reacts immediately
-    localStorage.setItem("debug_role_override", role);
-    // Use window.location.href to force a full reload and reset sidebar/dashboard state
+    localStorage.setItem("active_role", role);
     window.location.href = "/";
   };
 

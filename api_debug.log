@@ -1,0 +1,27 @@
+[2026-04-16T01:55:41.179Z] POST Body: {"id":0,"nama":"mobil","jenistruk":"1.1","tahun":"2026","muatan":11,"idGrupTruk":0}
+[2026-04-16T01:55:41.741Z] POST Error: Validation failed for parameter 'nama'. parameter.type.validate is not a function
+[2026-04-16T01:55:54.487Z] POST Body: {"id":0,"nama":"mobil","jenistruk":"1.1","tahun":"2026","muatan":11,"idGrupTruk":0}
+[2026-04-16T01:55:54.547Z] POST Error: Validation failed for parameter 'nama'. parameter.type.validate is not a function
+[2026-04-16T01:58:33.248Z] POST Body: {"id":0,"nama":"mobil","jenistruk":"1.1","tahun":"2026","muatan":21,"idGrupTruk":0}
+[2026-04-16T01:58:33.288Z] POST Error: Validation failed for parameter 'nama'. parameter.type.validate is not a function
+[2026-04-16T10:08:10.315Z] GET Error: Failed to connect to 192.168.188.29:7869 in 15000ms
+[2026-04-17T01:48:30.784Z] POST Body: {"id":0,"nama":"Mobil","jenistruk":"1.1","tahun":"2026","muatan":10,"idGrupTruk":0}
+[2026-04-17T01:48:30.851Z] POST Error: Validation failed for parameter 'nama'. parameter.type.validate is not a function
+[2026-04-17T02:31:04.269Z] POST Body: {"id":0,"nama":"mobil","jenistruk":"1.1","tahun":"2026","muatan":11,"idGrupTruk":0}
+[2026-04-17T02:31:04.426Z] POST Error: Validation failed for parameter 'muatan'. parameter.type.validate is not a function
+[2026-04-17T02:42:21.838Z] POST Body: {"id":0,"nama":"Mobil","jenistruk":"1.1","tahun":"2026","muatan":2,"idGrupTruk":0}
+[2026-04-17T02:42:21.937Z] POST Error: Validation failed for parameter 'muatan'. parameter.type.validate is not a function
+[2026-04-17T02:43:28.591Z] POST Body: {"id":0,"nama":"Mobil","jenistruk":"1.1","tahun":"2026","muatan":1,"idGrupTruk":0}
+[2026-04-17T02:43:28.830Z] POST Success
+[2026-04-17T02:43:51.835Z] Percepatan POST Body: {"kodePlant":"PKG","idGrupTruk":0,"idSumbu":14,"muatanPercepatan":2,"tanggalAwal":"2026-04-01","tanggalAkhir":"2026-04-30"}
+[2026-04-17T02:43:51.897Z] Percepatan POST Error: Validation failed for parameter 'tanggalAwal'. parameter.type.validate is not a function
+[2026-04-17T02:44:04.195Z] Percepatan POST Body: {"kodePlant":"PKG","idGrupTruk":0,"idSumbu":14,"muatanPercepatan":2,"tanggalAwal":"2026-04-17","tanggalAkhir":"2026-04-30"}
+[2026-04-17T02:44:04.239Z] Percepatan POST Error: Validation failed for parameter 'tanggalAwal'. parameter.type.validate is not a function
+[2026-04-17T02:47:47.394Z] Percepatan POST Body: {"kodePlant":"PKG","idGrupTruk":0,"idSumbu":14,"muatanPercepatan":2,"tanggalAwal":"2026-04-17","tanggalAkhir":"2026-04-30"}
+[2026-04-17T02:47:47.904Z] Percepatan POST Success
+[2026-04-17T06:38:10.113Z] Percepatan POST Body: {"kodePlant":"PKG","idGrupTruk":0,"idSumbu":14,"muatanPercepatan":3,"tanggalAwal":"2026-04-17","tanggalAkhir":"2026-04-30"}
+[2026-04-17T06:38:10.292Z] Percepatan POST Success
+[2026-04-27T06:43:59.452Z] GET Error: pool.request is not a function
+[2026-04-27T06:44:00.479Z] GET Error: pool.request is not a function
+[2026-04-27T06:44:16.498Z] GET Error: pool.request is not a function
+[2026-04-27T06:44:22.518Z] GET Error: timeout exceeded when trying to connect
