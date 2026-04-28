@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { AdminDashboard } from "@/components/dashboard/AdminDashboard";
 import { PodDashboard } from "@/components/dashboard/PodDashboard";
 import { RekananDashboard } from "@/components/dashboard/RekananDashboard";
@@ -9,23 +9,30 @@ import { ClipboardList, TrendingUp, Clock, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function DashboardClient({ session, dbRole }: { session: any, dbRole: string }) {
-  const [role, setRole] = useState(dbRole);
+  const [role, setRole] = useState(dbRole?.toLowerCase());
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     const roles: string[] = (session?.user as any)?.roles || [];
     const override = localStorage.getItem("active_role");
 
     if (override && roles.includes(override)) {
-      setRole(override);
+      setRole(override.toLowerCase());
     } else if (roles.length > 1) {
       router.push("/auth/role-select");
     } else if (roles.length === 1) {
-      setRole(roles[0]);
+      setRole(roles[0].toLowerCase());
     } else {
-      setRole(dbRole);
+      setRole(dbRole?.toLowerCase());
     }
   }, [session, router, dbRole]);
+
+  useEffect(() => {
+    if (role === "transport" && pathname === "/") {
+      router.push("/armada");
+    }
+  }, [role, pathname, router]);
 
   // Header Title Logic
   const title = role === "admin" || role === "superadmin"
@@ -40,7 +47,9 @@ export default function DashboardClient({ session, dbRole }: { session: any, dbR
             ? "Warehouse Operations Admin"
             : role === "rekanan"
               ? "Partner Portal Dashboard"
-              : "Logistics Overview";
+              : role === "transport"
+                ? "Transport Portal Dashboard"
+                : "Logistics Overview";
   
   const description = role === "admin" || role === "superadmin"
     ? "Global monitoring across all plants and regions."
@@ -54,7 +63,9 @@ export default function DashboardClient({ session, dbRole }: { session: any, dbR
             ? "Stock management and loading supervision."
           : role === "rekanan"
             ? "Manage your fleet, tickets, and shipment orders."
-            : "Welcome back. Here&apos;s what&apos;s happening today.";
+            : role === "transport"
+              ? "Manage your vehicle fleet and transport operations."
+              : "Welcome back. Here&apos;s what&apos;s happening today.";
 
   return (
     <div className="space-y-6">
@@ -86,7 +97,7 @@ export default function DashboardClient({ session, dbRole }: { session: any, dbR
         <AdminDashboard />
       ) : role === "pod" ? (
         <PodDashboard />
-      ) : role === "rekanan" ? (
+      ) : (role === "rekanan" || role === "transport") ? (
         <RekananDashboard />
       ) : (
         <>

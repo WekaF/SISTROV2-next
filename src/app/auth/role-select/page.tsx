@@ -38,6 +38,12 @@ const roleMetadata: Record<string, { label: string; icon: any; color: string; de
     color: "bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400",
     desc: "Fleet management, ticketing, and shipments.",
   },
+  transport: {
+    label: "Transport Portal",
+    icon: Truck,
+    color: "bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400",
+    desc: "Manage fleet and transport monitoring.",
+  },
   jembatan_timbang: {
     label: "Weighbridge",
     icon: Gauge,
@@ -95,7 +101,7 @@ export default function RoleSelectPage() {
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {availableRoles.map((role) => {
-            const meta = roleMetadata[role] || { 
+            const meta = roleMetadata[role.toLowerCase()] || { 
               label: role, 
               icon: LayoutGrid, 
               color: "bg-gray-50 text-gray-600",

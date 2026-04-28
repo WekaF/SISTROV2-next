@@ -95,13 +95,13 @@ const AppSidebar: React.FC = () => {
     if (saved) setOverrideRole(saved);
   }, []);
 
-  const role = overrideRole || (session?.user as any)?.role;
+  const role = (overrideRole || (session?.user as any)?.role)?.toLowerCase();
 
   // Compute navigation dynamically based on role
   let navItems = defaultNavItems;
   let adminItems = othersItems;
 
-  if (role === "rekanan") {
+  if (role === "rekanan" || role === "transport") {
     navItems = [
       {
         icon: <LayoutGrid className="h-5 w-5" />,
@@ -126,7 +126,7 @@ const AppSidebar: React.FC = () => {
       },
       {
         icon: <Truck className="h-5 w-5" />,
-        name: "Armada",
+        name: (role === "transport") ? "Transport" : "Armada",
         subItems: [
           { name: "List Armada", path: "/armada" },
           { name: "Pengajuan Armada Baru", path: "/armada/pengajuan" },

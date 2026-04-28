@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import Badge from "@/components/ui/badge/Badge";
 import { useSession } from "next-auth/react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useApi } from "@/hooks/use-api";
 import { useToast } from "@/components/ui/toast";
 import {
   Dialog,
@@ -34,24 +35,28 @@ import {
 
 interface FleetData {
   Nopol: string;
-  VendorCode: string;
+  VendorCode?: string;
   TransporterName?: string;
+  NamaTransportir?: string;
   AxleName?: string;
+  NamaSumbu?: string;
   Type?: string;
-  IsVerified: boolean;
+  IsVerified: boolean | number;
   ExpiryDate?: string;
-  CreatedAt: string;
+  CreatedAt?: string;
+  TglDaftar?: string;
 }
 
 export default function ArmadaPage() {
   const { data: session } = useSession();
+  const { apiJson, apiFetch, apiTable } = useApi();
   const { addToast } = useToast();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
   const role = (session?.user as any)?.role;
-  const isRekanan = role === 'rekanan';
+  const isRekanan = role === 'rekanan' || role === 'transport';
 
   const [isSubmitOpen, setIsSubmitOpen] = useState(false);
   const [formData, setFormData] = useState({ Nopol: "", SumbuId: "", Type: "" });
@@ -65,10 +70,14 @@ export default function ArmadaPage() {
   const { data: fleetsResult, isLoading, isFetching } = useQuery({
     queryKey: ['fleets', debouncedSearch, role],
     queryFn: async () => {
-      const endpoint = isRekanan ? '/api/rekanan/fleet' : `/api/admin/fleet?search=${debouncedSearch}`;
-      const res = await fetch(endpoint);
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error);
+      const body = {
+        draw: 1,
+        start: 0,
+        length: 100,
+        search: { value: debouncedSearch },
+        companyCode: (session?.user as any)?.companyCode
+      };
+      const data = await apiTable("/api/Armada/DataTable", body);
       return data;
     }
   });
@@ -76,23 +85,23 @@ export default function ArmadaPage() {
   const { data: sumbuResult } = useQuery({
     queryKey: ['sumbu-list'],
     queryFn: async () => {
-      const res = await fetch('/api/admin/sumbu');
-      const data = await res.json();
-      return data.data || [];
+      const data = await apiJson('/api/Master/GetSumbu');
+      return data.data || data || [];
     },
     enabled: isSubmitOpen
   });
 
   const submitMutation = useMutation({
     mutationFn: async (data: any) => {
-      const res = await fetch('/api/rekanan/fleet', {
+      const res = await apiFetch('/api/Armada/Submit', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       });
-      const resData = await res.json();
-      if (!resData.success) throw new Error(resData.error);
-      return resData;
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || res.statusText);
+      }
+      return res.json();
     },
     onSuccess: () => {
       addToast({ title: "Success", description: "Armada berhasil diajukan untuk verifikasi", variant: "success" });
@@ -183,13 +192,13 @@ export default function ArmadaPage() {
                      </td>
                      {!isRekanan && (
                         <td className="px-6 py-4">
-                           <span className="text-sm font-bold text-gray-900 dark:text-white uppercase">{f.TransporterName}</span>
+                           <span className="text-sm font-bold text-gray-900 dark:text-white uppercase">{f.TransporterName || f.NamaTransportir}</span>
                         </td>
                      )}
                      <td className="px-6 py-4">
                         <div className="flex flex-col">
                            <span className="text-xs font-medium text-gray-600 dark:text-gray-400">{f.Type || 'General'}</span>
-                           <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">{f.AxleName || 'Default'}</span>
+                           <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">{f.AxleName || f.NamaSumbu || 'Default'}</span>
                         </div>
                      </td>
                      <td className="px-6 py-4">
@@ -197,8 +206,8 @@ export default function ArmadaPage() {
                            <Badge color={f.IsVerified ? "success" : "warning"} size="sm" variant="light" className="w-fit italic font-bold">
                               {f.IsVerified ? "Verified" : "Pending Verification"}
                            </Badge>
-                           {f.ExpiryDate && (
-                              <span className="text-[10px] text-gray-400 font-bold">Exp: {new Date(f.ExpiryDate).toLocaleDateString()}</span>
+                           {(f.ExpiryDate || f.TglDaftar) && (
+                              <span className="text-[10px] text-gray-400 font-bold">Exp: {new Date(f.ExpiryDate || f.TglDaftar || "").toLocaleDateString()}</span>
                            )}
                         </div>
                      </td>
@@ -237,10 +246,10 @@ export default function ArmadaPage() {
                     value={formData.SumbuId}
                     onChange={(e) => setFormData({...formData, SumbuId: e.target.value})}
                   >
-                     <option value="">Pilih Sumbu...</option>
-                     {sumbuResult?.map((s: any) => (
-                        <option key={s.Id} value={s.Id}>{s.nama}</option>
-                     ))}
+                    <option value="">Pilih Sumbu...</option>
+                    {sumbuResult?.map((s: any) => (
+                      <option key={s.Id} value={s.Id}>{s.nama}</option>
+                    ))}
                   </select>
                </div>
                <div className="space-y-2">

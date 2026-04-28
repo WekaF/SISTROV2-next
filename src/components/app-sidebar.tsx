@@ -167,6 +167,18 @@ const roleMenus: Record<Role, any[]> = {
   eksternal: [
     { title: "Dashboard", url: "/", icon: LayoutDashboard },
   ],
+  transport: [
+    { title: "Dashboard", url: "/", icon: LayoutDashboard },
+    { title: "Tiket", url: "/ticket", icon: Ticket },
+    { title: "Posto", url: "/posto", icon: ClipboardList },
+    { title: "Antrian Gudang", url: "/antrian", icon: History },
+    { title: "Tracking Truck", url: "/tracking", icon: Map },
+    { title: "Stock", url: "/stock", icon: Box },
+    { title: "Laporan", url: "/reports", icon: BarChart3 },
+    { title: "Transport", url: "/armada", icon: Truck },
+    { title: "Pengajuan Jatuh Tempo", url: "/pengajuan/jatuh-tempo", icon: ClipboardList },
+    { title: "Pengajuan Armada", url: "/pengajuan/armada", icon: FileCheck },
+  ],
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {

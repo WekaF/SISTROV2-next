@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Badge from "@/components/ui/badge/Badge";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useApi } from "@/hooks/use-api";
 import { useToast } from "@/components/ui/toast";
 import {
   Dialog,
@@ -34,19 +35,22 @@ import ConfirmDialog from "@/components/ui/ConfirmDialog";
 
 interface FleetData {
   Nopol: string;
-  VendorCode: string;
-  TransporterName: string;
+  VendorCode?: string;
+  TransporterName?: string;
+  NamaTransportir?: string;
   SumbuId?: number;
   AxleName?: string;
+  NamaSumbu?: string;
   Type?: string;
-  IsVerified: boolean;
+  IsVerified: boolean | number;
   ExpiryDate?: string;
-  CreatedAt: string;
-  UpdatedAt: string;
+  CreatedAt?: string;
+  UpdatedAt?: string;
 }
 
 export default function FleetMasterPage() {
   const { addToast } = useToast();
+  const { apiJson, apiFetch } = useApi();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -67,22 +71,25 @@ export default function FleetMasterPage() {
   const { data: fleetsResult, isLoading, isFetching } = useQuery({
     queryKey: ['admin-fleets', debouncedSearch],
     queryFn: async () => {
-      const res = await fetch(`/api/admin/fleet?search=${debouncedSearch}`);
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error);
+      const body = {
+        draw: 1,
+        start: 0,
+        length: 25,
+        search: { value: debouncedSearch }
+      };
+      const data = await apiTable("/api/Armada/DataTable", body);
       return data;
     }
   });
 
   const verifyMutation = useMutation({
     mutationFn: async (data: any) => {
-      const res = await fetch('/api/admin/fleet', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await apiFetch('/api/Armada/Verify', {
+        method: 'POST',
         body: JSON.stringify(data)
       });
       const resData = await res.json();
-      if (!resData.success) throw new Error(resData.error);
+      if (!res.ok) throw new Error(resData.error || "Gagal verifikasi");
       return resData;
     },
     onSuccess: () => {
@@ -97,9 +104,12 @@ export default function FleetMasterPage() {
 
   const deleteMutation = useMutation({
     mutationFn: async (nopol: string) => {
-      const res = await fetch(`/api/admin/fleet?nopol=${nopol}`, { method: 'DELETE' });
+      const res = await apiFetch(`/api/Armada/DeleteData`, { 
+        method: 'POST',
+        body: JSON.stringify({ id: nopol })
+      });
       const data = await res.json();
-      if (!data.success) throw new Error(data.error);
+      if (!res.ok) throw new Error(data.error || "Gagal menghapus");
       return data;
     },
     onSuccess: () => {
@@ -115,7 +125,7 @@ export default function FleetMasterPage() {
   const handleVerifyRequest = (fleet: FleetData) => {
     setSelectedFleet(fleet);
     setVerifyData({ 
-      IsVerified: fleet.IsVerified, 
+      IsVerified: !!fleet.IsVerified, 
       ExpiryDate: fleet.ExpiryDate ? new Date(fleet.ExpiryDate).toISOString().split('T')[0] : "" 
     });
     setIsVerifyOpen(true);
@@ -239,14 +249,14 @@ export default function FleetMasterPage() {
                            </td>
                            <td className="px-6 py-4">
                               <div className="flex flex-col">
-                                 <span className="text-sm font-bold text-gray-900 dark:text-white uppercase">{f.TransporterName || 'Unknown Vendor'}</span>
+                                 <span className="text-sm font-bold text-gray-900 dark:text-white uppercase">{f.TransporterName || f.NamaTransportir || 'Unknown Vendor'}</span>
                                  <span className="text-[10px] font-mono text-gray-400">ID: {f.VendorCode}</span>
                               </div>
                            </td>
                            <td className="px-6 py-4">
                               <div className="flex flex-col">
                                  <span className="text-xs font-medium text-gray-600 dark:text-gray-400">{f.Type || 'General'}</span>
-                                 <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">{f.AxleName || 'Default Sumbu'}</span>
+                                 <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">{f.AxleName || f.NamaSumbu || 'Default Sumbu'}</span>
                               </div>
                            </td>
                            <td className="px-6 py-4">
@@ -311,28 +321,28 @@ export default function FleetMasterPage() {
                         value={verifyData.ExpiryDate}
                         onChange={(e) => setVerifyData({...verifyData, ExpiryDate: e.target.value})}
                         className="pl-10 rounded-xl font-bold"
-                     />
-                  </div>
-               </div>
-            </div>
-            <DialogFooter>
-               <Button variant="outline" onClick={() => setIsVerifyOpen(false)}>Batal</Button>
-               <Button className="bg-brand-500 font-bold" onClick={() => verifyMutation.mutate({ Nopol: selectedFleet?.Nopol, ...verifyData })}>Simpan Verifikasi</Button>
-            </DialogFooter>
-         </DialogContent>
-      </Dialog>
-
-      {/* Delete Modal */}
-      {selectedFleet && (
-         <ConfirmDialog 
-            open={isDeleteOpen}
-            onOpenChange={setIsDeleteOpen}
-            onConfirm={() => deleteMutation.mutate(selectedFleet.Nopol)}
-            title="Hapus Record Armada?"
-            description={`Anda yakin ingin menghapus data armada ${selectedFleet.Nopol}? Vendor harus mendaftarkan ulang unit ini jika nanti dibutuhkan.`}
-            variant="danger"
-         />
-      )}
-    </div>
-  );
-}
+                      />
+                   </div>
+                </div>
+             </div>
+             <DialogFooter>
+                <Button variant="outline" onClick={() => setIsVerifyOpen(false)}>Batal</Button>
+                <Button className="bg-brand-500 font-bold" onClick={() => verifyMutation.mutate({ nopol: selectedFleet?.Nopol, ...verifyData })}>Simpan Verifikasi</Button>
+             </DialogFooter>
+          </DialogContent>
+       </Dialog>
+ 
+       {/* Delete Modal */}
+       {selectedFleet && (
+          <ConfirmDialog 
+             open={isDeleteOpen}
+             onOpenChange={setIsDeleteOpen}
+             onConfirm={() => deleteMutation.mutate(selectedFleet.Nopol)}
+             title="Hapus Record Armada?"
+             description={`Anda yakin ingin menghapus data armada ${selectedFleet.Nopol}? Vendor harus mendaftarkan ulang unit ini jika nanti dibutuhkan.`}
+             variant="danger"
+          />
+       )}
+     </div>
+   );
+ }

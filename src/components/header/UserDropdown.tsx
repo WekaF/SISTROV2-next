@@ -122,10 +122,11 @@ export default function UserDropdown() {
                         : role === "admin" ? "Admin"
                         : role === "pod" ? "POD"
                         : role === "rekanan" ? "Rekanan"
+                        : role === "transport" ? "Transport"
                         : role === "security" ? "Security"
                         : role === "jembatan_timbang" ? "Weighbridge"
                         : role === "gudang" ? "Gudang"
-                        : role;
+                        : role.charAt(0).toUpperCase() + role.slice(1);
             
             return (
               <li key={role}>

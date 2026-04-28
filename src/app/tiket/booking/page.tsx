@@ -1,23 +1,49 @@
 "use client";
 import React, { useState } from "react";
-import { 
-  Package, 
-  Truck, 
-  User, 
-  Phone, 
+import {
+  Package,
+  Truck,
+  User,
+  Phone,
   ArrowLeft,
   Loader2,
   CheckCircle2,
   AlertCircle
 } from "lucide-react";
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useSession } from "next-auth/react";
+import { useApi } from "@/hooks/use-api";
 import { useToast } from "@/components/ui/toast";
+import { useRouter } from "next/navigation";
+
+interface PostoItem {
+  NoPOSTO?: string;
+  id?: string;
+  noposto?: string;
+  NamaProduk?: string;
+  product?: string;
+  ProductName?: string;
+  IdProduk?: string;
+  productId?: string;
+}
+
+interface ArmadaItem {
+  Nopol: string;
+  AxleName?: string;
+  IsVerified?: boolean;
+  StatusArmada?: string;
+}
 
 export default function TicketBookingPage() {
+  const { data: session } = useSession();
+  const { apiJson } = useApi();
   const { addToast } = useToast();
+  const router = useRouter();
+  const companyCode = (session?.user as any)?.companyCode;
+
   const [formData, setFormData] = useState({
     NoPosto: "",
     Nopol: "",
@@ -26,52 +52,54 @@ export default function TicketBookingPage() {
     ProductId: ""
   });
 
-  const { data: postoResult, isLoading: loadingPosto } = useQuery({
-    queryKey: ['rekanan-postos'],
-    queryFn: async () => {
-      const res = await fetch('/api/pod/posto');
-      const data = await res.json();
-      return data.data || [];
-    }
+  const { data: postoRaw, isLoading: loadingPosto } = useQuery({
+    queryKey: ['posto-tiket-baru', companyCode],
+    queryFn: () => apiJson('/api/POSTO/TiketBaru'),
+    enabled: !!session,
   });
+  const postoList: PostoItem[] = Array.isArray(postoRaw)
+    ? postoRaw
+    : Array.isArray(postoRaw?.data) ? postoRaw.data : [];
 
-  const { data: fleetResult, isLoading: loadingFleet } = useQuery({
-    queryKey: ['rekanan-fleets'],
-    queryFn: async () => {
-      const res = await fetch('/api/rekanan/fleet');
-      const data = await res.json();
-      return (data.data || []).filter((f: any) => f.IsVerified);
-    }
+  const { data: armadaRaw, isLoading: loadingFleet } = useQuery({
+    queryKey: ['armada-data', companyCode],
+    queryFn: () => apiJson(`/api/Armada/Data?posto=${companyCode}`),
+    enabled: !!companyCode,
   });
+  const allFleet: ArmadaItem[] = Array.isArray(armadaRaw)
+    ? armadaRaw
+    : Array.isArray(armadaRaw?.data) ? armadaRaw.data : [];
+  const verifiedFleet = allFleet.filter((f) => f.IsVerified !== false);
 
   const bookingMutation = useMutation({
-    mutationFn: async (data: any) => {
-      const res = await fetch('/api/rekanan/tiket', {
+    mutationFn: (payload: any) =>
+      apiJson('/api/Tiket/PostData', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-      const resData = await res.json();
-      if (!resData.success) throw new Error(resData.error);
-      return resData;
-    },
-    onSuccess: (data) => {
-      addToast({ title: "Berhasil", description: `Tiket ${data.data.bookingNo} berhasil dibuat`, variant: "success" });
-      window.location.href = '/tiket';
+        body: JSON.stringify(payload),
+      }),
+    onSuccess: () => {
+      addToast({ title: "Berhasil", description: "Tiket berhasil dibuat.", variant: "success" });
+      router.push('/tiket');
     },
     onError: (err: any) => {
-      addToast({ title: "Gagal", description: err.message, variant: "destructive" });
+      addToast({ title: "Gagal membuat tiket", description: err.message, variant: "destructive" });
     }
   });
 
+  const getPostoId = (p: PostoItem) => p.NoPOSTO || p.id || p.noposto || "";
+  const getPostoProduct = (p: PostoItem) => p.NamaProduk || p.product || p.ProductName || "";
+  const getPostoProductId = (p: PostoItem) => p.IdProduk || p.productId || "";
+
   const handlePostoChange = (val: string) => {
-    const selected = (postoResult || []).find((p: any) => p.id === val);
+    const selected = postoList.find((p) => getPostoId(p) === val);
     setFormData({
       ...formData,
       NoPosto: val,
-      ProductId: selected?.productId || ""
+      ProductId: selected ? getPostoProductId(selected) : ""
     });
   };
+
+  const selectedPosto = postoList.find((p) => getPostoId(p) === formData.NoPosto);
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -96,15 +124,23 @@ export default function TicketBookingPage() {
                   <label className="text-[10px] font-black uppercase text-gray-500 tracking-widest flex items-center gap-1.5 ml-1">
                     <Package className="h-3 w-3" /> Pilih Order POSTO
                   </label>
-                  <select 
+                  <select
                     className="w-full h-11 px-3 border border-gray-100 rounded-xl bg-white dark:bg-gray-900 dark:border-gray-800 text-sm font-bold outline-none focus:ring-2 focus:ring-brand-500"
                     value={formData.NoPosto}
                     onChange={(e) => handlePostoChange(e.target.value)}
+                    disabled={loadingPosto}
                   >
-                     <option value="">-- Pilih Nomor Posto --</option>
-                     {postoResult?.map((p: any) => (
-                        <option key={p.id} value={p.id}>{p.id} - {p.product}</option>
-                     ))}
+                     <option value="">
+                       {loadingPosto ? "Memuat data POSTO..." : "-- Pilih Nomor Posto --"}
+                     </option>
+                     {postoList.map((p) => {
+                       const id = getPostoId(p);
+                       return (
+                         <option key={id} value={id}>
+                           {id} - {getPostoProduct(p)}
+                         </option>
+                       );
+                     })}
                   </select>
                </div>
 
@@ -112,17 +148,22 @@ export default function TicketBookingPage() {
                   <label className="text-[10px] font-black uppercase text-gray-500 tracking-widest flex items-center gap-1.5 ml-1">
                     <Truck className="h-3 w-3" /> Pilih Armada
                   </label>
-                  <select 
+                  <select
                     className="w-full h-11 px-3 border border-gray-100 rounded-xl bg-white dark:bg-gray-900 dark:border-gray-800 text-sm font-bold outline-none focus:ring-2 focus:ring-brand-500"
                     value={formData.Nopol}
                     onChange={(e) => setFormData({...formData, Nopol: e.target.value})}
+                    disabled={loadingFleet}
                   >
-                     <option value="">-- Pilih Nopol Terverifikasi --</option>
-                     {fleetResult?.map((f: any) => (
-                        <option key={f.Nopol} value={f.Nopol}>{f.Nopol} ({f.AxleName})</option>
+                     <option value="">
+                       {loadingFleet ? "Memuat armada..." : "-- Pilih Nopol Terverifikasi --"}
+                     </option>
+                     {verifiedFleet.map((f) => (
+                        <option key={f.Nopol} value={f.Nopol}>
+                          {f.Nopol}{f.AxleName ? ` (${f.AxleName})` : ""}
+                        </option>
                      ))}
                   </select>
-                  {fleetResult?.length === 0 && !loadingFleet && (
+                  {verifiedFleet.length === 0 && !loadingFleet && (
                     <p className="text-[10px] text-rose-500 font-bold">* Belum ada armada terverifikasi. Silakan ajukan armada terlebih dahulu.</p>
                   )}
                </div>
@@ -132,8 +173,8 @@ export default function TicketBookingPage() {
                     <label className="text-[10px] font-black uppercase text-gray-500 tracking-widest flex items-center gap-1.5 ml-1">
                        <User className="h-3 w-3" /> Nama Driver
                     </label>
-                    <Input 
-                      placeholder="Input nama lengkap driver" 
+                    <Input
+                      placeholder="Input nama lengkap driver"
                       value={formData.DriverName}
                       onChange={(e) => setFormData({...formData, DriverName: e.target.value})}
                       className="rounded-xl font-bold h-11"
@@ -143,8 +184,8 @@ export default function TicketBookingPage() {
                     <label className="text-[10px] font-black uppercase text-gray-500 tracking-widest flex items-center gap-1.5 ml-1">
                        <Phone className="h-3 w-3" /> No. Telepon
                     </label>
-                    <Input 
-                      placeholder="Contoh: 0812345678" 
+                    <Input
+                      placeholder="Contoh: 0812345678"
                       value={formData.DriverPhone}
                       onChange={(e) => setFormData({...formData, DriverPhone: e.target.value})}
                       className="rounded-xl font-bold h-11"
@@ -153,7 +194,7 @@ export default function TicketBookingPage() {
                </div>
             </CardContent>
             <CardHeader className="border-t border-gray-100 dark:border-gray-800 p-6 flex flex-row gap-4">
-               <Button 
+               <Button
                  className="flex-grow bg-brand-500 hover:bg-brand-600 h-12 rounded-xl text-base font-bold shadow-lg shadow-brand-500/20"
                  onClick={() => bookingMutation.mutate(formData)}
                  disabled={bookingMutation.isPending || !formData.NoPosto || !formData.Nopol || !formData.DriverName}
@@ -167,7 +208,7 @@ export default function TicketBookingPage() {
         <div className="space-y-6">
            <Card className="bg-brand-900 text-white overflow-hidden relative">
               <div className="absolute top-0 right-0 p-4 opacity-10">
-                 <Ticket className="h-24 w-24" />
+                 <TicketIcon className="h-24 w-24" />
               </div>
               <CardContent className="p-6 space-y-4">
                  <h3 className="font-black uppercase tracking-widest text-xs text-brand-300">Ketentuan Booking</h3>
@@ -199,11 +240,15 @@ export default function TicketBookingPage() {
                  </div>
                  <div className="flex justify-between items-center text-sm">
                     <span className="text-gray-500">Produk:</span>
-                    <span className="font-bold">{postoResult?.find((p: any) => p.id === formData.NoPosto)?.product || '-'}</span>
+                    <span className="font-bold">{selectedPosto ? getPostoProduct(selectedPosto) : '-'}</span>
                  </div>
                  <div className="flex justify-between items-center text-sm">
                     <span className="text-gray-500">Armada:</span>
                     <span className="font-bold">{formData.Nopol || '-'}</span>
+                 </div>
+                 <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-500">Driver:</span>
+                    <span className="font-bold">{formData.DriverName || '-'}</span>
                  </div>
               </CardContent>
            </Card>
@@ -213,14 +258,11 @@ export default function TicketBookingPage() {
   );
 }
 
-// Icon helper
-function Ticket(props: any) {
+function TicketIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       {...props}
       xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"

@@ -25,6 +25,14 @@ const nextConfig: NextConfig = {
     });
     return config;
   },
+  async rewrites() {
+    return [
+      {
+        source: "/aspnet-proxy/:path*",
+        destination: "http://192.168.188.170:8090/:path*",
+      },
+    ];
+  },
 };
 
 export default nextConfig;

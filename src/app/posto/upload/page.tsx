@@ -4,33 +4,34 @@ import { Upload, FileText, CheckCircle2, AlertCircle, Loader2, Download, Table a
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import * as XLSX from 'xlsx';
+import { useApi } from "@/hooks/use-api";
+import { useSession } from "next-auth/react";
 
 export default function PostoUploadPage() {
   const [uploading, setUploading] = useState(false);
-  const [validating, setValidating] = useState(false);
   const [success, setSuccess] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
   
   const [wilayahOptions, setWilayahOptions] = useState<any[]>([]);
   const [selectedWilayah, setSelectedWilayah] = useState<any>(null);
+  const { apiJson, apiFetch } = useApi();
+  const { data: session } = useSession();
   
-  const [validationData, setValidationData] = useState<any>(null); // { records, summary, context }
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   React.useEffect(() => {
     async function fetchOptions() {
       try {
-        const res = await fetch('/api/pod/posto/upload/options');
-        const json = await res.json();
-        if (json.success) {
-          setWilayahOptions(json.data.wilayah || []);
+        const data = await apiJson('/api/Wilayah/DataMappingPOSTO');
+        if (data && Array.isArray(data)) {
+          setWilayahOptions(data);
         }
       } catch (err) {
         console.error("Failed to load options", err);
       }
     }
     fetchOptions();
-  }, []);
+  }, [apiJson]);
 
   const handleDownloadTemplate = () => {
     // Define the headers based on the requested template
@@ -61,84 +62,46 @@ export default function PostoUploadPage() {
     XLSX.writeFile(wb, "Template_Upload_POSTO.xlsx");
   };
 
-  const currentMappingPayload = {
-    wilayah: selectedWilayah?.abbrev
-  };
-
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setValidating(true);
-    setValidationData(null);
+    setUploading(true);
     setSuccess(false);
 
     try {
-      const data = await file.arrayBuffer();
-      const workbook = XLSX.read(data);
-      const firstSheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[firstSheetName];
-      // Note: defval ensures missing cells are returned as empty strings
-      const json = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
-
-      if (json.length === 0) {
-        alert("File kosong atau tidak memiliki data.");
-        setValidating(false);
-        return;
+      const formData = new FormData();
+      formData.append("file", file);
+      if (selectedWilayah) {
+        formData.append("wilayah", selectedWilayah.id || selectedWilayah.abbrev || "");
       }
-      
-      const res = await fetch("/api/pod/posto/upload", {
+
+      const res = await apiFetch("/api/POSTO/TransferUpload", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "validate", records: json, mapping: currentMappingPayload })
+        body: formData,
+        headers: {} // Empty to let browser set multipart boundary
       });
       
       const resData = await res.json();
       
-      if (resData.success) {
-        setValidationData(resData.data);
+      if (res.ok) {
+        setSuccess(true);
+        setSuccessMsg(resData.message || "Upload POSTO berhasil!");
       } else {
-        alert("Gagal memvalidasi data: " + resData.error);
+        alert("Gagal upload POSTO: " + (resData.message || resData.error || res.statusText));
       }
     } catch (error) {
       console.error(error);
-      alert("Error parsing file.");
+      alert("Error uploading file.");
     } finally {
-      setValidating(false);
+      setUploading(false);
       // Reset input so the same file can be uploaded again if needed
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
-  const handleSubmit = async () => {
-    if (!validationData || validationData.summary.valid === 0) return;
-    
-    setUploading(true);
-    try {
-      const res = await fetch("/api/pod/posto/upload", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          action: "submit", 
-          records: validationData.records,
-          mapping: currentMappingPayload
-        })
-      });
-      
-      const data = await res.json();
-      if (data.success) {
-        setSuccess(true);
-        setSuccessMsg(data.message);
-        setValidationData(null);
-      } else {
-        alert("Gagal submit POSTO: " + data.error);
-      }
-    } catch (error) {
-      console.error(error);
-      alert("Terjadi kesalahan saat submit data.");
-    } finally {
-      setUploading(false);
-    }
+  const handleSubmit = () => {
+    // Legacy logic, now TransferUpload handles it in one go or we use handleFileUpload
   };
 
   const isFormIncomplete = !selectedWilayah;

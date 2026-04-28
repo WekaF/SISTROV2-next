@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Badge from "@/components/ui/badge/Badge";
 import { useSession } from "next-auth/react";
+import { useApi } from "@/hooks/use-api";
 import Link from "next/link";
 import {
   Table,
@@ -32,8 +33,9 @@ export default function PostoPage() {
   const [search, setSearch] = useState("");
   const [date, setDate] = useState("");
   const { data: session } = useSession();
+  const { apiJson, apiFetch, apiTable } = useApi();
   const role = (session?.user as any)?.role;
-  const isRekanan = role === 'rekanan';
+  const isRekanan = role === 'rekanan' || role === 'transport';
 
   // Modal States
   const [selectedPosto, setSelectedPosto] = useState<any>(null);
@@ -51,14 +53,21 @@ export default function PostoPage() {
   const fetchData = async (term = "", dt = "") => {
     try {
       setLoading(true);
-      const params = new URLSearchParams();
-      if (term) params.append("search", term);
-      if (dt) params.append("date", dt);
+      const body = {
+        draw: 1,
+        start: 0,
+        length: 100,
+        search: { value: term },
+        extra_data: dt,
+        companyCode: (session?.user as any)?.companyCode
+      };
       
-      const res = await fetch(`/api/pod/posto?${params.toString()}`);
-      const data = await res.json();
-      if (data.success) {
+      const data = await apiTable(`/api/POSTO/DataTableFilter`, body);
+
+      if (data && data.data) {
         setPostoData(data.data);
+      } else if (Array.isArray(data)) {
+        setPostoData(data);
       }
     } catch (error) {
       console.error("Failed to fetch posto data", error);
@@ -84,10 +93,12 @@ export default function PostoPage() {
   // Actions
   const handleView = async (id: string) => {
     try {
-      const res = await fetch(`/api/pod/posto/${id}`);
-      const data = await res.json();
-      if (data.success) {
-        setSelectedPosto(data.data);
+      const data = await apiJson(`/api/POSTO/DetailData`, {
+        method: "POST",
+        body: JSON.stringify({ id })
+      });
+      if (data) {
+        setSelectedPosto(data.data || data);
         setIsViewOpen(true);
       }
     } catch (error) {
@@ -97,14 +108,17 @@ export default function PostoPage() {
 
   const handleEditInit = async (id: string) => {
     try {
-      const res = await fetch(`/api/pod/posto/${id}`);
-      const data = await res.json();
-      if (data.success) {
-        setSelectedPosto(data.data);
+      const data = await apiJson(`/api/POSTO/DetailData`, {
+        method: "POST",
+        body: JSON.stringify({ id })
+      });
+      if (data) {
+        const item = data.data || data;
+        setSelectedPosto(item);
         setEditForm({
-          date: data.data.date,
-          qty: data.data.qty,
-          expiryDate: data.data.expiryDate || ""
+          date: item.TglPOSTO || "",
+          qty: item.Qty || 0,
+          expiryDate: item.tgljatuhtempo || ""
         });
         setIsEditOpen(true);
       }
@@ -117,19 +131,20 @@ export default function PostoPage() {
     e.preventDefault();
     if (!selectedPosto) return;
 
+    setIsSaving(true);
     try {
-      setIsSaving(true);
-      const res = await fetch(`/api/pod/posto/${selectedPosto.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editForm)
+      const res = await apiFetch(`/api/POSTO/UpdateData`, {
+        method: 'POST',
+        body: JSON.stringify({
+          id: selectedPosto.NoPOSTO || selectedPosto.id,
+          date: editForm.date,
+          qty: editForm.qty,
+          expiryDate: editForm.expiryDate
+        })
       });
-      const data = await res.json();
-      if (data.success) {
+      if (res.ok) {
         setIsEditOpen(false);
         fetchData(search, date);
-      } else {
-        alert("Gagal update: " + data.error);
       }
     } catch (error) {
       alert("Error saat menyimpan perubahan");
@@ -142,16 +157,25 @@ export default function PostoPage() {
     if (!window.confirm(`Apakah Anda yakin ingin menghapus POSTO ${id}?`)) return;
 
     try {
-      const res = await fetch(`/api/pod/posto/${id}`, { method: 'DELETE' });
-      const data = await res.json();
-      if (data.success) {
+      const res = await apiFetch(`/api/POSTO/DeleteData`, { 
+        method: 'POST',
+        body: JSON.stringify({ id })
+      });
+      if (res.ok) {
         fetchData(search, date);
-      } else {
-        alert("Gagal menghapus: " + data.error);
       }
     } catch (error) {
       alert("Error saat menghapus data");
     }
+  };
+
+  const getStatusBadgeColor = (status: string) => {
+    const s = (status || "").toLowerCase();
+    if (s.includes("active")) return "info";
+    if (s.includes("progress")) return "warning";
+    if (s.includes("complete")) return "success";
+    if (s.includes("cancel")) return "error";
+    return "default";
   };
 
   return (
@@ -238,47 +262,42 @@ export default function PostoPage() {
                        </TableCell>
                      </TableRow>
                    ) : postoData.map((posto) => (
-                     <TableRow key={posto.id}>
-                       <TableCell className="font-mono font-bold">{posto.id}</TableCell>
-                       <TableCell className="text-gray-500 font-mono">{posto.date}</TableCell>
+                     <TableRow key={posto.NoPOSTO || posto.id}>
+                       <TableCell className="font-mono font-bold">{posto.NoPOSTO || posto.id}</TableCell>
+                       <TableCell className="text-gray-500 font-mono">{posto.TglPOSTO || posto.date}</TableCell>
                        <TableCell>
-                          <div className="text-sm font-medium">{posto.transportir}</div>
-                          <div className="text-[10px] text-gray-400 font-mono">{posto.transportirId}</div>
+                          <div className="text-sm font-medium">{posto.TransName || posto.transportir || posto.NAMA_VEND}</div>
+                          <div className="text-[10px] text-gray-400 font-mono">{posto.Trans || posto.transportirId}</div>
                        </TableCell>
                        <TableCell>
                           <div className="flex items-center gap-2">
                              <Package className="h-4 w-4 text-brand-500" />
-                             <span className="text-sm font-bold">{posto.product}</span>
+                             <span className="text-sm font-bold">{posto.Produk || posto.product || posto.NAMA_BARANG}</span>
                           </div>
                        </TableCell>
                        <TableCell className="text-right font-bold">
-                          {posto.qty.toLocaleString()}
+                          {(posto.Qty || posto.qty || 0).toLocaleString()}
                        </TableCell>
                        <TableCell className="text-right">
-                          <div className="text-sm font-bold text-emerald-600">{posto.realization.toLocaleString()}</div>
+                          <div className="text-sm font-bold text-emerald-600">{(posto.RE_TON || posto.realization || 0).toLocaleString()}</div>
                           <div className="text-[10px] text-gray-400 uppercase">Ton</div>
                        </TableCell>
-                       <TableCell>{posto.asal || "-"}</TableCell>
-                       <TableCell>{posto.tujuan || "-"}</TableCell>
-                       <TableCell className="font-medium">{posto.wilayah || "-"}</TableCell>
-                       <TableCell>{posto.bagian || "-"}</TableCell>
+                       <TableCell>{posto.Asal || posto.asal || "-"}</TableCell>
+                       <TableCell>{posto.Tujuan || posto.tujuan || "-"}</TableCell>
+                       <TableCell className="font-medium">{posto.Wilayah || posto.wilayah || "-"}</TableCell>
+                       <TableCell>{posto.Bagian || posto.bagian || "-"}</TableCell>
                        <TableCell className="text-center">
                           <Badge 
-                             color={
-                                posto.status === "Active" ? "info" : 
-                                posto.status === "In Progress" ? "warning" : 
-                                posto.status === "Completed" ? "success" : 
-                                posto.status === "Cancelled" ? "error" : "default" as any
-                             } 
+                             color={getStatusBadgeColor(posto.Status || posto.status) as any} 
                              size="sm"
                           >
-                             {posto.status}
+                             {posto.Status || posto.status}
                           </Badge>
                        </TableCell>
                         <TableCell className="text-right">
                            <div className="flex items-center justify-end gap-2">
                              {isRekanan ? (
-                               <Link href={`/tiket/booking?posto=${posto.id}`}>
+                               <Link href={`/tiket/booking?posto=${posto.NoPOSTO || posto.id}`}>
                                  <Button variant="outline" size="sm" className="bg-brand-50 text-brand-500 border-brand-200 hover:bg-brand-100">
                                    <Ticket className="h-4 w-4 mr-1" />
                                    Booking
@@ -286,13 +305,13 @@ export default function PostoPage() {
                                </Link>
                              ) : (
                                <>
-                                 <Button variant="outline" size="sm" className="text-blue-500 border-blue-200 hover:bg-blue-50" onClick={() => handleView(posto.id)}>
+                                 <Button variant="outline" size="sm" className="text-blue-500 border-blue-200 hover:bg-blue-50" onClick={() => handleView(posto.NoPOSTO || posto.id)}>
                                     <Eye className="h-4 w-4 mr-1" /> View
                                  </Button>
-                                 <Button variant="outline" size="sm" className="text-amber-500 border-amber-200 hover:bg-amber-50" onClick={() => handleEditInit(posto.id)}>
+                                 <Button variant="outline" size="sm" className="text-amber-500 border-amber-200 hover:bg-amber-50" onClick={() => handleEditInit(posto.NoPOSTO || posto.id)}>
                                     <FileEdit className="h-4 w-4 mr-1" /> Edit
                                  </Button>
-                                 <Button variant="outline" size="sm" className="text-red-500 border-red-200 hover:bg-red-50" onClick={() => handleDelete(posto.id)}>
+                                 <Button variant="outline" size="sm" className="text-red-500 border-red-200 hover:bg-red-50" onClick={() => handleDelete(posto.NoPOSTO || posto.id)}>
                                     <Trash2 className="h-4 w-4 mr-1" /> Hapus
                                  </Button>
                                </>
@@ -314,7 +333,7 @@ export default function PostoPage() {
           <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-900 border-none shadow-2xl">
             <CardHeader className="border-b dark:border-white/10">
               <div className="flex items-center justify-between">
-                <CardTitle>Detail POSTO: {selectedPosto.id}</CardTitle>
+                <CardTitle>Detail POSTO: {selectedPosto.NoPOSTO || selectedPosto.id}</CardTitle>
                 <Button variant="ghost" size="sm" onClick={() => setIsViewOpen(false)}>X</Button>
               </div>
             </CardHeader>
@@ -324,19 +343,19 @@ export default function PostoPage() {
                     <div>
                        <p className="text-[10px] text-gray-400 uppercase font-black">Distribution Info</p>
                        <div className="mt-2 space-y-2">
-                          <div className="flex justify-between text-sm"><span>No Posto</span><span className="font-bold">{selectedPosto.id}</span></div>
-                          <div className="flex justify-between text-sm"><span>Tanggal Posto</span><span className="font-bold">{selectedPosto.date}</span></div>
-                          <div className="flex justify-between text-sm"><span>Jatuh Tempo</span><span className="font-bold">{selectedPosto.expiryDate || "-"}</span></div>
-                          <div className="flex justify-between text-sm"><span>Status</span><Badge color="info" size="sm">{selectedPosto.status}</Badge></div>
+                          <div className="flex justify-between text-sm"><span>No Posto</span><span className="font-bold">{selectedPosto.NoPOSTO || selectedPosto.id}</span></div>
+                          <div className="flex justify-between text-sm"><span>Tanggal Posto</span><span className="font-bold">{selectedPosto.TglPOSTO || selectedPosto.date}</span></div>
+                          <div className="flex justify-between text-sm"><span>Jatuh Tempo</span><span className="font-bold">{selectedPosto.tgljatuhtempo || selectedPosto.expiryDate || "-"}</span></div>
+                          <div className="flex justify-between text-sm"><span>Status</span><Badge color="info" size="sm">{selectedPosto.Status || selectedPosto.status}</Badge></div>
                        </div>
                     </div>
                     <div>
                        <p className="text-[10px] text-gray-400 uppercase font-black">Area & Location</p>
                        <div className="mt-2 space-y-2">
-                          <div className="flex justify-between text-sm"><span>Asal</span><span className="font-bold">{selectedPosto.asal || "-"}</span></div>
-                          <div className="flex justify-between text-sm"><span>Tujuan</span><span className="font-bold">{selectedPosto.tujuan || "-"}</span></div>
-                          <div className="flex justify-between text-sm"><span>Wilayah</span><span className="font-bold">{selectedPosto.wilayah || "-"}</span></div>
-                          <div className="flex justify-between text-sm"><span>Bagian</span><span className="font-bold">{selectedPosto.bagian || "-"}</span></div>
+                          <div className="flex justify-between text-sm"><span>Asal</span><span className="font-bold">{selectedPosto.Asal || selectedPosto.asal || "-"}</span></div>
+                          <div className="flex justify-between text-sm"><span>Tujuan</span><span className="font-bold">{selectedPosto.Tujuan || selectedPosto.tujuan || "-"}</span></div>
+                          <div className="flex justify-between text-sm"><span>Wilayah</span><span className="font-bold">{selectedPosto.Wilayah || selectedPosto.wilayah || "-"}</span></div>
+                          <div className="flex justify-between text-sm"><span>Bagian</span><span className="font-bold">{selectedPosto.Bagian || selectedPosto.bagian || "-"}</span></div>
                        </div>
                     </div>
                  </div>
@@ -344,19 +363,19 @@ export default function PostoPage() {
                     <div>
                        <p className="text-[10px] text-gray-400 uppercase font-black">Transportir & Product</p>
                        <div className="mt-2 space-y-2">
-                          <div className="text-sm border-b pb-1 font-bold text-brand-500">{selectedPosto.transportir}</div>
-                          <div className="text-[10px] text-gray-400">ID: {selectedPosto.transportirId}</div>
+                          <div className="text-sm border-b pb-1 font-bold text-brand-500">{selectedPosto.TransName || selectedPosto.transportir}</div>
+                          <div className="text-[10px] text-gray-400">ID: {selectedPosto.Trans || selectedPosto.transportirId}</div>
                           <div className="mt-3 flex items-center gap-2">
                              <Package className="h-5 w-5 text-brand-500" />
-                             <span className="text-sm font-bold">{selectedPosto.product}</span>
+                             <span className="text-sm font-bold">{selectedPosto.Produk || selectedPosto.product}</span>
                           </div>
                        </div>
                     </div>
                     <div className="bg-gray-50 dark:bg-white/5 p-4 rounded-xl">
                        <p className="text-[10px] text-gray-400 uppercase font-black">Quantity Summary</p>
                        <div className="mt-3 grid grid-cols-2 gap-4">
-                          <div><p className="text-[10px] text-gray-500">Plan</p><p className="text-lg font-bold">{selectedPosto.qty.toLocaleString()} T</p></div>
-                          <div><p className="text-[10px] text-gray-500">Realization</p><p className="text-lg font-bold text-emerald-600">{selectedPosto.realization.toLocaleString()} T</p></div>
+                          <div><p className="text-[10px] text-gray-500">Plan</p><p className="text-lg font-bold">{(selectedPosto.Qty || selectedPosto.qty || 0).toLocaleString()} T</p></div>
+                          <div><p className="text-[10px] text-gray-500">Realization</p><p className="text-lg font-bold text-emerald-600">{(selectedPosto.RE_TON || selectedPosto.realization || 0).toLocaleString()} T</p></div>
                        </div>
                     </div>
                  </div>
@@ -374,13 +393,13 @@ export default function PostoPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <Card className="w-full max-w-md bg-white dark:bg-gray-900 border-none shadow-2xl">
             <CardHeader className="border-b dark:border-white/10">
-              <CardTitle>Edit POSTO: {selectedPosto.id}</CardTitle>
+              <CardTitle>Edit POSTO: {selectedPosto.NoPOSTO || selectedPosto.id}</CardTitle>
             </CardHeader>
             <form onSubmit={handleUpdate}>
               <CardContent className="p-6 space-y-4">
                 <div className="grid grid-cols-2 gap-4 text-xs bg-gray-50 dark:bg-white/10 p-3 rounded-lg border border-gray-100 dark:border-gray-800 italic">
-                   <div>Product: <strong>{selectedPosto.product}</strong></div>
-                   <div>Vendor: <strong>{selectedPosto.transportir}</strong></div>
+                   <div>Product: <strong>{selectedPosto.Produk || selectedPosto.product}</strong></div>
+                   <div>Vendor: <strong>{selectedPosto.TransName || selectedPosto.transportir}</strong></div>
                 </div>
                 
                 <div className="space-y-1">

@@ -34,17 +34,19 @@ export const authOptions: NextAuthOptions = {
             body:    params.toString(),
           });
 
-          data = await res.json();
-
           if (!res.ok) {
-            throw new Error(data?.error_description || "Login gagal");
+            const text = await res.text().catch(() => res.statusText);
+            let errMsg = "Login gagal";
+            try { errMsg = JSON.parse(text)?.error_description || text || errMsg; } catch {}
+            throw new Error(errMsg);
           }
+          data = await res.json();
         } catch (err: any) {
           throw new Error(err?.message || "Tidak dapat terhubung ke server");
         }
 
         const roles: string[] = data.role
-          ? data.role.split(", ").map((r: string) => r.trim())
+          ? data.role.split(", ").map((r: string) => r.trim().toLowerCase())
           : [];
 
         return {

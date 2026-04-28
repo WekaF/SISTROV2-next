@@ -12,6 +12,7 @@ export type Role =
   | "pod"
   | "pkd"
   | "eksternal"
+  | "transport"
 
 interface User {
   name: string

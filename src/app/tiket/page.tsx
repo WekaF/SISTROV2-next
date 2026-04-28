@@ -19,15 +19,23 @@ import { Button } from "@/components/ui/button";
 import Badge from "@/components/ui/badge/Badge";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
+import { useApi } from "@/hooks/use-api";
 
 interface TicketData {
   bookingno: string;
+  NoBooking?: string;
   idposto: string;
+  NoPOSTO?: string;
   nopol: string;
+  Nopol?: string;
   driver: string;
+  DriverName?: string;
   ProductName?: string;
+  Produk?: string;
   status: string;
+  Status?: string;
   createdat: string;
+  TglBooking?: string;
   JamMasuk?: string;
 }
 
@@ -35,14 +43,20 @@ export default function RekananTicketPage() {
   const { data: session } = useSession();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
+  const { apiTable } = useApi();
 
   const { data: ticketsResult, isLoading, isFetching } = useQuery({
-    queryKey: ['rekanan-tickets'],
+    queryKey: ['rekanan-tickets', searchTerm],
     queryFn: async () => {
-      const res = await fetch('/api/rekanan/tiket');
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error);
-      return data;
+      const body = {
+        draw: 1,
+        start: 0,
+        length: 100,
+        search: { value: searchTerm },
+        companyCode: (session?.user as any)?.companyCode
+      };
+      
+      return apiTable('/api/Tiket/DataTableFilter', body);
     }
   });
 
@@ -94,34 +108,34 @@ export default function RekananTicketPage() {
                    ) : tickets.length === 0 ? (
                       <tr><td colSpan={5} className="py-20 text-center text-gray-500 italic">Belum ada tiket yang diterbitkan.</td></tr>
                    ) : tickets.map((t: TicketData) => (
-                      <tr key={t.bookingno} className="hover:bg-gray-50/50 dark:hover:bg-white/[0.01] transition-colors group">
+                      <tr key={t.NoBooking || t.bookingno} className="hover:bg-gray-50/50 dark:hover:bg-white/[0.01] transition-colors group">
                          <td className="px-6 py-4">
-                            <div className="font-bold text-gray-900 dark:text-white font-mono text-sm tracking-tight">{t.bookingno}</div>
-                            <div className="text-[10px] text-gray-400 font-bold uppercase">Posto: {t.idposto}</div>
+                            <div className="font-bold text-gray-900 dark:text-white font-mono text-sm tracking-tight">{t.NoBooking || t.bookingno}</div>
+                            <div className="text-[10px] text-gray-400 font-bold uppercase">Posto: {t.NoPOSTO || t.idposto}</div>
                          </td>
                          <td className="px-6 py-4">
                             <div className="flex items-center gap-2">
-                               <div className="bg-gray-900 text-white px-2 py-1 rounded font-mono text-xs font-bold">{t.nopol}</div>
+                               <div className="bg-gray-900 text-white px-2 py-1 rounded font-mono text-xs font-bold">{t.Nopol || t.nopol}</div>
                             </div>
-                            <div className="text-[10px] text-gray-400 mt-1">{t.ProductName}</div>
+                            <div className="text-[10px] text-gray-400 mt-1">{t.Produk || t.ProductName}</div>
                          </td>
                          <td className="px-6 py-4">
-                            <div className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase">{t.driver}</div>
+                            <div className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase">{t.DriverName || t.driver}</div>
                          </td>
                          <td className="px-6 py-4">
-                            <Badge color={t.JamMasuk ? 'success' : 'info'} size="sm" variant="light" className="italic font-bold">
-                               {t.JamMasuk ? 'Check-in' : 'Booked'}
+                            <Badge color={(t.JamMasuk || t.Status?.includes("Check")) ? 'success' : 'info'} size="sm" variant="light" className="italic font-bold">
+                               {t.JamMasuk ? 'Check-in' : (t.Status || 'Booked')}
                             </Badge>
                          </td>
                          <td className="px-6 py-4 text-right">
                             <div className="flex flex-col items-end gap-1">
                                <div className="flex items-center gap-1.5 text-[10px] text-gray-400 font-bold">
                                   <Calendar className="h-3 w-3" />
-                                  {new Date(t.createdat).toLocaleDateString()}
+                                  {new Date(t.TglBooking || t.createdat).toLocaleDateString()}
                                </div>
                                <div className="flex items-center gap-1.5 text-[10px] text-gray-400 font-bold">
                                   <Clock className="h-3 w-3" />
-                                  {new Date(t.createdat).toLocaleTimeString()}
+                                  {new Date(t.TglBooking || t.createdat).toLocaleTimeString()}
                                </div>
                             </div>
                          </td>
