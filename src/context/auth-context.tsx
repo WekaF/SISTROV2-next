@@ -5,14 +5,17 @@ import React, { createContext, useContext, useState, ReactNode } from "react"
 export type Role =
   | "superadmin"
   | "admin"
+  | "candal"
+  | "staffarea"
+  | "viewer"
   | "rekanan"
+  | "transport"
   | "security"
   | "gudang"
   | "jembatan_timbang"
   | "pod"
   | "pkd"
   | "eksternal"
-  | "transport"
 
 interface User {
   name: string

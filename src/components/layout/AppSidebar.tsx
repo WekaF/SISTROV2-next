@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -7,33 +7,19 @@ import { useSession } from "next-auth/react";
 import { useSidebar } from "@/context/SidebarContext";
 import {
   LayoutGrid,
-  Calendar,
-  User,
-  Table as TableIcon,
   FileText,
   PieChart,
   Settings,
-  MoreHorizontal,
   ChevronDown,
   Monitor,
   Truck,
   Scan,
   Package,
-  Weight,
-  ShieldCheck,
   ClipboardList,
-  Map as MapIcon,
   BarChart3,
-  Layers,
   ArrowRightLeft,
-  Upload,
   TableProperties,
-  Scissors,
-  Zap,
   Ticket,
-  GanttChartSquare,
-  History,
-  HardDriveDownload,
   CalendarCheck,
 } from "lucide-react";
 
@@ -43,6 +29,83 @@ type NavItem = {
   path?: string;
   subItems?: { name: string; path: string; pro?: boolean; new?: boolean }[];
 };
+
+// Normalize raw backend role (already lowercased) to canonical sidebar role
+function normalizeRole(raw: string | undefined): string {
+  if (!raw) return "eksternal";
+  const r = raw.toLowerCase().replace(/\s+/g, "");
+  const map: Record<string, string> = {
+    // Superadmin / TI
+    ti: "superadmin",
+    superadmin: "superadmin",
+    // Admin
+    admin: "admin",
+    adminsumbu: "admin",
+    // Candal
+    candalkuota: "candal",
+    candaltruk: "candal",
+    candaltruck: "candal",
+    candalcontainer: "candal",
+    candalgudangposto: "gudang",
+    candaldept: "candal",
+    candalkapal: "candal",
+    // Staff Area
+    staffarea: "staffarea",
+    staffarealayah1: "staffarea",
+    staffarealayah2: "staffarea",
+    staffarewilayah1: "staffarea",
+    staffarewilayah2: "staffarea",
+    staffareajatim: "staffarea",
+    // DataAreaBagian* → staffarea (area monitoring)
+    dataareabagianpoall: "staffarea",
+    dataareabagiansoall: "staffarea",
+    dataareabagianpojateng: "staffarea",
+    dataareabagianpojatim: "staffarea",
+    dataareabagianpopelabuhan: "staffarea",
+    dataareabagianposulsel: "staffarea",
+    dataareabagianposumbagsel: "staffarea",
+    dataareabagianposumbagut: "staffarea",
+    dataareababagianjawa: "staffarea",
+    dataareabagiansojabar: "staffarea",
+    dataareababagiansojabar: "staffarea",
+    dataareababagianjateng: "staffarea",
+    dataareababagianjatim: "staffarea",
+    dataareababagiansoall: "staffarea",
+    // Viewer
+    viewer: "viewer",
+    pkg: "viewer",
+    viewerposto: "viewer",
+    viewerarmada: "viewer",
+    // Transport / Rekanan
+    transport: "transport",
+    transportsuraljalan: "transport",
+    rekanan: "rekanan",
+    // Security
+    security: "security",
+    securitylini3: "security",
+    // Gudang
+    gudang: "gudang",
+    candalgudang: "gudang",
+    gudanglini3: "gudang",
+    chekerlini3: "gudang",
+    checkerlini3: "gudang",
+    // Jembatan Timbang
+    timbangan: "jembatan_timbang",
+    jembatan_timbang: "jembatan_timbang",
+    // POD / AdminArmada
+    adminarmada: "pod",
+    pod: "pod",
+    // PKD / Pelabuhan
+    pelabuhanapp: "pkd",
+    pelabuhanuppp: "pkd",
+    terminal1: "pkd",
+    terminal2: "pkd",
+    pkd: "pkd",
+  };
+  // Handle DataAreaBagian* pattern dynamically
+  if (r.startsWith("dataareabagian")) return "staffarea";
+  return map[r] ?? "eksternal";
+}
 
 // Base items available to all/admin by default
 const defaultNavItems: NavItem[] = [
@@ -88,14 +151,7 @@ const AppSidebar: React.FC = () => {
   const { data: session } = useSession();
   const [openSubmenu, setOpenSubmenu] = useState<{ type: string; index: number } | null>(null);
 
-  const [overrideRole, setOverrideRole] = useState<string | null>(null);
-
-  useEffect(() => {
-    const saved = localStorage.getItem("debug_role_override");
-    if (saved) setOverrideRole(saved);
-  }, []);
-
-  const role = (overrideRole || (session?.user as any)?.role)?.toLowerCase();
+  const role = normalizeRole((session?.user as any)?.role);
 
   // Compute navigation dynamically based on role
   let navItems = defaultNavItems;
@@ -103,17 +159,13 @@ const AppSidebar: React.FC = () => {
 
   if (role === "rekanan" || role === "transport") {
     navItems = [
-      {
-        icon: <LayoutGrid className="h-5 w-5" />,
-        name: "Dashboard",
-        path: "/",
-      },
+      { icon: <LayoutGrid className="h-5 w-5" />, name: "Dashboard", path: "/" },
       {
         icon: <Package className="h-5 w-5" />,
         name: "POSTO",
         subItems: [
           { name: "Datatable Posto", path: "/posto" },
-          { name: "Pengajuan Jatuh Tempo", path: "/posto/jatuh-tempo" },
+          { name: "Pengajuan Jatuh Tempo", path: "/pengajuan/jatuh-tempo" },
         ],
       },
       {
@@ -126,7 +178,7 @@ const AppSidebar: React.FC = () => {
       },
       {
         icon: <Truck className="h-5 w-5" />,
-        name: (role === "transport") ? "Transport" : "Armada",
+        name: role === "transport" ? "Transport" : "Armada",
         subItems: [
           { name: "List Armada", path: "/armada" },
           { name: "Pengajuan Armada Baru", path: "/armada/pengajuan" },
@@ -134,13 +186,12 @@ const AppSidebar: React.FC = () => {
       },
       {
         icon: <FileText className="h-5 w-5" />,
-        name: "Report",
+        name: "Laporan",
         subItems: [
-          { name: "Report Pemesanan Tiket", path: "/report/pemesanan" },
+          { name: "Report Pemesanan Tiket", path: "/reports/booking" },
         ],
       },
     ];
-    // Hide admin configuration items for rekanan
     adminItems = [];
   } else if (role === "admin") {
     navItems = [
@@ -297,24 +348,320 @@ const AppSidebar: React.FC = () => {
   } else if (role === "security") {
     navItems = [
       { icon: <LayoutGrid className="h-5 w-5" />, name: "Dashboard", path: "/" },
-      { icon: <Scan className="h-5 w-5" />, name: "Scan Tiket", path: "/security/scan" },
-      { icon: <Ticket className="h-5 w-5" />, name: "Status Tiket", path: "/security/tickets" },
+      {
+        icon: <ClipboardList className="h-5 w-5" />,
+        name: "Tiket",
+        subItems: [
+          { name: "Data Tiket", path: "/tiket" },
+        ],
+      },
+      {
+        icon: <Scan className="h-5 w-5" />,
+        name: "Scan",
+        subItems: [
+          { name: "Scan Tiket", path: "/scan/tiket" },
+          { name: "Track Tiket", path: "/track/tiket" },
+        ],
+      },
+      {
+        icon: <BarChart3 className="h-5 w-5" />,
+        name: "Gudang",
+        subItems: [
+          { name: "Antrian", path: "/antrian" },
+          { name: "Gudang", path: "/gudang" },
+          { name: "Antrian Per Gudang", path: "/reports/antrian" },
+        ],
+      },
     ];
     adminItems = [];
   } else if (role === "jembatan_timbang") {
     navItems = [
       { icon: <LayoutGrid className="h-5 w-5" />, name: "Dashboard", path: "/" },
-      { icon: <Scan className="h-5 w-5" />, name: "Scan Tiket", path: "/weighbridge/scan" },
-      { icon: <Weight className="h-5 w-5" />, name: "Penimbangan", path: "/weighbridge/weighing" },
-      { icon: <Ticket className="h-5 w-5" />, name: "Status Tiket", path: "/weighbridge/tickets" },
-      { icon: <Package className="h-5 w-5" />, name: "Posto", path: "/weighbridge/posto" },
+      { icon: <ClipboardList className="h-5 w-5" />, name: "Tiket", path: "/tiket" },
+      {
+        icon: <Scan className="h-5 w-5" />,
+        name: "Scan & Track",
+        subItems: [
+          { name: "Scan Tiket", path: "/scan/tiket" },
+          { name: "Track Tiket", path: "/track/tiket" },
+        ],
+      },
+      {
+        icon: <BarChart3 className="h-5 w-5" />,
+        name: "Gudang",
+        subItems: [
+          { name: "Antrian", path: "/antrian" },
+          { name: "ByPass Antrian", path: "/antrian/bypass" },
+          { name: "Gudang", path: "/gudang" },
+          { name: "Batch Gudang Pemuatan", path: "/gudang/batch" },
+          { name: "Antrian Per Gudang", path: "/reports/antrian" },
+        ],
+      },
     ];
     adminItems = [];
   } else if (role === "gudang") {
     navItems = [
       { icon: <LayoutGrid className="h-5 w-5" />, name: "Dashboard", path: "/" },
-      { icon: <Scan className="h-5 w-5" />, name: "Scan Tiket", path: "/warehouse/scan" },
-      { icon: <Ticket className="h-5 w-5" />, name: "Status Tiket", path: "/warehouse/tickets" },
+      { icon: <ClipboardList className="h-5 w-5" />, name: "Tiket", path: "/tiket" },
+      {
+        icon: <Scan className="h-5 w-5" />,
+        name: "Scan",
+        subItems: [
+          { name: "Scan Tiket", path: "/scan/tiket" },
+          { name: "Track Tiket", path: "/track/tiket" },
+        ],
+      },
+      {
+        icon: <BarChart3 className="h-5 w-5" />,
+        name: "Gudang",
+        subItems: [
+          { name: "Antrian", path: "/antrian" },
+          { name: "Gudang", path: "/gudang" },
+          { name: "Batch Gudang Pemuatan", path: "/gudang/batch" },
+          { name: "Gudang Tujuan Bagian", path: "/gudang/tujuan-bagian" },
+          { name: "Antrian Per Gudang", path: "/reports/antrian" },
+          { name: "Trafik Antrian Gudang", path: "/gudang/trafik" },
+        ],
+      },
+    ];
+    adminItems = [];
+  } else if (role === "candal") {
+    navItems = [
+      { icon: <LayoutGrid className="h-5 w-5" />, name: "Dashboard", path: "/" },
+      {
+        icon: <CalendarCheck className="h-5 w-5" />,
+        name: "Kuota Pemuatan",
+        subItems: [
+          { name: "Penjadwalan Kuota", path: "/kuota/schedule" },
+          { name: "Kuota per Shift", path: "/kuota/shifts" },
+          { name: "Pengaturan Shift", path: "/shift" },
+          { name: "Template Kuota", path: "/kuota/template" },
+        ],
+      },
+      {
+        icon: <Package className="h-5 w-5" />,
+        name: "POSTO",
+        subItems: [
+          { name: "Data POSTO", path: "/posto" },
+          { name: "Data SO", path: "/so" },
+          { name: "Prioritas Tujuan Muat", path: "/posto/priority" },
+        ],
+      },
+      { icon: <ClipboardList className="h-5 w-5" />, name: "Tiket", path: "/tiket" },
+      {
+        icon: <BarChart3 className="h-5 w-5" />,
+        name: "Gudang & Antrian",
+        subItems: [
+          { name: "Antrian", path: "/antrian" },
+          { name: "ByPass Antrian", path: "/antrian/bypass" },
+          { name: "Gudang", path: "/gudang" },
+          { name: "Antrian Per Gudang", path: "/reports/antrian" },
+          { name: "Trafik Antrian Gudang", path: "/gudang/trafik" },
+        ],
+      },
+      {
+        icon: <Truck className="h-5 w-5" />,
+        name: "Armada",
+        subItems: [
+          { name: "List Armada", path: "/armada" },
+          { name: "Mapping Zero Odol", path: "/armada/mapping-zero-odol" },
+        ],
+      },
+      {
+        icon: <FileText className="h-5 w-5" />,
+        name: "Laporan",
+        subItems: [
+          { name: "Report Realisasi Pemuatan", path: "/reports/loading" },
+          { name: "Report By Pass", path: "/reports/bypass" },
+          { name: "Report Pembatalan Tiket", path: "/reports/cancelation" },
+          { name: "Report Pembuatan Kuota", path: "/reports/kuota-log" },
+          { name: "Report Pemesanan Tiket", path: "/reports/booking" },
+          { name: "Resume Booking Tiket", path: "/reports/resume" },
+        ],
+      },
+    ];
+    adminItems = [];
+  } else if (role === "staffarea") {
+    navItems = [
+      { icon: <LayoutGrid className="h-5 w-5" />, name: "Dashboard", path: "/" },
+      {
+        icon: <BarChart3 className="h-5 w-5" />,
+        name: "Antrian",
+        path: "/antrian",
+      },
+      {
+        icon: <Package className="h-5 w-5" />,
+        name: "POSTO",
+        subItems: [
+          { name: "Upload Posto", path: "/posto/upload" },
+          { name: "Data Posto", path: "/posto" },
+          { name: "Cut Off Posto", path: "/posto/cut-off" },
+          { name: "Prioritas Tujuan", path: "/posto/priority" },
+        ],
+      },
+      {
+        icon: <Ticket className="h-5 w-5" />,
+        name: "TIKET",
+        subItems: [
+          { name: "Datatable Tiket", path: "/admin/tickets" },
+        ],
+      },
+      {
+        icon: <CalendarCheck className="h-5 w-5" />,
+        name: "KUOTA",
+        subItems: [
+          { name: "Penjadwalan Kuota", path: "/kuota/schedule" },
+          { name: "Kuota Per-shift", path: "/kuota/shifts" },
+        ],
+      },
+      {
+        icon: <TableProperties className="h-5 w-5" />,
+        name: "Gudang",
+        subItems: [
+          { name: "List Gudang", path: "/gudang/list" },
+          { name: "Antrian Per Unit", path: "/gudang/unit-queue" },
+          { name: "Gudang Tujuan", path: "/gudang/targets" },
+        ],
+      },
+      {
+        icon: <Truck className="h-5 w-5" />,
+        name: "Armada",
+        subItems: [
+          { name: "Datatable Armada", path: "/armada" },
+          { name: "Pengajuan Armada", path: "/armada/approvals" },
+          { name: "Sumbu Kendaraan", path: "/armada/axle-setup" },
+        ],
+      },
+      {
+        icon: <FileText className="h-5 w-5" />,
+        name: "Laporan",
+        subItems: [
+          { name: "Laporan Tiket", path: "/reports/tickets" },
+          { name: "Laporan Antrian", path: "/reports/queue" },
+          { name: "Laporan Armada", path: "/reports/fleet" },
+          { name: "Laporan Gudang", path: "/reports/warehouses" },
+          { name: "Laporan Posto", path: "/reports/posto" },
+          { name: "Laporan Statistik", path: "/reports/stats" },
+        ],
+      },
+    ];
+    adminItems = [];
+  } else if (role === "viewer") {
+    // Viewer = multi-company monitoring (Viewer + PKG roles in cshtml)
+    navItems = [
+      {
+        icon: <LayoutGrid className="h-5 w-5" />,
+        name: "Dashboard",
+        subItems: [
+          { name: "Petrokimia Gresik", path: "/dashboard?company=PKG" },
+          { name: "Pupuk Kujang", path: "/dashboard?company=PKC" },
+          { name: "Pupuk Iskandar Muda", path: "/dashboard?company=PIM" },
+          { name: "UPP Meneng Banyuwangi", path: "/dashboard?company=LOG4MENENG" },
+          { name: "DC Makasar DSP", path: "/dashboard?company=D243" },
+          { name: "UPP Semarang", path: "/dashboard?company=F207" },
+          { name: "GD Romokalisari Surabaya", path: "/dashboard?company=ROMO" },
+          { name: "DC Medan", path: "/dashboard?company=MEDAN" },
+          { name: "DC Cilacap", path: "/dashboard?company=CILACAP" },
+          { name: "DC Lampung", path: "/dashboard?company=B205" },
+          { name: "UPP Celukan Bawang", path: "/dashboard?company=F249" },
+          { name: "UPP Lembar", path: "/dashboard?company=LOMBOK" },
+          { name: "UPP Makasar", path: "/dashboard?company=MAKASAR2" },
+          { name: "UPP Banjarmasin", path: "/dashboard?company=BANJARMASIN2" },
+        ],
+      },
+      {
+        icon: <ClipboardList className="h-5 w-5" />,
+        name: "Tiket",
+        subItems: [
+          { name: "Dashboard Tiket", path: "/tiket/dashboard" },
+        ],
+      },
+      {
+        icon: <BarChart3 className="h-5 w-5" />,
+        name: "Antrian",
+        subItems: [
+          { name: "Antrian PKG", path: "/antrian?company=PKG" },
+          { name: "Antrian PKC", path: "/antrian?company=PKC" },
+          { name: "Antrian PIM", path: "/antrian?company=PIM" },
+          { name: "Antrian Meneng", path: "/antrian?company=LOG4MENENG" },
+          { name: "Antrian DC Makasar", path: "/antrian?company=D243" },
+          { name: "Antrian UPP Semarang", path: "/antrian?company=F207" },
+          { name: "Antrian Romokalisari", path: "/antrian?company=ROMO" },
+          { name: "Antrian DC Medan", path: "/antrian?company=MEDAN" },
+          { name: "Antrian DC Cilacap", path: "/antrian?company=CILACAP" },
+          { name: "Antrian DC Lampung", path: "/antrian?company=B205" },
+          { name: "Antrian Celukan Bawang", path: "/antrian?company=F249" },
+          { name: "Antrian UPP Lembar", path: "/antrian?company=LOMBOK" },
+          { name: "Antrian UPP Makasar", path: "/antrian?company=MAKASAR2" },
+          { name: "Antrian UPP Banjarmasin", path: "/antrian?company=BANJARMASIN2" },
+        ],
+      },
+      { icon: <ArrowRightLeft className="h-5 w-5" />, name: "Resume Transit", path: "/resume-transit" },
+    ];
+    adminItems = [
+      {
+        icon: <Settings className="h-5 w-5" />,
+        name: "Admin",
+        subItems: [
+          { name: "Management Plant", path: "/admin/plant" },
+        ],
+      },
+    ];
+  } else if (role === "pkd") {
+    navItems = [
+      { icon: <LayoutGrid className="h-5 w-5" />, name: "Dashboard", path: "/" },
+      {
+        icon: <Package className="h-5 w-5" />,
+        name: "POSTO",
+        subItems: [
+          { name: "Data POSTO", path: "/posto" },
+          { name: "Data SO", path: "/so" },
+        ],
+      },
+      { icon: <ClipboardList className="h-5 w-5" />, name: "Tiket", path: "/tiket" },
+      {
+        icon: <Scan className="h-5 w-5" />,
+        name: "Scan & Track",
+        subItems: [
+          { name: "Scan Tiket", path: "/scan/tiket" },
+          { name: "Track Tiket", path: "/track/tiket" },
+        ],
+      },
+      {
+        icon: <BarChart3 className="h-5 w-5" />,
+        name: "Gudang & Antrian",
+        subItems: [
+          { name: "Antrian", path: "/antrian" },
+          { name: "ByPass Antrian", path: "/antrian/bypass" },
+          { name: "Gudang", path: "/gudang" },
+          { name: "Antrian Per Gudang", path: "/reports/antrian" },
+          { name: "Trafik Antrian Gudang", path: "/gudang/trafik" },
+        ],
+      },
+      {
+        icon: <Truck className="h-5 w-5" />,
+        name: "Armada",
+        subItems: [
+          { name: "List Armada", path: "/armada" },
+        ],
+      },
+      {
+        icon: <FileText className="h-5 w-5" />,
+        name: "Laporan",
+        subItems: [
+          { name: "Report Realisasi Pemuatan", path: "/reports/loading" },
+          { name: "Report By Pass", path: "/reports/bypass" },
+          { name: "Report Pembatalan Tiket", path: "/reports/cancelation" },
+          { name: "Report Pembuatan Kuota", path: "/reports/kuota-log" },
+          { name: "Report Pemesanan Tiket", path: "/reports/booking" },
+          { name: "Resume Booking Tiket", path: "/reports/resume" },
+        ],
+      },
+    ];
+    adminItems = [];
+  } else if (role === "eksternal") {
+    navItems = [
+      { icon: <LayoutGrid className="h-5 w-5" />, name: "Dashboard", path: "/" },
     ];
     adminItems = [];
   }

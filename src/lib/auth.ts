@@ -1,6 +1,86 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 
+// Priority order: index 0 = highest privilege
+const ROLE_PRIORITY = [
+  // System / Admin
+  "ti",
+  "superadmin",
+  "admin",
+  "adminsumbu",
+  // Candal (management roles)
+  "candalkuota",
+  "candaltruk",
+  "candaltruck",
+  "candalcontainer",
+  "candalgudangposto",
+  "candalgudang",
+  "candaldept",
+  "candalkapal",
+  // POD / AdminArmada
+  "adminarmada",
+  // Operational core roles — ranked before staffarea so if a user has
+  // both gudang/security AND staffarea, the operational role wins
+  "security",
+  "securitylini3",
+  "timbangan",
+  "gudang",
+  "gudanglini3",
+  "chekerlini3",
+  "checkerlini3",
+  // StaffArea (kuota + posto management)
+  "staffarea",
+  "staffarewilayah1",
+  "staffarewilayah2",
+  "staffarealayah1",
+  "staffarealayah2",
+  "staffareajatim",
+  // Viewer
+  "viewer",
+  "pkg",
+  "viewerposto",
+  "viewerarmada",
+  // DataAreaBagian (area data scoping, supplementary)
+  "dataareabagianpoall",
+  "dataareabagiansoall",
+  "dataareabagianpojateng",
+  "dataareabagianpojatim",
+  "dataareabagianpopelabuhan",
+  "dataareabagianposulsel",
+  "dataareabagianposumbagsel",
+  "dataareabagianposumbagut",
+  "dataareabagian",
+  // Transport / Rekanan
+  "transport",
+  "transportsuraljalan",
+  "rekanan",
+  // Terminal / Pelabuhan
+  "terminal1",
+  "terminal2",
+  "pelabuhanapp",
+  "pelabuhanuppp",
+  // Others
+  "tracknTrace",
+  "accessindigo",
+  "app",
+];
+
+function pickHighestRole(roles: string[]): string {
+  if (roles.length === 0) return "viewer";
+  let best = roles[0];
+  let bestPriority = ROLE_PRIORITY.indexOf(best);
+  if (bestPriority === -1) bestPriority = ROLE_PRIORITY.length;
+  for (const r of roles) {
+    const p = ROLE_PRIORITY.indexOf(r);
+    const effectivePriority = p === -1 ? ROLE_PRIORITY.length : p;
+    if (effectivePriority < bestPriority) {
+      best = r;
+      bestPriority = effectivePriority;
+    }
+  }
+  return best;
+}
+
 const ASPNET_API_URL = process.env.ASPNET_API_URL || "http://192.168.188.170:8090";
 
 export const authOptions: NextAuthOptions = {
@@ -53,7 +133,7 @@ export const authOptions: NextAuthOptions = {
           id:            data.userid,
           name:          data.fullname,
           email:         data.email,
-          role:          roles[0] ?? "viewer",
+          role:          pickHighestRole(roles),
           roles,
           companyCode:   data.companycode ?? null,
           aspnetToken:   data.access_token,

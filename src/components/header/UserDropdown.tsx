@@ -10,20 +10,6 @@ import { useSession, signOut } from "next-auth/react";
 export default function UserDropdown() {
   const [isOpen, setIsOpen] = useState(false);
   const { data: session } = useSession();
-  const [activeRole, setActiveRole] = useState<string | null>(null);
-
-  React.useEffect(() => {
-    setActiveRole(localStorage.getItem("debug_role_override") || (session?.user as any)?.role);
-  }, [session]);
-
-  const handleRoleSwitch = (role: string) => {
-    if (role === "reset") {
-      localStorage.removeItem("debug_role_override");
-    } else {
-      localStorage.setItem("debug_role_override", role);
-    }
-    window.location.reload(); // Reload to apply changes across all components
-  };
 
   function toggleDropdown(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) {
     e.stopPropagation();
@@ -113,46 +99,6 @@ export default function UserDropdown() {
               <LifeBuoy className="h-4 w-4 text-gray-400 group-hover:text-brand-500" />
               Support
             </DropdownItem>
-          </li>
-        </ul>
-        <ul className="flex flex-col gap-1 pt-4 pb-3 border-b border-gray-200 dark:border-gray-800">
-          <li className="px-3 py-1 text-theme-xs font-bold text-gray-400 uppercase">Switch Workspace</li>
-          {((session?.user as any)?.roles || []).map((role: string) => {
-            const label = role === "superadmin" ? "Super Admin" 
-                        : role === "admin" ? "Admin"
-                        : role === "pod" ? "POD"
-                        : role === "rekanan" ? "Rekanan"
-                        : role === "transport" ? "Transport"
-                        : role === "security" ? "Security"
-                        : role === "jembatan_timbang" ? "Weighbridge"
-                        : role === "gudang" ? "Gudang"
-                        : role.charAt(0).toUpperCase() + role.slice(1);
-            
-            return (
-              <li key={role}>
-                <button
-                  onClick={() => handleRoleSwitch(role)}
-                  className={`flex w-full items-center justify-between px-3 py-1.5 font-medium rounded-lg text-theme-xs transition-colors ${
-                    activeRole === role 
-                      ? "bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400" 
-                      : "text-gray-700 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-white/5"
-                  }`}
-                >
-                  {label}
-                  {activeRole === role && (
-                    <span className="h-1.5 w-1.5 rounded-full bg-brand-500"></span>
-                  )}
-                </button>
-              </li>
-            );
-          })}
-          <li>
-            <button
-                onClick={() => handleRoleSwitch("reset")}
-                className="flex w-full items-center gap-3 px-3 py-1.5 font-medium text-gray-400 rounded-lg text-theme-xs hover:bg-gray-50 dark:hover:bg-white/5"
-              >
-                Reset to Selection
-              </button>
           </li>
         </ul>
         <button
