@@ -44,20 +44,21 @@ const AppHeader: React.FC = () => {
             {isMobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
 
-          <Link href="/" className="lg:hidden">
+          <Link href="/" className="lg:hidden flex items-center gap-2">
             <Image
-              width={120}
-              height={32}
-              className="dark:hidden"
-              src="/images/logo/logo.svg"
+              width={60}
+              height={24}
+              src="/images/logo/logosistro.png"
               alt="Logo"
+              className="object-contain"
             />
+            <div className="h-4 w-px bg-gray-200" />
             <Image
-              width={120}
-              height={32}
-              className="hidden dark:block"
-              src="/images/logo/logo-dark.svg"
+              width={70}
+              height={24}
+              src="/images/logo/logocompany.png"
               alt="Logo"
+              className="object-contain"
             />
           </Link>
 

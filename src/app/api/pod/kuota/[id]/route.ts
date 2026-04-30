@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { query, getPool } from "@/lib/db";
 import crypto from "crypto";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {

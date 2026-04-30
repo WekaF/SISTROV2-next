@@ -1,5 +1,5 @@
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "./api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 import DashboardClient from "@/components/dashboard/DashboardClient";
 
 export default async function DashboardPage() {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query, getPool } from "@/lib/db";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 import { getActiveCompanyCode } from "@/lib/company-context";
 import crypto from "crypto";
 

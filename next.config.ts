@@ -1,23 +1,11 @@
 import type { NextConfig } from "next";
 
+const ASPNET_URL = process.env.ASPNET_API_URL || "http://192.168.188.170:8090";
+
 const nextConfig: NextConfig = {
   /* config options here */
-  experimental: {
-    // @ts-ignore - The types might not be updated for the latest version in the IDE
-    turbo: {
-      root: ".",
-    },
-  },
-  // @ts-ignore
-  turbopack: {
-    root: ".",
-    rules: {
-      '*.svg': {
-        loaders: ['@svgr/webpack'],
-        as: '*.js',
-      },
-    },
-  },
+  // Turbopack configuration (if needed)
+  // Note: Most turbo options are now handled automatically in Next.js 15+
   webpack(config) {
     config.module.rules.push({
       test: /\.svg$/,
@@ -29,7 +17,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/aspnet-proxy/:path*",
-        destination: "http://192.168.188.170:8090/:path*",
+        destination: `${ASPNET_URL}/:path*`,
       },
     ];
   },

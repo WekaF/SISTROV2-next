@@ -241,7 +241,7 @@ const AppSidebar: React.FC = () => {
         name: "POSTO",
         subItems: [
           { name: "Upload Posto", path: "/posto/upload" },
-          { name: "Datatable Posto", path: "/posto" },
+          { name: "Data Posto", path: "/posto" },
           { name: "Cut Off Posto", path: "/posto/cut-off" },
           { name: "Prioritas Tujuan", path: "/posto/priority" },
         ],
@@ -322,7 +322,7 @@ const AppSidebar: React.FC = () => {
   const isActive = useCallback((path: string) => path === pathname, [pathname]);
 
   const handleSubmenuToggle = (index: number, type: string) => {
-    setOpenSubmenu((prev) => 
+    setOpenSubmenu((prev) =>
       prev?.type === type && prev?.index === index ? null : { type, index }
     );
   };
@@ -332,16 +332,15 @@ const AppSidebar: React.FC = () => {
       {items.map((nav, index) => {
         const isOpen = openSubmenu?.type === type && openSubmenu?.index === index;
         const hasActiveSubItem = nav.subItems?.some(sub => isActive(sub.path));
-        
+
         return (
           <li key={nav.name}>
             {nav.subItems ? (
               <div>
                 <button
                   onClick={() => handleSubmenuToggle(index, type)}
-                  className={`menu-item group ${
-                    isOpen || hasActiveSubItem ? "menu-item-active" : "menu-item-inactive"
-                  } ${!isExpanded && !isHovered ? "lg:justify-center" : "lg:justify-start"}`}
+                  className={`menu-item group ${isOpen || hasActiveSubItem ? "menu-item-active" : "menu-item-inactive"
+                    } ${!isExpanded && !isHovered ? "lg:justify-center" : "lg:justify-start"}`}
                 >
                   <span className={`${isOpen || hasActiveSubItem ? "menu-item-icon-active" : "menu-item-icon-inactive"}`}>
                     {nav.icon}
@@ -359,9 +358,8 @@ const AppSidebar: React.FC = () => {
                       <li key={sub.name}>
                         <Link
                           href={sub.path}
-                          className={`menu-dropdown-item ${
-                            isActive(sub.path) ? "menu-dropdown-item-active" : "menu-dropdown-item-inactive"
-                          }`}
+                          className={`menu-dropdown-item ${isActive(sub.path) ? "menu-dropdown-item-active" : "menu-dropdown-item-inactive"
+                            }`}
                         >
                           {sub.name}
                         </Link>
@@ -373,9 +371,8 @@ const AppSidebar: React.FC = () => {
             ) : (
               <Link
                 href={nav.path || "#"}
-                className={`menu-item group ${
-                  isActive(nav.path || "") ? "menu-item-active" : "menu-item-inactive"
-                } ${!isExpanded && !isHovered ? "lg:justify-center" : "lg:justify-start"}`}
+                className={`menu-item group ${isActive(nav.path || "") ? "menu-item-active" : "menu-item-inactive"
+                  } ${!isExpanded && !isHovered ? "lg:justify-center" : "lg:justify-start"}`}
               >
                 <span className={`${isActive(nav.path || "") ? "menu-item-icon-active" : "menu-item-icon-inactive"}`}>
                   {nav.icon}
@@ -400,14 +397,23 @@ const AppSidebar: React.FC = () => {
       onMouseLeave={() => setIsHovered(false)}
     >
       <div className={`flex items-center h-20 px-6 ${!isExpanded && !isHovered ? "lg:justify-center" : "justify-start"}`}>
-        <Link href="/">
-          {isExpanded || isHovered || isMobileOpen ? (
-            <Image src="/images/logo/logo.svg" alt="Logo" width={140} height={40} className="dark:hidden" />
+        <Link href="/" className="flex items-center gap-3">
+          {!(isExpanded || isHovered || isMobileOpen) ? (
+            <div className="flex items-center justify-center">
+              <Image
+                src="/images/logo/avatar.jpg"
+                alt="Sistro"
+                width={40}
+                height={40}
+                className="object-cover rounded-full border border-gray-100 shadow-sm"
+              />
+            </div>
           ) : (
-            <Image src="/images/logo/logo-icon.svg" alt="Logo" width={32} height={32} />
-          )}
-          {(isExpanded || isHovered || isMobileOpen) && (
-             <Image src="/images/logo/logo-dark.svg" alt="Logo" width={140} height={40} className="hidden dark:block" />
+            <div className="flex items-center gap-2 min-w-[140px]">
+              <Image src="/images/logo/logosistro.png" alt="Sistro" width={70} height={32} className="object-contain" />
+              <div className="h-6 w-px bg-gray-200 dark:bg-gray-800" />
+              <Image src="/images/logo/logocompany.png" alt="Pupuk Indonesia" width={80} height={32} className="object-contain" />
+            </div>
           )}
         </Link>
       </div>

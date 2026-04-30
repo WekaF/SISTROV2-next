@@ -120,7 +120,7 @@ const roleMenus: Record<Role, any[]> = {
     { title: "Laporan", url: "/reports", icon: BarChart3 },
     { title: "Armada", url: "/armada", icon: Truck },
     { title: "Pengajuan Jatuh Tempo", url: "/pengajuan/jatuh-tempo", icon: ClipboardList },
-    { title: "Pengajuan Armada", url: "/pengajuan/armada", icon: FileCheck },
+    { title: "Pengajuan Armada", url: "/armada/pengajuan", icon: FileCheck },
   ],
   security: [
     { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -177,7 +177,7 @@ const roleMenus: Record<Role, any[]> = {
     { title: "Laporan", url: "/reports", icon: BarChart3 },
     { title: "Transport", url: "/armada", icon: Truck },
     { title: "Pengajuan Jatuh Tempo", url: "/pengajuan/jatuh-tempo", icon: ClipboardList },
-    { title: "Pengajuan Armada", url: "/pengajuan/armada", icon: FileCheck },
+    { title: "Pengajuan Armada", url: "/armada/pengajuan", icon: FileCheck },
   ],
 }
 

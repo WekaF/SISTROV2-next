@@ -57,17 +57,27 @@ export function useApi() {
     async <T = any>(path: string, payload: any): Promise<T> => {
       const params = new URLSearchParams();
       
-      // Flatten simple properties
-      Object.keys(payload).forEach(key => {
-        if (typeof payload[key] === 'object' && payload[key] !== null) {
-          // Flatten nested objects like search[value]
-          Object.keys(payload[key]).forEach(subKey => {
-            params.append(`${key}[${subKey}]`, String(payload[key][subKey]));
-          });
-        } else {
-          params.append(key, String(payload[key]));
-        }
-      });
+      // Ensure basic DataTables structure
+      const enhancedPayload = {
+        ...payload,
+        search: typeof payload.search === 'string' ? { value: payload.search, regex: 'false' } : (payload.search || { value: '', regex: 'false' }),
+        order: payload.order || [{ column: '0', dir: 'desc' }],
+        columns: payload.columns || [{ data: 'id', name: 'id', searchable: 'true', orderable: 'true', search: { value: '', regex: 'false' } }]
+      };
+
+      // Flatten properties for x-www-form-urlencoded
+      const flatten = (obj: any, prefix = '') => {
+        Object.keys(obj).forEach(key => {
+          const k = prefix ? `${prefix}[${key}]` : key;
+          if (typeof obj[key] === 'object' && obj[key] !== null) {
+            flatten(obj[key], k);
+          } else {
+            params.append(k, String(obj[key]));
+          }
+        });
+      };
+
+      flatten(enhancedPayload);
 
       const res = await apiFetch(path, {
         method: "POST",

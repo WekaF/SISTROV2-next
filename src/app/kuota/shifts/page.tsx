@@ -1,14 +1,12 @@
 "use client";
-import React from "react";
-import { 
-  Clock, 
-  Warehouse, 
-  ArrowRight, 
-  CheckCircle2, 
-  AlertCircle,
+import React, { useState, useEffect } from "react";
+import {
+  Clock,
+  Warehouse,
+  CheckCircle2,
   Truck,
   BarChart3,
-  Calendar
+  Info
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -197,6 +195,3 @@ export default function ShiftQuotaPage() {
     </div>
   );
 }
-
-import { useState, useEffect } from "react";
-import { Info } from "lucide-react";
