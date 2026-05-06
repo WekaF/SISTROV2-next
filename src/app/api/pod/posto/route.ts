@@ -14,6 +14,7 @@ export async function GET(req: NextRequest) {
     const isRekanan = userRoles.includes('rekanan');
     const sapVendorCode = (session.user as any).companyCode;
 
+
     const params: any[] = [];
     let filters = '';
     if (isRekanan && sapVendorCode) { params.push(sapVendorCode); filters += ` AND po.transport=$${params.length}`; }

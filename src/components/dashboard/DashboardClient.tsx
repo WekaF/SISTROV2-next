@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { AdminDashboard } from "@/components/dashboard/AdminDashboard";
 import { PodDashboard } from "@/components/dashboard/PodDashboard";
-import { RekananDashboard } from "@/components/dashboard/RekananDashboard";
+import { TransportDashboard } from "@/components/dashboard/TransportDashboard";
 import { LogisticsMetrics } from "@/components/dashboard/LogisticsMetrics";
 import { ClipboardList, TrendingUp, Clock, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -22,11 +22,14 @@ export default function DashboardClient({ session, dbRole }: { session: any, dbR
     }
   }, [session, dbRole]);
 
+  // Remove redirect for transport role so they can see the RekananDashboard
+  /* 
   useEffect(() => {
     if (role === "transport" && pathname === "/") {
       router.push("/armada");
     }
   }, [role, pathname, router]);
+  */
 
   // Header Title Logic
   const title = role === "admin" || role === "superadmin"
@@ -92,7 +95,7 @@ export default function DashboardClient({ session, dbRole }: { session: any, dbR
       ) : role === "pod" ? (
         <PodDashboard />
       ) : (role === "rekanan" || role === "transport") ? (
-        <RekananDashboard />
+        <TransportDashboard />
       ) : (
         <>
           <LogisticsMetrics />

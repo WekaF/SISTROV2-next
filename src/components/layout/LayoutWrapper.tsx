@@ -11,7 +11,8 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
     pathname === "/login" ||
     pathname === "/register" ||
     pathname === "/forgot-password" ||
-    pathname === "/auth/role-select";
+    pathname === "/auth/role-select" ||
+    pathname === "/security/print";
   const { isExpanded, isHovered, isMobileOpen, toggleMobileSidebar } = useSidebar();
 
   if (isAuthPage) {

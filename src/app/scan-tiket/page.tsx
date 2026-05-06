@@ -18,6 +18,7 @@ import { useToast } from "@/components/ui/toast";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { useCompany } from "@/context/CompanyContext";
 
 export default function ScanTiketPage() {
   const [ticketCode, setTicketCode] = useState("");
@@ -26,7 +27,7 @@ export default function ScanTiketPage() {
   const { addToast } = useToast();
   const router = useRouter();
   const { data: session } = useSession();
-  const companyCode = (session?.user as any)?.companyCode;
+  const companyCode = useCompany().activeCompanyCode;
 
   const { data: dashboardData } = useQuery({
     queryKey: ['tiket-dashboard', companyCode],
@@ -78,10 +79,10 @@ export default function ScanTiketPage() {
 
   return (
     <div className="flex flex-col">
-      <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-        <SidebarTrigger className="-ml-1" />
-        <Separator orientation="vertical" className="mr-2 h-4" />
-        <Breadcrumb>
+      <main className="flex-1 space-y-6">
+        
+        {/* Breadcrumbs inside main content */}
+        <Breadcrumb className="mb-2">
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink href="/">SISTRO</BreadcrumbLink>
@@ -92,8 +93,7 @@ export default function ScanTiketPage() {
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
-      </header>
-      <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+
         <div className="mx-auto max-w-md w-full grid gap-4">
           <Card className="border-2 border-primary/20 shadow-lg">
             <CardHeader className="text-center">

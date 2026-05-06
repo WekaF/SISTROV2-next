@@ -69,7 +69,9 @@ export function useApi() {
       const flatten = (obj: any, prefix = '') => {
         Object.keys(obj).forEach(key => {
           const k = prefix ? `${prefix}[${key}]` : key;
-          if (typeof obj[key] === 'object' && obj[key] !== null) {
+          if (obj[key] === undefined || obj[key] === null) {
+            // Skip appending null/undefined
+          } else if (typeof obj[key] === 'object') {
             flatten(obj[key], k);
           } else {
             params.append(k, String(obj[key]));
@@ -95,4 +97,40 @@ export function useApi() {
   );
 
   return { apiFetch, apiJson, apiTable, token };
+}
+
+import { useState, useEffect } from "react";
+
+/**
+ * Hook simplified untuk fetching data dari endpoint DataTable
+ * Tanpa perlu manajemen state manual di page.
+ */
+export function useApiTable({ url, defaultLength = 10 }: { url: string, defaultLength?: number }) {
+  const { apiTable } = useApi();
+  const [data, setData] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const refresh = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const res = await apiTable(url, {
+        start: 0,
+        length: defaultLength,
+        draw: 1,
+        search: { value: "", regex: false },
+        order: [{ column: 0, dir: "asc" }],
+      });
+      setData(res.data || []);
+    } catch (err) {
+      console.error("[useApiTable] Error:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [apiTable, url, defaultLength]);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  return { data, isLoading, refresh };
 }

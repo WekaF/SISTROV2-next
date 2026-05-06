@@ -38,6 +38,7 @@ import { useToast } from "@/components/ui/toast";
 import { useSession } from "next-auth/react";
 import { MultiSelect, MultiSelectOption } from "@/components/ui/MultiSelect";
 import { DataTable, DataTableColumn, DataTableParams } from "@/components/ui/DataTable";
+import { useCompany } from "@/context/CompanyContext";
 
 // ─────────────── Types ────────────────────────────────────────────────────────
 
@@ -224,7 +225,8 @@ export default function ArmadaPengajuanPage() {
 
   const role = (session?.user as any)?.role as string | undefined;
   const userName = session?.user?.name ?? "";
-  const transportCode = (session?.user as any)?.companyCode as string | undefined;
+  const { activeCompanyCode } = useCompany();
+  const transportCode = activeCompanyCode ?? ((session?.user as any)?.companyCode as string | undefined);
   const isTransport = role === "transport" || role === "rekanan";
 
   // ── form state ──
@@ -930,7 +932,7 @@ export default function ArmadaPengajuanPage() {
           <CardContent className="p-6">
             <DataTable
               columns={columns}
-              queryKey={["armada-review-baru", isCharterFilter]}
+              queryKey={["armada-review-baru", isCharterFilter, transportCode]}
               fetcher={fetchHistory}
               rowKey={(row) => row.ID || Math.random()}
               searchPlaceholder="Cari Nopol, Rekanan, atau Status..."

@@ -23,6 +23,7 @@ import Badge from "@/components/ui/badge/Badge";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useApi } from "@/hooks/use-api";
 import { useToast } from "@/components/ui/toast";
+import { useCompany } from "@/context/CompanyContext";
 import {
   Dialog,
   DialogContent,
@@ -50,7 +51,7 @@ interface FleetData {
 
 export default function FleetMasterPage() {
   const { addToast } = useToast();
-  const { apiJson, apiFetch } = useApi();
+  const { apiJson, apiFetch, apiTable } = useApi();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -68,14 +69,16 @@ export default function FleetMasterPage() {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [verifyData, setVerifyData] = useState({ IsVerified: false, ExpiryDate: "" });
 
+  const { activeCompanyCode } = useCompany();
   const { data: fleetsResult, isLoading, isFetching } = useQuery({
-    queryKey: ['admin-fleets', debouncedSearch],
+    queryKey: ['admin-fleets', debouncedSearch, activeCompanyCode],
     queryFn: async () => {
       const body = {
         draw: 1,
         start: 0,
         length: 25,
-        search: { value: debouncedSearch }
+        search: { value: debouncedSearch },
+        companyCode: activeCompanyCode
       };
       const data = await apiTable("/api/Armada/DataTable", body);
       return data;

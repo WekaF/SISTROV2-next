@@ -12,11 +12,13 @@ import {
   Calendar,
   Filter,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Badge from "@/components/ui/badge/Badge";
 import { useSession } from "next-auth/react";
+import { useCompany } from "@/context/CompanyContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useApi } from "@/hooks/use-api";
 import { useToast } from "@/components/ui/toast";
@@ -57,6 +59,7 @@ function getStatus(code: string | undefined) {
 }
 
 export default function TicketPage() {
+  const router = useRouter();
   const { data: session } = useSession();
   const { apiTable, apiJson, apiFetch } = useApi();
   const { addToast } = useToast();
@@ -68,7 +71,8 @@ export default function TicketPage() {
   const [isViewOpen, setIsViewOpen] = useState(false);
 
   const role = (session?.user as any)?.role as string | undefined;
-  const companyCode = (session?.user as any)?.companyCode as string | undefined;
+  const { activeCompanyCode } = useCompany();
+  const companyCode = activeCompanyCode ?? undefined;
   const isRekanan = role === "rekanan" || role === "transport";
 
   React.useEffect(() => {
@@ -87,7 +91,7 @@ export default function TicketPage() {
       if (companyCode) params.append("companyCode", companyCode);
       if (statusFilter) params.append("statusPemuatan", statusFilter);
 
-      const res = await apiFetch("/api/Tiket/DataTableFilter", {
+      const res = await apiFetch("/api/Tiket/DataTableFilterLegacy", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: params.toString(),
@@ -266,15 +270,15 @@ export default function TicketPage() {
                       </td>
                       <td className="px-5 py-4 text-right">
                         <div className="flex items-center justify-end gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            title="Lihat Detail"
-                            className="hover:text-brand-500"
-                            onClick={() => handleView(bn)}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              title="Track Tiket"
+                              className="hover:text-brand-500"
+                              onClick={() => router.push(`/track/tiket?id=${bn}`)}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
                           {(role === "admin" || role === "superadmin") && (
                             <Button
                               variant="ghost"

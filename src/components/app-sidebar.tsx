@@ -28,6 +28,10 @@ import {
   ShieldCheck,
   Users,
   Layers,
+  Warehouse,
+  MapPin,
+  TrendingUp,
+  ArrowLeftRight,
 } from "lucide-react"
 
 import {
@@ -105,6 +109,9 @@ const ASPNET_ROLE_MAP: Record<string, Role> = {
   // Superadmin fallbacks
   admin:                 "admin",
   superadmin:            "superadmin",
+  admingudang:           "gudang",
+  candalgudang:          "gudang",
+  admingudangcandalgudang: "gudang",
 }
 
 function mapAspnetRole(rawRole: string | undefined | null): Role {
@@ -162,6 +169,30 @@ const MENU_ARMADA_ADMIN = {
   ],
 }
 
+const MENU_GUDANG = {
+  title: "Gudang",
+  url: "#",
+  icon: Warehouse,
+  items: [
+    { title: "List Gudang", url: "/gudang", icon: Package },
+    { title: "Antrian Per Unit", url: "/gudang/unit-queue", icon: Layers },
+    { title: "Gudang Tujuan Bagian", url: "/gudang/tujuan-bagian", icon: Building2 },
+    { title: "Monitoring Pemuatan", url: "/gudang/targets", icon: MapPin },
+    { title: "Traffic Antrian", url: "/gudang/trafik", icon: ArrowLeftRight },
+    { title: "Bypass Antrian", url: "/gudang/bypass", icon: Zap },
+  ],
+}
+
+const MENU_REPORTS = {
+  title: "Laporan",
+  url: "#",
+  icon: BarChart3,
+  items: [
+    { title: "Summary Laporan", url: "/reports", icon: BarChart3 },
+    { title: "Antrian Per Gudang", url: "/reports/antrian", icon: History },
+  ],
+}
+
 const MENU_PENGATURAN_ADMIN = {
   title: "Pengaturan",
   url: "#",
@@ -186,9 +217,10 @@ const roleMenus: Record<Role, any[]> = {
     MENU_POSTO_FULL,
     MENU_KUOTA_FULL,
     { title: "Antrian Gudang", url: "/antrian", icon: History },
-    { title: "Tracking Truck", url: "/tracking", icon: Map },
+    MENU_GUDANG,
+    { title: "Tracking Truck", url: "/track/tiket", icon: Map },
     { title: "Stock", url: "/stock", icon: Box },
-    { title: "Laporan", url: "/reports", icon: BarChart3 },
+    MENU_REPORTS,
     MENU_ARMADA_ADMIN,
     MENU_PENGATURAN_ADMIN,
   ],
@@ -200,9 +232,10 @@ const roleMenus: Record<Role, any[]> = {
     MENU_POSTO_FULL,
     MENU_KUOTA_FULL,
     { title: "Antrian Gudang", url: "/antrian", icon: History },
-    { title: "Tracking Truck", url: "/tracking", icon: Map },
+    MENU_GUDANG,
+    { title: "Tracking Truck", url: "/track/tiket", icon: Map },
     { title: "Stock", url: "/stock", icon: Box },
-    { title: "Laporan", url: "/reports", icon: BarChart3 },
+    MENU_REPORTS,
     MENU_ARMADA_ADMIN,
     MENU_PENGATURAN_ADMIN,
   ],
@@ -214,7 +247,7 @@ const roleMenus: Record<Role, any[]> = {
     MENU_POSTO_FULL,
     MENU_KUOTA_FULL,
     { title: "Antrian Gudang", url: "/antrian", icon: History },
-    { title: "Tracking Truck", url: "/tracking", icon: Map },
+    { title: "Tracking Truck", url: "/track/tiket", icon: Map },
     { title: "Laporan", url: "/reports", icon: BarChart3 },
   ],
 
@@ -233,7 +266,7 @@ const roleMenus: Record<Role, any[]> = {
       ],
     },
     { title: "Antrian Gudang", url: "/antrian", icon: History },
-    { title: "Tracking Truck", url: "/tracking", icon: Map },
+    { title: "Tracking Truck", url: "/track/tiket", icon: Map },
     { title: "Laporan", url: "/reports", icon: BarChart3 },
   ],
 
@@ -243,7 +276,7 @@ const roleMenus: Record<Role, any[]> = {
     { title: "Tiket", url: "/ticket", icon: Ticket },
     MENU_POSTO_VIEW,
     { title: "Antrian Gudang", url: "/antrian", icon: History },
-    { title: "Tracking Truck", url: "/tracking", icon: Map },
+    { title: "Tracking Truck", url: "/track/tiket", icon: Map },
     { title: "Stock", url: "/stock", icon: Box },
     { title: "Laporan", url: "/reports", icon: BarChart3 },
   ],
@@ -254,7 +287,7 @@ const roleMenus: Record<Role, any[]> = {
     { title: "Tiket", url: "/ticket", icon: Ticket },
     MENU_POSTO_VIEW,
     { title: "Antrian Gudang", url: "/antrian", icon: History },
-    { title: "Tracking Truck", url: "/tracking", icon: Map },
+    { title: "Tracking Truck", url: "/track/tiket", icon: Map },
     { title: "Stock", url: "/stock", icon: Box },
     { title: "Laporan", url: "/reports", icon: BarChart3 },
     MENU_ARMADA_TRANSPORT,
@@ -265,7 +298,7 @@ const roleMenus: Record<Role, any[]> = {
     { title: "Tiket", url: "/ticket", icon: Ticket },
     MENU_POSTO_VIEW,
     { title: "Antrian Gudang", url: "/antrian", icon: History },
-    { title: "Tracking Truck", url: "/tracking", icon: Map },
+    { title: "Tracking Truck", url: "/track/tiket", icon: Map },
     { title: "Stock", url: "/stock", icon: Box },
     { title: "Laporan", url: "/reports", icon: BarChart3 },
     MENU_ARMADA_TRANSPORT,
@@ -276,7 +309,7 @@ const roleMenus: Record<Role, any[]> = {
     { title: "Dashboard", url: "/", icon: LayoutDashboard },
     { title: "Tiket", url: "/ticket", icon: Ticket },
     MENU_POSTO_VIEW,
-    { title: "Scan Tiket", url: "/scan-tiket", icon: Scan },
+    { title: "Scan Tiket", url: "/scan/tiket", icon: Scan },
   ],
 
   // ── Gudang ────────────────────────────────────────────────────────────────
@@ -285,8 +318,9 @@ const roleMenus: Record<Role, any[]> = {
     { title: "Tiket", url: "/ticket", icon: Ticket },
     MENU_POSTO_VIEW,
     { title: "Antrian Gudang", url: "/antrian", icon: History },
+    MENU_GUDANG,
     { title: "Stock", url: "/stock", icon: Box },
-    { title: "Scan Tiket", url: "/scan-tiket", icon: Scan },
+    { title: "Scan Tiket", url: "/scan/tiket", icon: Scan },
   ],
 
   // ── Jembatan Timbang ──────────────────────────────────────────────────────
@@ -295,7 +329,7 @@ const roleMenus: Record<Role, any[]> = {
     { title: "Tiket", url: "/ticket", icon: Ticket },
     MENU_POSTO_VIEW,
     { title: "Antrian Gudang", url: "/antrian", icon: History },
-    { title: "Scan Tiket", url: "/scan-tiket", icon: Scan },
+    { title: "Scan Tiket", url: "/scan/tiket", icon: Scan },
   ],
 
   // ── POD — AdminArmada + approver pengajuan ────────────────────────────────
@@ -304,9 +338,9 @@ const roleMenus: Record<Role, any[]> = {
     { title: "Tiket", url: "/ticket", icon: Ticket },
     MENU_POSTO_VIEW,
     { title: "Antrian Gudang", url: "/antrian", icon: History },
-    { title: "Tracking Truck", url: "/tracking", icon: Map },
+    { title: "Tracking Truck", url: "/track/tiket", icon: Map },
     { title: "Stock", url: "/stock", icon: Box },
-    { title: "Laporan", url: "/reports", icon: BarChart3 },
+    MENU_REPORTS,
     MENU_ARMADA_ADMIN,
     { title: "Penjadwalan Kuota", url: "/kuota/schedule", icon: CalendarCheck },
   ],
@@ -317,7 +351,7 @@ const roleMenus: Record<Role, any[]> = {
     { title: "Tiket", url: "/ticket", icon: Ticket },
     MENU_POSTO_VIEW,
     { title: "Antrian Gudang", url: "/antrian", icon: History },
-    { title: "Tracking Truck", url: "/tracking", icon: Map },
+    { title: "Tracking Truck", url: "/track/tiket", icon: Map },
     { title: "Stock", url: "/stock", icon: Box },
     { title: "Laporan", url: "/reports", icon: BarChart3 },
   ],

@@ -9,27 +9,32 @@ import {
   MoreVertical,
   Loader2
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Badge from "@/components/ui/badge/Badge";
 import { useQuery } from "@tanstack/react-query";
 import { useApi } from "@/hooks/use-api";
+import { useCompany } from "@/context/CompanyContext";
 
 export default function AdminTicketsPage() {
+  const router = useRouter();
   const { apiTable } = useApi();
+  const { activeCompanyCode } = useCompany();
   const [searchTerm, setSearchTerm] = React.useState("");
 
   const { data: ticketsResult, isLoading } = useQuery({
-    queryKey: ['admin-tickets', searchTerm],
+    queryKey: ['admin-tickets', searchTerm, activeCompanyCode],
     queryFn: async () => {
       const body = {
         draw: 1,
         start: 0,
         length: 25,
-        search: { value: searchTerm }
+        search: { value: searchTerm },
+        companyCode: activeCompanyCode
       };
-      return apiTable('/api/Tiket/DataTableFilter', body);
+      return apiTable('/api/Tiket/DataTableFilterLegacy', body);
     }
   });
 
@@ -123,7 +128,13 @@ export default function AdminTicketsPage() {
                      </td>
                      <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <Button variant="ghost" size="icon" title="View Detail" className="h-8 w-8">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            title="Track Tiket" 
+                            className="h-8 w-8 hover:text-brand-500"
+                            onClick={() => router.push(`/track/tiket?id=${ticket.NoBooking || ticket.bookingno}`)}
+                          >
                             <Eye className="h-4 w-4" />
                           </Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8">

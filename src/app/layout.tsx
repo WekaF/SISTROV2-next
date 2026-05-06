@@ -3,6 +3,7 @@ import { Outfit } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { SidebarProvider } from "@/context/SidebarContext";
+import { CompanyProvider } from "@/context/CompanyContext";
 import LayoutWrapper from "@/components/layout/LayoutWrapper";
 import AuthProvider from "@/components/auth/AuthProvider";
 import { ToastProvider } from "@/components/ui/toast";
@@ -30,11 +31,13 @@ export default function RootLayout({
           <ThemeProvider>
             <SidebarProvider>
               <QueryProvider>
-                <ToastProvider>
-                  <LayoutWrapper>
-                    {children}
-                  </LayoutWrapper>
-                </ToastProvider>
+                <CompanyProvider>
+                  <ToastProvider>
+                    <LayoutWrapper>
+                      {children}
+                    </LayoutWrapper>
+                  </ToastProvider>
+                </CompanyProvider>
               </QueryProvider>
             </SidebarProvider>
           </ThemeProvider>

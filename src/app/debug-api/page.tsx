@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { useApi } from "@/hooks/use-api";
 import { useSession } from "next-auth/react";
+import { useCompany } from "@/context/CompanyContext";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, Bug } from "lucide-react";
@@ -13,7 +14,7 @@ export default function DebugApiPage() {
   const [error, setError] = useState<string | null>(null);
 
   const { data: session } = useSession();
-  const companyCode = (session?.user as any)?.companyCode;
+  const companyCode = useCompany().activeCompanyCode;
 
   const testTiket = async (variation = 1) => {
     setLoading(true);
@@ -48,7 +49,7 @@ export default function DebugApiPage() {
         params.append("search[value]", "");
         if (companyCode) params.append("companyCode", companyCode);
 
-        const data = await apiJson("/api/Tiket/DataTableFilter", {
+        const data = await apiJson("/api/Tiket/DataTableFilterLegacy", {
           method: "POST",
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
           body: params.toString()
@@ -58,7 +59,7 @@ export default function DebugApiPage() {
         return;
       }
 
-      const data = await apiJson("/api/Tiket/DataTableFilter", {
+      const data = await apiJson("/api/Tiket/DataTableFilterLegacy", {
         method: "POST",
         body: JSON.stringify(body)
       });

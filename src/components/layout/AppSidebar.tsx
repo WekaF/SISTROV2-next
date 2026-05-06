@@ -101,6 +101,8 @@ function normalizeRole(raw: string | undefined): string {
     terminal1: "pkd",
     terminal2: "pkd",
     pkd: "pkd",
+    admingudang: "gudang",
+    admingudangcandalgudang: "gudang",
   };
   // Handle DataAreaBagian* pattern dynamically
   if (r.startsWith("dataareabagian")) return "staffarea";
@@ -229,10 +231,12 @@ const AppSidebar: React.FC = () => {
         path: "/transit",
       },
       {
-        icon: <PieChart className="h-5 w-5" />,
-        name: "Report",
+        icon: BarChart3,
+        name: "Laporan",
+        path: "/reports",
         subItems: [
-          { name: "Report Tiket", path: "/admin/reports" },
+          { name: "Summary Laporan", path: "/reports" },
+          { name: "Antrian Per Gudang", path: "/reports/antrian" },
           { name: "Performance Analysis", path: "/admin/reports/performance" },
         ],
       },
@@ -316,9 +320,12 @@ const AppSidebar: React.FC = () => {
         icon: <TableProperties className="h-5 w-5" />,
         name: "Gudang",
         subItems: [
-          { name: "List Gudang", path: "/gudang/list" },
+          { name: "List Gudang", path: "/gudang" },
           { name: "Antrian Per Unit", path: "/gudang/unit-queue" },
-          { name: "Gudang Tujuan", path: "/gudang/targets" },
+          { name: "Gudang Tujuan Bagian", path: "/gudang/tujuan-bagian" },
+          { name: "Monitoring Pemuatan", path: "/gudang/targets" },
+          { name: "Traffic Antrian", path: "/gudang/trafik" },
+          { name: "Bypass Antrian", path: "/gudang/bypass" },
         ],
       },
       {
@@ -393,7 +400,7 @@ const AppSidebar: React.FC = () => {
           { name: "Antrian", path: "/antrian" },
           { name: "ByPass Antrian", path: "/antrian/bypass" },
           { name: "Gudang", path: "/gudang" },
-          { name: "Batch Gudang Pemuatan", path: "/gudang/batch" },
+          // { name: "Batch Gudang Pemuatan", path: "/gudang/batch" },
           { name: "Antrian Per Gudang", path: "/reports/antrian" },
         ],
       },
@@ -408,6 +415,7 @@ const AppSidebar: React.FC = () => {
         name: "Scan",
         subItems: [
           { name: "Scan Tiket", path: "/scan/tiket" },
+          { name: "Integrasi Tiket", path: "/scan/integrasi" },
           { name: "Track Tiket", path: "/track/tiket" },
         ],
       },
@@ -417,7 +425,7 @@ const AppSidebar: React.FC = () => {
         subItems: [
           { name: "Antrian", path: "/antrian" },
           { name: "Gudang", path: "/gudang" },
-          { name: "Batch Gudang Pemuatan", path: "/gudang/batch" },
+          // { name: "Batch Gudang Pemuatan", path: "/gudang/batch" },
           { name: "Gudang Tujuan Bagian", path: "/gudang/tujuan-bagian" },
           { name: "Antrian Per Gudang", path: "/reports/antrian" },
           { name: "Trafik Antrian Gudang", path: "/gudang/trafik" },
@@ -518,9 +526,12 @@ const AppSidebar: React.FC = () => {
         icon: <TableProperties className="h-5 w-5" />,
         name: "Gudang",
         subItems: [
-          { name: "List Gudang", path: "/gudang/list" },
+          { name: "List Gudang", path: "/gudang" },
           { name: "Antrian Per Unit", path: "/gudang/unit-queue" },
-          { name: "Gudang Tujuan", path: "/gudang/targets" },
+          { name: "Gudang Tujuan Bagian", path: "/gudang/tujuan-bagian" },
+          { name: "Monitoring Pemuatan", path: "/gudang/targets" },
+          { name: "Traffic Antrian", path: "/gudang/trafik" },
+          { name: "Bypass Antrian", path: "/gudang/bypass" },
         ],
       },
       {
@@ -537,7 +548,7 @@ const AppSidebar: React.FC = () => {
         name: "Laporan",
         subItems: [
           { name: "Laporan Tiket", path: "/reports/tickets" },
-          { name: "Laporan Antrian", path: "/reports/queue" },
+          { name: "Antrian Per Gudang", path: "/reports/antrian" },
           { name: "Laporan Armada", path: "/reports/fleet" },
           { name: "Laporan Gudang", path: "/reports/warehouses" },
           { name: "Laporan Posto", path: "/reports/posto" },
@@ -624,6 +635,7 @@ const AppSidebar: React.FC = () => {
         name: "Scan & Track",
         subItems: [
           { name: "Scan Tiket", path: "/scan/tiket" },
+          { name: "Integrasi Tiket", path: "/scan/integrasi" },
           { name: "Track Tiket", path: "/track/tiket" },
         ],
       },

@@ -1,12 +1,16 @@
 "use client";
-import React from "react";
+import React, { Suspense } from "react";
 import { Plus, Calendar, Clock } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Badge from "@/components/ui/badge/Badge";
 import { useSession } from "next-auth/react";
+import { useCompany } from "@/context/CompanyContext";
 import { useApi } from "@/hooks/use-api";
+import { useSearchParams } from "next/navigation";
 import { DataTable, type DataTableColumn, type DataTableParams } from "@/components/ui/DataTable";
+import { TicketActions } from "@/components/ticket/TicketActions";
+import { normalizeRole } from "@/lib/role-utils";
 
 interface TicketData {
   bookingno: string;
@@ -28,24 +32,28 @@ interface TicketData {
   createdat: string;
   TglBooking?: string;
   JamMasuk?: string;
+  updatedonString?: string;
+  qty?: number;
 }
 
-export default function RekananTicketPage() {
+function RekananTicketContent() {
   const { data: session } = useSession();
   const { apiTable } = useApi();
-  const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
-  const postoFilter = searchParams?.get('posto');
-  const companyCode = (session?.user as any)?.companyCode;
+  const searchParams = useSearchParams();
+  const postoFilter = searchParams.get('posto');
+  const companyCode = useCompany().activeCompanyCode;
 
   const fetcher = async (params: DataTableParams) => {
-    const result = await apiTable("/api/Tiket/DataTableFilter", {
+    // Use DataTablePeriodeTiket if filtering by POSTO, otherwise use Legacy
+    const endpoint = postoFilter ? "/api/Tiket/DataTablePeriodeTiket" : "/api/Tiket/DataTableFilterLegacy";
+    
+    const result = await apiTable(endpoint, {
       draw: params.draw,
       start: params.start,
       length: params.length,
       search: { value: params.search },
       companyCode,
       posto: postoFilter || undefined,
-      // Pass a very old Start Date (SD) to bypass the default 3-month limit if filtering by POSTO
       SD: postoFilter ? "2020-01-01" : undefined,
       cmd: 'refresh',
       order: params.order?.length ? params.order : [{ column: 0, dir: "desc" }],
@@ -72,6 +80,13 @@ export default function RekananTicketPage() {
   };
 
   const columns: DataTableColumn<TicketData>[] = [
+    {
+      key: "action",
+      header: "Aksi",
+      render: (t) => (
+        <TicketActions bookingNo={t.bookingno} />
+      ),
+    },
     {
       key: "bookingno",
       header: "No Booking",
@@ -139,106 +154,102 @@ export default function RekananTicketPage() {
       ),
     },
     {
-      key: "transportString",
-      header: "Transport",
+      key: "qty",
+      header: "Qty",
       render: (t) => (
         <div className="font-bold text-gray-900 dark:text-white font-mono text-sm tracking-tight">
-          {t.transportString ?? "-"}
-        </div>
-      ),
-    },
-    {
-      key: "tujuan",
-      header: "Tujuan",
-      render: (t) => (
-        <div className="font-bold text-gray-900 dark:text-white font-mono text-sm tracking-tight">
-          {t.tujuan ?? "-"}
+          {t.qty ? `${t.qty} TON` : "-"}
         </div>
       ),
     },
     {
       key: "positionString",
-      header: "Posisi",
-      render: (t) => (
-        <div className="font-bold text-gray-900 dark:text-white font-mono text-sm tracking-tight">
-          {t.positionString ?? "-"}
-        </div>
-      ),
-    },
-    {
-      key: "status",
-      header: "Status",
+      header: "Posisi / Status",
       render: (t) => (
         <div className="flex flex-col gap-1">
-          <div className="font-bold text-gray-900 dark:text-white font-mono text-sm tracking-tight">
-            {t.statuspemuatan ?? "-"}
+          <div className="font-bold text-gray-900 dark:text-white font-mono text-sm tracking-tight uppercase">
+            {t.positionString ?? "-"}
           </div>
-          <Badge
-            color={(t.JamMasuk || t.Status?.includes("Check")) ? "success" : "info"}
-            size="sm"
-            variant="light"
-            className="italic font-bold w-fit"
-          >
-            {t.JamMasuk ? "Check-in" : (t.Status || "Booked")}
-          </Badge>
+          {t.statuspemuatan && (
+            <Badge color="info" size="sm" variant="light" className="w-fit font-bold italic">
+              {t.statuspemuatan}
+            </Badge>
+          )}
         </div>
       ),
     },
     {
-      key: "createdat",
-      header: "Activity",
-      headerClassName: "text-right",
-      className: "text-right",
+      key: "updatedonString",
+      header: "Update Terakhir",
       render: (t) => (
-        <div className="flex flex-col items-end gap-1">
-          <div className="flex items-center gap-1.5 text-[10px] text-gray-400 font-bold">
+        <div className="flex flex-col gap-0.5">
+          <div className="flex items-center gap-1.5 text-[10px] text-gray-400 font-bold uppercase tracking-tight">
             <Calendar className="h-3 w-3" />
-            {new Date(t.TglBooking || t.createdat).toLocaleDateString()}
+            {t.updatedonString || new Date(t.createdat).toLocaleDateString()}
           </div>
-          <div className="flex items-center gap-1.5 text-[10px] text-gray-400 font-bold">
-            <Clock className="h-3 w-3" />
-            {new Date(t.TglBooking || t.createdat).toLocaleTimeString()}
-          </div>
+          {!t.updatedonString && (
+             <div className="flex items-center gap-1.5 text-[10px] text-gray-400 font-bold uppercase tracking-tight">
+              <Clock className="h-3 w-3" />
+              {new Date(t.createdat).toLocaleTimeString()}
+            </div>
+          )}
         </div>
       ),
     },
   ];
+
+  const role = (session?.user as any)?.role;
+  const roles = (session?.user as any)?.roles || [];
+  const isTransport = ["transport", "rekanan"].includes(normalizeRole(role)) || 
+    roles.some((r: string) => ["transport", "rekanan"].includes(normalizeRole(r)));
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white uppercase tracking-tight">
-            Daftar Tiket Saya
+            {postoFilter ? "Riwayat Lengkap POSTO" : "Daftar Tiket Saya"}
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
-            Monitoring status tiket dan kedatangan armada Anda.
+            {postoFilter
+              ? `Menampilkan data tiket lengkap untuk POSTO: ${postoFilter}`
+              : "Monitoring status tiket dan kedatangan armada Anda."}
           </p>
         </div>
       </div>
 
-      <Card className="shadow-theme-xs">
+      <Card className="shadow-theme-xs rounded-none border-none">
         <CardContent className="p-4">
           <DataTable
             columns={columns}
-            queryKey={["rekanan-tickets", companyCode, postoFilter]}
+            queryKey={["rekanan-tickets", companyCode, postoFilter ?? ""]}
             fetcher={fetcher}
             rowKey={(t) => t.bookingno}
             searchPlaceholder="Cari No Booking atau Nopol..."
-            emptyText="Belum ada tiket yang diterbitkan."
+            emptyText="Belum ada tiket yang ditemukan."
             toolbar={
-              <Button
-                size="sm"
-                onClick={() => (window.location.href = "/tiket/booking")}
-                className="bg-brand-500 shadow-lg shadow-brand-500/20"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Booking Baru
-              </Button>
+              !postoFilter && isTransport && (
+                <Button
+                  size="sm"
+                  onClick={() => (window.location.href = "/tiket/booking")}
+                  className="bg-brand-500 shadow-lg shadow-brand-500/20"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Booking Baru
+                </Button>
+              )
             }
           />
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function RekananTicketPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-gray-400">Memuat data tiket...</div>}>
+      <RekananTicketContent />
+    </Suspense>
   );
 }

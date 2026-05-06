@@ -8,6 +8,7 @@ import { useSession } from "next-auth/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useApi } from "@/hooks/use-api";
 import { useToast } from "@/components/ui/toast";
+import { useCompany } from "@/context/CompanyContext";
 import {
   Dialog,
   DialogContent,
@@ -61,8 +62,9 @@ export default function ArmadaPage() {
   const { addToast } = useToast();
   const queryClient = useQueryClient();
 
+  const { activeCompanyCode } = useCompany();
   const role = (session?.user as any)?.role;
-  const companyCode = (session?.user as any)?.companyCode;
+  const companyCode = activeCompanyCode;
   const isRekanan = role === "rekanan" || role === "transport";
 
   const [isSubmitOpen, setIsSubmitOpen] = useState(false);

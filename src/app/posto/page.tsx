@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Badge from "@/components/ui/badge/Badge";
 import { useSession } from "next-auth/react";
+import { useCompany } from "@/context/CompanyContext";
 import { useApi } from "@/hooks/use-api";
 import { useToast } from "@/components/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -19,7 +20,8 @@ export default function PostoPage() {
   const queryClient = useQueryClient();
 
   const role = (session?.user as any)?.role;
-  const companyCode = (session?.user as any)?.companyCode as string | undefined;
+  const { activeCompanyCode } = useCompany();
+  const companyCode = activeCompanyCode ?? undefined;
   const isRekanan = role === "rekanan" || role === "transport";
 
   const [dateFilter, setDateFilter] = useState("");
@@ -76,17 +78,17 @@ export default function PostoPage() {
     }
   };
 
-  const handleView = async (id: string) => {
+  const handleView = async (id: string, noposto?: string) => {
     try {
-      const res = await apiTable("/api/POSTO/DetailData", { guid: id, posto: id, cmd: 'refresh' });
+      const res = await apiTable("/api/POSTO/DetailData", { guid: id, noposto: noposto || id, cmd: 'refresh' });
       const data = res?.response || (res?.noposto ? res : res?.data) || res;
-      
+
       // Ensure guid is preserved from the 'id' parameter if missing in response
       const enrichedData = {
         ...data,
         guid: data.guid || data.Guid || id
       };
-      
+
       setSelectedPosto(enrichedData);
       setIsViewOpen(true);
     } catch (error: any) {
@@ -95,9 +97,9 @@ export default function PostoPage() {
     }
   };
 
-  const handleEditInit = async (id: string) => {
+  const handleEditInit = async (id: string, noposto?: string) => {
     try {
-      const res = await apiJson("/api/POSTO/DetailData", { method: "POST", body: JSON.stringify({ id }) });
+      const res = await apiJson("/api/POSTO/DetailData", { method: "POST", body: JSON.stringify({ guid: id, noposto: noposto }) });
       const item = res?.data ?? res;
       setSelectedPosto(item);
       setEditForm({ date: item.TglPOSTO || "", qty: item.Qty || 0, expiryDate: item.tgljatuhtempo || "" });
@@ -134,10 +136,10 @@ export default function PostoPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm(`Apakah Anda yakin ingin menghapus POSTO ${id}?`)) return;
+  const handleDelete = async (id: string, noposto?: string) => {
+    if (!window.confirm(`Apakah Anda yakin ingin menghapus POSTO ${noposto || id}?`)) return;
     try {
-      const res = await apiFetch("/api/POSTO/DeleteData", { method: "POST", body: JSON.stringify({ id }) });
+      const res = await apiFetch("/api/POSTO/DeleteData", { method: "POST", body: JSON.stringify({ guid: id, noposto: noposto }) });
       if (res.ok) queryClient.invalidateQueries({ queryKey: ["posto"] });
     } catch {
       addToast({ title: "Error", description: "Error saat menghapus data", variant: "destructive" });
@@ -225,23 +227,24 @@ export default function PostoPage() {
       className: "text-right",
       render: (p) => {
         const id = p.guid;
+        const noposto = p.noposto;
         return (
           <div className="flex items-center justify-end gap-2">
             <Button
               variant="outline"
               size="sm"
               className="bg-brand-50 text-brand-500 border-brand-200 hover:bg-brand-100"
-              onClick={() => handleView(id)}
+              onClick={() => handleView(id, noposto)}
             >
               <Eye className="h-4 w-4 mr-1" /> {isRekanan ? "Riwayat & Detail" : "View"}
             </Button>
 
             {!isRekanan && (
               <>
-                <Button variant="outline" size="sm" className="text-amber-500 border-amber-200 hover:bg-amber-50" onClick={() => handleEditInit(id)}>
+                <Button variant="outline" size="sm" className="text-amber-500 border-amber-200 hover:bg-amber-50" onClick={() => handleEditInit(id, noposto)}>
                   <FileEdit className="h-4 w-4 mr-1" /> Edit
                 </Button>
-                <Button variant="outline" size="sm" className="text-red-500 border-red-200 hover:bg-red-50" onClick={() => handleDelete(id)}>
+                <Button variant="outline" size="sm" className="text-red-500 border-red-200 hover:bg-red-50" onClick={() => handleDelete(id, noposto)}>
                   <Trash2 className="h-4 w-4 mr-1" /> Hapus
                 </Button>
               </>
@@ -363,7 +366,7 @@ export default function PostoPage() {
                     <h3 className="text-sm font-black uppercase tracking-widest text-slate-900 dark:text-white">Riwayat Tiket</h3>
                     <p className="text-[10px] text-slate-400 font-medium">Daftar muatan yang menggunakan POSTO ini</p>
                   </div>
-                  <Link 
+                  <Link
                     href={`/tiket?posto=${selectedPosto?.guid || selectedPosto?.Guid || selectedPosto?.noposto}`}
                     className="text-[10px] font-bold text-brand-500 hover:text-brand-600 uppercase tracking-wider flex items-center gap-1 border-b border-brand-500/30 pb-0.5 transition-colors"
                   >

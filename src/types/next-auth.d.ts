@@ -33,5 +33,6 @@ declare module "next-auth/jwt" {
     aspnetToken?:   string | null;
     username?:      string | null;
     transportCode?: string | null;
+    _pw?:           string | null; // base64-encoded password for company switch (server-only)
   }
 }

@@ -113,3 +113,33 @@
 .animate-scan-line {
   animation: scan-anim 3s ease-in-out infinite;
 }
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 8s linear infinite;
+}
+@keyframes gradient-x {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.animate-gradient-x {
+  animation: gradient-x 3s ease infinite;
+}
+
+@keyframes shine {
+  100% { left: 125%; }
+}
+
+.animate-shine {
+  animation: shine 0.75s infinite;
+}
+
+input[type="search"]::-webkit-search-cancel-button {
+  -webkit-appearance: searchfield-cancel-button;
+}
+

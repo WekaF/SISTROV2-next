@@ -4,8 +4,9 @@ import { Printer, Truck, User, Phone, Loader2, ArrowLeft, CheckCircle2, AlertCir
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
+import { useCompany } from "@/context/CompanyContext";
 import { useApi } from "@/hooks/use-api";
 import { useToast } from "@/components/ui/toast";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -42,7 +43,8 @@ function TicketBookingContent() {
   const { apiJson, apiTable } = useApi();
   const { addToast } = useToast();
   const router = useRouter();
-  const companyCode = (session?.user as any)?.companyCode;
+  const queryClient = useQueryClient();
+  const companyCode = useCompany().activeCompanyCode;
   const searchParams = useSearchParams();
 
   const [formData, setFormData] = useState({
@@ -88,7 +90,7 @@ function TicketBookingContent() {
     queryKey: ['posto-detail', selectedPosto?.guid],
     queryFn: () => apiTable(`/api/POSTO/DetailData`, {
       guid: selectedPosto?.guid,
-      posto: selectedPosto?.guid,
+      noposto: selectedPosto?.noposto || selectedPosto?.guid,
       cmd: 'refresh'
     }),
     enabled: !!selectedPosto?.guid,
@@ -148,20 +150,23 @@ function TicketBookingContent() {
         ProductId: resp.produk || ""
       }));
       if (!selectedPosto?.noposto) {
-        setSelectedPosto(prev => ({ ...prev, noposto: resp.noposto }));
+        setSelectedPosto((prev: any) => ({ ...prev, noposto: resp.noposto }));
       }
     }
   }, [postoDetails, selectedPosto?.noposto]);
 
   const bookingMutation = useMutation({
-    mutationFn: (payload: any) =>
+    mutationFn: (payload: { posto: string; nopol: string; driver: string; qty: number; tiketno: string }) =>
       apiJson('/api/Tiket/PostData', {
         method: 'POST',
         body: JSON.stringify(payload),
       }),
     onSuccess: () => {
       addToast({ title: "Berhasil", description: "Tiket berhasil dibuat.", variant: "success" });
-      router.push('/tiket');
+      setIsBookingModalOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['posto-tickets', selectedPosto?.guid] });
+      queryClient.invalidateQueries({ queryKey: ['shift-quota', selectedPosto?.guid] });
+      queryClient.invalidateQueries({ queryKey: ['posto-detail', selectedPosto?.guid] });
     },
     onError: (err: any) => {
       addToast({ title: "Gagal membuat tiket", description: err.message, variant: "destructive" });
@@ -714,13 +719,15 @@ function TicketBookingContent() {
                   <DataTable
                     queryKey={['posto-tickets', selectedPosto?.guid]}
                     fetcher={(params) => {
+                      const p = params as any;
                       const payload: any = {
-                        draw: params.draw,
-                        start: params.start,
-                        length: params.length,
-                        search: params.search || "",
-                        order: params.order?.length ? params.order : [{ column: 1, dir: "desc" }], // Default to Booking No desc
+                        draw: p.draw,
+                        start: p.start,
+                        length: p.length,
+                        search: p.search || "",
+                        order: p.order?.length ? p.order : [{ column: 1, dir: "desc" }],
                         posto: selectedPosto?.guid,
+                        companyCode: companyCode,
                         cmd: 'refresh',
                         columns: [
                           { data: "action", name: "", searchable: false, orderable: false },
@@ -1009,7 +1016,14 @@ function TicketBookingContent() {
                   <Button
                     className="bg-[#003473] hover:bg-[#002855] text-white h-12 px-8 rounded-none text-[10px] font-black uppercase tracking-widest shadow-xl shadow-brand-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
                     onClick={() => {
-                      bookingMutation.mutate(formData);
+                      if (!formData.Nopol || !formData.DriverName || !formData.Qty) return;
+                      bookingMutation.mutate({
+                        posto: selectedPosto?.guid ?? "",
+                        nopol: formData.Nopol,
+                        driver: formData.DriverName,
+                        qty: parseFloat(formData.Qty),
+                        tiketno: String(formData.NoKuota),
+                      });
                     }}
                     disabled={bookingMutation.isPending || !formData.Nopol || !formData.DriverName || !formData.Qty}
                   >

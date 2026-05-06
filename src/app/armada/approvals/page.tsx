@@ -18,6 +18,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useApi } from "@/hooks/use-api";
 import { useToast } from "@/components/ui/toast";
 import { useSession } from "next-auth/react";
+import { useCompany } from "@/context/CompanyContext";
 
 interface ReviewItem {
   ID?: number;
@@ -39,7 +40,8 @@ export default function ArmadaApprovalsPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
 
-  const companyCode = (session?.user as any)?.companyCode as string | undefined;
+  const { activeCompanyCode } = useCompany();
+  const companyCode = activeCompanyCode;
 
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ["armada-review", companyCode],

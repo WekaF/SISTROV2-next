@@ -41,6 +41,7 @@ interface DataTableProps<T> {
   refetchInterval?: number;
   borderless?: boolean;
   striped?: boolean;
+  compact?: boolean;
 }
 
 export function DataTable<T>({
@@ -57,6 +58,7 @@ export function DataTable<T>({
   refetchInterval,
   borderless = false,
   striped = false,
+  compact = false,
 }: DataTableProps<T>) {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
@@ -132,7 +134,11 @@ export function DataTable<T>({
               {columns.map((col) => (
                 <th
                   key={col.key}
-                  className={`px-4 py-4 text-xs font-black uppercase text-gray-500 dark:text-gray-400 tracking-[0.2em] whitespace-nowrap ${col.headerClassName ?? ""}`}
+                  className={cn(
+                    "px-4 text-xs font-black uppercase text-gray-500 dark:text-gray-400 tracking-[0.2em] whitespace-nowrap",
+                    compact ? "py-1" : "py-4",
+                    col.headerClassName
+                  )}
                 >
                   {col.header}
                 </th>
@@ -170,11 +176,12 @@ export function DataTable<T>({
                     <td
                       key={col.key}
                       className={cn(
-                        "px-4 py-4 text-base",
+                        "px-4 text-[13px] transition-all duration-200",
+                        compact ? "py-0.5" : "py-4",
                         col.className
                       )}
                     >
-                      <div className="group-hover:translate-x-1 transition-transform duration-200">
+                      <div className={cn(!compact && "group-hover:translate-x-1 transition-transform duration-200")}>
                         {col.render
                           ? col.render(row, i)
                           : (row as any)[col.key] ?? "-"}

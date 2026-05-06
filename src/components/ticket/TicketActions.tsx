@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useRouter } from "next/navigation";
 import { useApi } from "@/hooks/use-api";
 import { useQuery } from "@tanstack/react-query";
 
@@ -27,6 +28,7 @@ export function TicketActions({
   showPrint = true,
   className = "",
 }: TicketActionsProps) {
+  const router = useRouter();
   const [isViewOpen, setIsViewOpen] = useState(false);
 
   const handlePrint = () => {
@@ -42,8 +44,8 @@ export function TicketActions({
           size="sm"
           variant="outline"
           className="h-8 w-8 p-0 rounded-none hover:bg-brand-50 hover:text-brand-600 transition-colors"
-          onClick={() => setIsViewOpen(true)}
-          title="Lihat Detail"
+          onClick={() => router.push(`/track/tiket?id=${bookingNo}`)}
+          title="Track Tiket"
         >
           <Eye className="h-4 w-4" />
         </Button>

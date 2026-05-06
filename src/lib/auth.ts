@@ -139,6 +139,9 @@ export const authOptions: NextAuthOptions = {
           aspnetToken:   data.access_token,
           username:      data.username,
           transportCode: data.transportcode ?? null,
+          // Store encoded password for company-switch re-auth
+          // Safe: JWT is encrypted by NEXTAUTH_SECRET server-side
+          _pw: Buffer.from(credentials.password).toString("base64"),
         };
       },
     }),
@@ -147,7 +150,8 @@ export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
 
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session: updateData }) {
+      // Initial sign-in
       if (user) {
         token.role          = (user as any).role;
         token.roles         = (user as any).roles;
@@ -156,6 +160,12 @@ export const authOptions: NextAuthOptions = {
         token.aspnetToken   = (user as any).aspnetToken;
         token.username      = (user as any).username;
         token.transportCode = (user as any).transportCode;
+        token._pw           = (user as any)._pw; // encoded password for switch
+      }
+      // Called from useSession().update() after company switch
+      if (trigger === "update" && updateData) {
+        if (updateData.aspnetToken) token.aspnetToken = updateData.aspnetToken;
+        if (updateData.companyCode) token.companyCode = updateData.companyCode;
       }
       return token;
     },
