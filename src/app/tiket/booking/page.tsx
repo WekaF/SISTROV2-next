@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, Suspense } from "react";
-import { Printer, Truck, User, Phone, Loader2, ArrowLeft, CheckCircle2, AlertCircle, Calendar, Check, Tag, Search } from "lucide-react";
+import { Printer, Truck, User, Phone, Loader2, ArrowLeft, CheckCircle2, AlertCircle, Calendar, Check, Tag, Search, Ticket } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -251,27 +251,27 @@ function TicketBookingContent() {
                   header: "Action",
                   headerClassName: "w-[150px] text-center",
                   render: (row: any) => (
-                    <div className="flex justify-center gap-1">
+                    <div className="flex justify-center gap-2">
                       <Button
                         size="sm"
-                        variant={formData.NoPosto === row.noposto ? "default" : "outline"}
-                        className="h-8 text-[10px] font-bold px-3 rounded-lg shadow-sm"
+                        className="h-8 text-[10px] font-black uppercase tracking-widest px-4 rounded-none bg-[#003473] hover:bg-[#002855] text-white shadow-lg shadow-blue-900/20 transition-all hover:scale-105 active:scale-95 flex items-center gap-2 border-none"
                         onClick={() => {
                           const url = `/tiket/booking?guid=${row.guid || row.id}`;
-                          window.open(url, '_blank');
+                          window.location.href = url;
                         }}
                       >
-                        Pesan Tiket
+                        <Ticket className="h-3 w-3" />
+                        Booking Tiket
                       </Button>
                       <Button
                         size="sm"
                         variant="outline"
-                        className="h-8 text-[10px] font-bold px-3 border-gray-200 text-gray-400 hover:bg-gray-50 rounded-lg shadow-sm"
+                        className="h-8 text-[10px] font-black uppercase tracking-widest px-3 border-gray-200 text-gray-400 hover:bg-gray-50 hover:text-gray-600 rounded-none shadow-sm transition-all"
                         onClick={() => {
                           window.open(`/posto/print/${row.guid || row.id}`, '_blank');
                         }}
                       >
-                        <Printer className="h-3 w-3 mr-1" /> Print
+                        <Printer className="h-3 w-3" />
                       </Button>
                     </div>
                   )
@@ -754,7 +754,13 @@ function TicketBookingContent() {
                         render: (row: any) => (
                           <div className="flex justify-center gap-3 py-2">
                             {/* Native Next.js Actions */}
-                            <TicketActions bookingNo={row.bookingno} />
+                            <TicketActions 
+                              bookingNo={row.bookingno} 
+                              status={row.position || "00"} 
+                              currentNopol={row.nopol}
+                              currentDriver={row.driver}
+                              postoGuid={row.posto || selectedPosto?.guid}
+                            />
 
                             {/* Legacy Actions (if any) */}
                             {row.Action && row.Action !== "-" && (

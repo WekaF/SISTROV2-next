@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import {
   RefreshCw,
@@ -16,11 +16,13 @@ import {
   Weight,
   Package,
   AlertCircle,
-  Truck
+  Truck,
+  Activity
 } from "lucide-react";
 import { useApi } from "@/hooks/use-api";
 import { useCompany } from "@/context/CompanyContext";
 import { useToast } from "@/components/ui/toast";
+import { normalizeRole, hasGudangAccess, isReadOnlyRole } from "@/lib/role-utils";
 import { DataTable, DataTableColumn } from "@/components/ui/DataTable";
 import Badge from "@/components/ui/badge/Badge";
 import { Button } from "@/components/ui/button";
@@ -73,10 +75,14 @@ export default function AntrianPage() {
   const queryClient = useQueryClient();
 
   // Role detection
-  const role = (session?.user as any)?.role;
+  const userRole = normalizeRole((session?.user as any)?.roleName || (session?.user as any)?.role);
   const roles: string[] = (session?.user as any)?.roles ?? [];
-  const isReadOnly = role === 'security' || role === 'timbangan';
-  const isGudangFull = role === 'gudang' || roles.includes('staff');
+  const isSuperAdmin = userRole === "superadmin" || userRole === "ti";
+  const isStaffArea = userRole === "staffarea";
+  const isGudang = userRole === "gudang";
+  
+  const isGudangFull = isSuperAdmin || isStaffArea || isGudang || hasGudangAccess(userRole, roles);
+  const isReadOnly = isReadOnlyRole(userRole, roles) && !isSuperAdmin && !isStaffArea;
 
   // Filters state
   const [filterSD, setFilterSD] = useState("");
@@ -97,24 +103,32 @@ export default function AntrianPage() {
   const [alasanBypass, setAlasanBypass] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [gudangList, setGudangList] = useState<any[]>([]);
-  const [isLoadingGudang, setIsLoadingGudang] = useState(false);
 
   // Fetch options on mount
   useEffect(() => {
     const fetchOptions = async () => {
       try {
-        const [prodData, gudData] = await Promise.all([
-          apiJson("/api/Produk/Data"),
-          apiJson("/api/Gudang/ListGudang")
-        ]);
+        const prodData = await apiJson("/api/Produk/Data");
         setProdukOptions(prodData || []);
-        setGudangOptions(gudData || []);
       } catch (err) {
-        console.error("Failed to fetch options", err);
+        console.error("Failed to fetch products", err);
       }
     };
     fetchOptions();
   }, [apiJson]);
+
+  // Fetch Gudang Summary/Options
+  const { data: gudangSummaryRaw, isLoading: isLoadingGudang } = useQuery({
+    queryKey: ["gudang-summary", activeCompanyCode],
+    queryFn: () => apiJson("/api/Gudang/ListGudang"),
+    enabled: !!activeCompanyCode,
+  });
+
+  useEffect(() => {
+    if (gudangSummaryRaw) {
+      setGudangOptions(gudangSummaryRaw || []);
+    }
+  }, [gudangSummaryRaw]);
 
   const fetchAntrian = useCallback(async (params: any) => {
     return apiTable("/api/Antrian/DataTable", {
@@ -133,7 +147,6 @@ export default function AntrianPage() {
   const handleOpenPindahGudang = async (antrian: AntrianData) => {
     setSelectedAntrian(antrian);
     setSelectedGudang("");
-    setIsLoadingGudang(true);
     setIsPindahOpen(true);
     try {
       const res = await apiJson("/api/Gudang/ListGudangPilihan", {
@@ -143,8 +156,6 @@ export default function AntrianPage() {
       setGudangList(res.data || []);
     } catch (err) {
       addToast({ title: "Error", description: "Gagal mengambil daftar gudang", variant: "destructive" });
-    } finally {
-      setIsLoadingGudang(false);
     }
   };
 
@@ -311,14 +322,89 @@ export default function AntrianPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">Antrian Armada</h1>
-            <Badge color={isGudangFull ? "success" : "info"} variant="solid" size="sm">
-              {isGudangFull ? "Full Access" : "Read Only"}
+            <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white uppercase">Management Antrian</h1>
+            <Badge color={isGudangFull ? "success" : "info"} variant="solid" size="sm" className="font-black">
+              {isGudangFull ? "ADMINISTRATIVE ACCESS" : "READ ONLY"}
             </Badge>
           </div>
-          <p className="text-sm text-slate-500 font-medium">Monitoring pergerakan armada dan pengelolaan antrian gudang muat.</p>
+          <p className="text-sm text-slate-500 font-medium tracking-tight">Monitoring pergerakan armada dan pengelolaan antrian gudang muat secara real-time.</p>
+        </div>
+        <div className="flex items-center gap-2">
+           <Button 
+            variant="outline" 
+            size="sm" 
+            className="h-10 bg-white border-2 font-bold uppercase text-[10px] tracking-widest"
+            onClick={() => queryClient.invalidateQueries({ queryKey: ["antrian"] })}
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh Data
+          </Button>
         </div>
       </div>
+
+      {/* Summary Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: "Total Antrian", value: "...", icon: Truck, color: "blue" },
+          { label: "Security In", value: "...", icon: ShieldCheck, color: "orange" },
+          { label: "Sedang Muat", value: "...", icon: Package, color: "indigo" },
+          { label: "Selesai Muat", value: "...", icon: CheckCircle2, color: "emerald" },
+        ].map((stat, i) => (
+          <Card key={i} className="border-none ring-0 shadow-sm overflow-visible bg-white dark:bg-slate-900">
+            <CardContent className="p-5 flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] mb-1">{stat.label}</p>
+                <p className="text-2xl font-black text-slate-900 dark:text-white">--</p>
+              </div>
+              <div className={cn("p-3 rounded-2xl", 
+                stat.color === "blue" ? "bg-blue-50 text-blue-600" :
+                stat.color === "orange" ? "bg-orange-50 text-orange-600" :
+                stat.color === "indigo" ? "bg-indigo-50 text-indigo-600" :
+                "bg-emerald-50 text-emerald-600"
+              )}>
+                <stat.icon className="h-6 w-6" />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Warehouse Snapshots */}
+      {gudangOptions.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] flex items-center gap-2">
+              <Activity className="h-3 w-3" />
+              Live Warehouse Snapshot
+            </h3>
+            <div className="h-px flex-1 bg-slate-100 dark:bg-slate-800" />
+          </div>
+          <div className="flex gap-4 overflow-x-auto px-1 py-4 custom-scrollbar -mx-1">
+            {gudangOptions.map((g: any) => (
+              <Card key={g.idgudang} className="min-w-[200px] border-none ring-0 shadow-sm flex-shrink-0 bg-white dark:bg-slate-900 border-l-4 border-l-brand-500 overflow-visible">
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between mb-2">
+                    <span className="text-xs font-black text-slate-700 dark:text-slate-200 uppercase truncate max-w-[120px]">{g.namagudang}</span>
+                    <Warehouse className="h-4 w-4 text-slate-300" />
+                  </div>
+                  <div className="flex items-end justify-between">
+                    <div>
+                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Antrian</p>
+                      <p className="text-xl font-black text-brand-600">{g.antriangudang ?? 0}</p>
+                    </div>
+                    <div className="text-right">
+                       <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Status</p>
+                       <Badge color={(g.antriangudang ?? 0) > 10 ? "warning" : "success"} size="sm" variant="light" className="px-1.5 py-0">
+                        {(g.antriangudang ?? 0) > 10 ? "Padat" : "Lancar"}
+                       </Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Filters */}
       <Card className="border-none shadow-sm bg-white dark:bg-slate-900 overflow-hidden">

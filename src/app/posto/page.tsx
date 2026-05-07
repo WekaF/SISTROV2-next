@@ -39,7 +39,7 @@ export default function PostoPage() {
       start: params.start,
       length: params.length,
       search: params.search || "",
-      order: params.order?.length ? params.order : [{ column: 0, dir: "desc" }],
+      order: [{ column: 0, dir: "desc" }],
       SD: dateFilter || "",
       columns: [
         { data: "noposto", name: "noposto", searchable: true, orderable: true },
@@ -230,21 +230,31 @@ export default function PostoPage() {
         const noposto = p.noposto;
         return (
           <div className="flex items-center justify-end gap-2">
+            {isRekanan && (
+              <Button
+                size="sm"
+                className="bg-[#003473] hover:bg-[#002855] text-white rounded-none shadow-lg shadow-blue-900/20 px-4 h-8 font-black uppercase text-[10px] tracking-widest transition-all hover:scale-105 active:scale-95 border-none"
+                onClick={() => window.location.href = `/tiket/booking?guid=${id}`}
+              >
+                <Ticket className="h-3.5 w-3.5 mr-1.5" /> Booking Tiket
+              </Button>
+            )}
+
             <Button
               variant="outline"
               size="sm"
-              className="bg-brand-50 text-brand-500 border-brand-200 hover:bg-brand-100"
+              className="bg-brand-50 text-brand-500 border-brand-200 hover:bg-brand-100 rounded-none h-8 font-bold text-[10px] uppercase tracking-wider"
               onClick={() => handleView(id, noposto)}
             >
-              <Eye className="h-4 w-4 mr-1" /> {isRekanan ? "Riwayat & Detail" : "View"}
+              <Eye className="h-4 w-4 mr-1" /> {isRekanan ? "Riwayat" : "View"}
             </Button>
 
             {!isRekanan && (
               <>
-                <Button variant="outline" size="sm" className="text-amber-500 border-amber-200 hover:bg-amber-50" onClick={() => handleEditInit(id, noposto)}>
+                <Button variant="outline" size="sm" className="text-amber-500 border-amber-200 hover:bg-amber-50 rounded-none h-8" onClick={() => handleEditInit(id, noposto)}>
                   <FileEdit className="h-4 w-4 mr-1" /> Edit
                 </Button>
-                <Button variant="outline" size="sm" className="text-red-500 border-red-200 hover:bg-red-50" onClick={() => handleDelete(id, noposto)}>
+                <Button variant="outline" size="sm" className="text-red-500 border-red-200 hover:bg-red-50 rounded-none h-8" onClick={() => handleDelete(id, noposto)}>
                   <Trash2 className="h-4 w-4 mr-1" /> Hapus
                 </Button>
               </>
@@ -384,7 +394,7 @@ export default function PostoPage() {
                         start: params.start,
                         length: params.length,
                         search: params.search || "",
-                        order: params.order?.length ? params.order : [{ column: 1, dir: "desc" }],
+                        order: [{ column: 1, dir: "desc" }],
                         posto: guidValue,
                         cmd: 'refresh',
                         columns: [
@@ -420,7 +430,7 @@ export default function PostoPage() {
                       {
                         key: "nopol",
                         header: "Nopol",
-                        render: (row: any) => <Badge color="default" size="sm" className="font-mono">{row.nopol}</Badge>
+                        render: (row: any) => <Badge color="dark" size="sm" className="font-mono">{row.nopol}</Badge>
                       },
                       {
                         key: "driver",

@@ -32,6 +32,8 @@ import {
   MapPin,
   TrendingUp,
   ArrowLeftRight,
+  FileText,
+  Zap,
 } from "lucide-react"
 
 import {
@@ -110,7 +112,6 @@ const ASPNET_ROLE_MAP: Record<string, Role> = {
   admin:                 "admin",
   superadmin:            "superadmin",
   admingudang:           "gudang",
-  candalgudang:          "gudang",
   admingudangcandalgudang: "gudang",
 }
 
@@ -128,9 +129,10 @@ const MENU_POSTO_FULL = {
   icon: ClipboardList,
   items: [
     { title: "Data POSTO", url: "/posto", icon: ClipboardList },
-    { title: "Upload POSTO / SO", url: "/posto/upload", icon: Upload },
-    { title: "Cutoff POSTO", url: "/posto/cut-off", icon: Scissors },
+    { title: "Data SO", url: "/posto/so", icon: FileText },
+    { title: "Cut Off POSTO", url: "/posto/cut-off", icon: Scissors },
     { title: "Prioritas Tujuan Muat", url: "/posto/priority", icon: SortAsc },
+    { title: "Upload POSTO / SO", url: "/posto/upload", icon: Upload },
     { title: "Pengajuan Jatuh Tempo", url: "/pengajuan/jatuh-tempo", icon: AlertCircle },
   ],
 }

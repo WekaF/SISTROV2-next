@@ -333,7 +333,8 @@ const AppSidebar: React.FC = () => {
         name: "Armada",
         subItems: [
           { name: "Datatable Armada", path: "/armada" },
-          { name: "Pengajuan Armada", path: "/armada/approvals" },
+          { name: "Pengajuan Armada", path: "/armada/pengajuan" },
+          // { name: "Persetujuan Armada", path: "/armada/approvals" },
           { name: "Sumbu Kendaraan", path: "/armada/axle-setup" },
         ],
       },
@@ -471,7 +472,10 @@ const AppSidebar: React.FC = () => {
         icon: <Truck className="h-5 w-5" />,
         name: "Armada",
         subItems: [
-          { name: "List Armada", path: "/armada" },
+          { name: "Datatable Armada", path: "/armada" },
+          { name: "Pengajuan Armada", path: "/armada/pengajuan" },
+          // { name: "Persetujuan Armada", path: "/armada/approvals" },
+          { name: "Sumbu Kendaraan", path: "/armada/axle-setup" },
           { name: "Mapping Zero Odol", path: "/armada/mapping-zero-odol" },
         ],
       },
@@ -501,10 +505,11 @@ const AppSidebar: React.FC = () => {
         icon: <Package className="h-5 w-5" />,
         name: "POSTO",
         subItems: [
-          { name: "Upload Posto", path: "/posto/upload" },
-          { name: "Data Posto", path: "/posto" },
-          { name: "Cut Off Posto", path: "/posto/cut-off" },
-          { name: "Prioritas Tujuan", path: "/posto/priority" },
+          { name: "Data POSTO", path: "/posto" },
+          { name: "Data SO", path: "/so" },
+          { name: "Cut Off POSTO", path: "/posto/cut-off" },
+          { name: "Prioritas Tujuan Muat", path: "/posto/priority" },
+          { name: "Upload POSTO / SO", path: "/posto/upload" },
         ],
       },
       {
@@ -539,7 +544,8 @@ const AppSidebar: React.FC = () => {
         name: "Armada",
         subItems: [
           { name: "Datatable Armada", path: "/armada" },
-          { name: "Pengajuan Armada", path: "/armada/approvals" },
+          { name: "Pengajuan Armada", path: "/armada/pengajuan" },
+          // { name: "Persetujuan Armada", path: "/armada/approvals" },
           { name: "Sumbu Kendaraan", path: "/armada/axle-setup" },
         ],
       },

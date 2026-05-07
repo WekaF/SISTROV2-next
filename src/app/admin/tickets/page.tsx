@@ -1,165 +1,207 @@
 "use client";
-import React from "react";
+import React, { Suspense } from "react";
 import { 
   Search, 
   Filter, 
   Download, 
-  Eye, 
-  ArrowUpDown,
-  MoreVertical,
+  Calendar,
+  Clock,
+  LayoutGrid,
+  ListFilter,
   Loader2
 } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import Badge from "@/components/ui/badge/Badge";
-import { useQuery } from "@tanstack/react-query";
 import { useApi } from "@/hooks/use-api";
 import { useCompany } from "@/context/CompanyContext";
+import { DataTable, type DataTableColumn } from "@/components/ui/DataTable";
+import { TicketActions } from "@/components/ticket/TicketActions";
+import Badge from "@/components/ui/badge/Badge";
 
-export default function AdminTicketsPage() {
-  const router = useRouter();
+function AdminTicketsContent() {
   const { apiTable } = useApi();
   const { activeCompanyCode } = useCompany();
   const [searchTerm, setSearchTerm] = React.useState("");
 
-  const { data: ticketsResult, isLoading } = useQuery({
-    queryKey: ['admin-tickets', searchTerm, activeCompanyCode],
-    queryFn: async () => {
-      const body = {
-        draw: 1,
-        start: 0,
-        length: 25,
-        search: { value: searchTerm },
-        companyCode: activeCompanyCode
-      };
-      return apiTable('/api/Tiket/DataTableFilterLegacy', body);
-    }
-  });
-
-  const tickets = ticketsResult?.data || [];
-
-  const getStatusColor = (status: string) => {
-    if (!status) return "default";
-    const s = status.toLowerCase();
-    if (s.includes("complete") || s.includes("selesai")) return "success";
-    if (s.includes("load") || s.includes("muat")) return "warning";
-    if (s.includes("queue") || s.includes("antri")) return "info";
-    if (s.includes("check")) return "success";
-    return "default";
-  };
+  const columns: DataTableColumn[] = [
+    {
+      key: "bookingno",
+      header: "Booking No",
+      searchable: true,
+      className: "font-black text-brand-600 font-mono text-[11px]",
+    },
+    {
+      key: "posto",
+      header: "POSTO",
+      searchable: true,
+      className: "font-bold text-gray-900 dark:text-white text-[11px]",
+    },
+    {
+      key: "tanggalString",
+      header: "Tanggal",
+      className: "text-[11px] font-bold",
+    },
+    {
+      key: "shift",
+      header: "Shift",
+      render: (row: any) => (
+        <div className="flex items-center gap-1.5">
+          <Clock className="h-3 w-3 text-gray-400" />
+          <span className="font-bold">{row.shift}</span>
+        </div>
+      ),
+    },
+    {
+      key: "nopol",
+      header: "No. Polisi",
+      searchable: true,
+      className: "font-black text-[11px] uppercase tracking-wider",
+    },
+    {
+      key: "driver",
+      header: "Driver",
+      searchable: true,
+      className: "text-[11px] font-bold text-gray-600 dark:text-gray-400 truncate max-w-[120px]",
+    },
+    {
+      key: "produkString",
+      header: "Produk",
+      className: "text-[11px] font-bold text-gray-900 dark:text-white",
+    },
+    {
+      key: "transportString",
+      header: "Transportir",
+      className: "text-[10px] font-bold text-gray-500 uppercase tracking-tight truncate max-w-[150px]",
+    },
+    {
+      key: "qty",
+      header: "Qty",
+      render: (row: any) => (
+        <div className="font-black text-[11px]">
+          {row.qty?.toLocaleString()} <span className="text-[8px] text-gray-400 uppercase">TON</span>
+        </div>
+      ),
+    },
+    {
+      key: "positionString",
+      header: "Status",
+      render: (row: any) => {
+        const pos = row.position || "00";
+        let variant: any = "default";
+        if (pos === "00") variant = "info";
+        if (pos === "10" || pos === "20") variant = "warning";
+        if (pos === "30" || pos === "40") variant = "success";
+        
+        return (
+          <Badge color={variant} size="sm" className="rounded-none px-2 py-0.5 text-[9px] font-black uppercase tracking-widest">
+            {row.positionString || "PENDING"}
+          </Badge>
+        );
+      },
+    },
+    {
+      key: "actions",
+      header: "Aksi",
+      headerClassName: "text-right",
+      className: "text-right",
+      render: (row: any) => (
+        <TicketActions 
+          bookingNo={row.bookingno} 
+          status={row.position || row.status} 
+          currentNopol={row.nopol}
+          currentDriver={row.driver}
+          className="justify-end"
+        />
+      ),
+    },
+  ];
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Global Ticket Management</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Monitoring seluruh tiket logistik dari semua plant dan company.</p>
+      <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between px-2">
+        <div className="space-y-1">
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-1.5 bg-[#003473] rounded-none" />
+            <h1 className="text-3xl font-black tracking-tighter text-gray-900 dark:text-white uppercase italic">
+              Ticket <span className="text-[#003473]">Management</span>
+            </h1>
+          </div>
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] ml-4">
+            Monitoring & Kontrol Operasional Logistik Global
+          </p>
         </div>
-        <div className="flex items-center gap-2">
-           <Button variant="outline" size="sm"><Download className="h-4 w-4 mr-2" /> Export CSV</Button>
-           <Button size="sm">Create Manual Ticket</Button>
-        </div>
+
       </div>
 
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2 w-full md:w-auto">
-              <div className="relative flex-grow md:w-80">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input 
-                  className="pl-10" 
-                  placeholder="Search by Ticket ID, Truck, or Plant..." 
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              <Button variant="outline" size="icon">
-                <Filter className="h-4 w-4" />
-              </Button>
+      <Card className="rounded-none border-none shadow-none ring-0 bg-white dark:bg-gray-900 overflow-hidden">
+        <CardHeader className="border-b border-gray-100 dark:border-gray-800 p-6">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="relative w-full md:w-[400px]">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input 
+                className="h-12 pl-12 rounded-none border-2 border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-white/[0.02] focus:border-[#003473] font-bold text-sm transition-all" 
+                placeholder="Cari Booking No, Plat Nomor, atau Driver..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
             
-            <div className="flex items-center gap-2">
-               <span className="text-sm text-gray-500">Show:</span>
-               <select className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded px-2 py-1 text-sm outline-none">
-                 <option>10 lines</option>
-                 <option>25 lines</option>
-                 <option>50 lines</option>
-               </select>
+            <div className="flex items-center gap-3 w-full md:w-auto">
+              {/* Optional: Add active filters count or other summary info here */}
             </div>
           </div>
         </CardHeader>
-        <CardContent>
-           <div className="border border-gray-100 dark:border-gray-800 rounded-xl overflow-hidden overflow-x-auto min-h-[400px]">
-             <table className="w-full text-left min-w-[800px]">
-               <thead className="bg-gray-50 dark:bg-white/[0.02]">
-                 <tr className="border-b border-gray-100 dark:border-gray-800">
-                   <th className="px-6 py-4 text-xs font-semibold uppercase text-gray-500">
-                      <div className="flex items-center gap-1 cursor-pointer hover:text-brand-500">
-                        Ticket ID <ArrowUpDown className="h-3 w-3" />
-                      </div>
-                   </th>
-                   <th className="px-6 py-4 text-xs font-semibold uppercase text-gray-500">Plant / Company</th>
-                   <th className="px-6 py-4 text-xs font-semibold uppercase text-gray-500">No. Truck</th>
-                   <th className="px-6 py-4 text-xs font-semibold uppercase text-gray-500">Produk</th>
-                   <th className="px-6 py-4 text-xs font-semibold uppercase text-gray-500">Status</th>
-                   <th className="px-6 py-4 text-xs font-semibold uppercase text-gray-500">Timestamp</th>
-                   <th className="px-6 py-4 text-xs font-semibold uppercase text-gray-500 text-right">Action</th>
-                 </tr>
-               </thead>
-               <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                 {isLoading ? (
-                   <tr><td colSpan={7} className="py-20 text-center"><Loader2 className="h-8 w-8 animate-spin text-brand-500 mx-auto" /></td></tr>
-                 ) : tickets.length === 0 ? (
-                   <tr><td colSpan={7} className="py-20 text-center text-gray-500 italic">Data tidak ditemukan.</td></tr>
-                 ) : tickets.map((ticket: any) => (
-                   <tr key={ticket.NoBooking || ticket.bookingno} className="hover:bg-gray-50/50 dark:hover:bg-white/[0.01] transition-colors">
-                     <td className="px-6 py-4 font-bold text-gray-900 dark:text-white font-mono">{ticket.NoBooking || ticket.bookingno}</td>
-                     <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{ticket.PlantName || ticket.NamaPlant || ticket.companyCode || "-"}</td>
-                     <td className="px-6 py-4 text-sm font-medium">{ticket.Nopol || ticket.nopol}</td>
-                     <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{ticket.Produk || ticket.ProductName}</td>
-                     <td className="px-6 py-4">
-                        <Badge color={getStatusColor(ticket.Status || ticket.status) as any} size="sm">{ticket.Status || ticket.status}</Badge>
-                     </td>
-                     <td className="px-6 py-4 text-sm text-gray-500">
-                       {ticket.TglBooking || ticket.createdat ? new Date(ticket.TglBooking || ticket.createdat).toLocaleString('id-ID') : "-"}
-                     </td>
-                     <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            title="Track Tiket" 
-                            className="h-8 w-8 hover:text-brand-500"
-                            onClick={() => router.push(`/track/tiket?id=${ticket.NoBooking || ticket.bookingno}`)}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </div>
-                     </td>
-                   </tr>
-                 ))}
-               </tbody>
-             </table>
-           </div>
-           
-           <div className="flex items-center justify-between mt-6">
-              <p className="text-sm text-gray-500">
-                Menampilkan {tickets.length} data.
-              </p>
-              <div className="flex items-center gap-1">
-                 <Button variant="outline" size="sm" disabled>Previous</Button>
-                 <Button variant="outline" size="sm" className="bg-brand-50 text-brand-500 border-brand-500">1</Button>
-                 <Button variant="outline" size="sm">Next</Button>
-              </div>
-           </div>
+        <CardContent className="p-0">
+          <DataTable
+            queryKey={['admin-tickets-global', searchTerm, activeCompanyCode]}
+            fetcher={(params) => {
+              const p = params as any;
+              const payload = {
+                draw: p.draw,
+                start: p.start,
+                length: p.length,
+                search: { value: searchTerm },
+                companyCode: activeCompanyCode,
+                cmd: 'refresh',
+                order: p.order?.length ? p.order : [{ column: 0, dir: "desc" }],
+                columns: [
+                  { data: "bookingno", name: "bookingno", searchable: true, orderable: true, search: { value: p.columnFilters?.bookingno || "" } },
+                  { data: "posto", name: "posto", searchable: true, orderable: true, search: { value: p.columnFilters?.posto || "" } },
+                  { data: "tanggalString", name: "tanggal", searchable: true, orderable: true },
+                  { data: "shift", name: "idshift", searchable: true, orderable: true },
+                  { data: "nopol", name: "nopol", searchable: true, orderable: true, search: { value: p.columnFilters?.nopol || "" } },
+                  { data: "driver", name: "driver", searchable: true, orderable: true, search: { value: p.columnFilters?.driver || "" } },
+                  { data: "produkString", name: "idproduk", searchable: true, orderable: true },
+                  { data: "transportString", name: "idtransport", searchable: true, orderable: true },
+                  { data: "qty", name: "qty", searchable: true, orderable: true },
+                  { data: "positionString", name: "positionString", searchable: true, orderable: true },
+                  { data: "position", name: "position", searchable: true, orderable: true }
+                ]
+              };
+              return apiTable('/api/Tiket/DataTableFilterLegacy', payload);
+            }}
+            columns={columns}
+            rowKey={(row: any) => row.bookingno}
+            borderless={true}
+            striped={true}
+            refetchInterval={30000}
+            hideGlobalSearch={true}
+          />
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function AdminTicketsPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-[#003473]" />
+      </div>
+    }>
+      <AdminTicketsContent />
+    </Suspense>
   );
 }

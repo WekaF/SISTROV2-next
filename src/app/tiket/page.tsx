@@ -27,6 +27,7 @@ interface TicketData {
   tujuan?: string;
   positionString?: string;
   statuspemuatan?: string;
+  position: string;
   status: string;
   Status?: string;
   createdat: string;
@@ -84,7 +85,13 @@ function RekananTicketContent() {
       key: "action",
       header: "Aksi",
       render: (t) => (
-        <TicketActions bookingNo={t.bookingno} />
+        <TicketActions 
+          bookingNo={t.bookingno} 
+          status={t.position} 
+          currentNopol={t.Nopol || t.nopol}
+          currentDriver={t.DriverName || t.driver}
+          postoGuid={t.posto}
+        />
       ),
     },
     {
@@ -232,7 +239,7 @@ function RekananTicketContent() {
                 <Button
                   size="sm"
                   onClick={() => (window.location.href = "/tiket/booking")}
-                  className="bg-brand-500 shadow-lg shadow-brand-500/20"
+                  className="bg-[#003473] hover:bg-[#002855] text-white shadow-lg shadow-blue-900/20 rounded-none h-9 px-5 font-black uppercase text-[10px] tracking-widest transition-all hover:scale-105 active:scale-95"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Booking Baru

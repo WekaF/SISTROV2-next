@@ -62,7 +62,7 @@ const AppHeader: React.FC = () => {
             />
           </Link>
 
-          <div className="hidden lg:block">
+          {/* <div className="hidden lg:block">
             <form>
               <div className="relative">
                 <span className="absolute -translate-y-1/2 left-4 top-1/2 pointer-events-none">
@@ -80,7 +80,7 @@ const AppHeader: React.FC = () => {
                 </div>
               </div>
             </form>
-          </div>
+          </div> */}
         </div>
 
         <div className="flex items-center gap-2 px-4 py-2 lg:gap-4 lg:px-0 lg:py-0">

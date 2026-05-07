@@ -41,14 +41,13 @@ export default function UserDropdown() {
             {session?.user?.name || "Loading..."}
           </span>
           <span className="block text-theme-xs text-gray-500 dark:text-gray-400 capitalize">
-            {(session?.user as any)?.role || "User"}
+            {(session?.user as any)?.username || "User"}
           </span>
         </div>
 
         <ChevronDown
-          className={`h-4 w-4 text-gray-500 transition-transform duration-200 ${
-            isOpen ? "rotate-180" : ""
-          }`}
+          className={`h-4 w-4 text-gray-500 transition-transform duration-200 ${isOpen ? "rotate-180" : ""
+            }`}
         />
       </button>
 
@@ -64,6 +63,18 @@ export default function UserDropdown() {
           <span className="mt-0.5 block text-theme-xs text-gray-500 dark:text-gray-400 truncate max-w-[230px]">
             {session?.user?.email || "No Email"}
           </span>
+          {((session?.user as any)?.roles?.length > 0) && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {(session?.user as any).roles.map((r: string) => (
+                <span
+                  key={r}
+                  className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-white/5 text-[9px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-tight border border-gray-200 dark:border-gray-800"
+                >
+                  {r}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
         <ul className="flex flex-col gap-1 pt-4 pb-3 border-b border-gray-200 dark:border-gray-800">

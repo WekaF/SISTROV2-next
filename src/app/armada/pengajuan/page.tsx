@@ -54,6 +54,13 @@ interface CompanyItem {
   company: string;
 }
 
+interface TransportItem {
+  kode: string;
+  nama: string;
+  username?: string;
+  singkatan?: string;
+}
+
 interface HistoryRow {
   ID?: number;
   numberString?: string;
@@ -84,29 +91,26 @@ interface HistoryRow {
 }
 
 interface DetailResponse {
-  tipe: string;
-  response: {
-    ID: number;
-    TransportCode: string;
-    nopol: string;
-    sumbu: string;
-    jeniskendaraan: string;
-    qtymax: number;
-    jbi: number;
-    beratkendaraan: number;
-    beratpenumpang: number;
-    tahun_pembuatan: number;
-    masa_berlaku_kir_string: string;
-    no_rangka_stnk: string;
-    no_mesin_stnk: string;
-    no_rangka_kir: string;
-    no_mesin_kir: string;
-    approver: string;
-    files1: string;
-    files2: string;
-    charterString: string;
-    charter: boolean;
-  };
+  ID: number;
+  TransportCode: string;
+  nopol: string;
+  sumbu: string;
+  jeniskendaraan: string;
+  qtymax: number;
+  jbi: number;
+  beratkendaraan: number;
+  beratpenumpang: number;
+  tahun_pembuatan: number;
+  masa_berlaku_kir_string: string;
+  no_rangka_stnk: string;
+  no_mesin_stnk: string;
+  no_rangka_kir: string;
+  no_mesin_kir: string;
+  approver: string;
+  files1: string;
+  files2: string;
+  charterString: string;
+  charter: boolean;
 }
 
 // ─────────────── Helpers ──────────────────────────────────────────────────────
@@ -133,6 +137,7 @@ const emptyForm = () => ({
   no_rangka_kir: "",
   no_mesin_kir: "",
   approvers: [] as string[],
+  transportCode: "", // Added for AdminArmada
   charter: false,
   file1: null as File | null,
   file2: null as File | null,
@@ -141,8 +146,13 @@ const emptyForm = () => ({
 const getStatusBadge = (status: string) => {
   if (!status) return { label: "Menunggu", color: "warning" as const };
   const s = status.toLowerCase();
-  if (s.includes("approve") || s.includes("sudah")) return { label: "Disetujui", color: "success" as const };
+  if (s.includes("menunggu")) return { label: "Menunggu", color: "warning" as const };
+  if (s.includes("sudah approve") || s === "approve") return { label: "Disetujui", color: "success" as const };
   if (s.includes("tolak") || s.includes("ditolak") || s.includes("revisi")) return { label: "Ditolak/Revisi", color: "error" as const };
+  
+  // Fallback for general success strings if needed
+  if (s.includes("approve")) return { label: "Disetujui", color: "success" as const };
+  
   return { label: "Menunggu", color: "warning" as const };
 };
 
@@ -156,6 +166,7 @@ function FileUploadZone({
   existingUrl,
   onClearExisting,
   id,
+  handleViewFile,
 }: {
   label: string;
   required?: boolean;
@@ -165,7 +176,6 @@ function FileUploadZone({
   onClearExisting?: () => void;
   id: string;
   handleViewFile: (url: string) => void;
-  isCheckingFile: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   return (
@@ -179,10 +189,9 @@ function FileUploadZone({
             <button
               type="button"
               onClick={() => handleViewFile(existingUrl)}
-              className="text-[10px] font-bold text-brand-600 hover:text-brand-700 underline flex items-center gap-1 disabled:opacity-50"
-              disabled={isCheckingFile}
+              className="text-[10px] font-bold text-brand-600 hover:text-brand-700 underline flex items-center gap-1"
             >
-              {isCheckingFile ? <Loader2 className="h-3 w-3 animate-spin" /> : <Eye className="h-3 w-3" />} Lihat
+              <Eye className="h-3 w-3" /> Lihat
             </button>
             {onClearExisting && (
               <button type="button" onClick={onClearExisting} className="text-red-500 hover:text-red-600 transition-colors">
@@ -228,6 +237,18 @@ export default function ArmadaPengajuanPage() {
   const { activeCompanyCode } = useCompany();
   const transportCode = activeCompanyCode ?? ((session?.user as any)?.companyCode as string | undefined);
   const isTransport = role === "transport" || role === "rekanan";
+  const isAdminArmada = useMemo(() => {
+    if (!role) return false;
+    const r = role.toLowerCase().replace(/\s+/g, "");
+    return (
+      r.includes("adminarmada") || 
+      r.includes("staffare") || 
+      r.includes("candal") || 
+      r.includes("pod") || 
+      r.includes("dataareabagian") ||
+      r === "admin"
+    );
+  }, [role]);
 
   // ── form state ──
   const [form, setForm] = useState(emptyForm());
@@ -248,41 +269,17 @@ export default function ArmadaPengajuanPage() {
   // ── delete modal ──
   const [deleteId, setDeleteId] = useState<number | null>(null);
 
-  const [viewFileUrl, setViewFileUrl] = useState<string | null>(null);
   const [isCharterFilter, setIsCharterFilter] = useState(false);
 
-  // ── file check logic ──
-  const [isCheckingFile, setIsCheckingFile] = useState(false);
-  const handleViewFile = async (url: string) => {
+  // ── tolak modal ──
+  const [tolakId, setTolakId] = useState<number | null>(null);
+  const [tolakAlasan, setTolakAlasan] = useState("");
+  const handleViewFile = (url: string) => {
     if (!url || url === "null" || url === "") {
       addToast({ title: "Gagal", description: "URL file tidak valid.", variant: "destructive" });
       return;
     }
-
-    setIsCheckingFile(true);
-    try {
-      // Check if file exists using HEAD request
-      const response = await fetch(url, { method: 'HEAD' });
-      
-      if (response.status === 404) {
-        addToast({ 
-          title: "File Not Found", 
-          description: "File tidak ditemukan atau link sudah tidak berlaku (Corrupt/Not Found).", 
-          variant: "destructive" 
-        });
-      } else if (!response.ok) {
-        throw new Error("Gagal mengakses file");
-      } else {
-        setViewFileUrl(url);
-      }
-    } catch (error) {
-      console.error("File check error:", error);
-      // Fallback: try opening directly if HEAD is blocked by CORS, 
-      // or show error if it's a known failure
-      setViewFileUrl(url); 
-    } finally {
-      setIsCheckingFile(false);
-    }
+    window.open(url, "_blank");
   };
 
   // ─── Data Fetching ──────────────────────────────────────────────────────────
@@ -306,6 +303,17 @@ export default function ArmadaPengajuanPage() {
       return res.json();
     },
     enabled: !!session,
+    staleTime: 60_000,
+  });
+  
+  const { data: transportList = [] } = useQuery<TransportItem[]>({
+    queryKey: ["transportir-list"],
+    queryFn: async () => {
+      const res = await apiFetch("/api/Armada/GetTransportirData");
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!session && isAdminArmada,
     staleTime: 60_000,
   });
 
@@ -367,9 +375,9 @@ export default function ArmadaPengajuanPage() {
 
   // Populate edit form when detail arrives
   const prevEditIdRef = useRef<number | null>(null);
-  if (detailData?.tipe === "success" && editId && editId !== prevEditIdRef.current) {
+  if (detailData && editId && editId !== prevEditIdRef.current) {
     prevEditIdRef.current = editId;
-    const r = detailData.response;
+    const r = detailData;
     const approverArr = r.approver ? r.approver.split(",").map((s) => s.trim()).filter(Boolean) : [];
     setEditForm({
       nopol: r.nopol ?? "",
@@ -386,6 +394,7 @@ export default function ArmadaPengajuanPage() {
       no_rangka_kir: r.no_rangka_kir ?? "",
       no_mesin_kir: r.no_mesin_kir ?? "",
       approvers: approverArr,
+      transportCode: r.TransportCode ?? "",
       charter: r.charter === true || r.charterString === "1",
       file1: null,
       file2: null,
@@ -398,7 +407,8 @@ export default function ArmadaPengajuanPage() {
 
   const buildFormData = (f: ReturnType<typeof emptyForm>, extra?: Record<string, string>) => {
     const fd = new FormData();
-    if (transportCode) fd.append("TransportCode", transportCode);
+    const finalTransportCode = isAdminArmada ? f.transportCode : transportCode;
+    if (finalTransportCode) fd.append("TransportCode", finalTransportCode);
     fd.append("nopol", f.nopol);
     fd.append("sumbu", f.sumbu);
     fd.append("jeniskendaraan", f.jeniskendaraan);
@@ -413,7 +423,10 @@ export default function ArmadaPengajuanPage() {
     fd.append("no_rangka_kir", f.no_rangka_kir);
     fd.append("no_mesin_kir", f.no_mesin_kir);
     fd.append("charterString", f.charter ? "1" : "0");
-    f.approvers.forEach((a) => fd.append("approver", a));
+    
+    const finalApprovers = isAdminArmada ? [activeCompanyCode || transportCode || ""] : f.approvers;
+    finalApprovers.filter(Boolean).forEach((a) => fd.append("approver", a));
+    
     if (f.file1) fd.append("file1", f.file1);
     if (f.file2) fd.append("file2", f.file2);
     if (extra) Object.entries(extra).forEach(([k, v]) => fd.append(k, v));
@@ -421,7 +434,8 @@ export default function ArmadaPengajuanPage() {
   };
 
   const validate = (f: ReturnType<typeof emptyForm>, requireFile1 = true) => {
-    if (!f.approvers.length) return "Pilih minimal satu Approver/Rekanan.";
+    if (isAdminArmada && !f.transportCode) return "Pilih Transportir.";
+    if (!isAdminArmada && !f.approvers.length) return "Pilih minimal satu Approver.";
     if (!f.nopol) return "Nomor Polisi wajib diisi.";
     if (!f.sumbu) return "Sumbu wajib dipilih.";
     if (!f.jbi) return "JBI wajib diisi.";
@@ -497,6 +511,43 @@ export default function ArmadaPengajuanPage() {
     onError: (e: any) => addToast({ title: "Gagal", description: e.message, variant: "destructive" }),
   });
 
+  const approveMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiFetch("/api/Armada/ApproveDataReview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ID: id }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const text = await res.text();
+      if (text && text.toLowerCase().includes("gagal")) throw new Error(text);
+    },
+    onSuccess: () => {
+      addToast({ title: "Berhasil", description: "Armada telah disetujui.", variant: "success" });
+      queryClient.invalidateQueries({ queryKey: ["armada-review-baru"] });
+    },
+    onError: (e: any) => addToast({ title: "Gagal", description: e.message, variant: "destructive" }),
+  });
+
+  const tolakMutation = useMutation({
+    mutationFn: async ({ id, alasan }: { id: number; alasan: string }) => {
+      if (!alasan) throw new Error("Alasan penolakan wajib diisi.");
+      const res = await apiFetch("/api/Armada/TolakDataReview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ID: id, alasan }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+    },
+    onSuccess: () => {
+      addToast({ title: "Berhasil", description: "Pengajuan telah ditolak/revisi.", variant: "success" });
+      setTolakId(null);
+      setTolakAlasan("");
+      queryClient.invalidateQueries({ queryKey: ["armada-review-baru"] });
+    },
+    onError: (e: any) => addToast({ title: "Gagal", description: e.message, variant: "destructive" }),
+  });
+
   // ─── Sumbu Picker Logic ──────────────────────────────────────────────────────
 
   const filteredSumbu = sumbuList.filter((s) =>
@@ -520,13 +571,19 @@ export default function ArmadaPengajuanPage() {
     const deleteMatch = html.match(/deleteItemProcess\('(\d+)'\)/);
     const editMatch = html.match(/editItemProcess\('(\d+)'\)/);
     const viewMatch = html.match(/viewItemProcess\('(\d+)'\)/);
+    const tolakMatch = html.match(/tolakItemProcess\('(\d+)'\)/);
+    const approveMatch = html.match(/approveItemProcess\('(\d+)'\)/);
     return {
       canDelete: !!deleteMatch,
       canEdit: !!editMatch,
       canView: !!viewMatch,
+      canTolak: !!tolakMatch,
+      canApprove: !!approveMatch,
       deleteId: deleteMatch ? parseInt(deleteMatch[1]) : null,
       editId: editMatch ? parseInt(editMatch[1]) : null,
       viewId: viewMatch ? parseInt(viewMatch[1]) : null,
+      tolakId: tolakMatch ? parseInt(tolakMatch[1]) : null,
+      approveId: approveMatch ? parseInt(approveMatch[1]) : null,
     };
   };
 
@@ -598,23 +655,21 @@ export default function ArmadaPengajuanPage() {
           {row.file1String && (
             <button 
               type="button" 
-              disabled={isCheckingFile}
               onClick={() => handleViewFile(row.file1String!)} 
-              className="p-1.5 rounded-lg bg-brand-50 text-brand-600 border border-brand-100 hover:bg-brand-100 transition-all disabled:opacity-50" 
+              className="p-1.5 rounded-lg bg-brand-50 text-brand-600 border border-brand-100 hover:bg-brand-100 transition-all" 
               title="KIR & STNK"
             >
-              {isCheckingFile ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileText className="h-3.5 w-3.5" />}
+              <FileText className="h-3.5 w-3.5" />
             </button>
           )}
           {row.file2String && (
             <button 
               type="button" 
-              disabled={isCheckingFile}
               onClick={() => handleViewFile(row.file2String!)} 
-              className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-100 transition-all disabled:opacity-50" 
+              className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-100 transition-all" 
               title="Lainnya"
             >
-              {isCheckingFile ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileText className="h-3.5 w-3.5" />}
+              <FileText className="h-3.5 w-3.5" />
             </button>
           )}
         </div>
@@ -625,9 +680,36 @@ export default function ArmadaPengajuanPage() {
       header: "Action",
       className: "text-right",
       render: (row) => {
-        const { canDelete, canEdit, canView, deleteId: dId, editId: eId, viewId: vId } = parseActions(row);
+        const { canDelete, canEdit, canView, canTolak, canApprove, deleteId: dId, editId: eId, viewId: vId, tolakId: tId, approveId: aId } = parseActions(row);
+        const isMenunggu = row.aprrovestatus?.toLowerCase().includes("menunggu");
+
         return (
           <div className="flex items-center justify-end gap-1">
+            {isMenunggu && canTolak && tId && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8 text-red-500 hover:bg-red-50" 
+                onClick={() => setTolakId(tId)}
+                title="Tolak/Revisi"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+            {isMenunggu && canApprove && aId && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8 text-emerald-600 hover:bg-emerald-50" 
+                onClick={() => {
+                  if (confirm("Setujui armada ini?")) approveMutation.mutate(aId);
+                }}
+                title="Setujui"
+                disabled={approveMutation.isPending}
+              >
+                {approveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+              </Button>
+            )}
             {canView && vId && (
               <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-brand-600 hover:bg-brand-50" onClick={() => setEditId(vId)}>
                 <Eye className="h-4 w-4" />
@@ -668,20 +750,43 @@ export default function ArmadaPengajuanPage() {
 
         <div className="space-y-4 p-5 rounded-2xl border border-gray-100 dark:border-gray-800 bg-white/50 dark:bg-white/[0.01]">
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest px-1">Transportir</label>
+            <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest px-1">
+              {isAdminArmada ? "Admin Plant" : "Transportir"}
+            </label>
             <div className="h-10 px-4 flex items-center bg-gray-50/50 dark:bg-white/[0.02] border border-gray-200 dark:border-gray-800 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-300">
-              {userName || transportCode || "—"}
+              {isAdminArmada 
+                ? (target === "edit" ? f.approvers[0] : (activeCompanyCode || transportCode))
+                : (target === "edit" ? transportCode : (userName || transportCode))
+              }
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest px-1">Approver <span className="text-red-500">*</span></label>
-            <MultiSelect
-              options={companyOptions}
-              selected={f.approvers}
-              onChange={(vals) => set({ approvers: vals })}
-              placeholder="Pilih plant/rekanan..."
-            />
+            {isAdminArmada ? (
+              <>
+                <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest px-1">Transportir <span className="text-red-500">*</span></label>
+                <select 
+                  className="h-10 w-full px-4 bg-white dark:bg-white/[0.02] border border-gray-200 dark:border-gray-800 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-300 outline-none focus:ring-2 focus:ring-brand-500 transition-all"
+                  value={f.transportCode}
+                  onChange={(e) => set({ transportCode: e.target.value })}
+                >
+                  <option value="">Pilih Transportir...</option>
+                  {transportList.map(t => (
+                    <option key={t.kode} value={t.kode}>{t.nama} ({t.kode})</option>
+                  ))}
+                </select>
+              </>
+            ) : (
+              <>
+                <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest px-1">Approver <span className="text-red-500">*</span></label>
+                <MultiSelect
+                  options={companyOptions}
+                  selected={f.approvers}
+                  onChange={(vals) => set({ approvers: vals })}
+                  placeholder="Pilih plant/rekanan..."
+                />
+              </>
+            )}
           </div>
 
           <div className="space-y-1.5">
@@ -784,7 +889,6 @@ export default function ArmadaPengajuanPage() {
               value={f.file1}
               onChange={(file) => set({ file1: file })}
               handleViewFile={handleViewFile}
-              isCheckingFile={isCheckingFile}
               existingUrl={target === "edit" ? editExistingFile1 : undefined}
               onClearExisting={target === "edit" ? () => setEditExistingFile1("") : undefined}
             />
@@ -794,7 +898,6 @@ export default function ArmadaPengajuanPage() {
               value={f.file2}
               onChange={(file) => set({ file2: file })}
               handleViewFile={handleViewFile}
-              isCheckingFile={isCheckingFile}
               existingUrl={target === "edit" ? editExistingFile2 : undefined}
               onClearExisting={target === "edit" ? () => setEditExistingFile2("") : undefined}
             />
@@ -844,31 +947,10 @@ export default function ArmadaPengajuanPage() {
         </div>
       </div>
 
-      {/* Stats Quick Overview (Optional but adds premium feel) */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[
-          { label: "Total Pengajuan", value: "24", icon: Truck, color: "brand" },
-          { label: "Menunggu Approval", value: "08", icon: Clock, color: "warning" },
-          { label: "Disetujui", value: "12", icon: CheckCircle2, color: "success" },
-          { label: "Ditolak / Revisi", value: "04", icon: X, color: "error" },
-        ].map((stat, i) => (
-          <Card key={i} className="border-none shadow-theme-xs">
-            <CardContent className="p-4 flex items-center gap-4">
-              <div className={`p-2 rounded-xl bg-${stat.color}-50 text-${stat.color}-600 dark:bg-${stat.color}-500/10 dark:text-${stat.color}-400`}>
-                <stat.icon className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest">{stat.label}</p>
-                <p className="text-xl font-black text-gray-900 dark:text-white">{stat.value}</p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
 
       {/* Form Section */}
       <div id="form-section">
-        {isTransport ? (
+        {(isTransport || isAdminArmada) ? (
           <Card className="border-none shadow-theme-lg overflow-hidden bg-white dark:bg-white/[0.02]">
             <CardHeader className="px-8 py-6 border-b border-gray-100 dark:border-gray-800">
               <div className="flex items-center justify-between">
@@ -1054,22 +1136,34 @@ export default function ArmadaPengajuanPage() {
         </DialogContent>
       </Dialog>
 
-      {/* File Viewer */}
-      <Dialog open={!!viewFileUrl} onOpenChange={(o) => !o && setViewFileUrl(null)}>
-        <DialogContent className="max-w-4xl h-[85vh] p-0 overflow-hidden border-none shadow-theme-lg bg-black">
-          <div className="absolute top-4 right-4 z-10 flex gap-2">
-            <a href={viewFileUrl ?? "#"} target="_blank" rel="noopener noreferrer" className="h-9 px-4 bg-white/10 hover:bg-white/20 text-white rounded-lg backdrop-blur-md flex items-center gap-2 text-xs font-bold transition-all">
-              <Eye className="h-4 w-4" /> Buka Tab Baru
-            </a>
-            <Button variant="ghost" size="icon" className="bg-white/10 hover:bg-white/20 text-white rounded-lg backdrop-blur-md" onClick={() => setViewFileUrl(null)}>
-              <X className="h-5 w-5" />
+      {/* Tolak Dialog */}
+      <Dialog open={!!tolakId} onOpenChange={(o) => !o && setTolakId(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Tolak / Revisi Armada</DialogTitle>
+            <DialogDescription>
+              Berikan alasan mengapa armada ini ditolak atau memerlukan revisi.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <textarea
+              className="w-full h-32 p-3 text-sm border border-gray-200 dark:border-gray-800 rounded-xl outline-none focus:ring-2 focus:ring-red-500 transition-all dark:bg-white/5"
+              placeholder="Contoh: Lampiran KIR tidak terbaca, mohon upload ulang."
+              value={tolakAlasan}
+              onChange={(e) => setTolakAlasan(e.target.value)}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setTolakId(null)}>Batal</Button>
+            <Button 
+              variant="destructive" 
+              onClick={() => tolakId && tolakMutation.mutate({ id: tolakId, alasan: tolakAlasan })}
+              disabled={tolakMutation.isPending || !tolakAlasan.trim()}
+            >
+              {tolakMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <X className="h-4 w-4 mr-2" />}
+              Tolak Sekarang
             </Button>
-          </div>
-          <div className="w-full h-full pt-16">
-            {viewFileUrl && (
-              <iframe src={viewFileUrl} className="w-full h-full border-none" title="Document Viewer" />
-            )}
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
