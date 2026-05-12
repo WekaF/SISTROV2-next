@@ -1,15 +1,11 @@
 "use client";
-import React, { useState } from "react";
-import { 
-  Home, 
-  MapPin, 
-  Search, 
-  Plus, 
-  ArrowRightLeft, 
-  Warehouse, 
-  Navigation,
+import React, { useState, useCallback } from "react";
+import {
+  Home,
+  Search,
+  Plus,
+  Warehouse,
   Globe,
-  Settings2,
   Table as TableIcon,
   RefreshCw,
   Loader2,
@@ -21,13 +17,13 @@ import {
   CheckCircle2,
   X
 } from "lucide-react";
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
+import { MultiSelect, MultiSelectOption } from "@/components/ui/MultiSelect";
+import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import Badge from "@/components/ui/badge/Badge";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/components/ui/toast";
-import { 
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -54,6 +50,76 @@ interface WarehouseData {
   MuatCount?: number;
 }
 
+type ActionType = 'view' | 'edit' | 'delete' | 'tujuan';
+
+// Extracted outside component so React.memo works across renders
+const WarehouseRow = React.memo(function WarehouseRow({
+  wh,
+  onAction,
+}: {
+  wh: WarehouseData;
+  onAction: (action: ActionType, wh: WarehouseData) => void;
+}) {
+  return (
+    <tr className="hover:bg-gray-50/50 dark:hover:bg-white/[0.01] transition-colors group">
+      <td className="px-6 py-4">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 bg-gray-50 text-gray-400 rounded-xl flex items-center justify-center border border-gray-100 dark:bg-white/5 dark:border-gray-800 transition-transform group-hover:rotate-12">
+            <Home className="h-5 w-5" />
+          </div>
+          <div className="max-w-[250px]">
+            <div className="font-bold text-gray-900 dark:text-white uppercase tracking-tight text-sm truncate">{wh.Deskripsi}</div>
+            <div className="text-[10px] text-gray-400 line-clamp-1">{wh.Alamat || '-'}</div>
+          </div>
+        </div>
+      </td>
+      <td className="px-6 py-4">
+        <div className="text-[10px] font-mono text-gray-500 font-bold tracking-widest bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded w-fit italic">#{wh.ID}</div>
+      </td>
+      <td className="px-6 py-4">
+        <span className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 uppercase">{wh.Kabupaten || '-'}</span>
+      </td>
+      <td className="px-6 py-4">
+        <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase">{wh.Propinsi || '-'}</span>
+      </td>
+      <td className="px-6 py-4 text-right">
+        <div className="flex items-center justify-end gap-1.5">
+          <div className="flex items-center border-r border-gray-200 dark:border-gray-700 pr-2 mr-1 gap-1">
+            <Tooltip>
+              <TooltipTrigger render={<Button variant="ghost" size="icon-xs" className="text-gray-400 hover:text-brand-500 hover:bg-brand-50" onClick={() => onAction('view', wh)}><Eye className="h-3.5 w-3.5" /></Button>} />
+              <TooltipContent><p className="text-[10px]">View Detail</p></TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger render={<Button variant="ghost" size="icon-xs" className="text-gray-400 hover:text-indigo-500 hover:bg-indigo-50" onClick={() => onAction('edit', wh)}><Edit className="h-3.5 w-3.5" /></Button>} />
+              <TooltipContent><p className="text-[10px]">Edit Data</p></TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger render={<Button variant="ghost" size="icon-xs" className="text-gray-400 hover:text-rose-500 hover:bg-rose-50" onClick={() => onAction('delete', wh)}><Trash2 className="h-3.5 w-3.5" /></Button>} />
+              <TooltipContent><p className="text-[10px]">Delete Warehouse</p></TooltipContent>
+            </Tooltip>
+          </div>
+          <div className="flex items-center gap-1">
+            <Tooltip>
+              <TooltipTrigger render={
+                <Button
+                  variant={wh.TujuanCount && wh.TujuanCount > 0 ? "default" : "outline"}
+                  size="sm"
+                  className={`h-7 text-[10px] font-bold px-2.5 gap-1.5 ${wh.TujuanCount && wh.TujuanCount > 0 ? 'bg-indigo-600 text-white' : 'border-brand-100 text-brand-600 hover:bg-brand-50'}`}
+                  onClick={() => onAction('tujuan', wh)}
+                >
+                  <Target className="h-3 w-3" />
+                  Tujuan {wh.TujuanCount && wh.TujuanCount > 0 ? `(${wh.TujuanCount})` : ''}
+                </Button>
+              } />
+              <TooltipContent><p className="text-[10px]">Mapping sebagai Gudang Tujuan</p></TooltipContent>
+            </Tooltip>
+          </div>
+        </div>
+      </td>
+    </tr>
+  );
+});
+
 export default function WarehouseMasterPage() {
   const { addToast } = useToast();
   const queryClient = useQueryClient();
@@ -66,7 +132,7 @@ export default function WarehouseMasterPage() {
   React.useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchTerm);
-      setPage(1); // Reset to first page on new search
+      setPage(1);
     }, 500);
     return () => clearTimeout(timer);
   }, [searchTerm]);
@@ -77,9 +143,8 @@ export default function WarehouseMasterPage() {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isTujuanOpen, setIsTujuanOpen] = useState(false);
-  const [isMuatOpen, setIsMuatOpen] = useState(false);
   const [editFormData, setEditFormData] = useState<Partial<WarehouseData>>({});
-  const [selectedCompany, setSelectedCompany] = useState("");
+  const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
   const [activeMappings, setActiveMappings] = useState<any[]>([]);
   const [loadingMapData, setLoadingMapData] = useState(false);
 
@@ -95,7 +160,8 @@ export default function WarehouseMasterPage() {
         console.error("Fetch error:", err);
         throw err;
       }
-    }
+    },
+    staleTime: 5 * 60 * 1000,
   });
 
   const syncMutation = useMutation({
@@ -133,7 +199,7 @@ export default function WarehouseMasterPage() {
 
   const updateMutation = useMutation({
     mutationFn: async (data: Partial<WarehouseData>) => {
-      const res = await fetch(`/api/admin/gudang/${data.ID}`, { 
+      const res = await fetch(`/api/admin/gudang/${data.ID}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -152,46 +218,47 @@ export default function WarehouseMasterPage() {
     }
   });
 
-  // Query for plants/companies
-  const { data: plantsData } = useQuery({
-    queryKey: ['plants'],
+  const { data: companyData } = useQuery({
+    queryKey: ['companies-fitur'],
     queryFn: async () => {
-      const res = await fetch('/api/admin/plants');
+      const res = await fetch('/api/admin/companies');
       return res.json();
     },
+    staleTime: 10 * 60 * 1000,
   });
 
-  const plants = plantsData?.data || [];
+  const companies = companyData?.data || [];
 
-  const fetchMappings = async (type: 'tujuan' | 'muat', warehouseId: string) => {
+  const fetchMappings = useCallback(async (type: 'tujuan' | 'muat', warehouseId: string) => {
     setLoadingMapData(true);
     try {
       const res = await fetch(`/api/admin/gudang/mapping/${type}?warehouseId=${warehouseId}`);
       const data = await res.json();
-      if (data.success) {
-        setActiveMappings(data.data);
-      }
+      if (data.success) setActiveMappings(data.data);
     } catch (error) {
       console.error(`Failed to fetch ${type} mappings:`, error);
     } finally {
       setLoadingMapData(false);
     }
-  };
+  }, []);
 
   const addMappingMutation = useMutation({
-    mutationFn: async ({ type, payload }: { type: 'tujuan' | 'muat', payload: any }) => {
-      const res = await fetch(`/api/admin/gudang/mapping/${type}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error);
-      return data;
+    mutationFn: async ({ type, warehouseId, companyCodes }: { type: 'tujuan', warehouseId: string, companyCodes: string[] }) => {
+      const results = await Promise.all(companyCodes.map(async (companyCode) => {
+        const res = await fetch(`/api/admin/gudang/mapping/${type}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ warehouseId, companyCode }),
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || `Failed to map ${companyCode}`);
+        return data;
+      }));
+      return results;
     },
     onSuccess: (_, variables) => {
-      addToast({ title: "Mapping Berhasil", description: "Gudang telah dipetakan ke company.", variant: "success" });
-      setSelectedCompany("");
+      addToast({ title: "Mapping Berhasil", description: `${variables.companyCodes.length} company telah dipetakan ke gudang.`, variant: "success" });
+      setSelectedCompanies([]);
       if (selectedWarehouse) fetchMappings(variables.type, selectedWarehouse.ID);
       queryClient.invalidateQueries({ queryKey: ['warehouses'] });
     },
@@ -201,7 +268,7 @@ export default function WarehouseMasterPage() {
   });
 
   const deleteMappingMutation = useMutation({
-    mutationFn: async ({ type, id }: { type: 'tujuan' | 'muat', id: number }) => {
+    mutationFn: async ({ type, id }: { type: 'tujuan', id: string }) => {
       const res = await fetch(`/api/admin/gudang/mapping/${type}?id=${id}`, { method: 'DELETE' });
       const data = await res.json();
       if (!data.success) throw new Error(data.error);
@@ -217,7 +284,7 @@ export default function WarehouseMasterPage() {
     }
   });
 
-  const handleAction = (action: 'view' | 'edit' | 'delete' | 'tujuan' | 'muat', warehouse: WarehouseData) => {
+  const handleAction = useCallback((action: ActionType, warehouse: WarehouseData) => {
     setSelectedWarehouse(warehouse);
     if (action === 'view') setIsViewOpen(true);
     if (action === 'edit') {
@@ -226,21 +293,16 @@ export default function WarehouseMasterPage() {
     }
     if (action === 'delete') setIsDeleteOpen(true);
     if (action === 'tujuan') {
-       setIsTujuanOpen(true);
-       setSelectedCompany("");
-       fetchMappings('tujuan', warehouse.ID);
+      setIsTujuanOpen(true);
+      fetchMappings('tujuan', warehouse.ID);
     }
-    if (action === 'muat') {
-       setIsMuatOpen(true);
-       setSelectedCompany("");
-       fetchMappings('muat', warehouse.ID);
-    }
-  };
+  }, [fetchMappings]);
 
   const warehouses = warehousesResult?.data || [];
   const pagination = warehousesResult?.pagination || { total: 0, totalPages: 0 };
 
   return (
+    <TooltipProvider>
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -248,8 +310,8 @@ export default function WarehouseMasterPage() {
           <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Manajemen data gudang muat & tujuan serta konfigurasi mapping distribusi.</p>
         </div>
         <div className="flex gap-2">
-           <Button 
-            variant="outline" 
+           <Button
+            variant="outline"
             className="gap-2 border-brand-200 text-brand-600 hover:bg-brand-50"
             onClick={() => syncMutation.mutate()}
             disabled={syncMutation.isPending}
@@ -300,9 +362,9 @@ export default function WarehouseMasterPage() {
             <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                <div className="relative w-full md:w-96">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input 
-                    className="pl-10" 
-                    placeholder="Cari kode, nama, kabupaten..." 
+                  <Input
+                    className="pl-10"
+                    placeholder="Cari kode, nama, kabupaten..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
@@ -351,84 +413,7 @@ export default function WarehouseMasterPage() {
                            <td colSpan={5} className="px-6 py-12 text-center text-gray-500 italic">Data gudang tidak ditemukan.</td>
                         </tr>
                      ) : warehouses.map((wh: WarehouseData) => (
-                        <tr key={wh.ID} className="hover:bg-gray-50/50 dark:hover:bg-white/[0.01] transition-colors group">
-                           <td className="px-6 py-4">
-                              <div className="flex items-center gap-3">
-                                 <div className="h-10 w-10 bg-gray-50 text-gray-400 rounded-xl flex items-center justify-center border border-gray-100 dark:bg-white/5 dark:border-gray-800 transition-transform group-hover:rotate-12">
-                                    <Home className="h-5 w-5" />
-                                 </div>
-                                 <div className="max-w-[250px]">
-                                    <div className="font-bold text-gray-900 dark:text-white uppercase tracking-tight text-sm truncate">{wh.Deskripsi}</div>
-                                    <div className="text-[10px] text-gray-400 line-clamp-1">{wh.Alamat || '-'}</div>
-                                 </div>
-                              </div>
-                           </td>
-                           <td className="px-6 py-4">
-                              <div className="text-[10px] font-mono text-gray-500 font-bold tracking-widest bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded w-fit italic">#{wh.ID}</div>
-                           </td>
-                           <td className="px-6 py-4">
-                              <span className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 uppercase">{wh.Kabupaten || '-'}</span>
-                           </td>
-                           <td className="px-6 py-4">
-                               <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase">{wh.Propinsi || '-'}</span>
-                           </td>
-                           <td className="px-6 py-4 text-right">
-                               <TooltipProvider>
-                               <div className="flex items-center justify-end gap-1.5">
-                                   <div className="flex items-center border-r border-gray-200 dark:border-gray-700 pr-2 mr-1 gap-1">
-                                      <Tooltip>
-                                         <TooltipTrigger>
-                                            <Button variant="ghost" size="icon-xs" className="text-gray-400 hover:text-brand-500 hover:bg-brand-50" onClick={() => handleAction('view', wh)}><Eye className="h-3.5 w-3.5" /></Button>
-                                         </TooltipTrigger>
-                                         <TooltipContent><p className="text-[10px]">View Detail</p></TooltipContent>
-                                      </Tooltip>
-                                      <Tooltip>
-                                         <TooltipTrigger>
-                                            <Button variant="ghost" size="icon-xs" className="text-gray-400 hover:text-indigo-500 hover:bg-indigo-50" onClick={() => handleAction('edit', wh)}><Edit className="h-3.5 w-3.5" /></Button>
-                                         </TooltipTrigger>
-                                         <TooltipContent><p className="text-[10px]">Edit Data</p></TooltipContent>
-                                      </Tooltip>
-                                      <Tooltip>
-                                         <TooltipTrigger>
-                                            <Button variant="ghost" size="icon-xs" className="text-gray-400 hover:text-rose-500 hover:bg-rose-50" onClick={() => handleAction('delete', wh)}><Trash2 className="h-3.5 w-3.5" /></Button>
-                                         </TooltipTrigger>
-                                         <TooltipContent><p className="text-[10px]">Delete Warehouse</p></TooltipContent>
-                                      </Tooltip>
-                                  </div>
-                                  <div className="flex items-center gap-1">
-                                      <Tooltip>
-                                         <TooltipTrigger>
-                                            <Button 
-                                             variant={wh.TujuanCount && wh.TujuanCount > 0 ? "default" : "outline"}
-                                             size="sm" 
-                                             className={`h-7 text-[10px] font-bold px-2.5 gap-1.5 ${wh.TujuanCount && wh.TujuanCount > 0 ? 'bg-indigo-600' : 'border-brand-100 text-brand-600 hover:bg-brand-50'}`}
-                                             onClick={() => handleAction('tujuan', wh)}
-                                            >
-                                               <Target className="h-3 w-3" />
-                                               Tujuan {wh.TujuanCount && wh.TujuanCount > 0 ? `(${wh.TujuanCount})` : ''}
-                                            </Button>
-                                         </TooltipTrigger>
-                                         <TooltipContent><p className="text-[10px]">Mapping sebagai Gudang Tujuan</p></TooltipContent>
-                                      </Tooltip>
-                                      <Tooltip>
-                                         <TooltipTrigger>
-                                            <Button 
-                                             variant={wh.MuatCount && wh.MuatCount > 0 ? "default" : "outline"}
-                                             size="sm" 
-                                             className={`h-7 text-[10px] font-bold px-2.5 gap-1.5 ${wh.MuatCount && wh.MuatCount > 0 ? 'bg-emerald-600' : 'border-emerald-100 text-emerald-600 hover:bg-emerald-50'}`}
-                                             onClick={() => handleAction('muat', wh)}
-                                            >
-                                               <Truck className="h-3 w-3" />
-                                               Muat {wh.MuatCount && wh.MuatCount > 0 ? `(${wh.MuatCount})` : ''}
-                                            </Button>
-                                         </TooltipTrigger>
-                                         <TooltipContent><p className="text-[10px]">Mapping sebagai Gudang Muat</p></TooltipContent>
-                                      </Tooltip>
-                                  </div>
-                               </div>
-                               </TooltipProvider>
-                           </td>
-                        </tr>
+                        <WarehouseRow key={wh.ID} wh={wh} onAction={handleAction} />
                      ))}
                   </tbody>
                </table>
@@ -443,7 +428,7 @@ export default function WarehouseMasterPage() {
                    </div>
                    <div className="flex items-center gap-2">
                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest whitespace-nowrap">Rows per page:</span>
-                       <select 
+                       <select
                           className="h-7 text-[10px] font-bold border-gray-200 dark:border-gray-800 rounded bg-white dark:bg-gray-900 px-1 outline-none focus:ring-1 focus:ring-brand-500"
                           value={limit}
                           onChange={(e) => { setLimit(Number(e.target.value)); setPage(1); }}
@@ -452,11 +437,11 @@ export default function WarehouseMasterPage() {
                        </select>
                    </div>
                 </div>
-                
+
                 <div className="flex gap-1.5">
-                   <Button 
-                     variant="outline" 
-                     size="sm" 
+                   <Button
+                     variant="outline"
+                     size="sm"
                      className="h-8 text-[10px] font-black uppercase"
                      disabled={page === 1}
                      onClick={() => setPage(p => Math.max(1, p - 1))}
@@ -469,12 +454,11 @@ export default function WarehouseMasterPage() {
                        if (pagination.totalPages <= 5) {
                           pageNum = i + 1;
                        } else {
-                          // Dynamic range around current page
                           if (page <= 3) pageNum = i + 1;
                           else if (page >= pagination.totalPages - 2) pageNum = pagination.totalPages - 4 + i;
                           else pageNum = page - 2 + i;
                        }
-                       
+
                        return (
                          <Button
                            key={pageNum}
@@ -501,9 +485,9 @@ export default function WarehouseMasterPage() {
                         </>
                      )}
                    </div>
-                   <Button 
-                     variant="outline" 
-                     size="sm" 
+                   <Button
+                     variant="outline"
+                     size="sm"
                      className="h-8 text-[10px] font-black uppercase"
                      disabled={page === pagination.totalPages}
                      onClick={() => setPage(p => Math.min(pagination.totalPages, p + 1))}
@@ -563,16 +547,16 @@ export default function WarehouseMasterPage() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
                <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">Nama / Deskripsi Gudang</label>
-               <Input 
-                  value={editFormData?.Deskripsi || ''} 
+               <Input
+                  value={editFormData?.Deskripsi || ''}
                   onChange={(e) => setEditFormData({...editFormData, Deskripsi: e.target.value})}
                   className="rounded-xl border-gray-100 font-bold h-11"
                />
             </div>
             <div className="space-y-2">
                <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">Alamat Lengkap</label>
-               <Input 
-                  value={editFormData?.Alamat || ''} 
+               <Input
+                  value={editFormData?.Alamat || ''}
                   onChange={(e) => setEditFormData({...editFormData, Alamat: e.target.value})}
                   className="rounded-xl border-gray-100 font-bold h-11"
                />
@@ -580,16 +564,16 @@ export default function WarehouseMasterPage() {
             <div className="grid grid-cols-2 gap-3">
                <div className="space-y-2">
                   <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">Kabupaten</label>
-                  <Input 
-                     value={editFormData?.Kabupaten || ''} 
+                  <Input
+                     value={editFormData?.Kabupaten || ''}
                      onChange={(e) => setEditFormData({...editFormData, Kabupaten: e.target.value})}
                      className="rounded-xl border-gray-100 font-bold h-11 uppercase"
                   />
                </div>
                <div className="space-y-2">
                   <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">Provinsi</label>
-                  <Input 
-                     value={editFormData?.Propinsi || ''} 
+                  <Input
+                     value={editFormData?.Propinsi || ''}
                      onChange={(e) => setEditFormData({...editFormData, Propinsi: e.target.value})}
                      className="rounded-xl border-gray-100 font-bold h-11 uppercase"
                   />
@@ -619,27 +603,31 @@ export default function WarehouseMasterPage() {
             </DialogHeader>
             <div className="space-y-6 py-4">
                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase text-gray-500 tracking-widest ml-1">Assign to Company / Plant</label>
-                  <div className="flex gap-2">
-                     <select 
-                       className="flex-1 h-11 px-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-white/5 font-bold text-sm outline-none focus:ring-2 focus:ring-indigo-500/20"
-                       value={selectedCompany}
-                       onChange={(e) => setSelectedCompany(e.target.value)}
-                     >
-                        <option value="">Pilih Company...</option>
-                        {plants.map((p: any) => <option key={p.code} value={p.code}>{p.name} ({p.code})</option>)}
-                     </select>
-                     <Button 
-                       className="bg-indigo-600 hover:bg-indigo-700 h-11 px-6 rounded-xl font-bold"
-                       onClick={() => addMappingMutation.mutate({ 
-                         type: 'tujuan', 
-                         payload: { warehouseId: selectedWarehouse?.ID, companyCode: selectedCompany } 
-                       })}
-                       disabled={!selectedCompany || addMappingMutation.isPending}
-                     >
-                        {addMappingMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Assign"}
-                     </Button>
-                  </div>
+                   <label className="text-[10px] font-black uppercase text-gray-500 tracking-widest ml-1">Assign to Company / Plant</label>
+                   <div className="flex gap-2 items-start">
+                      <MultiSelect
+                        className="flex-1"
+                        options={companies.map((c: any) => ({ value: c.company_code, label: `${c.company} (${c.company_code})` }))}
+                        selected={selectedCompanies}
+                        onChange={setSelectedCompanies}
+                        placeholder="Pilih satu atau lebih company..."
+                      />
+                      <Button
+                        className="bg-indigo-600 hover:bg-indigo-700 h-11 px-6 rounded-xl font-bold"
+                        onClick={() => {
+                          if (selectedWarehouse) {
+                            addMappingMutation.mutate({
+                              type: 'tujuan',
+                              warehouseId: selectedWarehouse.ID,
+                              companyCodes: selectedCompanies
+                            });
+                          }
+                        }}
+                        disabled={selectedCompanies.length === 0 || addMappingMutation.isPending}
+                      >
+                         {addMappingMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Assign"}
+                      </Button>
+                   </div>
                </div>
 
                <div className="space-y-4">
@@ -662,9 +650,9 @@ export default function WarehouseMasterPage() {
                                 <div className="text-[10px] font-mono font-bold text-gray-400 uppercase tracking-tighter">{m.CompanyCode}</div>
                              </div>
                           </div>
-                          <Button 
-                           variant="ghost" 
-                           size="icon" 
+                          <Button
+                           variant="ghost"
+                           size="icon"
                            className="h-8 w-8 text-rose-500 hover:bg-rose-50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
                            onClick={() => deleteMappingMutation.mutate({ type: 'tujuan', id: m.Id })}
                           >
@@ -685,87 +673,7 @@ export default function WarehouseMasterPage() {
          </DialogContent>
       </Dialog>
 
-      {/* Mapping Muat Modal */}
-      <Dialog open={isMuatOpen} onOpenChange={setIsMuatOpen}>
-         <DialogContent className="max-w-lg shadow-2xl border-none">
-            <DialogHeader>
-               <div className="flex items-center gap-3 mb-2">
-                  <div className="h-12 w-12 bg-emerald-50 text-emerald-500 rounded-2xl flex items-center justify-center dark:bg-emerald-500/10 shadow-sm border border-emerald-100">
-                     <Truck className="h-6 w-6" />
-                  </div>
-                  <div>
-                     <DialogTitle className="uppercase tracking-tight text-xl">Mapping Gudang Muat</DialogTitle>
-                     <DialogDescription className="font-bold text-xs text-emerald-500">{selectedWarehouse?.Deskripsi || 'Gudang'}</DialogDescription>
-                  </div>
-               </div>
-            </DialogHeader>
-            <div className="space-y-6 py-4">
-               <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase text-gray-500 tracking-widest ml-1">Assign to Company / Plant</label>
-                  <div className="flex gap-2">
-                     <select 
-                       className="flex-1 h-11 px-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-white/5 font-bold text-sm outline-none focus:ring-2 focus:ring-emerald-500/20"
-                       value={selectedCompany}
-                       onChange={(e) => setSelectedCompany(e.target.value)}
-                     >
-                        <option value="">Pilih Company...</option>
-                        {plants.map((p: any) => <option key={p.code} value={p.code}>{p.name} ({p.code})</option>)}
-                     </select>
-                     <Button 
-                       className="bg-emerald-600 hover:bg-emerald-700 h-11 px-6 rounded-xl font-bold"
-                       onClick={() => addMappingMutation.mutate({ 
-                         type: 'muat', 
-                         payload: { warehouseId: selectedWarehouse?.ID, companyCode: selectedCompany } 
-                       })}
-                       disabled={!selectedCompany || addMappingMutation.isPending}
-                     >
-                        {addMappingMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Assign"}
-                     </Button>
-                  </div>
-               </div>
 
-               <div className="space-y-4">
-                  <h4 className="text-[10px] font-black uppercase text-gray-400 tracking-widest flex items-center justify-between ml-1">
-                     <span className="flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                        Active Mappings
-                     </span>
-                     {loadingMapData && <Loader2 className="h-3 w-3 animate-spin" />}
-                  </h4>
-                  <div className="max-h-60 overflow-y-auto space-y-2 custom-scrollbar pr-1">
-                     {activeMappings.length > 0 ? activeMappings.map((m) => (
-                       <div key={m.Id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-white/[0.02] rounded-2xl border border-gray-100 dark:border-gray-800 group hover:border-emerald-200 transition-colors">
-                          <div className="flex items-center gap-3">
-                             <div className="h-9 w-9 bg-white dark:bg-gray-800 text-emerald-500 rounded-xl flex items-center justify-center font-black text-xs shadow-sm shadow-emerald-500/10">
-                                {m.CompanyName?.[0] || 'C'}
-                             </div>
-                             <div>
-                                <div className="text-sm font-bold text-gray-900 dark:text-white">{m.CompanyName}</div>
-                                <div className="text-[10px] font-mono font-bold text-gray-400 uppercase tracking-tighter">{m.CompanyCode}</div>
-                             </div>
-                          </div>
-                          <Button 
-                           variant="ghost" 
-                           size="icon" 
-                           className="h-8 w-8 text-rose-500 hover:bg-rose-50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                           onClick={() => deleteMappingMutation.mutate({ type: 'muat', id: m.Id })}
-                          >
-                             <Trash2 className="h-4 w-4" />
-                          </Button>
-                       </div>
-                     )) : !loadingMapData && (
-                       <div className="text-center py-10 bg-gray-50/50 dark:bg-white/[0.01] rounded-2xl border border-dashed border-gray-200 dark:border-gray-800">
-                          <p className="text-xs text-gray-400 font-medium italic">Belum ada mapping untuk gudang ini.</p>
-                       </div>
-                     )}
-                  </div>
-               </div>
-            </div>
-            <DialogFooter className="bg-gray-50 dark:bg-white/5 -mx-6 -mb-6 p-4 mt-2">
-               <Button variant="outline" onClick={() => setIsMuatOpen(false)} className="rounded-xl font-bold">Selesai</Button>
-            </DialogFooter>
-         </DialogContent>
-      </Dialog>
 
       {/* Delete Confirmation */}
       {selectedWarehouse && (
@@ -779,5 +687,6 @@ export default function WarehouseMasterPage() {
         />
       )}
     </div>
+    </TooltipProvider>
   );
 }

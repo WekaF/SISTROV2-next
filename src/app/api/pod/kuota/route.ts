@@ -1,74 +1,105 @@
-import { NextRequest, NextResponse } from "next/server";
-import { query, getPool } from "@/lib/db";
-import crypto from "crypto";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { NextRequest, NextResponse } from "next/server"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
+import { normalizeRole } from "@/lib/role-utils"
 
-export async function GET() {
-  try {
-    const result = await query(`
-      SELECT h.id, TO_CHAR(h.tanggal, 'YYYY-MM-DD') as date, p.nama as product,
-        h.kuota as quota,
-        COALESCE((SELECT SUM(k4.kuota) FROM kuota4shift k4
-          WHERE k4.level3 IN (SELECT id FROM kuota3bagian WHERE level2 IN (SELECT id FROM kuota2wilayah WHERE level1=h.id))), 0) as booked,
-        h.activated as status
-      FROM kuota1header h LEFT JOIN produk p ON h.idproduk = p.id::varchar
-      ORDER BY h.tanggal DESC
-    `);
-    return NextResponse.json({
-      success: true, data: result.rows,
-      metrics: {
-        totalDailyQuota: result.rows.reduce((a, r) => a + (Number(r.quota)||0), 0),
-        totalBooked: result.rows.reduce((a, r) => a + (Number(r.booked)||0), 0),
-        totalRealization: 0
-      }
-    });
-  } catch (error: any) {
-    return NextResponse.json({ success: true, data: [], metrics: { totalDailyQuota: 0, totalBooked: 0, totalRealization: 0 } });
-  }
-}
+const ASPNET = process.env.ASPNET_API_URL || "http://192.168.188.170:8090"
 
 export async function POST(req: NextRequest) {
-  const client = await getPool().connect();
   try {
-    const session = await getServerSession(authOptions);
-    const userRole = (session?.user as any)?.role?.toLowerCase();
-    if (userRole !== 'pod' && userRole !== 'superadmin') {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 403 });
+    const session = await getServerSession(authOptions)
+    if (!session?.user) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
+
+    const activeRole = normalizeRole((session.user as any).role)
+    if (!["pod", "superadmin", "candal", "admin"].includes(activeRole)) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 403 })
     }
-    const { header, wilayah, areas, shifts } = await req.json();
-    const updatedby = (session?.user as any)?.id || null;
-    await client.query("BEGIN");
-    const mappingRes = await client.query(`SELECT abbrev, scope FROM m_bagian`);
-    const areaMapping: Record<string,string> = {};
-    for (const r of mappingRes.rows) areaMapping[r.abbrev] = r.scope;
-    const hRes = await client.query(`INSERT INTO kuota1header (guid,idproduk,tanggal,kuota,activated,updatedby) VALUES ($1,$2,$3,$4,'1',$5) RETURNING id`,
-      [crypto.randomUUID(), String(header.productId), header.startDate, Number(header.totalQuota), updatedby]);
-    const hId = hRes.rows[0].id;
-    for (const [wKey, wVal] of Object.entries(wilayah)) {
-      const val = Number(wVal); if (val <= 0) continue;
-      const wRes = await client.query(`INSERT INTO kuota2wilayah (guid,level1,wilayah,tanggal,idproduk,kuota,activated) VALUES ($1,$2,$3,$4,$5,$6,'1') RETURNING id`,
-        [crypto.randomUUID(), hId, wKey, header.startDate, String(header.productId), val]);
-      const wId = wRes.rows[0].id;
-      for (const [aKey, aVal] of Object.entries(areas)) {
-        const aAmount = Number(aVal); if (aAmount <= 0 || areaMapping[aKey] !== wKey) continue;
-        const bRes = await client.query(`INSERT INTO kuota3bagian (guid,level2,bagian,tanggal,idproduk,kuota,activated) VALUES ($1,$2,$3,$4,$5,$6,'1') RETURNING id`,
-          [crypto.randomUUID(), wId, aKey, header.startDate, String(header.productId), aAmount]);
-        const bId = bRes.rows[0].id;
-        const areaShifts = (shifts as any)[aKey];
-        if (areaShifts) {
-          for (const [sNum, sVal] of Object.entries(areaShifts)) {
-            const sAmount = Number(sVal); if (sAmount <= 0) continue;
-            await client.query(`INSERT INTO kuota4shift (guid,level3,tanggal,shift,idproduk,kuota,activated) VALUES ($1,$2,$3,$4,$5,$6,'1')`,
-              [crypto.randomUUID(), bId, header.startDate, String(sNum), String(header.productId), sAmount]);
-          }
-        }
+
+    const token = (session.user as any).aspnetToken
+    const jsonHeaders = { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" }
+
+    const { header, wilayah, areas, shifts } = await req.json()
+
+    // Validate shift totals match area quotas
+    for (const [areaAbbrev, areaKuota] of Object.entries(areas as Record<string, number>)) {
+      if (Number(areaKuota) <= 0) continue
+      const areaShifts = (shifts as Record<string, Record<number, number>>)[areaAbbrev] || {}
+      const shiftTotal = Object.values(areaShifts).reduce((a: number, b: unknown) => a + Number(b), 0)
+      if (Math.abs(shiftTotal - Number(areaKuota)) > 0.01) {
+        return NextResponse.json({
+          success: false,
+          error: `Total shift area ${areaAbbrev} (${shiftTotal}) tidak sama dengan kuota area (${areaKuota})`,
+        }, { status: 400 })
       }
     }
-    await client.query("COMMIT");
-    return NextResponse.json({ success: true, message: "Quota saved successfully", id: hId });
+
+    // Fetch area scopes from ASP.NET to map area abbrev → wilayah abbrev
+    const bagianRes = await fetch(`${ASPNET}/api/Kuota/DataBagian`, {
+      headers: { "Authorization": `Bearer ${token}` },
+    })
+    const bagianData = await bagianRes.json()
+    const bagianList: any[] = Array.isArray(bagianData?.bagian) ? bagianData.bagian : Array.isArray(bagianData) ? bagianData : []
+    const areaScopes: Record<string, string> = {}
+    for (const b of bagianList) areaScopes[b.abbrev] = b.scope || ""
+
+    const wilayahPayload = Object.entries(wilayah as Record<string, number>)
+      .filter(([, v]) => Number(v) > 0)
+      .map(([abbrev, kuota]) => ({
+        id: "0",
+        id_wilayah: abbrev,
+        nama_wilayah: abbrev,
+        value: Number(kuota),
+      }))
+
+    const bagianPayload = Object.entries(areas as Record<string, number>)
+      .filter(([, v]) => Number(v) > 0)
+      .map(([abbrev, kuota]) => ({
+        id: "0",
+        id_area: abbrev,
+        scope: areaScopes[abbrev] || "",
+        value: Number(kuota),
+      }))
+
+    const shiftPayload = Object.entries(areas as Record<string, number>)
+      .filter(([, kuota]) => Number(kuota) > 0)
+      .map(([abbrev]) => {
+        const areaShifts = (shifts as Record<string, Record<number, number>>)[abbrev] || {}
+        return {
+          id_area: abbrev,
+          count: 3,
+          idShift1: 0,
+          idShift2: 0,
+          idShift3: 0,
+          shift1: Number(areaShifts[1]) || 0,
+          shift2: Number(areaShifts[2]) || 0,
+          shift3: Number(areaShifts[3]) || 0,
+        }
+      })
+
+    const payload = {
+      id: 0,
+      startdate: header.startDate,
+      enddate: header.endDate,
+      produk: String(header.productId),
+      harian: Number(header.totalQuota),
+      wilayah: wilayahPayload,
+      bagian: bagianPayload,
+      shift: shiftPayload,
+    }
+
+    const res = await fetch(`${ASPNET}/api/Kuota/AddWizard`, {
+      method: "POST",
+      headers: jsonHeaders,
+      body: JSON.stringify(payload),
+    })
+
+    if (!res.ok) {
+      const txt = await res.text()
+      return NextResponse.json({ success: false, error: txt || `Error ${res.status}` }, { status: 400 })
+    }
+
+    return NextResponse.json({ success: true, message: "Kuota berhasil disimpan" })
   } catch (error: any) {
-    await client.query("ROLLBACK");
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
-  } finally { client.release(); }
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 })
+  }
 }

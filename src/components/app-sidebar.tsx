@@ -182,6 +182,7 @@ const MENU_GUDANG = {
     { title: "Monitoring Pemuatan", url: "/gudang/targets", icon: MapPin },
     { title: "Traffic Antrian", url: "/gudang/trafik", icon: ArrowLeftRight },
     { title: "Bypass Antrian", url: "/gudang/bypass", icon: Zap },
+    { title: "Mapping Zero ODOL", url: "/armada/mapping-zero-odol", icon: MapPin },
   ],
 }
 
@@ -265,6 +266,7 @@ const roleMenus: Record<Role, any[]> = {
       items: [
         { title: "Penjadwalan Kuota", url: "/kuota/schedule", icon: CalendarCheck },
         { title: "Kuota per Shift", url: "/kuota/shifts", icon: Layers },
+        { title: "Mapping Zero ODOL", url: "/armada/mapping-zero-odol", icon: MapPin },
       ],
     },
     { title: "Antrian Gudang", url: "/antrian", icon: History },
@@ -345,6 +347,7 @@ const roleMenus: Record<Role, any[]> = {
     MENU_REPORTS,
     MENU_ARMADA_ADMIN,
     { title: "Penjadwalan Kuota", url: "/kuota/schedule", icon: CalendarCheck },
+    { title: "Mapping Zero ODOL", url: "/armada/mapping-zero-odol", icon: MapPin },
   ],
 
   // ── PKD — Pelabuhan / Terminal ────────────────────────────────────────────
@@ -407,9 +410,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                       <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/menu-item:rotate-90" />
                     </SidebarMenuButton>
                     <SidebarMenuSub>
-                      {item.items.map((subItem: { title: string; url: string }) => (
+                      {item.items.map((subItem: { title: string; url: string; icon?: React.ComponentType<{ className?: string }> }) => (
                         <SidebarMenuSubItem key={subItem.title}>
                           <SidebarMenuSubButton href={subItem.url}>
+                            {subItem.icon && <subItem.icon className="h-4 w-4 shrink-0 text-muted-foreground" />}
                             <span>{subItem.title}</span>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>

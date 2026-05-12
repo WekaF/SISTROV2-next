@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { query } from "@/lib/db";
+import { aspnetFetchServer } from "@/lib/api-client";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -9,22 +9,16 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   try {
-    const today = new Date().toISOString().split('T')[0];
-    const ticketResult = await query(`
-      SELECT COUNT(*) as totaltoday FROM tiket WHERE DATE(tanggal) = $1
-    `, [today]);
-    const avgTimeResult = await query(`
-      SELECT AVG(EXTRACT(EPOCH FROM (timegudang - timesec))/60)::int as avgminutes
-      FROM tiket WHERE DATE(tanggal) = $1 AND timesec IS NOT NULL AND timegudang IS NOT NULL
-    `, [today]);
-    const queueResult = await query(`
-      SELECT COUNT(*) as queuecount FROM antrian WHERE status IS NULL
-    `);
+    const token = (session?.user as any)?.aspnetToken as string;
+    const res = await aspnetFetchServer('/api/Home/GetViewerDashboardStats', token);
+    if (!res.ok) throw new Error("Failed to fetch ticket stats");
+    
+    const data = await res.json();
     return NextResponse.json({
-      totalToday: Number(ticketResult.rows[0]?.totaltoday) || 0,
-      avgLoadingTime: Number(avgTimeResult.rows[0]?.avgminutes) || 0,
-      currentQueue: Number(queueResult.rows[0]?.queuecount) || 0,
-      trend: "stable"
+      totalToday: data.TotalToday || data.totalToday || 0,
+      avgLoadingTime: data.AvgLoadingTime || data.avgLoadingTime || 0,
+      currentQueue: data.CurrentQueue || data.currentQueue || 0,
+      trend: data.Trend || data.trend || "stable"
     });
   } catch (error) {
     console.error("Admin Dashboard Tickets Error:", error);

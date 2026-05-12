@@ -1,32 +1,56 @@
 import { NextResponse } from "next/server";
-import { query } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { aspnetFetchServer } from "@/lib/api-client";
+
+function isAuthorized(session: any): boolean {
+  const roles = (session?.user as any)?.roles || [];
+  return !!session?.user && roles.some((r: string) => ["superadmin", "ti"].includes(r.toLowerCase()));
+}
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as any).role !== 'superadmin') {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-    }
+    if (!isAuthorized(session)) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+
+    const token = (session?.user as any)?.aspnetToken as string;
     const { id } = params;
     const { Deskripsi, Alamat, Kecamatan, Kabupaten, Propinsi } = await req.json();
-    await query(`
-      UPDATE gudang SET deskripsi=$1, alamat=$2, kecamatan=$3, kabupaten=$4, propinsi=$5 WHERE id=$6
-    `, [Deskripsi, Alamat, Kecamatan, Kabupaten, Propinsi, id]);
+
+    const res = await aspnetFetchServer('/api/SuperadminGudang/Sync', token, {
+      method: 'POST',
+      body: JSON.stringify({ id, deskripsi: Deskripsi, alamat: Alamat, kecamatan: Kecamatan, kabupaten: Kabupaten, propinsi: Propinsi }),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text().catch(() => res.statusText);
+      throw new Error(`API error: ${res.status} ${errText}`);
+    }
+
     return NextResponse.json({ success: true, message: "Warehouse updated successfully" });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as any).role !== 'superadmin') {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    if (!isAuthorized(session)) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+
+    const token = (session?.user as any)?.aspnetToken as string;
+    const { id } = params;
+
+    const res = await aspnetFetchServer('/api/SuperadminGudang/Delete', token, {
+      method: 'POST',
+      body: JSON.stringify({ id }),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text().catch(() => res.statusText);
+      throw new Error(`API error: ${res.status} ${errText}`);
     }
-    await query(`DELETE FROM gudang WHERE id=$1`, [params.id]);
+
     return NextResponse.json({ success: true, message: "Warehouse deleted successfully" });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { query } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { aspnetFetchServer } from "@/lib/api-client";
 
 export async function GET(req: Request) {
   try {
@@ -12,12 +12,21 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const productId = searchParams.get('productId');
     if (!productId) return NextResponse.json({ success: false, error: "Product ID is required" }, { status: 400 });
-    const result = await query(`
-      SELECT pm.id, pm.companycode, c.company as companyname
-      FROM produkmapping pm JOIN company c ON pm.companycode = c.company_code
-      WHERE pm.produkid=$1
-    `, [productId]);
-    return NextResponse.json({ success: true, data: result.rows });
+
+    const token = (session?.user as any)?.aspnetToken as string;
+    const res = await aspnetFetchServer('/api/ProdukMapping/ProdukMappingList', token, {
+      method: 'POST',
+      body: JSON.stringify({ productId })
+    });
+    
+    if (!res.ok) throw new Error("Failed to fetch product mappings from API");
+    const data: any[] = await res.json();
+    
+    return NextResponse.json({ success: true, data: data.map(m => ({
+      id: m.id || m.ID,
+      companycode: m.company_code || m.companycode || m.CompanyCode,
+      companyname: m.company || m.companyname || m.CompanyName
+    }))});
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
@@ -31,9 +40,18 @@ export async function POST(req: Request) {
     }
     const { productId, companyCode } = await req.json();
     if (!productId || !companyCode) return NextResponse.json({ success: false, error: "Required fields missing" }, { status: 400 });
-    const check = await query(`SELECT 1 FROM produkmapping WHERE produkid=$1 AND companycode=$2`, [productId, companyCode]);
-    if (check.rows.length > 0) return NextResponse.json({ success: false, error: "Mapping already exists" }, { status: 400 });
-    await query(`INSERT INTO produkmapping (produkid, companycode, createdat) VALUES ($1,$2,NOW())`, [productId, companyCode]);
+    
+    const token = (session?.user as any)?.aspnetToken as string;
+    const res = await aspnetFetchServer('/api/ProdukMapping/SaveData', token, {
+      method: 'POST',
+      body: JSON.stringify({ productId, companyCode })
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      return NextResponse.json({ success: false, error: err }, { status: res.status });
+    }
+
     return NextResponse.json({ success: true, message: "Mapping created successfully" });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
@@ -49,7 +67,18 @@ export async function DELETE(req: Request) {
     const { searchParams } = new URL(req.url);
     const mappingId = searchParams.get('id');
     if (!mappingId) return NextResponse.json({ success: false, error: "Mapping ID is required" }, { status: 400 });
-    await query(`DELETE FROM produkmapping WHERE id=$1`, [mappingId]);
+
+    const token = (session?.user as any)?.aspnetToken as string;
+    const res = await aspnetFetchServer('/api/ProdukMapping/RemoveData', token, {
+      method: 'POST',
+      body: JSON.stringify({ id: mappingId })
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      return NextResponse.json({ success: false, error: err }, { status: res.status });
+    }
+
     return NextResponse.json({ success: true, message: "Mapping removed successfully" });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

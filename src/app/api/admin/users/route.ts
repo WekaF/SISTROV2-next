@@ -1,97 +1,133 @@
 import { NextResponse } from "next/server";
-import { query, getPool } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { aspnetFetchServer } from "@/lib/api-client";
+
+function isSuperAdmin(session: any): boolean {
+  const roles = (session?.user as any)?.roles || [];
+  return !!session?.user && roles.some((r: string) => ["superadmin", "ti"].includes(r.toLowerCase()));
+}
 
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    
-    const userRoles = (session.user as any).roles || [];
-    const isAdmin = userRoles.some((r: string) => ["superadmin", "admin", "ti"].includes(r.toLowerCase()));
-    
-    if (!isAdmin) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const userRoles = (session?.user as any)?.roles || [];
+    const isAdmin = !!session?.user && userRoles.some((r: string) => ["superadmin", "admin", "ti"].includes(r.toLowerCase()));
+    if (!isAdmin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const result = await query(`
-      SELECT u.id, u.username, u.email, u.fullname, u.isactive, u.sapvendorcode,
-        COALESCE(ARRAY_AGG(DISTINCT r.code) FILTER (WHERE r.code IS NOT NULL), '{}') as roles,
-        COALESCE(ARRAY_AGG(DISTINCT c.company_code) FILTER (WHERE c.company_code IS NOT NULL), '{}') as companies
-      FROM users u
-      LEFT JOIN userroles ur ON ur.userid = u.id
-      LEFT JOIN roles r ON r.id = ur.roleid
-      LEFT JOIN usercompanies uc ON uc.userid = u.id
-      LEFT JOIN company c ON c.company_code = uc.companycode
-      GROUP BY u.id ORDER BY u.fullname ASC
-    `);
-    return NextResponse.json(result.rows.map(u => ({ ...u, status: u.isactive ? 'Active' : 'Inactive' })));
+    const token = (session?.user as any)?.aspnetToken as string;
+    const res = await aspnetFetchServer('/api/UserAccount/ListUser', token);
+    if (!res.ok) throw new Error("Failed to fetch users from API");
+    
+    const data: any[] = await res.json();
+    // Normalize data structure to match what the frontend expects
+    const mapped = data.map(u => ({
+      id: u.userid || u.id,
+      username: u.username,
+      email: u.email,
+      fullname: u.fullname,
+      status: 'Active', // Legacy API doesn't always return status, assuming active
+      roles: u.role ? u.role.split(',').map((r: string) => r.trim()) : [],
+      companies: u.company_code ? [u.company_code] : (u.companycode ? [u.companycode] : []),
+      sapvendorcode: u.sapvendorcode || u.sap
+    }));
+
+    return NextResponse.json(mapped);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
-export async function PUT(req: Request) {
-  const client = await getPool().connect();
+export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!isSuperAdmin(session)) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
 
-    const userRoles = (session.user as any).roles || [];
-    const isSuperAdmin = userRoles.some((r: string) => ["superadmin", "ti"].includes(r.toLowerCase()));
+    const body = await req.json();
+    const token = (session?.user as any)?.aspnetToken as string;
 
-    if (!isSuperAdmin) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // Register basic user data
+    const registerRes = await aspnetFetchServer('/api/UserAccount/Register', token, {
+      method: 'POST',
+      body: JSON.stringify({
+        Username: body.username,
+        Password: body.password,
+        FullName: body.fullName,
+        Email: body.email,
+        IsActive: body.isActive !== false,
+        SAPVendorCode: body.sapVendorCode || null
+      })
+    });
+
+    if (!registerRes.ok) {
+      const err = await registerRes.text();
+      return NextResponse.json({ success: false, error: err }, { status: registerRes.status });
     }
 
-    const { id, fullName, email, isActive, roles, companyIds } = await req.json();
-    if (!id) return NextResponse.json({ error: "User ID is required" }, { status: 400 });
-    
-    await client.query("BEGIN");
-    await client.query(`UPDATE users SET fullname=$1, email=$2, isactive=$3 WHERE id=$4`, [fullName, email, isActive, id]);
-    
-    if (roles && Array.isArray(roles)) {
-      await client.query(`DELETE FROM userroles WHERE userid=$1`, [id]);
-      for (const roleCode of roles) {
-        await client.query(`INSERT INTO userroles (userid, roleid) SELECT $1, id FROM roles WHERE code=$2`, [id, roleCode]);
+    // Role assignments
+    if (body.roles && body.roles.length > 0) {
+      for (const roleName of body.roles) {
+        await aspnetFetchServer('/api/UserAccount/AddtoRole', token, {
+          method: 'POST',
+          body: JSON.stringify({ username: body.username, role: roleName })
+        });
       }
     }
-    
-    if (companyIds && Array.isArray(companyIds)) {
-      await client.query(`DELETE FROM usercompanies WHERE userid=$1`, [id]);
-      for (const companyId of companyIds) {
-        await client.query(`INSERT INTO usercompanies (userid, companycode, isprimary) SELECT $1, company_code, false FROM company WHERE id=$2`, [id, companyId]);
-      }
+
+    return NextResponse.json({ success: true, message: "User registered successfully" });
+  } catch (err: any) {
+    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  }
+}
+
+export async function PUT(req: Request) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!isSuperAdmin(session)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const body = await req.json();
+    const token = (session?.user as any)?.aspnetToken as string;
+
+    const res = await aspnetFetchServer('/api/UserAccount/UpdateUserProfile', token, {
+      method: 'POST',
+      body: JSON.stringify({
+        Id: body.id,
+        FullName: body.fullName,
+        Email: body.email,
+        IsActive: body.isActive
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      return NextResponse.json({ success: false, error: err }, { status: res.status });
     }
-    
-    await client.query("COMMIT");
+
     return NextResponse.json({ success: true, message: "User updated successfully" });
   } catch (err: any) {
-    await client.query("ROLLBACK");
     return NextResponse.json({ error: err.message }, { status: 500 });
-  } finally {
-    client.release();
   }
 }
 
 export async function DELETE(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-    const userRoles = (session.user as any).roles || [];
-    const isSuperAdmin = userRoles.some((r: string) => ["superadmin", "ti"].includes(r.toLowerCase()));
-
-    if (!isSuperAdmin) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!isSuperAdmin(session)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
-    if (!id) return NextResponse.json({ error: "User ID is required" }, { status: 400 });
-    
-    await query(`DELETE FROM users WHERE id=$1`, [id]);
+    const token = (session?.user as any)?.aspnetToken as string;
+
+    const res = await aspnetFetchServer('/api/UserAccount/DeleteData', token, {
+      method: 'POST',
+      body: JSON.stringify({ id })
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      return NextResponse.json({ success: false, error: err }, { status: res.status });
+    }
+
     return NextResponse.json({ success: true, message: "User deleted successfully" });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

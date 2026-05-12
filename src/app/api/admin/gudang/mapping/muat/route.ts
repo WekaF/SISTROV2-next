@@ -1,23 +1,39 @@
 import { NextResponse } from "next/server";
-import { query } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { aspnetFetchServer } from "@/lib/api-client";
+
+function isAuthorized(session: any): boolean {
+  const roles = (session?.user as any)?.roles || [];
+  return !!session?.user && roles.some((r: string) => ["superadmin", "ti"].includes(r.toLowerCase()));
+}
 
 export async function GET(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as any).role !== 'superadmin') {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-    }
+    if (!isAuthorized(session)) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+
     const { searchParams } = new URL(req.url);
     const warehouseId = searchParams.get('warehouseId');
     if (!warehouseId) return NextResponse.json({ success: false, error: "Warehouse ID is required" }, { status: 400 });
-    const result = await query(`
-      SELECT pm.id, pm.companycode, c.company as companyname
-      FROM gudangmuatmapping pm JOIN company c ON pm.companycode = c.company_code
-      WHERE pm.warehouseid=$1
-    `, [warehouseId]);
-    return NextResponse.json({ success: true, data: result.rows });
+
+    const token = (session?.user as any)?.aspnetToken as string;
+    const res = await aspnetFetchServer(`/api/SuperadminGudang/Mappings?gudangId=${warehouseId}&type=muat`, token);
+
+    if (!res.ok) {
+      const errText = await res.text().catch(() => res.statusText);
+      throw new Error(`API error: ${res.status} ${errText}`);
+    }
+
+    const mappings: any[] = await res.json();
+
+    const data = mappings.map((m) => ({
+      Id: `${m.gudang}|${m.company_code}`,
+      CompanyCode: m.company_code,
+      CompanyName: m.company_name || m.company_code,
+    }));
+
+    return NextResponse.json({ success: true, data });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
@@ -26,14 +42,26 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as any).role !== 'superadmin') {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-    }
+    if (!isAuthorized(session)) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+
+    const token = (session?.user as any)?.aspnetToken as string;
     const { warehouseId, companyCode } = await req.json();
     if (!warehouseId || !companyCode) return NextResponse.json({ success: false, error: "Required fields missing" }, { status: 400 });
-    const check = await query(`SELECT 1 FROM gudangmuatmapping WHERE warehouseid=$1 AND companycode=$2`, [warehouseId, companyCode]);
-    if (check.rows.length > 0) return NextResponse.json({ success: false, error: "Mapping already exists" }, { status: 400 });
-    await query(`INSERT INTO gudangmuatmapping (warehouseid, companycode, createdat) VALUES ($1, $2, NOW())`, [warehouseId, companyCode]);
+
+    const res = await aspnetFetchServer('/api/SuperadminGudang/AddMapping', token, {
+      method: 'POST',
+      body: JSON.stringify({ 
+        gudangId: warehouseId, 
+        companyCode: companyCode, 
+        type: 'muat' 
+      }),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text().catch(() => res.statusText);
+      throw new Error(errText || `API error: ${res.status}`);
+    }
+
     return NextResponse.json({ success: true, message: "Mapping created successfully" });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
@@ -43,13 +71,29 @@ export async function POST(req: Request) {
 export async function DELETE(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as any).role !== 'superadmin') {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-    }
+    if (!isAuthorized(session)) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+
+    const token = (session?.user as any)?.aspnetToken as string;
     const { searchParams } = new URL(req.url);
-    const mappingId = searchParams.get('id');
-    if (!mappingId) return NextResponse.json({ success: false, error: "Mapping ID is required" }, { status: 400 });
-    await query(`DELETE FROM gudangmuatmapping WHERE id=$1`, [mappingId]);
+    const compoundId = searchParams.get('id');
+    if (!compoundId) return NextResponse.json({ success: false, error: "Mapping ID is required" }, { status: 400 });
+
+    const [gudangId, companyCode] = compoundId.split('|');
+    
+    const res = await aspnetFetchServer('/api/SuperadminGudang/RemoveMapping', token, {
+      method: 'POST',
+      body: JSON.stringify({ 
+        gudangId: gudangId, 
+        companyCode: companyCode, 
+        type: 'muat' 
+      }),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text().catch(() => res.statusText);
+      throw new Error(errText || `API error: ${res.status}`);
+    }
+
     return NextResponse.json({ success: true, message: "Mapping removed successfully" });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

@@ -1,17 +1,24 @@
 import { NextResponse } from "next/server";
-import { query } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { aspnetFetchServer } from "@/lib/api-client";
+
+function isAuthorized(session: any): boolean {
+  const roles = (session?.user as any)?.roles || [];
+  return !!session?.user && roles.some((r: string) => ["superadmin", "ti"].includes(r.toLowerCase()));
+}
 
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    const role = (session?.user as any)?.role;
-    if (role !== 'superadmin' && role !== 'admin') {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-    }
-    const result = await query(`SELECT * FROM sumbu ORDER BY id ASC`);
-    return NextResponse.json({ success: true, data: result.rows });
+    if (!isAuthorized(session)) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+
+    const token = (session?.user as any)?.aspnetToken as string;
+    const res = await aspnetFetchServer('/api/Sumbu/DataTable', token, { method: 'POST', body: JSON.stringify({}) });
+    if (!res.ok) throw new Error("Failed to fetch sumbu from API");
+    
+    const data = await res.json();
+    return NextResponse.json({ success: true, data });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
@@ -20,16 +27,27 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    const role = (session?.user as any)?.role;
-    if (role !== 'superadmin' && role !== 'admin') {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-    }
+    if (!isAuthorized(session)) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+
     const body = await req.json();
-    const { nama, jenistruk, tahun, muatan, idGrupTruk } = body;
-    await query(`
-      INSERT INTO sumbu (nama, jenistruk, tahun, muatan, idgruptruk, updatedon, updatedby)
-      VALUES ($1, $2, $3, $4, $5, NOW(), $6)
-    `, [nama, jenistruk, tahun, muatan, idGrupTruk || 0, session?.user?.email || 'administrator']);
+    const token = (session?.user as any)?.aspnetToken as string;
+
+    const res = await aspnetFetchServer('/api/Sumbu/PostData', token, {
+      method: 'POST',
+      body: JSON.stringify({
+        Nama: body.nama,
+        JenisTruk: body.jenistruk,
+        Tahun: body.tahun,
+        Muatan: body.muatan,
+        IdGrupTruk: body.idGrupTruk || 0
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      return NextResponse.json({ success: false, error: err }, { status: res.status });
+    }
+
     return NextResponse.json({ success: true, message: "Sumbu created successfully" });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
@@ -39,15 +57,28 @@ export async function POST(req: Request) {
 export async function PUT(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    const role = (session?.user as any)?.role;
-    if (role !== 'superadmin' && role !== 'admin') {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    if (!isAuthorized(session)) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+
+    const body = await req.json();
+    const token = (session?.user as any)?.aspnetToken as string;
+
+    const res = await aspnetFetchServer('/api/Sumbu/PostData', token, {
+      method: 'POST',
+      body: JSON.stringify({
+        Id: body.id,
+        Nama: body.nama,
+        JenisTruk: body.jenistruk,
+        Tahun: body.tahun,
+        Muatan: body.muatan,
+        IdGrupTruk: body.idGrupTruk || 0
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      return NextResponse.json({ success: false, error: err }, { status: res.status });
     }
-    const { id, nama, jenistruk, tahun, muatan, idGrupTruk } = await req.json();
-    await query(`
-      UPDATE sumbu SET nama=$1, jenistruk=$2, tahun=$3, muatan=$4, idgruptruk=$5, updatedon=NOW(), updatedby=$6
-      WHERE id=$7
-    `, [nama, jenistruk, tahun, muatan, idGrupTruk || 0, session?.user?.email || 'administrator', id]);
+
     return NextResponse.json({ success: true, message: "Sumbu updated successfully" });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
@@ -57,13 +88,22 @@ export async function PUT(req: Request) {
 export async function DELETE(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    const role = (session?.user as any)?.role;
-    if (role !== 'superadmin' && role !== 'admin') {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-    }
+    if (!isAuthorized(session)) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
-    await query(`DELETE FROM sumbu WHERE id=$1`, [id]);
+    const token = (session?.user as any)?.aspnetToken as string;
+
+    const res = await aspnetFetchServer('/api/Sumbu/RemoveData', token, {
+      method: 'POST',
+      body: JSON.stringify({ id })
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      return NextResponse.json({ success: false, error: err }, { status: res.status });
+    }
+
     return NextResponse.json({ success: true, message: "Sumbu deleted successfully" });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

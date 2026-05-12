@@ -130,21 +130,21 @@ export default function ArmadaPage() {
   useEffect(() => {
     if (armadaDetail) {
       setEditFormData({
-        Nopol: armadaDetail.nopol || "",
-        SumbuId: armadaDetail.sumbu || "",
-        JenisKendaraan: armadaDetail.jeniskendaraan || "",
-        QtyMax: armadaDetail.qtymax || "0",
-        JBI: armadaDetail.jbi || "0",
-        BeratKendaraan: armadaDetail.beratkendaraan || "0",
-        BeratPenumpang: armadaDetail.beratpenumpang || "0",
-        TahunPembuatan: armadaDetail.tahun_pembuatan || "",
-        MasaBerlakuKir: armadaDetail.masa_berlaku_kir_string || "",
-        NoRangkaStnk: armadaDetail.no_rangka_stnk || "",
-        NoMesinStnk: armadaDetail.no_mesin_stnk || "",
-        NoRangkaKir: armadaDetail.no_rangka_kir || "",
-        NoMesinKir: armadaDetail.no_mesin_kir || "",
-        Charter: armadaDetail.charter === true,
-        Approver: armadaDetail.approver || "",
+        Nopol: armadaDetail.nopol || armadaDetail.Nopol || "",
+        SumbuId: armadaDetail.sumbu || armadaDetail.Sumbu || "",
+        JenisKendaraan: armadaDetail.jeniskendaraan || armadaDetail.JenisKendaraan || "",
+        QtyMax: armadaDetail.qtymax || armadaDetail.QtyMax || "0",
+        JBI: armadaDetail.jbi || armadaDetail.JBI || "0",
+        BeratKendaraan: armadaDetail.beratkendaraan || armadaDetail.BeratKendaraan || "0",
+        BeratPenumpang: armadaDetail.beratpenumpang || armadaDetail.BeratPenumpang || "0",
+        TahunPembuatan: armadaDetail.tahun_pembuatan || armadaDetail.TahunPembuatan || "",
+        MasaBerlakuKir: armadaDetail.masa_berlaku_kir_string || armadaDetail.MasaBerlakuKirString || "",
+        NoRangkaStnk: armadaDetail.no_rangka_stnk || armadaDetail.NoRangkaStnk || "",
+        NoMesinStnk: armadaDetail.no_mesin_stnk || armadaDetail.NoMesinStnk || "",
+        NoRangkaKir: armadaDetail.no_rangka_kir || armadaDetail.NoRangkaKir || "",
+        NoMesinKir: armadaDetail.no_mesin_kir || armadaDetail.NoMesinKir || "",
+        Charter: (armadaDetail.charter || armadaDetail.Charter) === true,
+        Approver: armadaDetail.approver || armadaDetail.Approver || "",
       });
     }
   }, [armadaDetail]);

@@ -1,42 +1,46 @@
-import { NextResponse } from "next/server";
-import { query } from "@/lib/db";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { NextResponse } from "next/server"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
+
+const ASPNET = process.env.ASPNET_API_URL || "http://192.168.188.170:8090"
 
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const session = await getServerSession(authOptions)
+    if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-    const userId = (session.user as any).id;
+    const token = (session.user as any).aspnetToken
+    const headers = { "Authorization": `Bearer ${token}` }
 
-    const productsResult = await query<{ id: number; name: string; code: string }>(`
-      SELECT DISTINCT p.id, p.nama as name, p.kode as code
-      FROM produk p
-      JOIN produkmapping pm ON p.id = pm.produkid
-      WHERE pm.companycode IN (
-        SELECT companycode FROM usercompanies WHERE userid = $1
-      ) AND (p.deleted IS NULL OR p.deleted = false)
-    `, [userId]);
+    const [produkRes, wilayahRes, bagianRes] = await Promise.all([
+      fetch(`${ASPNET}/api/ProdukMapping/ProdukMappingList`, { headers }),
+      fetch(`${ASPNET}/api/Kuota/DataWilayah`, { headers }),
+      fetch(`${ASPNET}/api/Kuota/DataBagian`, { headers }),
+    ])
 
-    const wilayahResult = await query<{ id: string; name: string }>(
-      "SELECT abbrev as id, keterangan as name FROM m_wilayah ORDER BY abbrev"
-    );
+    const [produkData, wilayahData, bagianData] = await Promise.all([
+      produkRes.json(),
+      wilayahRes.json(),
+      bagianRes.json(),
+    ])
 
-    const areasResult = await query<{ id: string; name: string; wilayahId: string }>(
-      `SELECT abbrev as id, keterangan as name, scope as "wilayahId" FROM m_bagian ORDER BY abbrev`
-    );
+    const products = Array.isArray(produkData)
+      ? produkData.map((p: any) => ({ id: String(p.ID ?? p.id ?? ""), name: p.Nama ?? p.nama ?? "" }))
+      : []
 
-    return NextResponse.json({
-      success: true,
-      products: productsResult.rows,
-      wilayah: wilayahResult.rows,
-      areas: areasResult.rows
-    });
+    const wilayah = Array.isArray(wilayahData)
+      ? wilayahData.map((w: any) => ({ id: w.abbrev ?? "", name: w.keterangan ?? "" }))
+      : []
+
+    const bagianList = Array.isArray(bagianData?.bagian) ? bagianData.bagian : Array.isArray(bagianData) ? bagianData : []
+    const areas = bagianList.map((a: any) => ({
+      id: a.abbrev ?? "",
+      name: a.keterangan ?? "",
+      wilayahId: a.scope ?? "",
+    }))
+
+    return NextResponse.json({ success: true, products, wilayah, areas })
   } catch (error: any) {
-    console.error("Lookup Error:", error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 })
   }
 }

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { query } from "@/lib/db";
+import { aspnetFetchServer } from "@/lib/api-client";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -9,18 +9,16 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   try {
-    const plantResult = await query(`
-      SELECT 
-        COUNT(*) FILTER (WHERE has_security = true) as activeplants,
-        COUNT(*) FILTER (WHERE has_security = false OR has_security IS NULL) as inactiveplants
-      FROM company
-    `);
-    const warehouseResult = await query(`SELECT COUNT(*) as count FROM gudang`);
+    const token = (session?.user as any)?.aspnetToken as string;
+    const res = await aspnetFetchServer('/api/Home/GetViewerDashboardStats', token);
+    if (!res.ok) throw new Error("Failed to fetch dashboard stats");
+    
+    const data = await res.json();
     return NextResponse.json({
-      activePlants: Number(plantResult.rows[0]?.activeplants) || 0,
-      inactivePlants: Number(plantResult.rows[0]?.inactiveplants) || 0,
-      totalWarehouses: Number(warehouseResult.rows[0]?.count) || 0,
-      regions: 8
+      activePlants: data.ActivePlants || data.activePlants || 0,
+      inactivePlants: data.InactivePlants || data.inactivePlants || 0,
+      totalWarehouses: data.TotalWarehouses || data.totalWarehouses || 0,
+      regions: data.Regions || data.regions || 8
     });
   } catch (error) {
     console.error("Admin Dashboard Status Error:", error);

@@ -1,197 +1,403 @@
-"use client";
-import React, { useState, useEffect } from "react";
-import {
-  Clock,
-  Warehouse,
-  CheckCircle2,
-  Truck,
-  BarChart3,
-  Info
-} from "lucide-react";
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import Badge from "@/components/ui/badge/Badge";
+"use client"
+import { useState, useEffect, useRef } from "react"
+import { Clock, Package, Filter, Calendar, FileEdit, X, AlertCircle } from "lucide-react"
+import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import Badge from "@/components/ui/badge/Badge"
+import { DataTable, type DataTableColumn, type DataTableParams } from "@/components/ui/DataTable"
+import { useSession } from "next-auth/react"
+import { normalizeRole } from "@/lib/role-utils"
+import { useToast } from "@/components/ui/toast"
 
-export default function ShiftQuotaPage() {
-  const [loading, setLoading] = useState(true);
-  const [shiftData, setShiftData] = useState<any[]>([]);
-  const [summary, setSummary] = useState<any>({});
-  const [currentShift, setCurrentShift] = useState(1);
-  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+interface ShiftRow {
+  id: number
+  guid: string
+  tanggal: string
+  tanggalString: string
+  shift: string
+  namaproduk: string
+  kuota: number
+  kuotaHeader: number
+  kuota_terpesan: number
+  kuota_in: number
+  kuota_out: number
+  activated: string
+  wilayahString: string
+  bagianString: string
+  updatedbyString: string
+}
 
-  const calculateActiveShift = () => {
-    const hour = new Date().getHours();
-    if (hour >= 6 && hour < 14) return 1;
-    if (hour >= 14 && hour < 22) return 2;
-    return 3;
-  };
+interface LookupItem { id: string; name: string }
 
-  const getShiftTimeRange = (s: number) => {
-    if (s === 1) return "06:00 - 14:00";
-    if (s === 2) return "14:00 - 22:00";
-    return "22:00 - 06:00";
-  };
+export default function KuotaShiftsPage() {
+  const { data: session } = useSession()
+  const { addToast } = useToast()
+  const activeRole = normalizeRole((session?.user as any)?.role)
+  const canEdit = ["candal", "superadmin", "admin", "pod"].includes(activeRole)
 
-  const fetchData = async () => {
-    try {
-      const res = await fetch('/api/kuota/shifts');
-      const data = await res.json();
-      if (data.success) {
-        setShiftData(data.data);
-        setSummary(data.summary);
-      }
-    } catch (error) {
-      console.error("Failed to fetch shift data", error);
-    } finally {
-      setLoading(false);
-      setLastUpdated(new Date());
-    }
-  };
+  const [products, setProducts] = useState<LookupItem[]>([])
+  const [sdFilter, setSdFilter] = useState("")
+  const [edFilter, setEdFilter] = useState("")
+  const [produkFilter, setProdukFilter] = useState("")
+  const [appliedSD, setAppliedSD] = useState("")
+  const [appliedED, setAppliedED] = useState("")
+  const [appliedProduk, setAppliedProduk] = useState("")
+
+  // Edit modal state
+  const [editRow, setEditRow] = useState<ShiftRow | null>(null)
+  const [editKuota, setEditKuota] = useState("")
+  const [saving, setSaving] = useState(false)
+  const [refreshKey, setRefreshKey] = useState(0)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    setCurrentShift(calculateActiveShift());
-    fetchData();
-    
-    // Auto refresh every 5 minutes
-    const interval = setInterval(fetchData, 5 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, []);
+    fetch("/api/kuota/lookup")
+      .then(r => r.json())
+      .then(d => { if (d.success) setProducts(d.products) })
+      .catch(() => {})
+  }, [])
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500"></div>
-      </div>
-    );
+  useEffect(() => {
+    if (editRow) {
+      setEditKuota(String(editRow.kuota))
+      setTimeout(() => inputRef.current?.focus(), 50)
+    }
+  }, [editRow])
+
+  const applyFilter = () => {
+    setAppliedSD(sdFilter)
+    setAppliedED(edFilter)
+    setAppliedProduk(produkFilter)
   }
+
+  const resetFilter = () => {
+    setSdFilter(""); setEdFilter(""); setProdukFilter("")
+    setAppliedSD(""); setAppliedED(""); setAppliedProduk("")
+  }
+
+  const handleSave = async () => {
+    if (!editRow) return
+    const kuotaNum = Number(editKuota)
+    if (isNaN(kuotaNum) || kuotaNum < 0) {
+      addToast({ variant: "warning", title: "Kuota tidak valid", description: "Masukkan nilai kuota yang benar." })
+      return
+    }
+    setSaving(true)
+    try {
+      const res = await fetch("/api/kuota/shifts", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ guid: editRow.guid, kuota: kuotaNum }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        addToast({ variant: "success", title: "Kuota shift berhasil diperbarui" })
+        setEditRow(null)
+        setRefreshKey(k => k + 1)
+      } else {
+        addToast({ variant: "destructive", title: "Gagal menyimpan", description: data.error })
+      }
+    } catch {
+      addToast({ variant: "destructive", title: "Gagal menyimpan", description: "Terjadi kesalahan." })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const fetcher = async (params: DataTableParams) => {
+    const qs = new URLSearchParams({
+      draw:   String(params.draw),
+      start:  String(params.start),
+      length: String(params.length),
+      search: params.search || "",
+      SD:     appliedSD,
+      ED:     appliedED,
+      produk: appliedProduk,
+    })
+    const res = await fetch(`/api/kuota/shifts?${qs}`)
+    const data = await res.json()
+    if (!data.success) throw new Error(data.error || "Gagal memuat data")
+    return {
+      data: data.data ?? [],
+      recordsTotal:    data.recordsTotal    ?? 0,
+      recordsFiltered: data.recordsFiltered ?? 0,
+    }
+  }
+
+  const columns: DataTableColumn<ShiftRow>[] = [
+    {
+      key: "tanggal",
+      header: "Tanggal",
+      render: (item) => (
+        <div className="flex items-center gap-1.5">
+          <Calendar className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+          <span className="font-semibold text-sm whitespace-nowrap">{item.tanggalString || item.tanggal}</span>
+        </div>
+      ),
+    },
+    {
+      key: "shift",
+      header: "Shift",
+      render: (item) => (
+        <Badge
+          color={item.shift === "1" ? "info" : item.shift === "2" ? "warning" : "success"}
+          size="sm" variant="light"
+        >
+          Shift {item.shift}
+        </Badge>
+      ),
+    },
+    {
+      key: "wilayahString",
+      header: "Wilayah",
+      render: (item) => <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{item.wilayahString || "—"}</span>,
+    },
+    {
+      key: "bagianString",
+      header: "Bagian / Area",
+      render: (item) => <span className="text-xs font-semibold text-gray-900 dark:text-white">{item.bagianString || "—"}</span>,
+    },
+    {
+      key: "namaproduk",
+      header: "Produk",
+      render: (item) => (
+        <div className="flex items-center gap-2">
+          <div className="p-1 bg-brand-50 rounded text-brand-500 dark:bg-brand-500/10 shrink-0">
+            <Package className="h-3 w-3" />
+          </div>
+          <span className="text-xs font-bold text-gray-900 dark:text-white">{item.namaproduk || "—"}</span>
+        </div>
+      ),
+    },
+    {
+      key: "kuotaHeader",
+      header: "Kuota Bagian",
+      headerClassName: "text-right",
+      className: "text-right",
+      render: (item) => (
+        <span className="text-xs font-semibold text-gray-500">
+          {Number(item.kuotaHeader || 0).toLocaleString("id-ID")}
+        </span>
+      ),
+    },
+    {
+      key: "kuota",
+      header: "Kuota Shift",
+      headerClassName: "text-right",
+      className: "text-right",
+      render: (item) => (
+        <span className="font-bold text-gray-900 dark:text-white text-sm">
+          {Number(item.kuota).toLocaleString("id-ID")}
+        </span>
+      ),
+    },
+    {
+      key: "kuota_terpesan",
+      header: "Terpesan",
+      headerClassName: "text-right",
+      className: "text-right",
+      render: (item) => <span className="font-semibold text-blue-600 text-sm">{Number(item.kuota_terpesan).toLocaleString("id-ID")}</span>,
+    },
+    {
+      key: "kuota_in",
+      header: "Masuk",
+      headerClassName: "text-right",
+      className: "text-right",
+      render: (item) => <span className="font-semibold text-orange-600 text-sm">{Number(item.kuota_in).toLocaleString("id-ID")}</span>,
+    },
+    {
+      key: "kuota_out",
+      header: "Keluar",
+      headerClassName: "text-right",
+      className: "text-right",
+      render: (item) => <span className="font-semibold text-green-600 text-sm">{Number(item.kuota_out).toLocaleString("id-ID")}</span>,
+    },
+    {
+      key: "activated",
+      header: "Status",
+      render: (item) => (
+        <Badge color={item.activated === "1" ? "success" : "error"} size="sm" variant="light">
+          {item.activated === "1" ? "Aktif" : "Nonaktif"}
+        </Badge>
+      ),
+    },
+    {
+      key: "updatedbyString",
+      header: "Updated By",
+      render: (item) => <span className="text-xs text-gray-500 dark:text-gray-400">{item.updatedbyString || "—"}</span>,
+    },
+    ...(canEdit ? [{
+      key: "action",
+      header: "Action",
+      headerClassName: "text-right",
+      className: "text-right",
+      render: (item: ShiftRow) => (
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          title="Edit Kuota Shift"
+          className="hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10"
+          onClick={() => setEditRow(item)}
+        >
+          <FileEdit className="h-4 w-4" />
+        </Button>
+      ),
+    }] as DataTableColumn<ShiftRow>[] : []),
+  ]
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Monitoring Kuota Per-Shift</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Pemantauan realisasi muat berdasarkan pembagian shift harian (Data Real Time).</p>
-        </div>
-        <div className="flex flex-col items-end gap-1">
-           <div className="flex items-center gap-2 bg-brand-500 text-white px-4 py-2 rounded-xl shadow-lg shadow-brand-500/20">
-              <Clock className="h-5 w-5 animate-pulse" />
-              <div className="flex flex-col -space-y-1">
-                 <span className="text-[10px] uppercase font-black opacity-80">Active Shift</span>
-                 <span className="text-sm font-bold font-serif">Shift {currentShift} ({getShiftTimeRange(currentShift)})</span>
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white font-serif">Kuota Per Shift</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400">Monitor alokasi tonase per shift, wilayah, dan bagian.</p>
+      </div>
+
+      {/* Filter */}
+      <Card className="shadow-theme-xs">
+        <CardContent className="pt-4">
+          <div className="flex items-center gap-2 mb-4">
+            <Filter className="h-4 w-4 text-brand-500" />
+            <span className="font-bold text-sm text-gray-900 dark:text-white">Filter</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Tanggal Mulai</label>
+              <Input type="date" value={sdFilter} onChange={(e) => setSdFilter(e.target.value)} className="h-9 text-sm" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Tanggal Selesai</label>
+              <Input type="date" value={edFilter} onChange={(e) => setEdFilter(e.target.value)} className="h-9 text-sm" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Produk</label>
+              <select
+                className="w-full h-9 px-3 text-sm rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-white/5"
+                value={produkFilter}
+                onChange={(e) => setProdukFilter(e.target.value)}
+              >
+                <option value="">Semua Produk</option>
+                {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            </div>
+            <div className="flex items-end gap-2">
+              <Button size="sm" className="flex-1" onClick={applyFilter}>
+                <Filter className="h-3.5 w-3.5 mr-1.5" />
+                Filter
+              </Button>
+              <Button size="sm" variant="outline" onClick={resetFilter}>Reset</Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* DataTable */}
+      <Card className="shadow-theme-xs">
+        <CardContent className="pt-4">
+          <div className="flex items-center gap-2 mb-4">
+            <Clock className="h-5 w-5 text-brand-500" />
+            <span className="font-bold text-gray-900 dark:text-white">Daftar Kuota Per Shift</span>
+          </div>
+          <DataTable<ShiftRow>
+            queryKey={["kuota-shifts", appliedSD, appliedED, appliedProduk, refreshKey]}
+            fetcher={fetcher}
+            columns={columns}
+            rowKey={(r) => r.guid || r.id}
+            searchPlaceholder="Cari produk, wilayah, bagian..."
+            defaultPageSize={25}
+            pageSizeOptions={[10, 25, 50, 100]}
+            emptyText="Belum ada data kuota shift."
+          />
+        </CardContent>
+      </Card>
+
+      {/* Edit Modal */}
+      {editRow && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setEditRow(null)} />
+          <div className="relative z-10 w-full max-w-md mx-4 bg-white dark:bg-gray-dark rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-800">
+            {/* Header */}
+            <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-800">
+              <div className="flex items-center gap-2">
+                <FileEdit className="h-5 w-5 text-blue-500" />
+                <h3 className="font-bold text-gray-900 dark:text-white">Edit Kuota Shift</h3>
               </div>
-           </div>
-           <p className="text-[10px] text-gray-400">Last updated: {lastUpdated.toLocaleTimeString()}</p>
+              <button
+                onClick={() => setEditRow(null)}
+                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Info */}
+            <div className="p-5 space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 bg-gray-50 dark:bg-white/5 rounded-xl">
+                  <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-0.5">Tanggal</p>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">{editRow.tanggalString || editRow.tanggal}</p>
+                </div>
+                <div className="p-3 bg-gray-50 dark:bg-white/5 rounded-xl">
+                  <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-0.5">Shift</p>
+                  <Badge
+                    color={editRow.shift === "1" ? "info" : editRow.shift === "2" ? "warning" : "success"}
+                    size="sm" variant="light"
+                  >
+                    Shift {editRow.shift}
+                  </Badge>
+                </div>
+                <div className="p-3 bg-gray-50 dark:bg-white/5 rounded-xl">
+                  <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-0.5">Bagian</p>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">{editRow.bagianString}</p>
+                </div>
+                <div className="p-3 bg-gray-50 dark:bg-white/5 rounded-xl">
+                  <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-0.5">Produk</p>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">{editRow.namaproduk}</p>
+                </div>
+                <div className="p-3 bg-gray-50 dark:bg-white/5 rounded-xl">
+                  <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-0.5">Kuota Saat Ini</p>
+                  <p className="text-sm font-bold text-gray-900 dark:text-white">{Number(editRow.kuota).toLocaleString("id-ID")} Ton</p>
+                </div>
+                <div className="p-3 bg-gray-50 dark:bg-white/5 rounded-xl">
+                  <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-0.5">Terpesan</p>
+                  <p className="text-sm font-bold text-blue-600">{Number(editRow.kuota_terpesan).toLocaleString("id-ID")} Ton</p>
+                </div>
+              </div>
+
+              {Number(editKuota) < editRow.kuota_terpesan && (
+                <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-500/5 border border-red-100 dark:border-red-500/20 rounded-lg text-red-600 text-xs">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  Kuota baru tidak boleh lebih kecil dari kuota terpesan ({Number(editRow.kuota_terpesan).toLocaleString("id-ID")})
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Kuota Baru (Ton)</label>
+                <Input
+                  ref={inputRef}
+                  type="number"
+                  placeholder="Masukkan kuota baru..."
+                  value={editKuota}
+                  onChange={(e) => setEditKuota(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleSave() }}
+                />
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end gap-2 p-5 border-t border-gray-100 dark:border-gray-800">
+              <Button variant="outline" onClick={() => setEditRow(null)} disabled={saving}>Batal</Button>
+              <Button
+                onClick={handleSave}
+                disabled={saving || !editKuota || Number(editKuota) < editRow.kuota_terpesan}
+              >
+                {saving && <div className="w-3.5 h-3.5 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                {saving ? "Menyimpan..." : "Simpan"}
+              </Button>
+            </div>
+          </div>
         </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-         {/* Shift Performance Summary */}
-         <Card className="lg:col-span-2">
-            <CardHeader>
-               <div className="flex items-center justify-between">
-                  <CardTitle>Realisasi Per-Area</CardTitle>
-                  <Button variant="ghost" size="sm" className="text-brand-500" onClick={fetchData}>Refresh Data</Button>
-               </div>
-               <CardDescription>Performa pemuatan dibandingkan dengan target alokasi shift hari ini.</CardDescription>
-            </CardHeader>
-            <CardContent>
-               <div className="space-y-6">
-                  {shiftData.length === 0 ? (
-                    <div className="text-center py-10 text-gray-400 italic">
-                      Tidak ada data kuota ditemukan untuk hari ini.
-                    </div>
-                  ) : shiftData.map((item) => {
-                    const progress = item.total > 0 ? (item.realization / item.total) * 100 : 0;
-                    return (
-                      <div key={item.abbrev} className="space-y-2">
-                        <div className="flex items-center justify-between">
-                           <div className="flex items-center gap-2">
-                             <Warehouse className="h-4 w-4 text-brand-500" />
-                             <div className="flex flex-col">
-                                <span className="font-bold text-sm">{item.area || item.abbrev}</span>
-                                <span className="text-[10px] text-gray-400 uppercase font-mono">{item.abbrev}</span>
-                             </div>
-                           </div>
-                           <div className="text-sm">
-                              <span className="font-bold">{item.realization.toLocaleString()}</span>
-                              <span className="text-gray-400"> / {item.total.toLocaleString()} Ton</span>
-                           </div>
-                        </div>
-                        <div className="relative w-full h-3 bg-gray-100 dark:bg-white/5 rounded-full overflow-hidden">
-                           <div 
-                              className={`absolute left-0 top-0 h-full transition-all duration-1000 ${
-                                progress > 90 ? "bg-emerald-500" : progress > 50 ? "bg-brand-500" : progress > 0 ? "bg-orange-500" : "bg-gray-200 dark:bg-gray-800"
-                              }`}
-                              style={{ width: `${Math.min(progress, 100)}%` }}
-                           />
-                        </div>
-                        <div className="grid grid-cols-3 gap-2">
-                           <div className={`text-[10px] p-1.5 rounded-lg text-center border transition-all ${currentShift === 1 ? 'bg-brand-500 text-white border-brand-500 font-bold shadow-sm shadow-brand-500/20' : 'bg-gray-50 dark:bg-white/5 border-gray-100 dark:border-white/5 text-gray-500'}`}>
-                              S1: {item.shift1}T
-                           </div>
-                           <div className={`text-[10px] p-1.5 rounded-lg text-center border transition-all ${currentShift === 2 ? 'bg-brand-500 text-white border-brand-500 font-bold shadow-sm shadow-brand-500/20' : 'bg-gray-50 dark:bg-white/5 border-gray-100 dark:border-white/5 text-gray-500'}`}>
-                              S2: {item.shift2}T
-                           </div>
-                           <div className={`text-[10px] p-1.5 rounded-lg text-center border transition-all ${currentShift === 3 ? 'bg-brand-500 text-white border-brand-500 font-bold shadow-sm shadow-brand-500/20' : 'bg-gray-50 dark:bg-white/5 border-gray-100 dark:border-white/5 text-gray-500'}`}>
-                              S3: {item.shift3}T
-                           </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-               </div>
-            </CardContent>
-         </Card>
-
-         {/* Shift Statistics */}
-         <div className="space-y-6">
-            <Card className="bg-emerald-50/50 dark:bg-emerald-500/5 border-emerald-100 dark:border-emerald-500/20">
-               <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2 text-emerald-600">
-                     <CheckCircle2 className="h-5 w-5" />
-                     {currentShift === 1 ? "Active" : "Last"} Shift Summary
-                  </CardTitle>
-               </CardHeader>
-               <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between p-3 bg-white dark:bg-white/[0.02] rounded-xl border border-emerald-100 dark:border-emerald-500/20 shadow-theme-xs">
-                     <span className="text-xs text-gray-500">Total Out</span>
-                     <span className="font-bold text-emerald-600">{summary[1]?.totalOut || 0} Ton</span>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-white dark:bg-white/[0.02] rounded-xl border border-emerald-100 dark:border-emerald-500/20 shadow-theme-xs">
-                     <span className="text-xs text-gray-500">Utilization</span>
-                     <span className="font-bold text-emerald-600">{summary[1]?.utilization.toFixed(1) || 0}%</span>
-                  </div>
-               </CardContent>
-            </Card>
-
-            <Card className={currentShift === 2 ? "bg-brand-50/50 dark:bg-brand-500/5 border-brand-100 dark:border-brand-500/20" : ""}>
-               <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                     <BarChart3 className="h-5 w-5 text-brand-500" />
-                     Forecast Shift {currentShift === 3 ? 1 : currentShift + 1}
-                  </CardTitle>
-               </CardHeader>
-               <CardContent className="space-y-4">
-                  <div className="flex items-center gap-3">
-                     <div className="p-2 bg-gray-50 dark:bg-white/5 rounded-lg">
-                        <Truck className="h-4 w-4 text-gray-500" />
-                     </div>
-                     <div>
-                        <p className="text-[10px] text-gray-400 uppercase font-black">Target Vol.</p>
-                        <p className="text-sm font-bold">{summary[currentShift === 3 ? 1 : currentShift + 1]?.totalQuota || 0} Ton</p>
-                     </div>
-                  </div>
-                  <div className="p-3 bg-blue-50 border border-blue-100 dark:bg-blue-500/5 dark:border-blue-500/20 rounded-xl flex gap-3 italic">
-                     <Info className="h-4 w-4 text-blue-500 shrink-0" />
-                     <p className="text-[10px] text-blue-700 dark:text-blue-400">Data estimasi muat akan diperbarui berdasarkan status antrian kendaraan saat ini.</p>
-                  </div>
-               </CardContent>
-               <CardHeader className="pt-0">
-                  <Button variant="outline" size="sm" className="w-full" onClick={() => window.location.href='/kuota/schedule'}>Manage Schedule</Button>
-               </CardHeader>
-            </Card>
-         </div>
-      </div>
+      )}
     </div>
-  );
+  )
 }

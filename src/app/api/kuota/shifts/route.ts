@@ -1,34 +1,88 @@
-import { NextRequest, NextResponse } from "next/server";
-import { query } from "@/lib/db";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { NextRequest, NextResponse } from "next/server"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
+import { normalizeRole } from "@/lib/role-utils"
+
+const ASPNET = process.env.ASPNET_API_URL || "http://192.168.188.170:8090"
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-    const result = await query(`
-      SELECT b.bagian as abbrev, MAX(m.keterangan) as area,
-        SUM(CASE WHEN s.shift='1' THEN s.kuota ELSE 0 END) as shift1,
-        SUM(CASE WHEN s.shift='2' THEN s.kuota ELSE 0 END) as shift2,
-        SUM(CASE WHEN s.shift='3' THEN s.kuota ELSE 0 END) as shift3,
-        COALESCE(SUM(s.kuota_out),0) as realization, COALESCE(SUM(s.kuota),0) as total
-      FROM kuota4shift s
-      JOIN kuota3bagian b ON s.level3 = b.id
-      LEFT JOIN m_bagian m ON b.bagian = m.abbrev
-      WHERE DATE(s.tanggal) = CURRENT_DATE
-      GROUP BY b.bagian ORDER BY b.bagian ASC
-    `);
-    const summaryResult = await query(`
-      SELECT shift, COALESCE(SUM(kuota_out),0) as totalout, COALESCE(SUM(kuota),0) as totalquota
-      FROM kuota4shift WHERE DATE(tanggal) = CURRENT_DATE GROUP BY shift
-    `);
-    const summary = summaryResult.rows.reduce((acc: any, curr: any) => {
-      acc[curr.shift] = { totalOut: curr.totalout, utilization: curr.totalquota > 0 ? (curr.totalout / curr.totalquota) * 100 : 0 };
-      return acc;
-    }, {});
-    return NextResponse.json({ success: true, data: result.rows, summary });
+    const session = await getServerSession(authOptions)
+    if (!session?.user) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
+    const token = (session.user as any).aspnetToken
+
+    const { searchParams } = req.nextUrl
+    const draw   = searchParams.get("draw")   || "1"
+    const start  = searchParams.get("start")  || "0"
+    const length = searchParams.get("length") || "25"
+    const search = searchParams.get("search") || ""
+    const SD     = searchParams.get("SD")     || ""
+    const ED     = searchParams.get("ED")     || ""
+    const produk = searchParams.get("produk") || ""
+
+    const body = new URLSearchParams({
+      draw, start, length,
+      "search[value]": search,
+      "columns[0][name]": "number",
+      "columns[1][name]": "id",
+      "columns[2][name]": "tanggal",
+      "columns[3][name]": "shift",
+      "columns[4][name]": "idproduk",
+      "order[0][column]": "2",
+      "order[0][dir]": "desc",
+    })
+    if (SD)     body.append("SD", SD)
+    if (ED)     body.append("ED", ED)
+    if (produk) body.append("produk", produk)
+
+    const res = await fetch(`${ASPNET}/api/KuotaLevel4/DataTable`, {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/x-www-form-urlencoded" },
+      body: body.toString(),
+    })
+
+    if (!res.ok) {
+      const text = await res.text()
+      return NextResponse.json({ success: false, error: `Backend error: ${res.status} ${text}` }, { status: res.status })
+    }
+
+    const aspData = await res.json()
+    const rows: any[] = aspData.data || []
+    const recordsTotal    = aspData.recordsTotal    ?? rows.length
+    const recordsFiltered = aspData.recordsFiltered ?? rows.length
+
+    return NextResponse.json({ success: true, data: rows, recordsTotal, recordsFiltered })
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 })
+  }
+}
+
+export async function PUT(req: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
+
+    const activeRole = normalizeRole((session.user as any).role)
+    if (!["candal", "superadmin", "admin", "pod"].includes(activeRole)) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 403 })
+    }
+
+    const token = (session.user as any).aspnetToken
+    const { guid, kuota } = await req.json()
+
+    const res = await fetch(`${ASPNET}/api/KuotaLevel4/UpdateData`, {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ guid, kuota: Number(kuota) }),
+    })
+
+    if (!res.ok) {
+      const txt = await res.text()
+      return NextResponse.json({ success: false, error: txt || `Error ${res.status}` }, { status: 400 })
+    }
+
+    return NextResponse.json({ success: true, message: "Kuota shift berhasil diperbarui" })
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 })
   }
 }

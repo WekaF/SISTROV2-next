@@ -1,5 +1,7 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useToast } from "@/components/ui/toast";
 import { 
   CalendarCheck, 
   ChevronRight, 
@@ -18,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Badge from "@/components/ui/badge/Badge";
 import { useSession } from "next-auth/react";
+import { normalizeRole } from "@/lib/role-utils";
 
 // Types for Lookup Data
 interface LookupItem {
@@ -28,6 +31,8 @@ interface LookupItem {
 
 export default function NewQuotaWizard() {
   const { data: session } = useSession();
+  const router = useRouter();
+  const { addToast } = useToast();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -85,11 +90,21 @@ export default function NewQuotaWizard() {
   // Math Validations
   const totalWilayah = Object.values(formData.wilayah).reduce((a, b) => a + b, 0);
   const totalAreas = Object.values(formData.areas).reduce((a, b) => a + b, 0);
-  
+
+  const shiftErrors: string[] = Object.entries(formData.areas)
+    .filter(([, kuota]) => Number(kuota) > 0)
+    .flatMap(([areaId, kuota]) => {
+      const shiftTotal = Object.values((formData.shifts as any)[areaId] || {}).reduce((a: number, b: unknown) => a + Number(b), 0);
+      return Math.abs(shiftTotal - Number(kuota)) > 0.01
+        ? [`${areaId}: total shift (${shiftTotal}) ≠ kuota area (${kuota})`]
+        : [];
+    });
+
   const validateStep = () => {
     if (step === 1) return formData.header.productId && formData.header.totalQuota > 0;
     if (step === 2) return totalWilayah === formData.header.totalQuota;
     if (step === 3) return totalAreas === totalWilayah;
+    if (step === 4) return shiftErrors.length === 0;
     return true;
   };
 
@@ -105,13 +120,14 @@ export default function NewQuotaWizard() {
       });
       const data = await res.json();
       if (data.success) {
-        window.location.href = '/kuota/schedule';
+        addToast({ variant: "success", title: "Kuota berhasil disimpan" });
+        router.push('/kuota/schedule');
       } else {
-        alert("Error saving quota: " + data.error);
+        addToast({ variant: "destructive", title: "Gagal menyimpan", description: data.error });
       }
     } catch (error) {
       console.error("Save failed", error);
-      alert("Save failed. Please check console.");
+      addToast({ variant: "destructive", title: "Gagal menyimpan", description: "Terjadi kesalahan, cek console." });
     } finally {
       setSaving(false);
     }
@@ -126,13 +142,13 @@ export default function NewQuotaWizard() {
      );
   }
 
-  const activeRole = (session?.user as any)?.role?.toLowerCase() || "superadmin";
-  if (activeRole !== "pod" && activeRole !== "superadmin") {
+  const activeRole = normalizeRole((session?.user as any)?.role);
+  if (!["pod", "superadmin", "candal", "admin"].includes(activeRole)) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
         <AlertCircle className="h-16 w-16 text-red-500" />
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Akses Ditolak</h2>
-        <p className="text-gray-500">Hanya peran POD atau Superadmin yang diizinkan mengatur kuota.</p>
+        <p className="text-gray-500">Hanya peran POD, Candal, atau Superadmin yang diizinkan mengatur kuota.</p>
         <Button variant="outline" onClick={() => window.history.back()}>Kembali</Button>
       </div>
     );
@@ -353,21 +369,45 @@ export default function NewQuotaWizard() {
              {/* Step 4: Shift Breakdown */}
              {step === 4 && (
                <div className="space-y-8 animate-in slide-in-from-right-4 duration-300">
+                  {shiftErrors.length > 0 && (
+                    <div className="flex flex-col gap-1 p-3 bg-red-50 dark:bg-red-500/5 border border-red-100 dark:border-red-500/20 rounded-lg">
+                      <div className="flex items-center gap-2 text-red-500 text-sm font-semibold">
+                        <AlertCircle className="h-4 w-4 shrink-0" />
+                        Total shift harus sama dengan kuota area
+                      </div>
+                      {shiftErrors.map((e, i) => <p key={i} className="text-xs text-red-400 ml-6">{e}</p>)}
+                    </div>
+                  )}
                   {lookup.areas.filter(a => formData.areas[a.id] > 0).map(a => (
-                    <div key={a.id} className="p-5 border border-gray-100 dark:border-gray-800 rounded-2xl bg-gray-50/50 dark:bg-white/[0.01]">
+                    <div key={a.id} className={`p-5 border rounded-2xl ${
+                      (() => {
+                        const st = Object.values((formData.shifts as any)[a.id] || {}).reduce((x: number, y: unknown) => x + Number(y), 0);
+                        const ok = Math.abs(st - Number(formData.areas[a.id])) <= 0.01;
+                        return ok ? "border-emerald-200 dark:border-emerald-500/30 bg-emerald-50/30 dark:bg-emerald-500/5" : "border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-white/[0.01]";
+                      })()
+                    }`}>
                        <div className="flex items-center justify-between mb-4">
                           <h4 className="font-bold flex items-center gap-2 text-brand-500">
                              <Clock className="h-4 w-4" />
                              {a.name}
                           </h4>
-                          <Badge color="light" size="sm">Global: {formData.areas[a.id]} Ton</Badge>
+                          <div className="flex items-center gap-2">
+                            {(() => {
+                              const st = Object.values((formData.shifts as any)[a.id] || {}).reduce((x: number, y: unknown) => x + Number(y), 0);
+                              const sisa = Number(formData.areas[a.id]) - st;
+                              return <span className={`text-xs font-semibold ${Math.abs(sisa) <= 0.01 ? "text-emerald-600" : "text-orange-500"}`}>
+                                {Math.abs(sisa) <= 0.01 ? "✓ Seimbang" : `Sisa: ${sisa}`}
+                              </span>;
+                            })()}
+                            <Badge color="light" size="sm">Kuota: {formData.areas[a.id]} Ton</Badge>
+                          </div>
                        </div>
                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                           {[1, 2, 3].map(sNum => (
                             <div key={sNum} className="space-y-2">
                                <label className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Shift {sNum}</label>
-                               <Input 
-                                  type="number" 
+                               <Input
+                                  type="number"
                                   placeholder="0"
                                   value={formData.shifts[a.id]?.[sNum] || ""}
                                   onChange={(e) => {

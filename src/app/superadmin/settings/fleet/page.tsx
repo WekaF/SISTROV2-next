@@ -229,7 +229,7 @@ export default function FleetMasterPage() {
                   </thead>
                   <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                      {isLoading ? (
-                        <tr>
+                        <tr key="loading-row">
                            <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
                               <div className="flex flex-col items-center gap-2">
                                  <Loader2 className="h-8 w-8 animate-spin text-brand-500" />
@@ -238,7 +238,7 @@ export default function FleetMasterPage() {
                            </td>
                         </tr>
                      ) : fleets.length === 0 ? (
-                        <tr>
+                        <tr key="empty-row">
                            <td colSpan={5} className="px-6 py-12 text-center text-gray-500 italic">Belum ada data armada terdaftar.</td>
                         </tr>
                      ) : fleets.map((f: FleetData, i: number) => (

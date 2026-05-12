@@ -15,7 +15,7 @@ import { DataTable, type DataTableColumn, type DataTableParams } from "@/compone
 
 export default function PostoPage() {
   const { data: session } = useSession();
-  const { apiJson, apiFetch, apiTable } = useApi();
+  const { apiJson, apiFetch, apiTable, token } = useApi();
   const { addToast } = useToast();
   const queryClient = useQueryClient();
 
@@ -34,6 +34,7 @@ export default function PostoPage() {
   const [editForm, setEditForm] = useState({ date: "", qty: 0, expiryDate: "" });
 
   const fetcher = async (params: DataTableParams) => {
+    if (!token) return { data: [], recordsTotal: 0, recordsFiltered: 0 };
     const payload: any = {
       draw: params.draw,
       start: params.start,
@@ -280,7 +281,7 @@ export default function PostoPage() {
         <CardContent className="p-4">
           <DataTable
             columns={columns}
-            queryKey={["posto", companyCode, dateFilter]}
+            queryKey={["posto", companyCode, dateFilter, !!token]}
             fetcher={fetcher}
             rowKey={(p) => p.noposto || p.NoPOSTO || p.id}
             searchPlaceholder="Search No POSTO or Transportir..."

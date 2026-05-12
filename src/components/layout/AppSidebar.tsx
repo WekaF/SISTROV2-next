@@ -8,7 +8,6 @@ import { useSidebar } from "@/context/SidebarContext";
 import {
   LayoutGrid,
   FileText,
-  PieChart,
   Settings,
   ChevronDown,
   Monitor,
@@ -46,7 +45,7 @@ function normalizeRole(raw: string | undefined): string {
     candaltruk: "candal",
     candaltruck: "candal",
     candalcontainer: "candal",
-    candalgudangposto: "gudang",
+    candalgudangposto: "candal",
     candaldept: "candal",
     candalkapal: "candal",
     // Staff Area
@@ -216,9 +215,47 @@ const AppSidebar: React.FC = () => {
         ],
       },
       {
-        icon: <BarChart3 className="h-5 w-5" />,
-        name: "Antrian",
-        path: "/antrian",
+        icon: <Package className="h-5 w-5" />,
+        name: "POSTO",
+        subItems: [
+          { name: "Data POSTO", path: "/posto" },
+          { name: "Data SO", path: "/so" },
+          { name: "Cut Off POSTO", path: "/posto/cut-off" },
+          { name: "Prioritas Tujuan Muat", path: "/posto/priority" },
+          { name: "Upload POSTO / SO", path: "/posto/upload" },
+        ],
+      },
+      {
+        icon: <CalendarCheck className="h-5 w-5" />,
+        name: "KUOTA",
+        subItems: [
+          { name: "Penjadwalan Kuota", path: "/kuota/schedule" },
+          { name: "Kuota Per-shift", path: "/kuota/shifts" },
+        ],
+      },
+      {
+        icon: <TableProperties className="h-5 w-5" />,
+        name: "Gudang",
+        subItems: [
+          { name: "Antrian", path: "/antrian" },
+          { name: "List Gudang", path: "/gudang" },
+          { name: "Antrian Per Unit", path: "/gudang/unit-queue" },
+          { name: "Gudang Tujuan Bagian", path: "/gudang/tujuan-bagian" },
+          { name: "Monitoring Pemuatan", path: "/gudang/targets" },
+          { name: "Traffic Antrian", path: "/gudang/trafik" },
+          { name: "Bypass Antrian", path: "/gudang/bypass" },
+        ],
+      },
+      {
+        icon: <Truck className="h-5 w-5" />,
+        name: "Armada",
+        subItems: [
+          { name: "Datatable Armada", path: "/armada" },
+          { name: "Pengajuan Armada", path: "/armada/pengajuan" },
+          { name: "Upload Armada", path: "/armada/upload" },
+          { name: "Sumbu Kendaraan", path: "/armada/axle-setup" },
+          { name: "Mapping Zero Odol", path: "/armada/mapping-zero-odol" },
+        ],
       },
       {
         icon: <ClipboardList className="h-5 w-5" />,
@@ -226,14 +263,8 @@ const AppSidebar: React.FC = () => {
         path: "/admin/tickets",
       },
       {
-        icon: <ArrowRightLeft className="h-5 w-5" />,
-        name: "Resume in Transit",
-        path: "/transit",
-      },
-      {
-        icon: BarChart3,
+        icon: <FileText className="h-5 w-5" />,
         name: "Laporan",
-        path: "/reports",
         subItems: [
           { name: "Summary Laporan", path: "/reports" },
           { name: "Antrian Per Gudang", path: "/reports/antrian" },
@@ -261,15 +292,54 @@ const AppSidebar: React.FC = () => {
           { name: "Produk & Mapping", path: "/superadmin/settings/products" },
           { name: "Gudang & Mapping", path: "/superadmin/settings/warehouses" },
           { name: "Konfigurasi Rekanan", path: "/superadmin/settings/transport" },
+          { name: "Force Delete Tiket", path: "/superadmin/settings/tiket" },
         ],
       },
       {
-        icon: <BarChart3 className="h-5 w-5" />,
-        name: "Antrian",
-        path: "/antrian",
+        icon: <Package className="h-5 w-5" />,
+        name: "POSTO",
+        subItems: [
+          { name: "Data POSTO", path: "/posto" },
+          { name: "Data SO", path: "/so" },
+          { name: "Cut Off POSTO", path: "/posto/cut-off" },
+          { name: "Prioritas Tujuan Muat", path: "/posto/priority" },
+          { name: "Upload POSTO / SO", path: "/posto/upload" },
+        ],
       },
       {
-        icon: <ClipboardList className="h-5 w-5" />,
+        icon: <CalendarCheck className="h-5 w-5" />,
+        name: "KUOTA",
+        subItems: [
+          { name: "Penjadwalan Kuota", path: "/kuota/schedule" },
+          { name: "Kuota Per-shift", path: "/kuota/shifts" },
+        ],
+      },
+      {
+        icon: <TableProperties className="h-5 w-5" />,
+        name: "Gudang",
+        subItems: [
+          { name: "Antrian", path: "/antrian" },
+          { name: "List Gudang", path: "/gudang" },
+          { name: "Antrian Per Unit", path: "/gudang/unit-queue" },
+          { name: "Gudang Tujuan Bagian", path: "/gudang/tujuan-bagian" },
+          { name: "Monitoring Pemuatan", path: "/gudang/targets" },
+          { name: "Traffic Antrian", path: "/gudang/trafik" },
+          { name: "Bypass Antrian", path: "/gudang/bypass" },
+        ],
+      },
+      {
+        icon: <Truck className="h-5 w-5" />,
+        name: "Armada",
+        subItems: [
+          { name: "Datatable Armada", path: "/armada" },
+          { name: "Pengajuan Armada", path: "/armada/pengajuan" },
+          { name: "Upload Armada", path: "/armada/upload" },
+          { name: "Sumbu Kendaraan", path: "/armada/axle-setup" },
+          { name: "Mapping Zero Odol", path: "/armada/mapping-zero-odol" },
+        ],
+      },
+      {
+        icon: <Ticket className="h-5 w-5" />,
         name: "Tiket Master",
         path: "/admin/tickets",
       },
@@ -334,8 +404,9 @@ const AppSidebar: React.FC = () => {
         subItems: [
           { name: "Datatable Armada", path: "/armada" },
           { name: "Pengajuan Armada", path: "/armada/pengajuan" },
-          // { name: "Persetujuan Armada", path: "/armada/approvals" },
+          { name: "Upload Armada", path: "/armada/upload" },
           { name: "Sumbu Kendaraan", path: "/armada/axle-setup" },
+          { name: "Mapping Zero Odol", path: "/armada/mapping-zero-odol" },
         ],
       },
       {
@@ -439,12 +510,11 @@ const AppSidebar: React.FC = () => {
       { icon: <LayoutGrid className="h-5 w-5" />, name: "Dashboard", path: "/" },
       {
         icon: <CalendarCheck className="h-5 w-5" />,
-        name: "Kuota Pemuatan",
+        name: "KUOTA",
         subItems: [
           { name: "Penjadwalan Kuota", path: "/kuota/schedule" },
           { name: "Kuota per Shift", path: "/kuota/shifts" },
           { name: "Pengaturan Shift", path: "/shift" },
-          { name: "Template Kuota", path: "/kuota/template" },
         ],
       },
       {
@@ -497,11 +567,6 @@ const AppSidebar: React.FC = () => {
     navItems = [
       { icon: <LayoutGrid className="h-5 w-5" />, name: "Dashboard", path: "/" },
       {
-        icon: <BarChart3 className="h-5 w-5" />,
-        name: "Antrian",
-        path: "/antrian",
-      },
-      {
         icon: <Package className="h-5 w-5" />,
         name: "POSTO",
         subItems: [
@@ -531,6 +596,7 @@ const AppSidebar: React.FC = () => {
         icon: <TableProperties className="h-5 w-5" />,
         name: "Gudang",
         subItems: [
+          { name: "Antrian", path: "/antrian" },
           { name: "List Gudang", path: "/gudang" },
           { name: "Antrian Per Unit", path: "/gudang/unit-queue" },
           { name: "Gudang Tujuan Bagian", path: "/gudang/tujuan-bagian" },
@@ -545,8 +611,8 @@ const AppSidebar: React.FC = () => {
         subItems: [
           { name: "Datatable Armada", path: "/armada" },
           { name: "Pengajuan Armada", path: "/armada/pengajuan" },
-          // { name: "Persetujuan Armada", path: "/armada/approvals" },
           { name: "Sumbu Kendaraan", path: "/armada/axle-setup" },
+          { name: "Mapping Zero Odol", path: "/armada/mapping-zero-odol" },
         ],
       },
       {

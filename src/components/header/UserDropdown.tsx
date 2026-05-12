@@ -41,7 +41,7 @@ export default function UserDropdown() {
             {session?.user?.name || "Loading..."}
           </span>
           <span className="block text-theme-xs text-gray-500 dark:text-gray-400 capitalize">
-            {(session?.user as any)?.username || "User"}
+            {(session?.user as any)?.username || "User  "}
           </span>
         </div>
 

@@ -1,46 +1,62 @@
 import { NextResponse } from "next/server";
-import { query } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { aspnetFetchServer } from "@/lib/api-client";
+
+function isAuthorized(session: any): boolean {
+  const roles = (session?.user as any)?.roles || [];
+  return !!session?.user && roles.some((r: string) => ["superadmin", "ti"].includes(r.toLowerCase()));
+}
 
 export async function GET(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as any).role !== 'superadmin') {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-    }
+    if (!isAuthorized(session)) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '25');
-    const search = searchParams.get('search') || '';
-    const offset = (page - 1) * limit;
+    const limit = Math.min(parseInt(searchParams.get('limit') || '25'), 100);
+    const search = (searchParams.get('search') || '').toLowerCase().trim();
 
-    let whereClause = '';
-    const params: any[] = [];
-    if (search) {
-      params.push(`%${search}%`);
-      whereClause = `WHERE id ILIKE $1 OR deskripsi ILIKE $1 OR kabupaten ILIKE $1 OR propinsi ILIKE $1`;
+    const token = (session?.user as any)?.aspnetToken as string;
+
+    const remoteRes = await aspnetFetchServer('/api/SuperadminGudang/List', token);
+    if (!remoteRes.ok) {
+      const errText = await remoteRes.text().catch(() => remoteRes.statusText);
+      throw new Error(`SISTRODEV API error: ${remoteRes.status} ${errText}`);
     }
 
-    const countParams = [...params];
-    const dataParams = [...params];
-    dataParams.push(limit, offset);
+    const allDataRaw = await remoteRes.json();
+    let allData: any[] = Array.isArray(allDataRaw) ? allDataRaw : (allDataRaw.data || []);
 
-    const [countResult, result] = await Promise.all([
-      query(`SELECT COUNT(*) as total FROM gudang ${whereClause}`, countParams),
-      query(`
-        SELECT g.id, g.deskripsi, g.alamat, g.kecamatan, g.kabupaten, g.propinsi,
-          (SELECT COUNT(*) FROM gudangtujuanmapping WHERE warehouseid = g.id) as tujuancount,
-          (SELECT COUNT(*) FROM gudangmuatmapping WHERE warehouseid = g.id) as muatcount
-        FROM gudang g ${whereClause}
-        ORDER BY deskripsi ASC LIMIT $${params.length+1} OFFSET $${params.length+2}
-      `, dataParams)
-    ]);
+    // Map C# response shape → page shape
+    allData = allData.map((g: any) => ({
+      ID: (g.id || '').toString(),
+      Deskripsi: g.deskripsi || '',
+      Alamat: g.alamat || '',
+      Kecamatan: g.kecamatan || '',
+      Kabupaten: g.kabupaten || '',
+      Propinsi: g.propinsi || '',
+      TujuanCount: g.tujuan_count || 0,
+      MuatCount: g.muat_count || 0,
+    }));
 
-    const total = Number(countResult.rows[0].total);
+    if (search) {
+      allData = allData.filter((g) =>
+        g.ID?.toLowerCase().includes(search) ||
+        g.Deskripsi?.toLowerCase().includes(search) ||
+        g.Kabupaten?.toLowerCase().includes(search) ||
+        g.Propinsi?.toLowerCase().includes(search)
+      );
+    }
+
+    const total = allData.length;
+    const offset = (page - 1) * limit;
+    const paginatedData = allData.slice(offset, offset + limit);
+
     return NextResponse.json({
       success: true,
-      data: result.rows,
+      data: paginatedData,
       pagination: { total, page, limit, totalPages: Math.ceil(total / limit) }
     });
   } catch (error: any) {

@@ -1,43 +1,49 @@
 import { NextRequest, NextResponse } from "next/server";
-import { query } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { aspnetFetchServer } from "@/lib/api-client";
 
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    
     const { searchParams } = new URL(req.url);
     const search = searchParams.get('search') || '';
     const date = searchParams.get('date') || '';
-    const userRoles = (session.user as any).roles || [];
-    const isRekanan = userRoles.includes('rekanan');
-    const sapVendorCode = (session.user as any).companyCode;
+    const token = (session?.user as any)?.aspnetToken as string;
 
+    const res = await aspnetFetchServer('/api/POSTO/DataTable', token, {
+      method: 'POST',
+      body: JSON.stringify({
+        Search: search,
+        Date: date
+      })
+    });
 
-    const params: any[] = [];
-    let filters = '';
-    if (isRekanan && sapVendorCode) { params.push(sapVendorCode); filters += ` AND po.transport=$${params.length}`; }
-    if (search) { params.push(`%${search}%`); filters += ` AND (po.noposto ILIKE $${params.length} OR u.fullname ILIKE $${params.length} OR po.transport ILIKE $${params.length})`; }
-    if (date) { params.push(date); filters += ` AND DATE(po.tglposto)=$${params.length}`; }
+    if (!res.ok) throw new Error("Failed to fetch POSTO from API");
+    const data = await res.json();
+    
+    // Normalize response if necessary
+    const rawData = data.data || data;
+    const normalized = Array.isArray(rawData) ? rawData.map((po: any) => ({
+      id: po.noposto || po.NoPosto || po.ID,
+      date: po.tglposto || po.TglPosto,
+      transportir: po.transportir || po.TransportirName || po.transport,
+      transportirid: po.transport || po.TransportirCode,
+      product: po.produkname || po.ProductName || po.produk,
+      productid: po.produk || po.ProductCode,
+      qty: po.qty || po.Qty,
+      realization: po.qtyrealisasi || po.QtyRealisasi,
+      asal: po.asalname || po.AsalName || po.asal,
+      tujuan: po.tujuanname || po.TujuanName || po.tujuan,
+      wilayah: po.wilayah || po.Wilayah,
+      bagian: po.bagian || po.Bagian,
+      company: po.companycode || po.CompanyCode,
+      status: po.status_desc || po.StatusDesc || (po.status === '1' ? 'Active' : po.status === '3' ? 'Completed' : 'Unknown')
+    })) : [];
 
-    const result = await query(`
-      SELECT po.noposto as id, TO_CHAR(po.tglposto,'YYYY-MM-DD') as date,
-        COALESCE(u.fullname, po.transport) as transportir, po.transport as transportirid,
-        COALESCE(p.nama, po.produk) as product, po.produk as productid,
-        po.qty, po.qtyrealisasi as realization,
-        COALESCE(ga.deskripsi, po.asal) as asal, COALESCE(gt.deskripsi, po.tujuan) as tujuan,
-        po.wilayah, po.bagian, po.companycode as company, po.status as statuscode,
-        CASE po.status WHEN '1' THEN 'Active' WHEN '2' THEN 'In Progress' WHEN '3' THEN 'Completed' WHEN '0' THEN 'Cancelled' ELSE 'Unknown' END as status
-      FROM posto po
-      LEFT JOIN produk p ON po.produk = p.kode
-      LEFT JOIN users u ON po.transport = u.sapvendorcode
-      LEFT JOIN gudang ga ON po.asal = ga.id
-      LEFT JOIN gudang gt ON po.tujuan = gt.id
-      WHERE 1=1 ${filters}
-      ORDER BY po.tglposto DESC, po.noposto DESC
-    `, params);
-    return NextResponse.json({ success: true, data: result.rows });
+    return NextResponse.json({ success: true, data: normalized });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }

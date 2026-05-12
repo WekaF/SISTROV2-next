@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { query } from "@/lib/db";
+import { aspnetFetchServer } from "@/lib/api-client";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -9,18 +9,19 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   try {
-    const [tonnageResult, activityResult] = await Promise.all([
-      query(`SELECT COALESCE(SUM(qty),0) as totaltonnage FROM tiket WHERE DATE(tanggal)=CURRENT_DATE`),
-      query(`SELECT COUNT(*) as totaltickets, COUNT(timegudang) as completed, COUNT(*) FILTER (WHERE timegudang IS NULL) as inprocess FROM tiket WHERE DATE(tanggal)=CURRENT_DATE`)
-    ]);
+    const token = (session?.user as any)?.aspnetToken as string;
+    const res = await aspnetFetchServer('/api/Home/GetViewerDashboardStats', token);
+    if (!res.ok) throw new Error("Failed to fetch dashboard metrics");
+    
+    const data = await res.json();
     return NextResponse.json({
-      tonnage: Number(tonnageResult.rows[0]?.totaltonnage) || 0,
-      totalTickets: Number(activityResult.rows[0]?.totaltickets) || 0,
-      completed: Number(activityResult.rows[0]?.completed) || 0,
-      inProcess: Number(activityResult.rows[0]?.inprocess) || 0,
+      tonnage: data.TotalTonnage || data.totalTonnage || 0,
+      totalTickets: data.TotalTickets || data.totalTickets || 0,
+      completed: data.Completed || data.completed || 0,
+      inProcess: data.InProcess || data.inProcess || 0,
       timestamp: new Date().toISOString()
     });
-  } catch (error) {
-    return NextResponse.json({ tonnage: 0, totalTickets: 0, completed: 0, inProcess: 0, mocked: true });
+  } catch (error: any) {
+    return NextResponse.json({ tonnage: 0, totalTickets: 0, completed: 0, inProcess: 0, mocked: true, error: error.message });
   }
 }
