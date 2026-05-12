@@ -1,39 +1,61 @@
 import { NextResponse } from "next/server";
-import { query } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { aspnetFetchServer } from "@/lib/api-client";
 import { getProductsFromApg } from "@/lib/apg-service";
+
+function isAuthorized(session: any): boolean {
+  const roles = (session?.user as any)?.roles || [];
+  return !!session?.user && roles.some((r: string) => ["superadmin", "ti"].includes(r.toLowerCase()));
+}
 
 export async function POST() {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as any).role !== 'superadmin') {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-    }
-    const externalProducts = await getProductsFromApg();
-    const existingRes = await query(`SELECT id, kode, nama FROM produk WHERE (deleted IS NULL OR deleted=false)`);
-    const existingMap = new Map(existingRes.rows.map((p: any) => [p.kode, { id: p.id, name: p.nama }]));
+    if (!isAuthorized(session)) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
 
-    let syncCount = 0, newCount = 0, errorCount = 0;
-    for (const ext of externalProducts) {
-      const code = (ext.value || ext.VALUE || ext.id || ext.ID || "").toString().trim();
-      let name = (ext.text || ext.TEXT || ext.name || ext.NAME || "").toString().trim();
-      if (!code || !name) continue;
-      if (name.startsWith(code)) name = name.substring(code.length).replace(/^[\s\-]+/, '').trim();
-      try {
-        const existing = existingMap.get(code);
-        if (existing) {
-          if (existing.name !== name) {
-            await query(`UPDATE produk SET nama=$1 WHERE id=$2`, [name, existing.id]);
-            syncCount++;
-          }
-        } else {
-          await query(`INSERT INTO produk (nama, kode, issubsidi, createdat, deleted) VALUES ($1,$2,false,NOW(),false)`, [name, code]);
-          newCount++;
-        }
-      } catch (e) { errorCount++; }
+    let apgProducts: any[] = [];
+    try {
+      apgProducts = await getProductsFromApg();
+    } catch (err: any) {
+      throw new Error(`Gagal mengambil data dari APG: ${err.message}`);
     }
-    return NextResponse.json({ success: true, message: `Sync completed. Added: ${newCount}, Updated: ${syncCount}, Errors: ${errorCount}.` });
+
+    if (!apgProducts || apgProducts.length === 0) {
+      throw new Error("Data produk dari APG kosong atau tidak dapat diakses.");
+    }
+
+    // APG returns combo-style { value, text } pairs
+    const items = apgProducts
+      .map((ext: any) => {
+        const kode = (ext.value || ext.VALUE || ext.id || ext.ID || '').toString().trim();
+        let nama = (ext.text || ext.TEXT || ext.name || ext.NAME || '').toString().trim();
+        // Strip code prefix if present (e.g. "1000036 Urea Bersubsidi" -> "Urea Bersubsidi")
+        if (nama.startsWith(kode)) nama = nama.substring(kode.length).replace(/^[\s\-]+/, '').trim();
+        return { Id: kode, Nama: nama, Kode: kode };
+      })
+      .filter((i: any) => i.Kode && i.Nama);
+
+    if (items.length === 0) {
+      throw new Error("Tidak ada data valid dari APG setelah mapping.");
+    }
+
+    const token = (session?.user as any)?.aspnetToken as string;
+    const res = await aspnetFetchServer('/api/SuperadminProduk/SyncBulk', token, {
+      method: 'POST',
+      body: JSON.stringify(items),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text().catch(() => res.statusText);
+      throw new Error(`Sync API error: ${res.status} ${errText}`);
+    }
+
+    const result = await res.json();
+    return NextResponse.json({
+      success: true,
+      message: result.message ?? `Sync selesai. ${result.added} ditambahkan, ${result.updated} diperbarui.`
+    });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }

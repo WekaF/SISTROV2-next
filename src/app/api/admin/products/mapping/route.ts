@@ -3,30 +3,32 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { aspnetFetchServer } from "@/lib/api-client";
 
+function isAuthorized(session: any): boolean {
+  const roles = (session?.user as any)?.roles || [];
+  return !!session?.user && roles.some((r: string) => ["superadmin", "ti"].includes(r.toLowerCase()));
+}
+
 export async function GET(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as any).role !== 'superadmin') {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-    }
+    if (!isAuthorized(session)) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+
     const { searchParams } = new URL(req.url);
     const productId = searchParams.get('productId');
-    if (!productId) return NextResponse.json({ success: false, error: "Product ID is required" }, { status: 400 });
+    if (!productId) return NextResponse.json({ success: false, error: "productId wajib diisi." }, { status: 400 });
 
     const token = (session?.user as any)?.aspnetToken as string;
-    const res = await aspnetFetchServer('/api/ProdukMapping/ProdukMappingList', token, {
-      method: 'POST',
-      body: JSON.stringify({ productId })
-    });
-    
-    if (!res.ok) throw new Error("Failed to fetch product mappings from API");
+    const res = await aspnetFetchServer(
+      `/api/SuperadminProduk/Mappings?produkId=${encodeURIComponent(productId)}`,
+      token
+    );
+    if (!res.ok) {
+      const err = await res.text().catch(() => res.statusText);
+      throw new Error(`API error: ${res.status} ${err}`);
+    }
+
     const data: any[] = await res.json();
-    
-    return NextResponse.json({ success: true, data: data.map(m => ({
-      id: m.id || m.ID,
-      companycode: m.company_code || m.companycode || m.CompanyCode,
-      companyname: m.company || m.companyname || m.CompanyName
-    }))});
+    return NextResponse.json({ success: true, data });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
@@ -35,24 +37,25 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as any).role !== 'superadmin') {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-    }
+    if (!isAuthorized(session)) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+
     const { productId, companyCode } = await req.json();
-    if (!productId || !companyCode) return NextResponse.json({ success: false, error: "Required fields missing" }, { status: 400 });
-    
+    if (!productId || !companyCode) {
+      return NextResponse.json({ success: false, error: "productId dan companyCode wajib diisi." }, { status: 400 });
+    }
+
     const token = (session?.user as any)?.aspnetToken as string;
-    const res = await aspnetFetchServer('/api/ProdukMapping/SaveData', token, {
+    const res = await aspnetFetchServer('/api/SuperadminProduk/AddMapping', token, {
       method: 'POST',
-      body: JSON.stringify({ productId, companyCode })
+      body: JSON.stringify({ ProdukId: productId, CompanyCode: companyCode }),
     });
 
     if (!res.ok) {
-      const err = await res.text();
+      const err = await res.text().catch(() => res.statusText);
       return NextResponse.json({ success: false, error: err }, { status: res.status });
     }
 
-    return NextResponse.json({ success: true, message: "Mapping created successfully" });
+    return NextResponse.json({ success: true, message: "Mapping berhasil ditambahkan." });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
@@ -61,25 +64,24 @@ export async function POST(req: Request) {
 export async function DELETE(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as any).role !== 'superadmin') {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-    }
+    if (!isAuthorized(session)) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+
     const { searchParams } = new URL(req.url);
-    const mappingId = searchParams.get('id');
-    if (!mappingId) return NextResponse.json({ success: false, error: "Mapping ID is required" }, { status: 400 });
+    const id = searchParams.get('id');
+    if (!id) return NextResponse.json({ success: false, error: "Mapping ID wajib diisi." }, { status: 400 });
 
     const token = (session?.user as any)?.aspnetToken as string;
-    const res = await aspnetFetchServer('/api/ProdukMapping/RemoveData', token, {
+    const res = await aspnetFetchServer('/api/SuperadminProduk/RemoveMapping', token, {
       method: 'POST',
-      body: JSON.stringify({ id: mappingId })
+      body: JSON.stringify({ Id: parseInt(id, 10) }),
     });
 
     if (!res.ok) {
-      const err = await res.text();
+      const err = await res.text().catch(() => res.statusText);
       return NextResponse.json({ success: false, error: err }, { status: res.status });
     }
 
-    return NextResponse.json({ success: true, message: "Mapping removed successfully" });
+    return NextResponse.json({ success: true, message: "Mapping berhasil dihapus." });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
