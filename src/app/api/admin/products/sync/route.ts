@@ -30,9 +30,20 @@ export async function POST() {
       .map((ext: any) => {
         const kode = (ext.value || ext.VALUE || ext.id || ext.ID || '').toString().trim();
         let nama = (ext.text || ext.TEXT || ext.name || ext.NAME || '').toString().trim();
+        
         // Strip code prefix if present (e.g. "1000036 Urea Bersubsidi" -> "Urea Bersubsidi")
-        if (nama.startsWith(kode)) nama = nama.substring(kode.length).replace(/^[\s\-]+/, '').trim();
-        return { Id: kode, Nama: nama, Kode: kode };
+        if (nama.startsWith(kode)) {
+          nama = nama.substring(kode.length).replace(/^[\s\-]+/, '').trim();
+        }
+
+        // Limit name length to avoid DB issues
+        if (nama.length > 200) nama = nama.substring(0, 197) + "...";
+
+        return { 
+          ID: 0, // ID should be 0 for upsert/insert scenarios in most C# controllers
+          Nama: nama, 
+          Kode: kode 
+        };
       })
       .filter((i: any) => i.Kode && i.Nama);
 

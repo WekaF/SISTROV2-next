@@ -63,17 +63,19 @@ const Toast: React.FC<ToastProps> = ({ id, title, description, variant = "defaul
 export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [toasts, setToasts] = React.useState<Omit<ToastProps, "onClose">[]>([])
 
-  const addToast = (toast: Omit<ToastProps, "id" | "onClose">) => {
+  const addToast = React.useCallback((toast: Omit<ToastProps, "id" | "onClose">) => {
     const id = Math.random().toString(36).substring(2, 9)
     setToasts((prev) => [...prev, { ...toast, id }])
-  }
+  }, [])
 
-  const removeToast = (id: string) => {
+  const removeToast = React.useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id))
-  }
+  }, [])
+
+  const contextValue = React.useMemo(() => ({ addToast }), [addToast])
 
   return (
-    <ToastContext.Provider value={{ addToast }}>
+    <ToastContext.Provider value={contextValue}>
       {children}
       <div className="fixed bottom-4 right-4 z-[9999] flex flex-col gap-2 w-full max-w-sm pointer-events-none [&>*]:pointer-events-auto">
         {toasts.map((toast) => (
