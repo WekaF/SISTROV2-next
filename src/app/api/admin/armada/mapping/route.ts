@@ -69,11 +69,13 @@ export async function DELETE(req: Request) {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
     if (!id) return NextResponse.json({ success: false, error: "Mapping ID wajib diisi." }, { status: 400 });
+    const idNum = parseInt(id, 10);
+    if (isNaN(idNum)) return NextResponse.json({ success: false, error: "ID harus berupa angka." }, { status: 400 });
 
     const token = (session?.user as any)?.aspnetToken as string;
     const res = await aspnetFetchServer('/api/SuperadminArmada/RemoveMapping', token, {
       method: 'POST',
-      body: JSON.stringify({ Id: parseInt(id, 10) }),
+      body: JSON.stringify({ Id: idNum }),
     });
 
     if (!res.ok) {
