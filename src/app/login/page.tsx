@@ -1,6 +1,7 @@
 import SignInForm from "@/components/auth/SignInForm";
 import { Metadata } from "next";
 import Image from "next/image";
+import { Suspense } from "react";
 
 export const metadata: Metadata = {
   title: "Login | SISTRO",
@@ -12,7 +13,9 @@ export default function LoginPage() {
     <div className="relative flex min-h-screen w-full bg-white dark:bg-gray-900">
       {/* Sign In Form */}
       <div className="flex flex-col justify-center w-full p-6 lg:w-1/2 sm:p-10">
-        <SignInForm />
+        <Suspense>
+          <SignInForm />
+        </Suspense>
       </div>
 
       {/* Side Image / Illustration Area */}
