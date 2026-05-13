@@ -14,9 +14,11 @@ export async function GET(req: Request) {
     if (!isAuthorized(session)) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
 
     const token = (session?.user as any)?.aspnetToken as string;
+    const { searchParams } = new URL(req.url);
+    const search = searchParams.get('search') || '';
     const res = await aspnetFetchServer('/api/Armada/Data', token);
     if (!res.ok) throw new Error("Failed to fetch fleet from API");
-    
+
     let allFleet: any[] = await res.json();
     if (search) {
       const s = search.toLowerCase();

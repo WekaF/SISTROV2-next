@@ -185,10 +185,10 @@ export default function ShiftManagementPage() {
         });
         setShowModal(true);
       } else {
-        addToast("Gagal mengambil detail shift", "error");
+        addToast({ title: "Gagal mengambil detail shift", variant: "destructive" });
       }
     } catch (error) {
-      addToast("Terjadi kesalahan sistem", "error");
+      addToast({ title: "Terjadi kesalahan sistem", variant: "destructive" });
     }
   };
 
@@ -207,12 +207,12 @@ export default function ShiftManagementPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["shifts-all"] });
-      addToast("Data shift berhasil diperbarui", "success");
+      addToast({ title: "Data shift berhasil diperbarui", variant: "success" });
       setShowModal(false);
       resetForm();
     },
     onError: (error: any) => {
-      addToast(error.message, "error");
+      addToast({ title: error.message, variant: "destructive" });
     },
     onSettled: () => setIsSubmitting(false),
   });
@@ -265,8 +265,8 @@ export default function ShiftManagementPage() {
             columns={columns}
             fetcher={fetcher}
             queryKey={["shifts-table"]}
-            pageSize={25}
-            // title="Daftar Shift"
+            rowKey={(item: any) => item.abbrev}
+            defaultPageSize={25}
             searchPlaceholder="Cari shift (keterangan, scope, level)..."
           />
         </div>

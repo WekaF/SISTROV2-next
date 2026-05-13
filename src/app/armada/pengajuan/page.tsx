@@ -1014,7 +1014,7 @@ export default function ArmadaPengajuanPage() {
           <CardContent className="p-6">
             <DataTable
               columns={columns}
-              queryKey={["armada-review-baru", isCharterFilter, transportCode]}
+              queryKey={["armada-review-baru", String(isCharterFilter), transportCode]}
               fetcher={fetchHistory}
               rowKey={(row) => row.ID || Math.random()}
               searchPlaceholder="Cari Nopol, Rekanan, atau Status..."

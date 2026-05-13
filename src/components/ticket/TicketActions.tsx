@@ -23,6 +23,7 @@ interface TicketActionsProps {
   status?: string;
   currentNopol?: string;
   currentDriver?: string;
+  postoGuid?: string;
   showView?: boolean;
   showPrint?: boolean;
   className?: string;

@@ -22,6 +22,7 @@ import { DataTable, type DataTableColumn, type DataTableParams } from "@/compone
 
 interface FleetData {
   Nopol: string;
+  __key?: string;
   VendorCode?: string;
   TransporterName?: string;
   NamaTransportir?: string;

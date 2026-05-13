@@ -281,7 +281,7 @@ export default function PostoPage() {
         <CardContent className="p-4">
           <DataTable
             columns={columns}
-            queryKey={["posto", companyCode, dateFilter, !!token]}
+            queryKey={["posto", companyCode, dateFilter]}
             fetcher={fetcher}
             rowKey={(p) => p.noposto || p.NoPOSTO || p.id}
             searchPlaceholder="Search No POSTO or Transportir..."

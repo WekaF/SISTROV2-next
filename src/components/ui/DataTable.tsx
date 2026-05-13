@@ -20,7 +20,8 @@ export interface DataTableParams {
   start: number;
   length: number;
   search: string;
-  columnFilters?: Record<string, string>; // New: per-column search
+  columnFilters?: Record<string, string>;
+  order?: { column: number; dir: string }[];
 }
 
 export interface DataTableResult<T> {
@@ -31,13 +32,13 @@ export interface DataTableResult<T> {
 
 interface DataTableProps<T> {
   columns: DataTableColumn<T>[];
-  queryKey: (string | number | undefined)[];
+  queryKey: (string | number | null | undefined)[];
   fetcher: (params: DataTableParams) => Promise<DataTableResult<T>>;
   searchPlaceholder?: string;
   toolbar?: React.ReactNode;
   pageSizeOptions?: number[];
   defaultPageSize?: number;
-  rowKey: (row: T) => string | number;
+  rowKey: (row: T) => string | number | null | undefined;
   rowClassName?: (row: T) => string;
   emptyText?: string;
   refetchInterval?: number;

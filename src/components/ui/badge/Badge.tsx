@@ -3,7 +3,7 @@ import type { VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 import React from "react"
 
-type LegacyColor = "success" | "warning" | "error" | "destructive" | "info" | "blue" | "default"
+type LegacyColor = "success" | "warning" | "error" | "destructive" | "info" | "blue" | "default" | "light" | "indigo" | "primary" | "dark"
 type LegacyVariant = "solid" | "light" | "outline" | "default" | "secondary" | "ghost"
 type LegacySize = "sm" | "md" | "lg"
 
@@ -14,6 +14,10 @@ const colorClass: Record<LegacyColor, string> = {
   destructive: "bg-red-100 text-red-700 border-red-200",
   info: "bg-blue-100 text-blue-700 border-blue-200",
   blue: "bg-blue-100 text-blue-700 border-blue-200",
+  light: "bg-gray-100 text-gray-600 border-gray-200",
+  indigo: "bg-indigo-100 text-indigo-700 border-indigo-200",
+  primary: "bg-brand-100 text-brand-700 border-brand-200",
+  dark: "bg-gray-800 text-white border-gray-700",
   default: "",
 }
 
@@ -27,9 +31,10 @@ interface BadgeLegacyProps extends React.HTMLAttributes<HTMLSpanElement> {
   color?: LegacyColor
   variant?: LegacyVariant | VariantProps<typeof badgeVariants>["variant"]
   size?: LegacySize
+  startIcon?: React.ReactNode
 }
 
-function Badge({ color, variant, size, className, ...props }: BadgeLegacyProps) {
+function Badge({ color, variant, size, startIcon, className, children, ...props }: BadgeLegacyProps) {
   const mapped: VariantProps<typeof badgeVariants>["variant"] =
     variant === "outline" ? "outline"
     : variant === "ghost" ? "ghost"
@@ -45,7 +50,10 @@ function Badge({ color, variant, size, className, ...props }: BadgeLegacyProps) 
         className
       )}
       {...(props as any)}
-    />
+    >
+      {startIcon && <span className="mr-1 inline-flex">{startIcon}</span>}
+      {children}
+    </BadgeBase>
   )
 }
 

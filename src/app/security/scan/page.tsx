@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import Badge from "@/components/ui/badge/Badge";
 import {
   Search,
   Printer,
@@ -560,7 +560,7 @@ export default function SecurityScanPage() {
             )}
 
             {/* Print Button (Position 01+ or after verification success) */}
-            {(ticketData.data.position !== "00" || (ticketData.data.position === "01" && !isChecking)) && (
+            {ticketData.data.position !== "00" && (
                <Button 
                 variant="outline"
                 size="lg" 
