@@ -42,7 +42,7 @@ export default function ShiftPage() {
     queryFn: async () => {
       const res = await fetch("/api/admin/shifts");
       const data = await res.json();
-      return (data || []) as any[];
+      return (Array.isArray(data) ? data : []) as any[];
     },
   });
 
@@ -55,8 +55,9 @@ export default function ShiftPage() {
     const res = await fetch("/api/admin/shifts");
     const allData = await res.json();
     if (!res.ok) throw new Error(allData.error || "Failed to fetch shifts");
+    const safeData = Array.isArray(allData) ? allData : [];
 
-    const filtered = (allData || []).filter((s: any) => {
+    const filtered = safeData.filter((s: any) => {
       const searchTerm = params.search.toLowerCase();
       return (
         (s.keterangan || "").toLowerCase().includes(searchTerm) ||
@@ -70,7 +71,7 @@ export default function ShiftPage() {
 
     return {
       data: filtered.slice(start, start + length),
-      recordsTotal: allData.length,
+      recordsTotal: safeData.length,
       recordsFiltered: filtered.length,
     };
   };
