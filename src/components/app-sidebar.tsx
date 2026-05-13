@@ -201,6 +201,7 @@ const MENU_PENGATURAN_SUPERADMIN = {
   url: "#",
   icon: Settings,
   items: [
+    { title: "Semua Pengguna", url: "/admin/users", icon: Users },
     { title: "Management User", url: "/superadmin/settings/users", icon: UserCog },
     { title: "User Transport", url: "/admin/pengaturan/rekanan", icon: Users },
     { title: "Company / Plant", url: "/admin/pengaturan/plant", icon: Factory },

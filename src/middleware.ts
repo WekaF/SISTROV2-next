@@ -7,7 +7,10 @@ export async function middleware(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   const { pathname } = req.nextUrl;
 
-  if (pathname.startsWith("/superadmin")) {
+  const isSuperAdminRoute =
+    pathname.startsWith("/superadmin") || pathname === "/admin/users";
+
+  if (isSuperAdminRoute) {
     const roles: string[] = (token?.roles as string[]) || [];
     const isSuperAdmin = roles.some((r) => SUPERADMIN_ROLES.includes(r.toLowerCase()));
     if (!token || !isSuperAdmin) {
@@ -19,5 +22,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/superadmin/:path*"],
+  matcher: ["/superadmin/:path*", "/admin/users"],
 };
