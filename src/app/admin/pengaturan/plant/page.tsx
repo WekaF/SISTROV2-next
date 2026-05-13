@@ -1,53 +1,34 @@
 "use client"
 
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
-import { Separator } from "@/components/ui/separator"
-import { SidebarTrigger } from "@/components/ui/sidebar"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Factory, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default function PlantPengaturanPage() {
   return (
-    <div className="flex flex-col">
-      <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-        <SidebarTrigger className="-ml-1" />
-        <Separator orientation="vertical" className="mr-2 h-4" />
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink href="/">SISTRO</BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbLink href="#">Pengaturan</BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbPage>Company/Plant</BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-      </header>
-      <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
-        <div className="flex items-center justify-between">
-          <div className="grid gap-1">
-            <h1 className="text-2xl font-bold tracking-tight">Plant Management</h1>
-            <p className="text-sm text-muted-foreground">Manage and configure active plants and company codes.</p>
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-brand-500 text-white rounded-2xl shadow-lg shadow-brand-500/20">
+            <Factory className="h-6 w-6" />
           </div>
-          <Button className="gap-2">
-            <Plus className="h-4 w-4" />
-            Add Plant
-          </Button>
+          <div>
+            <h1 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight">
+              Plant Management
+            </h1>
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest opacity-70">
+              SISTRO NEXT &bull; KONFIGURASI UNIT
+            </p>
+          </div>
         </div>
         
+        <Button className="bg-brand-500 hover:bg-brand-600 font-black uppercase tracking-widest text-[10px] h-10 px-6 shadow-xl shadow-brand-500/20 rounded-none">
+          <Plus className="h-4 w-4 mr-2" />
+          Tambah Plant
+        </Button>
+      </div>
+
+      <main className="flex flex-1 flex-col gap-4">
         <div className="grid gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0">

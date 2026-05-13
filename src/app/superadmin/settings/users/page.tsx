@@ -16,7 +16,6 @@ export default function UserConfigPage() {
   const { addToast } = useToast();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
-  const [companyFilter, setCompanyFilter] = useState<string>("all");
 
   const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -70,10 +69,7 @@ export default function UserConfigPage() {
       (u.username || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
       (u.email || "").toLowerCase().includes(searchTerm.toLowerCase());
 
-    const userCompany = (u.companies || [])[0] || "";
-    const matchCompany = companyFilter === "all" || userCompany === companyFilter;
-
-    return matchSearch && matchCompany;
+    return matchSearch;
   });
 
   const stats = {
@@ -249,19 +245,6 @@ export default function UserConfigPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input className="pl-10" placeholder="Cari nama, username, atau email..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
             </div>
-            <select
-              aria-label="Filter by plant"
-              value={companyFilter}
-              onChange={(e) => setCompanyFilter(e.target.value)}
-              className="border rounded-md px-3 py-2 text-sm bg-background"
-            >
-              <option value="all">Semua Plant</option>
-              {availableCompanies.map((c: any) => (
-                <option key={c.code || c.id} value={c.code || c.id}>
-                  {c.name || c.code}
-                </option>
-              ))}
-            </select>
           </div>
         </CardHeader>
         <CardContent className="p-0">
@@ -301,8 +284,8 @@ export default function UserConfigPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex flex-wrap gap-1">
-                        {(user.roles || []).map((role: string) => (
-                          <Badge key={role} variant="light" color={role.toLowerCase() === 'superadmin' ? 'warning' : 'info'} className="uppercase font-black text-[10px]">{role}</Badge>
+                        {(user.roles || []).map((role: string, idx: number) => (
+                          <Badge key={`${role}-${idx}`} variant="light" color={role.toLowerCase() === 'superadmin' ? 'warning' : 'info'} className="uppercase font-black text-[10px]">{role}</Badge>
                         ))}
                         {(user.roles || []).length === 0 && <span className="text-xs text-gray-400">-</span>}
                       </div>
@@ -399,11 +382,12 @@ export default function UserConfigPage() {
                 <div className="space-y-3">
                   <label className="text-[10px] font-black uppercase text-gray-400">Role Selection</label>
                   <div className="flex flex-wrap gap-2">
-                    {availableRoles.map((role: any) => {
-                      const isSelected = formData.roles.includes(role.Code || role.code);
+                    {availableRoles.map((role: any, idx: number) => {
                       const code = role.Code || role.code || role.Name || role.name;
+                      if (!code) return null;
+                      const isSelected = formData.roles.includes(code);
                       return (
-                        <button key={`role-${code}`} type="button" onClick={() => toggleRole(code)}
+                        <button key={`role-${code}-${idx}`} type="button" onClick={() => toggleRole(code)}
                           className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 border ${isSelected ? 'bg-brand-500 text-white border-brand-500 shadow-md shadow-brand-500/20' : 'bg-white text-gray-600 border-gray-200 hover:border-brand-200'}`}>
                           {isSelected && <Check className="h-3 w-3" />}
                           {role.Name || role.name}
@@ -416,11 +400,12 @@ export default function UserConfigPage() {
                 <div className="space-y-3">
                   <label className="text-[10px] font-black uppercase text-gray-400">Plant / Company Mapping</label>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-1">
-                    {availableCompanies.map((company: any) => {
-                      const id = company.code || company.id || company.company_code || '';
+                    {availableCompanies.map((company: any, idx: number) => {
+                      const id = company.code || company.id || company.company_code;
+                      if (!id) return null;
                       const isSelected = formData.companyIds.includes(id);
                       return (
-                        <button key={`company-${id}`} type="button" onClick={() => toggleCompany(id)}
+                        <button key={`company-${id}-${idx}`} type="button" onClick={() => toggleCompany(id)}
                           className={`p-3 rounded-xl text-xs font-medium text-left transition-all border ${isSelected ? 'bg-emerald-50 text-emerald-700 border-emerald-200 ring-2 ring-emerald-500/20' : 'bg-gray-50/50 text-gray-600 border-gray-100 hover:bg-gray-50'}`}>
                           <div className="flex items-center gap-2">
                             <div className={`p-1 rounded ${isSelected ? 'bg-emerald-500 text-white' : 'bg-gray-200 text-gray-500'}`}>

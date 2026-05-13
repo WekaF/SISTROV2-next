@@ -20,6 +20,9 @@ import {
   TableProperties,
   Ticket,
   CalendarCheck,
+  Users,
+  ShieldCheck,
+  CalendarClock,
 } from "lucide-react";
 
 type NavItem = {
@@ -140,8 +143,8 @@ const othersItems: NavItem[] = [
     icon: <Settings className="h-5 w-5" />,
     name: "User Management",
     subItems: [
-      { name: "Users & Roles", path: "/admin/users" },
-      { name: "System Settings", path: "/admin/settings" },
+      { name: "Users & Roles", path: "/admin/pengaturan/user" },
+      { name: "System Settings", path: "/admin/pengaturan/plant" },
     ],
   },
 ];
@@ -202,19 +205,6 @@ const AppSidebar: React.FC = () => {
         path: "/",
       },
       {
-        icon: <Settings className="h-5 w-5" />,
-        name: "SETTING",
-        subItems: [
-          { name: "Konfigurasi Plant", path: "/superadmin/settings/plants" },
-          { name: "Master Sumbu", path: "/superadmin/settings/sumbu" },
-          { name: "Master Percepatan", path: "/superadmin/settings/percepatan" },
-          { name: "Konfigurasi Armada", path: "/superadmin/settings/fleet" },
-          { name: "Produk & Mapping", path: "/superadmin/settings/products" },
-          { name: "Gudang & Mapping", path: "/superadmin/settings/warehouses" },
-          { name: "Konfigurasi Rekanan", path: "/superadmin/settings/transport" },
-        ],
-      },
-      {
         icon: <Package className="h-5 w-5" />,
         name: "POSTO",
         subItems: [
@@ -253,7 +243,6 @@ const AppSidebar: React.FC = () => {
           { name: "Datatable Armada", path: "/armada" },
           { name: "Pengajuan Armada", path: "/armada/pengajuan" },
           { name: "Upload Armada", path: "/armada/upload" },
-          { name: "Sumbu Kendaraan", path: "/armada/axle-setup" },
           { name: "Mapping Zero Odol", path: "/armada/mapping-zero-odol" },
         ],
       },
@@ -261,6 +250,16 @@ const AppSidebar: React.FC = () => {
         icon: <ClipboardList className="h-5 w-5" />,
         name: "Tiket",
         path: "/admin/tickets",
+      },
+      {
+        icon: <Users className="h-5 w-5" />,
+        name: "User Plant",
+        path: "/superadmin/settings/users",
+      },
+      {
+        icon: <CalendarClock className="h-5 w-5" />,
+        name: "Manajemen Shift",
+        path: "/superadmin/settings/shifts",
       },
       {
         icon: <FileText className="h-5 w-5" />,
@@ -272,28 +271,28 @@ const AppSidebar: React.FC = () => {
         ],
       },
     ];
-  } else if (role === "superadmin") {
-    navItems = [
+    adminItems = [
       {
-        icon: <LayoutGrid className="h-5 w-5" />,
-        name: "Dashboard",
-        path: "/",
-      },
-      {
-        icon: <Settings className="h-5 w-5" />,
-        name: "SETTING",
+        icon: <ShieldCheck className="h-5 w-5" />,
+        name: "Administration",
         subItems: [
           { name: "Konfigurasi Plant", path: "/superadmin/settings/plants" },
-          { name: "Tambah Plant", path: "/superadmin/settings/plants/new" },
-          { name: "Konfigurasi All User", path: "/superadmin/settings/users" },
           { name: "Master Sumbu", path: "/superadmin/settings/sumbu" },
           { name: "Master Percepatan", path: "/superadmin/settings/percepatan" },
           { name: "Konfigurasi Armada", path: "/superadmin/settings/fleet" },
           { name: "Produk & Mapping", path: "/superadmin/settings/products" },
           { name: "Gudang & Mapping", path: "/superadmin/settings/warehouses" },
           { name: "Konfigurasi Rekanan", path: "/superadmin/settings/transport" },
-          { name: "Force Delete Tiket", path: "/superadmin/settings/tiket" },
+          { name: "Sumbu Kendaraan", path: "/armada/axle-setup" },
         ],
+      },
+    ];
+  } else if (role === "superadmin") {
+    navItems = [
+      {
+        icon: <LayoutGrid className="h-5 w-5" />,
+        name: "Dashboard",
+        path: "/",
       },
       {
         icon: <Package className="h-5 w-5" />,
@@ -334,7 +333,6 @@ const AppSidebar: React.FC = () => {
           { name: "Datatable Armada", path: "/armada" },
           { name: "Pengajuan Armada", path: "/armada/pengajuan" },
           { name: "Upload Armada", path: "/armada/upload" },
-          { name: "Sumbu Kendaraan", path: "/armada/axle-setup" },
           { name: "Mapping Zero Odol", path: "/armada/mapping-zero-odol" },
         ],
       },
@@ -344,9 +342,38 @@ const AppSidebar: React.FC = () => {
         path: "/admin/tickets",
       },
       {
+        icon: <Users className="h-5 w-5" />,
+        name: "User Plant",
+        path: "/superadmin/settings/users",
+      },
+      {
+        icon: <CalendarClock className="h-5 w-5" />,
+        name: "Manajemen Shift",
+        path: "/superadmin/settings/shifts",
+      },
+      {
         icon: <FileText className="h-5 w-5" />,
         name: "Global Reports",
         path: "/admin/reports",
+      },
+    ];
+    adminItems = [
+      {
+        icon: <ShieldCheck className="h-5 w-5" />,
+        name: "Administration",
+        subItems: [
+          { name: "Konfigurasi Plant", path: "/superadmin/settings/plants" },
+          { name: "Tambah Plant", path: "/superadmin/settings/plants/new" },
+          { name: "Master Sumbu", path: "/superadmin/settings/sumbu" },
+          { name: "Master Percepatan", path: "/superadmin/settings/percepatan" },
+          { name: "Konfigurasi Armada", path: "/superadmin/settings/fleet" },
+          { name: "Produk & Mapping", path: "/superadmin/settings/products" },
+          { name: "Gudang & Mapping", path: "/superadmin/settings/warehouses" },
+          { name: "Konfigurasi Rekanan", path: "/superadmin/settings/transport" },
+          { name: "Force Delete Tiket", path: "/superadmin/settings/tiket" },
+          { name: "Konfigurasi All User", path: "/admin/pengaturan/user" },
+          { name: "Sumbu Kendaraan", path: "/armada/axle-setup" },
+        ],
       },
     ];
   } else if (role === "pod") {
@@ -423,6 +450,36 @@ const AppSidebar: React.FC = () => {
       },
     ];
     // Hide specialized user management items for POD
+    adminItems = [];
+  } else if (role === "staffarea") {
+    navItems = [
+      { icon: <LayoutGrid className="h-5 w-5" />, name: "Dashboard", path: "/" },
+      {
+        icon: <BarChart3 className="h-5 w-5" />,
+        name: "Antrian",
+        path: "/antrian",
+      },
+      {
+        icon: <Package className="h-5 w-5" />,
+        name: "POSTO",
+        subItems: [
+          { name: "Data Posto", path: "/posto" },
+          { name: "Upload Posto", path: "/posto/upload" },
+        ],
+      },
+      {
+        icon: <Ticket className="h-5 w-5" />,
+        name: "TIKET",
+        subItems: [
+          { name: "Datatable Tiket", path: "/admin/tickets" },
+        ],
+      },
+      {
+        icon: <CalendarClock className="h-5 w-5" />,
+        name: "Manajemen Shift",
+        path: "/superadmin/settings/shifts",
+      },
+    ];
     adminItems = [];
   } else if (role === "security") {
     navItems = [

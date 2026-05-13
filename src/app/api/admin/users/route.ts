@@ -19,17 +19,17 @@ export async function GET() {
     const res = await aspnetFetchServer('/api/UserAccount/ListUser', token);
     if (!res.ok) throw new Error("Failed to fetch users from API");
     
-    const data: any[] = await res.json();
-    // Normalize data structure to match what the frontend expects
+    const payload = await res.json();
+    const data: any[] = payload.data || payload || [];
+    // Normalize data — ListUser now returns roles[] directly
     const mapped = data.map(u => ({
-      id: u.userid || u.id,
-      username: u.username,
-      email: u.email,
-      fullname: u.fullname,
-      status: 'Active', // Legacy API doesn't always return status, assuming active
-      roles: u.role ? u.role.split(',').map((r: string) => r.trim()) : [],
-      companies: u.company_code ? [u.company_code] : (u.companycode ? [u.companycode] : []),
-      sapvendorcode: u.sapvendorcode || u.sap
+      id:           u.Id || u.id || u.userid,
+      username:     u.UserName || u.username,
+      fullname:     u.fullname,
+      email:        u.email || null,
+      roles:        Array.isArray(u.roles) ? u.roles : (u.role ? u.role.split(',').map((r: string) => r.trim()) : []),
+      companies:    u.company_code ? [u.company_code] : [],
+      isactive:     u.isactive ?? true,
     }));
 
     return NextResponse.json(mapped);
@@ -87,7 +87,9 @@ export async function PUT(req: Request) {
 
     const body = await req.json();
     const token = (session?.user as any)?.aspnetToken as string;
+    const errors: string[] = [];
 
+    // 1. Update basic profile
     const res = await aspnetFetchServer('/api/UserAccount/UpdateUserProfile', token, {
       method: 'POST',
       body: JSON.stringify({
@@ -103,7 +105,44 @@ export async function PUT(req: Request) {
       return NextResponse.json({ success: false, error: err }, { status: res.status });
     }
 
-    return NextResponse.json({ success: true, message: "User updated successfully" });
+    // 2. Sync roles if provided
+    if (Array.isArray(body.newRoles) && Array.isArray(body.currentRoles)) {
+      const currentSet = new Set<string>(body.currentRoles.map((r: string) => r.toLowerCase()));
+      const newSet     = new Set<string>(body.newRoles.map((r: string) => r.toLowerCase()));
+
+      // Roles to add (in newRoles but not in currentRoles)
+      const toAdd = body.newRoles.filter((r: string) => !currentSet.has(r.toLowerCase()));
+      // Roles to remove (in currentRoles but not in newRoles)
+      const toRemove = body.currentRoles.filter((r: string) => !newSet.has(r.toLowerCase()));
+
+      for (const role of toAdd) {
+        const addRes = await aspnetFetchServer('/api/UserAccount/AddtoRole', token, {
+          method: 'POST',
+          body: JSON.stringify({ guid: body.id, role })
+        });
+        if (!addRes.ok) {
+          const msg = await addRes.text().catch(() => 'unknown error');
+          errors.push(`Gagal tambah role "${role}": ${msg}`);
+        }
+      }
+
+      for (const role of toRemove) {
+        const removeRes = await aspnetFetchServer('/api/UserAccount/RemoveUserFromRole', token, {
+          method: 'POST',
+          body: JSON.stringify({ guid: body.id, role })
+        });
+        if (!removeRes.ok) {
+          const msg = await removeRes.text().catch(() => 'unknown error');
+          errors.push(`Gagal hapus role "${role}": ${msg}`);
+        }
+      }
+    }
+
+    if (errors.length > 0) {
+      return NextResponse.json({ success: true, message: "Profil diperbarui, namun ada error pada sinkronisasi role.", roleErrors: errors });
+    }
+
+    return NextResponse.json({ success: true, message: "User dan role berhasil diperbarui" });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

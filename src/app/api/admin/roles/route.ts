@@ -18,9 +18,9 @@ export async function GET() {
     const data: any[] = await res.json();
     // Normalize data structure
     const mapped = data.map(r => ({
-      id: r.id || r.Id,
-      code: r.code || r.Name, // Adjust based on what API returns
-      name: r.name || r.Name
+      id: r.Id || r.id,
+      code: r.rolename,
+      name: r.rolename,
     }));
     return NextResponse.json(mapped);
   } catch (error: any) {

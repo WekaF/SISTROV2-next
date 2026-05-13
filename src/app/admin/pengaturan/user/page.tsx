@@ -1,78 +1,182 @@
 "use client";
 import React, { useState } from "react";
 import {
-  Users, Search, ShieldCheck, UserCheck, Edit, X, Loader2,
+  Users, Edit, X, Loader2, Mail, Check, Lock, Building, 
+  ShieldCheck, Fingerprint, Activity, Plus, UserCheck
 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Badge from "@/components/ui/badge/Badge";
 import { useToast } from "@/components/ui/toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
-
-const RESTRICTED_ROLES = ["ti", "superadmin"];
+import { DataTable, type DataTableColumn, type DataTableParams } from "@/components/ui/DataTable";
 
 export default function AdminUserPage() {
   const { data: session } = useSession();
   const { addToast } = useToast();
   const queryClient = useQueryClient();
-  const [searchTerm, setSearchTerm] = useState("");
+  
   const [showModal, setShowModal] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<any>(null);
-  const [currentRoles, setCurrentRoles] = useState<string[]>([]);
-
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [adminPassword, setAdminPassword] = useState("");
+  
   const companyCode = (session?.user as any)?.companyCode || "";
 
   const emptyForm = {
-    id: "", username: "", fullName: "", email: "",
-    isActive: true, roles: [] as string[],
+    id: "",
+    username: "",
+    fullName: "",
+    email: "",
+    companyCode: "",
+    deskripsi: "",
+    password: "",
+    isIdentik: false,
+    mfaRemember: false,
   };
   const [formData, setFormData] = useState(emptyForm);
 
   const resetForm = () => {
     setFormData(emptyForm);
-    setSelectedUser(null);
-    setCurrentRoles([]);
+    setAdminPassword("");
   };
 
-  const { data: usersData, isLoading } = useQuery({
-    queryKey: ["plant-users", companyCode],
+  // Fetch users for stats
+  const { data: allUsers } = useQuery({
+    queryKey: ["plant-users-all", companyCode],
     queryFn: async () => {
       const res = await fetch("/api/admin/users/plant");
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to fetch users");
       return (data || []) as any[];
     },
     enabled: !!companyCode,
   });
 
-  const { data: rolesData } = useQuery({
-    queryKey: ["admin-roles-plant"],
-    queryFn: async () => {
-      const res = await fetch("/api/admin/roles");
-      const data = await res.json() as any[];
-      return data.filter((r: any) =>
-        !RESTRICTED_ROLES.includes((r.code || r.name || "").toLowerCase())
-      );
-    },
-  });
-
-  const users = usersData || [];
-  const availableRoles = rolesData || [];
-
-  const filteredUsers = users.filter((u: any) =>
-    (u.fullname || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (u.username || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (u.email || "").toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
   const stats = {
-    total: users.length,
-    active: users.filter((u: any) => u.isactive).length,
-    rolesCount: new Set(users.flatMap((u: any) => u.roles || [])).size,
+    total: allUsers?.length || 0,
+    active: allUsers?.length || 0, // In this context, all returned users are considered active for now
   };
 
+  // DataTable Fetcher
+  const fetcher = async (params: DataTableParams) => {
+    const res = await fetch("/api/admin/users/plant");
+    const allData = await res.json();
+    if (!res.ok) throw new Error(allData.error || "Failed to fetch users");
+    
+    // Client-side filtering as the legacy API doesn't support server-side params
+    const filtered = (allData || []).filter((u: any) => {
+      const s = params.search.toLowerCase();
+      return (
+        (u.username || u.UserName || "").toLowerCase().includes(s) ||
+        (u.email || u.Email || "").toLowerCase().includes(s) ||
+        (u.company_code || "").toLowerCase().includes(s)
+      );
+    });
+
+    const start = params.start || 0;
+    const length = params.length || 25;
+    const paginated = filtered.slice(start, start + length);
+
+    return {
+      data: paginated,
+      recordsTotal: allData.length,
+      recordsFiltered: filtered.length,
+    };
+  };
+
+  const columns: DataTableColumn<any>[] = [
+    {
+      key: "no",
+      header: "No.",
+      headerClassName: "w-16 text-center",
+      className: "text-center",
+      render: (_, index) => (
+        <span className="text-[10px] font-black text-gray-300">
+          {(index + 1).toString().padStart(2, '0')}
+        </span>
+      ),
+    },
+    {
+      key: "username",
+      header: "Username",
+      render: (u) => (
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-none bg-gray-100 dark:bg-white/5 flex items-center justify-center text-[10px] font-black text-gray-500 border border-gray-100 dark:border-white/5">
+            {(u.username || u.UserName || "US").substring(0, 2).toUpperCase()}
+          </div>
+          <span className="font-bold text-gray-900 dark:text-white uppercase tracking-tight">
+            {u.username || u.UserName}
+          </span>
+        </div>
+      ),
+    },
+    {
+      key: "email",
+      header: "Email Address",
+      render: (u) => (
+        <div className="flex items-center gap-2 text-gray-500 font-bold">
+          <Mail className="h-3 w-3 opacity-40" />
+          {u.email || u.Email || "-"}
+        </div>
+      ),
+    },
+    {
+      key: "company_code",
+      header: "Unit",
+      headerClassName: "text-center",
+      className: "text-center",
+      render: (u) => (
+        <Badge variant="light" color="info" className="font-mono text-[10px] px-2 py-0.5 rounded-none border border-blue-100">
+          {u.company_code}
+        </Badge>
+      ),
+    },
+    {
+      key: "isIdentik",
+      header: "Identik",
+      render: (u) => {
+        const isIdentik = u.IsIdentik === true || u.isidentik === true;
+        return isIdentik ? (
+          <div className="flex items-center gap-1.5 text-emerald-500 font-black uppercase text-[9px] tracking-widest bg-emerald-50 dark:bg-emerald-500/10 px-2 py-1 border border-emerald-100 dark:border-emerald-500/20 w-fit">
+            <Fingerprint className="h-3 w-3" />
+            Verified
+          </div>
+        ) : (
+          <div className="flex items-center gap-1.5 text-gray-400 font-black uppercase text-[9px] tracking-widest bg-gray-50 dark:bg-white/5 px-2 py-1 border border-gray-100 dark:border-white/5 w-fit">
+            Standard
+          </div>
+        );
+      },
+    },
+    {
+      key: "deskripsi",
+      header: "Deskripsi",
+      render: (u) => (
+        <span className="text-[11px] font-bold text-gray-500 uppercase tracking-tight opacity-70">
+          {u.deskripsi || "-"}
+        </span>
+      ),
+    },
+    {
+      key: "action",
+      header: "Aksi",
+      headerClassName: "text-right",
+      className: "text-right",
+      render: (u) => (
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={() => openEdit(u)}
+          className="text-gray-300 hover:text-brand-500 hover:bg-brand-500/5 rounded-none h-8 w-8 p-0"
+        >
+          <Edit className="h-4 w-4" />
+        </Button>
+      ),
+    },
+  ];
+
+  // Update Mutation
   const updateMutation = useMutation({
     mutationFn: async (payload: any) => {
       const res = await fetch("/api/admin/users/plant", {
@@ -81,19 +185,13 @@ export default function AdminUserPage() {
         body: JSON.stringify(payload),
       });
       const data = await res.json();
-      if (!data.success && !res.ok) throw new Error(data.error || "Update failed");
+      if (!data.success) throw new Error(data.error || "Update failed");
       return data;
     },
-    onSuccess: (data: any) => {
-      const desc = data.roleErrors?.length
-        ? `Profil disimpan. Peringatan: ${data.roleErrors.join("; ")}`
-        : "Data pengguna berhasil diperbarui.";
-      addToast({
-        title: "User Diperbarui",
-        description: desc,
-        variant: data.roleErrors?.length ? "warning" : "success",
-      });
+    onSuccess: () => {
+      addToast({ title: "User Diperbarui", description: "Data pengguna berhasil diperbarui.", variant: "success" });
       setShowModal(false);
+      setShowConfirmModal(false);
       resetForm();
       queryClient.invalidateQueries({ queryKey: ["plant-users"] });
     },
@@ -101,251 +199,262 @@ export default function AdminUserPage() {
       addToast({ title: "Gagal Update", description: err.message, variant: "destructive" }),
   });
 
-  const openEdit = (user: any) => {
-    const roles = user.roles || [];
-    setFormData({
-      id: user.id,
-      username: user.username || "",
-      fullName: user.fullname || "",
-      email: user.email || "",
-      isActive: user.isactive ?? true,
-      roles,
-    });
-    setCurrentRoles(roles);
-    setSelectedUser(user);
-    setShowModal(true);
+  const openEdit = async (user: any) => {
+    try {
+      const res = await fetch(`/api/admin/users/plant?username=${user.username || user.UserName}`, { method: 'PATCH' });
+      const detail = await res.json();
+      
+      if (!detail.success || !detail.data) {
+        throw new Error(detail.message || "Gagal mengambil detail user");
+      }
+      
+      const d = detail.data;
+      setFormData({
+        id: d.Id || d.id,
+        username: d.username || d.UserName,
+        fullName: d.fullname || d.FullName || "",
+        email: d.email || d.Email || "",
+        companyCode: d.company_code || "",
+        deskripsi: d.deskripsi || "",
+        password: "",
+        isIdentik: d.IsIdentik === true,
+        mfaRemember: d.MfaRemember === true,
+      });
+      setShowModal(true);
+    } catch (err: any) {
+      addToast({ title: "Error", description: err.message, variant: "destructive" });
+    }
   };
 
-  const handleSave = () => {
-    if (!formData.fullName.trim()) {
-      addToast({ title: "Validasi", description: "Nama lengkap wajib diisi.", variant: "warning" });
+  const handleSaveAttempt = () => {
+    if (!formData.email.trim()) {
+      addToast({ title: "Validasi", description: "Email wajib diisi.", variant: "warning" });
+      return;
+    }
+    setShowConfirmModal(true);
+  };
+
+  const executeSave = () => {
+    if (!adminPassword) {
+      addToast({ title: "Validasi", description: "Password konfirmasi wajib diisi.", variant: "warning" });
       return;
     }
     updateMutation.mutate({
-      id: formData.id,
-      fullName: formData.fullName,
-      email: formData.email,
-      isActive: formData.isActive,
-      roles: formData.roles,
-      currentRoles,
+      ...formData,
+      adminPassword
     });
   };
 
-  const toggleRole = (roleName: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      roles: prev.roles.includes(roleName)
-        ? prev.roles.filter((r) => r !== roleName)
-        : [...prev.roles, roleName],
-    }));
-  };
-
   return (
-    <div className="p-6 space-y-6 max-w-6xl mx-auto">
-      <div className="flex items-center justify-between">
+    <div className="p-6 space-y-8 max-w-7xl mx-auto">
+      {/* Page Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Management User</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Plant: <span className="font-semibold">{companyCode || "—"}</span>
+          <h1 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight">
+            User Management
+          </h1>
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] flex items-center gap-2 mt-1">
+            SISTRO NEXT &bull; ADMINISTRASI SISTEM
           </p>
+        </div>
+        
+        <div className="flex gap-4">
+          <Card className="rounded-none border-gray-100 dark:border-white/5 shadow-none bg-white dark:bg-white/[0.02] py-3 px-6 flex items-center gap-4 min-w-[160px]">
+             <div className="p-2 bg-brand-50 dark:bg-brand-500/10 text-brand-500">
+                <Users className="h-5 w-5" />
+             </div>
+             <div>
+                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Total Users</p>
+                <p className="text-xl font-black tracking-tighter leading-none">{stats.total}</p>
+             </div>
+          </Card>
+
+          <Card className="rounded-none border-gray-100 dark:border-white/5 shadow-none bg-white dark:bg-white/[0.02] py-3 px-6 flex items-center gap-4 min-w-[160px]">
+             <div className="p-2 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500">
+                <Activity className="h-5 w-5" />
+             </div>
+             <div>
+                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Active Now</p>
+                <p className="text-xl font-black tracking-tighter leading-none">{stats.active}</p>
+             </div>
+          </Card>
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-3">
-              <Users className="h-8 w-8 text-blue-500" />
-              <div>
-                <p className="text-2xl font-bold">{stats.total}</p>
-                <p className="text-xs text-muted-foreground">Total User</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-3">
-              <UserCheck className="h-8 w-8 text-green-500" />
-              <div>
-                <p className="text-2xl font-bold">{stats.active}</p>
-                <p className="text-xs text-muted-foreground">User Aktif</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-3">
-              <ShieldCheck className="h-8 w-8 text-purple-500" />
-              <div>
-                <p className="text-2xl font-bold">{stats.rolesCount}</p>
-                <p className="text-xs text-muted-foreground">Jenis Role</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          aria-label="Cari user"
-          placeholder="Cari nama, username, atau email..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-9"
+      {/* DataTable Integration */}
+      <div className="bg-white dark:bg-white/[0.02] border-none">
+        <DataTable
+          columns={columns}
+          queryKey={["plant-users", companyCode]}
+          fetcher={fetcher}
+          rowKey={(u) => u.id || u.username || Math.random()}
+          searchPlaceholder="Cari username atau email..."
+          emptyText="Belum ada data pengguna ditemukan."
+          borderless={true}
+          defaultPageSize={25}
         />
       </div>
 
-      <Card>
-        <CardContent className="p-0">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/50">
-                  <tr>
-                    <th className="px-4 py-3 text-left font-medium">Nama Lengkap</th>
-                    <th className="px-4 py-3 text-left font-medium">Username</th>
-                    <th className="px-4 py-3 text-left font-medium">Email</th>
-                    <th className="px-4 py-3 text-left font-medium">Role</th>
-                    <th className="px-4 py-3 text-left font-medium">Status</th>
-                    <th className="px-4 py-3 text-right font-medium">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {filteredUsers.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
-                        Tidak ada user ditemukan
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredUsers.map((u: any) => (
-                      <tr key={u.id} className="hover:bg-muted/30 transition-colors">
-                        <td className="px-4 py-3 font-medium">{u.fullname || "-"}</td>
-                        <td className="px-4 py-3 text-muted-foreground">{u.username}</td>
-                        <td className="px-4 py-3 text-muted-foreground">{u.email || "-"}</td>
-                        <td className="px-4 py-3">
-                          <div className="flex flex-wrap gap-1">
-                            {(u.roles || []).slice(0, 3).map((r: string) => (
-                              <Badge key={r} variant="light" color="info" className="text-xs">
-                                {r}
-                              </Badge>
-                            ))}
-                            {(u.roles || []).length > 3 && (
-                              <Badge variant="light" color="light" className="text-xs">
-                                +{u.roles.length - 3}
-                              </Badge>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <Badge variant="light" color={u.isactive ? "success" : "light"}>
-                            {u.isactive ? "Aktif" : "Nonaktif"}
-                          </Badge>
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <Button variant="ghost" size="sm" onClick={() => openEdit(u)}>
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
+      {/* Edit Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-background rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-6 border-b">
-              <h2 className="text-lg font-semibold">Edit User</h2>
-              <Button variant="ghost" size="sm" onClick={() => { setShowModal(false); resetForm(); }}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="text-sm font-medium">Username</label>
-                <Input value={formData.username} disabled className="mt-1 bg-muted" />
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <Card className="w-full max-w-2xl rounded-none border-none bg-white dark:bg-[#1a1c1e] shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-in zoom-in duration-200">
+            <CardHeader className="border-b dark:border-white/5 pb-6 bg-gray-50/50 dark:bg-white/[0.02] p-8">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-brand-500 text-white shadow-xl shadow-brand-500/20">
+                    <UserCheck className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl font-black uppercase tracking-tight">Otorisasi Profil</CardTitle>
+                    <CardDescription className="text-[10px] font-black uppercase tracking-widest text-brand-500 mt-1">{formData.username}</CardDescription>
+                  </div>
+                </div>
+                <Button variant="ghost" size="icon" className="rounded-none hover:bg-gray-200 dark:hover:bg-white/10" onClick={() => { setShowModal(false); resetForm(); }}>
+                  <X className="h-5 w-5" />
+                </Button>
               </div>
+            </CardHeader>
 
-              <div>
-                <label className="text-sm font-medium" htmlFor="fullName">Nama Lengkap *</label>
-                <Input
-                  id="fullName"
-                  value={formData.fullName}
-                  onChange={(e) => setFormData((p) => ({ ...p, fullName: e.target.value }))}
-                  className="mt-1"
-                  placeholder="Nama lengkap"
-                />
-              </div>
-
-              <div>
-                <label className="text-sm font-medium" htmlFor="email">Email</label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData((p) => ({ ...p, email: e.target.value }))}
-                  className="mt-1"
-                  placeholder="email@example.com"
-                />
-              </div>
-
-              <div className="flex items-center gap-3">
-                <label className="text-sm font-medium" htmlFor="isActive">Status Aktif</label>
-                <input
-                  id="isActive"
-                  type="checkbox"
-                  checked={formData.isActive}
-                  onChange={(e) => setFormData((p) => ({ ...p, isActive: e.target.checked }))}
-                  className="h-4 w-4"
-                />
-              </div>
-
-              <div>
-                <label className="text-sm font-medium mb-2 block">Role</label>
-                <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto border rounded-md p-3">
-                  {availableRoles.map((role: any) => {
-                    const roleName = role.code || role.name || role;
-                    const isChecked = formData.roles.includes(roleName);
-                    return (
-                      <label key={roleName} className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={() => toggleRole(roleName)}
-                          className="h-4 w-4"
-                        />
-                        <span className="text-sm">{roleName}</span>
-                      </label>
-                    );
-                  })}
+            <div className="overflow-y-auto flex-1 p-8 space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Username</label>
+                  <Input value={formData.username} disabled className="bg-gray-100/50 dark:bg-white/5 border-gray-100 dark:border-white/5 font-mono text-xs h-10 rounded-none px-4" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase text-brand-500 tracking-widest">Email Address</label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input 
+                      value={formData.email} 
+                      onChange={e => setFormData({...formData, email: e.target.value})}
+                      className="pl-10 h-10 border-gray-100 dark:border-white/5 focus:ring-brand-500/20 font-bold text-xs rounded-none"
+                    />
+                  </div>
                 </div>
               </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Kode Unit</label>
+                  <Input value={formData.companyCode} disabled className="bg-gray-100/50 dark:bg-white/5 border-gray-100 dark:border-white/5 font-mono text-xs h-10 rounded-none" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Deskripsi Perusahaan</label>
+                  <Input value={formData.deskripsi} disabled className="bg-gray-100/50 dark:bg-white/5 border-gray-100 dark:border-white/5 text-xs font-bold h-10 rounded-none" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-6 bg-gray-50/50 dark:bg-white/[0.03] border border-gray-100 dark:border-white/5">
+                <div className="space-y-4">
+                  <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest block">Otorisasi Identik</label>
+                  <div className="flex items-center gap-6">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input 
+                        type="radio" 
+                        name="isIdentik" 
+                        checked={formData.isIdentik} 
+                        onChange={() => setFormData({...formData, isIdentik: true})}
+                        className="w-4 h-4 text-brand-500" 
+                      />
+                      <span className={`text-[10px] font-black transition-all ${formData.isIdentik ? 'text-brand-500' : 'text-gray-400'}`}>AKTIF</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input 
+                        type="radio" 
+                        name="isIdentik" 
+                        checked={!formData.isIdentik} 
+                        onChange={() => setFormData({...formData, isIdentik: false})}
+                        className="w-4 h-4 text-brand-500" 
+                      />
+                      <span className={`text-[10px] font-black transition-all ${!formData.isIdentik ? 'text-rose-500' : 'text-gray-400'}`}>NON-AKTIF</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="space-y-4 border-l dark:border-white/5 pl-6">
+                  <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest block">Session Persistence</label>
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <div className="relative">
+                      <input
+                        type="checkbox"
+                        checked={formData.mfaRemember}
+                        onChange={(e) => setFormData((p) => ({ ...p, mfaRemember: e.target.checked }))}
+                        className="sr-only"
+                      />
+                      <div className={`block w-10 h-6 transition-all duration-300 ${formData.mfaRemember ? 'bg-brand-500' : 'bg-gray-300 dark:bg-gray-700'}`}></div>
+                      <div className={`dot absolute left-1 top-1 bg-white w-4 h-4 transition-transform duration-300 ${formData.mfaRemember ? 'transform translate-x-4' : ''}`}></div>
+                    </div>
+                    <span className="text-[10px] font-black text-gray-700 dark:text-gray-300 uppercase">Remember MFA</span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="p-6 bg-rose-500/[0.03] dark:bg-rose-500/[0.02] border border-rose-500/10">
+                <div className="flex items-center gap-2 text-rose-500 mb-4">
+                  <Lock className="h-4 w-4" />
+                  <span className="text-[10px] font-black uppercase tracking-widest">Credential Update</span>
+                </div>
+                <Input 
+                  type="password"
+                  placeholder="NEW PASSWORD (OPTIONAL)"
+                  value={formData.password}
+                  onChange={e => setFormData({...formData, password: e.target.value})}
+                  className="h-10 bg-white dark:bg-transparent border-gray-100 dark:border-white/5 focus:ring-rose-500/20 text-center font-mono tracking-[0.3em] rounded-none"
+                />
+              </div>
             </div>
 
-            <div className="flex justify-end gap-3 p-6 border-t">
-              <Button variant="outline" onClick={() => { setShowModal(false); resetForm(); }}>
-                Batal
+            <CardFooter className="flex justify-end gap-4 p-8 border-t dark:border-white/5 bg-gray-50/50 dark:bg-white/[0.01]">
+              <Button variant="ghost" className="font-black uppercase tracking-widest text-[10px] text-gray-500 h-10 px-6 rounded-none" onClick={() => { setShowModal(false); resetForm(); }}>
+                DISCARD
               </Button>
-              <Button onClick={handleSave} disabled={updateMutation.isPending}>
-                {updateMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                Simpan
+              <Button 
+                onClick={handleSaveAttempt} 
+                className="bg-brand-500 hover:bg-brand-600 font-black uppercase tracking-widest text-[10px] px-10 h-10 shadow-xl shadow-brand-500/30 rounded-none transition-all active:scale-95"
+              >
+                COMMIT CHANGES
               </Button>
+            </CardFooter>
+          </Card>
+        </div>
+      )}
+
+      {/* Admin Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4 backdrop-blur-md animate-in fade-in duration-300">
+          <Card className="w-full max-w-sm rounded-none border-none bg-white dark:bg-[#1a1c1e] text-center p-10 animate-in zoom-in duration-300">
+            <div className="mx-auto w-16 h-16 bg-brand-500 text-white flex items-center justify-center mb-6 shadow-xl shadow-brand-500/50">
+              <Lock className="h-8 w-8" />
             </div>
-          </div>
+            <h3 className="text-xl font-black text-gray-900 dark:text-white mb-2 uppercase tracking-tight">Security Check</h3>
+            <p className="text-[10px] font-black text-gray-400 mb-8 uppercase tracking-widest">Enter administrator password to authorize changes.</p>
+            
+            <div className="space-y-4">
+              <Input 
+                type="password"
+                placeholder="••••••••"
+                className="text-center font-mono py-6 text-xl border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-white/5 focus:ring-brand-500/20 placeholder:tracking-[0.5em] rounded-none"
+                value={adminPassword}
+                onChange={e => setAdminPassword(e.target.value)}
+                autoFocus
+                onKeyDown={e => e.key === 'Enter' && executeSave()}
+              />
+              <div className="flex flex-col gap-2 pt-2">
+                <Button 
+                  onClick={executeSave}
+                  className="w-full bg-brand-500 hover:bg-brand-600 h-12 font-black uppercase tracking-widest text-xs rounded-none shadow-xl shadow-brand-500/40"
+                  disabled={updateMutation.isPending}
+                >
+                  {updateMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "AUTHORIZE"}
+                </Button>
+                <Button variant="ghost" onClick={() => setShowConfirmModal(false)} className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-rose-500 transition-colors">
+                  ABORT
+                </Button>
+              </div>
+            </div>
+          </Card>
         </div>
       )}
     </div>

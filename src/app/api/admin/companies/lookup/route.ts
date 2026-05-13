@@ -16,11 +16,12 @@ export async function GET() {
     
     const data: any[] = await res.json();
     const mapped = data.map(c => ({
-      id: c.id ?? 0,
+      id:   c.company_code ?? c.ID ?? c.id ?? '',   // company_code is the real unique key
       code: c.company_code ?? c.ID ?? '',
       name: c.company ?? c.Deskripsi ?? ''
     }));
     return NextResponse.json(mapped);
+
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
