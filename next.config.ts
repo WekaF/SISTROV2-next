@@ -3,9 +3,14 @@ import type { NextConfig } from "next";
 const ASPNET_URL = process.env.ASPNET_API_URL || "http://192.168.188.170:8090";
 
 const nextConfig: NextConfig = {
-  /* config options here */
-  // Turbopack configuration (if needed)
-  // Note: Most turbo options are now handled automatically in Next.js 15+
+  turbopack: {
+    rules: {
+      "*.svg": {
+        loaders: ["@svgr/webpack"],
+        as: "*.js",
+      },
+    },
+  },
   webpack(config) {
     config.module.rules.push({
       test: /\.svg$/,
