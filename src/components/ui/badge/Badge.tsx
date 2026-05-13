@@ -4,7 +4,8 @@ import { cn } from "@/lib/utils"
 import React from "react"
 
 type LegacyColor = "success" | "warning" | "error" | "destructive" | "info" | "blue" | "default"
-type LegacyVariant = "solid" | "outline" | "default" | "secondary" | "ghost"
+type LegacyVariant = "solid" | "light" | "outline" | "default" | "secondary" | "ghost"
+type LegacySize = "sm" | "md" | "lg"
 
 const colorClass: Record<LegacyColor, string> = {
   success: "bg-emerald-100 text-emerald-700 border-emerald-200",
@@ -16,22 +17,33 @@ const colorClass: Record<LegacyColor, string> = {
   default: "",
 }
 
+const sizeClass: Record<LegacySize, string> = {
+  sm: "text-[10px] px-1.5 py-0",
+  md: "text-xs px-2 py-0.5",
+  lg: "text-sm px-3 py-1",
+}
+
 interface BadgeLegacyProps extends React.HTMLAttributes<HTMLSpanElement> {
   color?: LegacyColor
   variant?: LegacyVariant | VariantProps<typeof badgeVariants>["variant"]
+  size?: LegacySize
 }
 
-function Badge({ color, variant, className, ...props }: BadgeLegacyProps) {
-  const mapped = variant === "outline"
-    ? "outline"
-    : (variant === "solid" || !variant)
-      ? "default"
-      : variant as VariantProps<typeof badgeVariants>["variant"]
+function Badge({ color, variant, size, className, ...props }: BadgeLegacyProps) {
+  const mapped: VariantProps<typeof badgeVariants>["variant"] =
+    variant === "outline" ? "outline"
+    : variant === "ghost" ? "ghost"
+    : variant === "secondary" ? "secondary"
+    : "default"
 
   return (
     <BadgeBase
       variant={mapped}
-      className={cn(color ? (colorClass[color] ?? "") : "", className)}
+      className={cn(
+        color ? (colorClass[color] ?? "") : "",
+        size ? (sizeClass[size] ?? "") : "",
+        className
+      )}
       {...(props as any)}
     />
   )
