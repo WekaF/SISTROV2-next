@@ -348,8 +348,8 @@ const AppSidebar: React.FC = () => {
       },
       {
         icon: <CalendarClock className="h-5 w-5" />,
-        name: "Manajemen Shift",
-        path: "/superadmin/settings/shifts",
+        name: "Pengaturan Shift",
+        path: "/shift",
       },
       {
         icon: <FileText className="h-5 w-5" />,
@@ -476,8 +476,8 @@ const AppSidebar: React.FC = () => {
       },
       {
         icon: <CalendarClock className="h-5 w-5" />,
-        name: "Manajemen Shift",
-        path: "/superadmin/settings/shifts",
+        name: "Pengaturan Shift",
+        path: "/shift",
       },
     ];
     adminItems = [];
@@ -616,72 +616,6 @@ const AppSidebar: React.FC = () => {
           { name: "Report Pembuatan Kuota", path: "/reports/kuota-log" },
           { name: "Report Pemesanan Tiket", path: "/reports/booking" },
           { name: "Resume Booking Tiket", path: "/reports/resume" },
-        ],
-      },
-    ];
-    adminItems = [];
-  } else if (role === "staffarea") {
-    navItems = [
-      { icon: <LayoutGrid className="h-5 w-5" />, name: "Dashboard", path: "/" },
-      {
-        icon: <Package className="h-5 w-5" />,
-        name: "POSTO",
-        subItems: [
-          { name: "Data POSTO", path: "/posto" },
-          { name: "Data SO", path: "/so" },
-          { name: "Cut Off POSTO", path: "/posto/cut-off" },
-          { name: "Prioritas Tujuan Muat", path: "/posto/priority" },
-          { name: "Upload POSTO / SO", path: "/posto/upload" },
-        ],
-      },
-      {
-        icon: <Ticket className="h-5 w-5" />,
-        name: "TIKET",
-        subItems: [
-          { name: "Datatable Tiket", path: "/admin/tickets" },
-        ],
-      },
-      {
-        icon: <CalendarCheck className="h-5 w-5" />,
-        name: "KUOTA",
-        subItems: [
-          { name: "Penjadwalan Kuota", path: "/kuota/schedule" },
-          { name: "Kuota Per-shift", path: "/kuota/shifts" },
-        ],
-      },
-      {
-        icon: <TableProperties className="h-5 w-5" />,
-        name: "Gudang",
-        subItems: [
-          { name: "Antrian", path: "/antrian" },
-          { name: "List Gudang", path: "/gudang" },
-          { name: "Antrian Per Unit", path: "/gudang/unit-queue" },
-          { name: "Gudang Tujuan Bagian", path: "/gudang/tujuan-bagian" },
-          { name: "Monitoring Pemuatan", path: "/gudang/targets" },
-          { name: "Traffic Antrian", path: "/gudang/trafik" },
-          { name: "Bypass Antrian", path: "/gudang/bypass" },
-        ],
-      },
-      {
-        icon: <Truck className="h-5 w-5" />,
-        name: "Armada",
-        subItems: [
-          { name: "Datatable Armada", path: "/armada" },
-          { name: "Pengajuan Armada", path: "/armada/pengajuan" },
-          { name: "Sumbu Kendaraan", path: "/armada/axle-setup" },
-          { name: "Mapping Zero Odol", path: "/armada/mapping-zero-odol" },
-        ],
-      },
-      {
-        icon: <FileText className="h-5 w-5" />,
-        name: "Laporan",
-        subItems: [
-          { name: "Laporan Tiket", path: "/reports/tickets" },
-          { name: "Antrian Per Gudang", path: "/reports/antrian" },
-          { name: "Laporan Armada", path: "/reports/fleet" },
-          { name: "Laporan Gudang", path: "/reports/warehouses" },
-          { name: "Laporan Posto", path: "/reports/posto" },
-          { name: "Laporan Statistik", path: "/reports/stats" },
         ],
       },
     ];

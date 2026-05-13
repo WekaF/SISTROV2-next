@@ -8,19 +8,20 @@ import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge/Badge";
-import { 
-  Search, 
-  Printer, 
-  CheckCircle2, 
-  XCircle, 
-  LogOut, 
+import { Badge } from "@/components/ui/badge";
+import {
+  Search,
+  Printer,
+  CheckCircle2,
+  XCircle,
+  LogOut,
   ArrowRight,
   Clock,
   Truck,
   Package,
   Warehouse,
-  Loader2
+  Loader2,
+  Info
 } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
