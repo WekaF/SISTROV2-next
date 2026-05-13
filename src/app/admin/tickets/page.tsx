@@ -24,7 +24,7 @@ function AdminTicketsContent() {
   const { activeCompanyCode } = useCompany();
   const [searchTerm, setSearchTerm] = React.useState("");
 
-  const columns: DataTableColumn[] = [
+  const columns: DataTableColumn<any>[] = [
     {
       key: "bookingno",
       header: "Booking No",
