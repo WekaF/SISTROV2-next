@@ -16,20 +16,23 @@ export default function UserConfigPage() {
   const { addToast } = useToast();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
+  const [companyFilter, setCompanyFilter] = useState<string>("all");
 
   const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [showPassword, setShowPassword] = useState(false);
+  // snapshot of roles before edit — used to compute diff on save
+  const [currentRoles, setCurrentRoles] = useState<string[]>([]);
 
   const emptyForm = {
-    id: 0, username: "", password: "", fullName: "", email: "",
-    isActive: true, roles: [] as string[], companyIds: [] as number[], sapVendorCode: ""
+    id: "", username: "", password: "", fullName: "", email: "",
+    isActive: true, roles: [] as string[], companyIds: [] as string[], sapVendorCode: ""
   };
   const [formData, setFormData] = useState(emptyForm);
 
-  const resetForm = () => { setFormData(emptyForm); setIsEditing(false); setSelectedUser(null); setShowPassword(false); };
+  const resetForm = () => { setFormData(emptyForm); setIsEditing(false); setSelectedUser(null); setShowPassword(false); setCurrentRoles([]); };
 
   const { data: usersData, isLoading } = useQuery({
     queryKey: ["admin-users"],
@@ -61,11 +64,17 @@ export default function UserConfigPage() {
   const availableRoles = rolesData || [];
   const availableCompanies = companiesData || [];
 
-  const filteredUsers = users.filter((u: any) =>
-    (u.fullname || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (u.username || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (u.email || "").toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredUsers = users.filter((u: any) => {
+    const matchSearch =
+      (u.fullname || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (u.username || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (u.email || "").toLowerCase().includes(searchTerm.toLowerCase());
+
+    const userCompany = (u.companies || [])[0] || "";
+    const matchCompany = companyFilter === "all" || userCompany === companyFilter;
+
+    return matchSearch && matchCompany;
+  });
 
   const stats = {
     superadmins: users.filter((u: any) => (u.roles || []).some((r: string) => r.toLowerCase() === 'superadmin')).length,
@@ -105,8 +114,11 @@ export default function UserConfigPage() {
       if (!data.success && !res.ok) throw new Error(data.error || "Update failed");
       return data;
     },
-    onSuccess: () => {
-      addToast({ title: "User Diperbarui", description: "Konfigurasi pengguna berhasil disimpan.", variant: "success" });
+    onSuccess: (data: any) => {
+      const desc = data.roleErrors?.length
+        ? `Profil disimpan. Peringatan role: ${data.roleErrors.join('; ')}`
+        : "Konfigurasi pengguna dan role berhasil disimpan.";
+      addToast({ title: "User Diperbarui", description: desc, variant: data.roleErrors?.length ? "warning" : "success" });
       setShowModal(false);
       resetForm();
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
@@ -132,14 +144,16 @@ export default function UserConfigPage() {
 
   const handleEditClick = (user: any) => {
     setSelectedUser(user);
+    const existingRoles = user.roles || [];
+    setCurrentRoles(existingRoles);          // snapshot before any changes
     setFormData({
       id: user.id,
       username: user.username || "",
       password: "",
       fullName: user.fullname || "",
       email: user.email || "",
-      isActive: user.isactive,
-      roles: user.roles || [],
+      isActive: user.isactive ?? true,
+      roles: [...existingRoles],             // editable copy
       companyIds: [],
       sapVendorCode: user.sapvendorcode || ""
     });
@@ -155,7 +169,14 @@ export default function UserConfigPage() {
       if (!formData.fullName.trim()) return addToast({ title: "Validasi Gagal", description: "Nama lengkap diperlukan.", variant: "destructive" });
       createMutation.mutate(formData);
     } else {
-      updateMutation.mutate({ id: formData.id, fullName: formData.fullName, email: formData.email, isActive: formData.isActive, roles: formData.roles, companyIds: formData.companyIds });
+      updateMutation.mutate({
+        id: formData.id,
+        fullName: formData.fullName,
+        email: formData.email,
+        isActive: formData.isActive,
+        currentRoles,           // roles sebelum edit (untuk diff)
+        newRoles: formData.roles // roles setelah edit
+      });
     }
   };
 
@@ -166,7 +187,7 @@ export default function UserConfigPage() {
     }));
   };
 
-  const toggleCompany = (id: number) => {
+  const toggleCompany = (id: string) => {
     setFormData(prev => ({
       ...prev,
       companyIds: prev.companyIds.includes(id) ? prev.companyIds.filter(c => c !== id) : [...prev.companyIds, id]
@@ -223,9 +244,24 @@ export default function UserConfigPage() {
 
       <Card className="shadow-theme-xs overflow-hidden">
         <CardHeader className="border-b border-gray-100 dark:border-gray-800 p-6">
-          <div className="relative w-full md:w-96">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input className="pl-10" placeholder="Cari nama, username, atau email..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+          <div className="flex flex-wrap gap-3 items-center">
+            <div className="relative w-full md:w-96">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input className="pl-10" placeholder="Cari nama, username, atau email..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+            </div>
+            <select
+              aria-label="Filter by plant"
+              value={companyFilter}
+              onChange={(e) => setCompanyFilter(e.target.value)}
+              className="border rounded-md px-3 py-2 text-sm bg-background"
+            >
+              <option value="all">Semua Plant</option>
+              {availableCompanies.map((c: any) => (
+                <option key={c.code || c.id} value={c.code || c.id}>
+                  {c.name || c.code}
+                </option>
+              ))}
+            </select>
           </div>
         </CardHeader>
         <CardContent className="p-0">
@@ -235,6 +271,7 @@ export default function UserConfigPage() {
                 <tr className="border-b border-gray-100 dark:border-gray-800">
                   <th className="px-6 py-4 text-xs font-black uppercase text-gray-500 tracking-widest">Full Name</th>
                   <th className="px-6 py-4 text-xs font-black uppercase text-gray-500 tracking-widest">Username</th>
+                  <th className="px-6 py-4 text-xs font-black uppercase text-gray-500 tracking-widest">Plant</th>
                   <th className="px-6 py-4 text-xs font-black uppercase text-gray-500 tracking-widest">Email</th>
                   <th className="px-6 py-4 text-xs font-black uppercase text-gray-500 tracking-widest">Roles</th>
                   <th className="px-6 py-4 text-xs font-black uppercase text-gray-500 tracking-widest">Status</th>
@@ -253,6 +290,9 @@ export default function UserConfigPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4"><span className="text-xs font-medium text-gray-900 dark:text-white">@{user.username}</span></td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground">
+                      {(user.companies || []).join(", ") || "-"}
+                    </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2 text-xs text-gray-500">
                         <Mail className="h-3 w-3" />
@@ -361,9 +401,9 @@ export default function UserConfigPage() {
                   <div className="flex flex-wrap gap-2">
                     {availableRoles.map((role: any) => {
                       const isSelected = formData.roles.includes(role.Code || role.code);
-                      const code = role.Code || role.code;
+                      const code = role.Code || role.code || role.Name || role.name;
                       return (
-                        <button key={role.Id || role.id} type="button" onClick={() => toggleRole(code)}
+                        <button key={`role-${code}`} type="button" onClick={() => toggleRole(code)}
                           className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 border ${isSelected ? 'bg-brand-500 text-white border-brand-500 shadow-md shadow-brand-500/20' : 'bg-white text-gray-600 border-gray-200 hover:border-brand-200'}`}>
                           {isSelected && <Check className="h-3 w-3" />}
                           {role.Name || role.name}
@@ -377,10 +417,10 @@ export default function UserConfigPage() {
                   <label className="text-[10px] font-black uppercase text-gray-400">Plant / Company Mapping</label>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-1">
                     {availableCompanies.map((company: any) => {
-                      const id = company.Id || company.id;
+                      const id = company.code || company.id || company.company_code || '';
                       const isSelected = formData.companyIds.includes(id);
                       return (
-                        <button key={id} type="button" onClick={() => toggleCompany(id)}
+                        <button key={`company-${id}`} type="button" onClick={() => toggleCompany(id)}
                           className={`p-3 rounded-xl text-xs font-medium text-left transition-all border ${isSelected ? 'bg-emerald-50 text-emerald-700 border-emerald-200 ring-2 ring-emerald-500/20' : 'bg-gray-50/50 text-gray-600 border-gray-100 hover:bg-gray-50'}`}>
                           <div className="flex items-center gap-2">
                             <div className={`p-1 rounded ${isSelected ? 'bg-emerald-500 text-white' : 'bg-gray-200 text-gray-500'}`}>

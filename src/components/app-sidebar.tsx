@@ -196,16 +196,27 @@ const MENU_REPORTS = {
   ],
 }
 
+const MENU_PENGATURAN_SUPERADMIN = {
+  title: "Pengaturan",
+  url: "#",
+  icon: Settings,
+  items: [
+    { title: "Management User", url: "/superadmin/settings/users", icon: UserCog },
+    { title: "User Transport", url: "/admin/pengaturan/rekanan", icon: Users },
+    { title: "Company / Plant", url: "/admin/pengaturan/plant", icon: Factory },
+    { title: "Produk", url: "/admin/pengaturan/produk", icon: Package },
+    { title: "Mapping Produk Gudang", url: "/admin/pengaturan/mapping-produk", icon: Building2 },
+    { title: "Fleet / Armada", url: "/superadmin/settings/fleet", icon: Truck },
+  ],
+}
+
 const MENU_PENGATURAN_ADMIN = {
   title: "Pengaturan",
   url: "#",
   icon: Settings,
   items: [
     { title: "Management User", url: "/admin/pengaturan/user", icon: UserCog },
-    { title: "User Transport", url: "/admin/pengaturan/rekanan", icon: Users },
-    { title: "Company / Plant", url: "/admin/pengaturan/plant", icon: Factory },
     { title: "Produk", url: "/admin/pengaturan/produk", icon: Package },
-    { title: "Mapping Produk Gudang", url: "/admin/pengaturan/mapping-produk", icon: Building2 },
   ],
 }
 
@@ -225,7 +236,7 @@ const roleMenus: Record<Role, any[]> = {
     { title: "Stock", url: "/stock", icon: Box },
     MENU_REPORTS,
     MENU_ARMADA_ADMIN,
-    MENU_PENGATURAN_ADMIN,
+    MENU_PENGATURAN_SUPERADMIN,
   ],
 
   // ── Admin — sama dengan superadmin ────────────────────────────────────────
