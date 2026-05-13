@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { aspnetFetchServer } from "@/lib/api-client";
@@ -8,13 +8,13 @@ function isAuthorized(session: any): boolean {
   return !!session?.user && roles.some((r: string) => ["superadmin", "ti"].includes(r.toLowerCase()));
 }
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     if (!isAuthorized(session)) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
 
     const token = (session?.user as any)?.aspnetToken as string;
-    const { id } = params;
+    const { id } = await params;
     const { Deskripsi, Alamat, Kecamatan, Kabupaten, Propinsi } = await req.json();
 
     const res = await aspnetFetchServer('/api/SuperadminGudang/Sync', token, {
@@ -33,13 +33,13 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   }
 }
 
-export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     if (!isAuthorized(session)) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
 
     const token = (session?.user as any)?.aspnetToken as string;
-    const { id } = params;
+    const { id } = await params;
 
     const res = await aspnetFetchServer('/api/SuperadminGudang/Delete', token, {
       method: 'POST',
