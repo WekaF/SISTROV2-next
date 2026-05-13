@@ -7,7 +7,7 @@ import {
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import Badge from "@/components/ui/badge/Badge";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
@@ -99,10 +99,10 @@ export default function ShiftPage() {
         });
         setShowModal(true);
       } else {
-        addToast("Gagal mengambil detail shift", "error");
+        addToast({ title: "Gagal mengambil detail shift", variant: "destructive" });
       }
     } catch {
-      addToast("Terjadi kesalahan sistem", "error");
+      addToast({ title: "Terjadi kesalahan sistem", variant: "destructive" });
     }
   };
 
@@ -121,12 +121,12 @@ export default function ShiftPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["shifts-all"] });
-      addToast("Data shift berhasil diperbarui", "success");
+      addToast({ title: "Data shift berhasil diperbarui", variant: "success" });
       setShowModal(false);
       resetForm();
     },
     onError: (error: any) => {
-      addToast(error.message, "error");
+      addToast({ title: error.message, variant: "destructive" });
     },
     onSettled: () => setIsSubmitting(false),
   });
@@ -257,7 +257,8 @@ export default function ShiftPage() {
             columns={columns}
             fetcher={fetcher}
             queryKey={["shifts-table"]}
-            pageSize={25}
+            defaultPageSize={25}
+            rowKey={(row: any) => row.abbrev ?? `row-${row.number}`}
             searchPlaceholder="Cari shift (keterangan, scope, level)..."
           />
         </div>
