@@ -244,6 +244,7 @@ const AppSidebar: React.FC = () => {
           { name: "Pengajuan Armada", path: "/armada/pengajuan" },
           { name: "Upload Armada", path: "/armada/upload" },
           { name: "Mapping Zero Odol", path: "/armada/mapping-zero-odol" },
+          { name: "Sumbu Percepatan", path: "/armada/percepatan" },
         ],
       },
       {
@@ -334,6 +335,7 @@ const AppSidebar: React.FC = () => {
           { name: "Pengajuan Armada", path: "/armada/pengajuan" },
           { name: "Upload Armada", path: "/armada/upload" },
           { name: "Mapping Zero Odol", path: "/armada/mapping-zero-odol" },
+          { name: "Sumbu Percepatan", path: "/armada/percepatan" },
         ],
       },
       {
@@ -434,6 +436,7 @@ const AppSidebar: React.FC = () => {
           { name: "Upload Armada", path: "/armada/upload" },
           { name: "Sumbu Kendaraan", path: "/armada/axle-setup" },
           { name: "Mapping Zero Odol", path: "/armada/mapping-zero-odol" },
+          { name: "Sumbu Percepatan", path: "/armada/percepatan" },
         ],
       },
       {
@@ -449,8 +452,15 @@ const AppSidebar: React.FC = () => {
         ],
       },
     ];
-    // Hide specialized user management items for POD
-    adminItems = [];
+    adminItems = [
+      {
+        icon: <ShieldCheck className="h-5 w-5" />,
+        name: "Administration",
+        subItems: [
+          { name: "Master Sumbu", path: "/superadmin/settings/sumbu" },
+        ],
+      },
+    ];
   } else if (role === "staffarea") {
     navItems = [
       { icon: <LayoutGrid className="h-5 w-5" />, name: "Dashboard", path: "/" },
