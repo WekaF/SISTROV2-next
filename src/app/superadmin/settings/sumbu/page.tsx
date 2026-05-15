@@ -99,19 +99,14 @@ export default function SumbuPage() {
     setIsSubmitting(true);
     try {
       const method = isEditing ? 'PUT' : 'POST';
-      window.alert(`DEBUG: Direct Fetch ${method} /api/admin/sumbu\nPayload: ` + JSON.stringify(formData));
-      
       const res = await fetch('/api/admin/sumbu', {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       });
-      
       const data = await res.json();
-      window.alert(`DEBUG: Server Response: ` + JSON.stringify(data));
-      
       if (data.success) {
-        addToast({ title: isEditing ? "Sumbu Updated" : "Sumbu Created", variant: "success" });
+        addToast({ title: isEditing ? "Sumbu Diperbarui" : "Sumbu Ditambahkan", variant: "success" });
         setShowModal(false);
         resetForm();
         queryClient.invalidateQueries({ queryKey: ['sumbu'] });
@@ -119,9 +114,7 @@ export default function SumbuPage() {
         throw new Error(data.error || "Gagal menyimpan data");
       }
     } catch (err: any) {
-      console.error("Save Error:", err);
-      addToast({ title: "Operation Failed", description: err.message, variant: "destructive" });
-      window.alert("DEBUG: Catch Error: " + err.message);
+      addToast({ title: "Gagal", description: err.message, variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
@@ -168,33 +161,37 @@ export default function SumbuPage() {
             <table className="w-full text-left">
               <thead className="bg-gray-50 dark:bg-white/[0.02]">
                 <tr className="border-b border-gray-100 dark:border-gray-800">
-                  <th className="px-6 py-4 text-[10px] font-black uppercase text-gray-500 tracking-widest">Jenis Truk</th>
+                  <th className="px-6 py-4 text-[10px] font-black uppercase text-gray-500 tracking-widest">Jenis Kendaraan</th>
                   <th className="px-6 py-4 text-[10px] font-black uppercase text-gray-500 tracking-widest text-center">Tipe Sumbu</th>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase text-gray-500 tracking-widest text-center">Standar Muatan</th>
+                  <th className="px-6 py-4 text-[10px] font-black uppercase text-gray-500 tracking-widest text-center">Muatan (Ton)</th>
+                  <th className="px-6 py-4 text-[10px] font-black uppercase text-gray-500 tracking-widest text-center">Tahun</th>
                   <th className="px-6 py-4 text-[10px] font-black uppercase text-gray-500 tracking-widest text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                 {loading ? (
-                  <tr><td colSpan={4} className="px-6 py-12 text-center text-gray-500"><Loader2 className="h-8 w-8 animate-spin mx-auto text-brand-500" /></td></tr>
+                  <tr><td colSpan={5} className="px-6 py-12 text-center text-gray-500"><Loader2 className="h-8 w-8 animate-spin mx-auto text-brand-500" /></td></tr>
                 ) : filteredData.length === 0 ? (
-                  <tr><td colSpan={4} className="px-6 py-12 text-center text-gray-500 italic">Data tidak ditemukan</td></tr>
+                  <tr><td colSpan={5} className="px-6 py-12 text-center text-gray-500 italic">Data tidak ditemukan</td></tr>
                 ) : filteredData.map((s) => (
                   <tr key={s.Id} className="hover:bg-gray-50/50 dark:hover:bg-white/[0.01] transition-colors group">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="h-10 w-10 bg-brand-50 text-brand-500 rounded-xl flex items-center justify-center font-bold dark:bg-brand-500/10"><Truck className="h-5 w-5" /></div>
-                        <div><div className="font-bold text-gray-900 dark:text-white uppercase tracking-tight">{s.nama}</div><div className="text-[10px] text-gray-400 font-mono">ID: {s.Id}</div></div>
+                        <div><div className="font-bold text-gray-900 dark:text-white uppercase tracking-tight">{s.jenistruk}</div><div className="text-[10px] text-gray-400 font-mono">ID: {s.Id}</div></div>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-center">
-                       <Badge color="info" variant="light" size="sm" className="font-mono">{s.jenistruk}</Badge>
+                       <Badge color="info" variant="light" size="sm" className="font-mono">{s.nama}</Badge>
                     </td>
                     <td className="px-6 py-4 text-center">
                        <div className="flex items-center justify-center gap-1.5 font-black text-gray-900 dark:text-white">
                           <Weight className="h-3 w-3 text-brand-500" />
                           {Number(s.muatan).toLocaleString()} <span className="text-[10px] text-gray-400 uppercase">KG</span>
                        </div>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <span className="text-sm text-gray-700 dark:text-gray-300 font-mono">{s.tahun || '-'}</span>
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-1">
@@ -219,8 +216,8 @@ export default function SumbuPage() {
             </CardHeader>
             <form onSubmit={handleSubmit}>
               <CardContent className="space-y-4">
-                <div className="space-y-1.5"><label className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Jenis Truk / Nama Kendaraan</label><Input value={formData.nama} onChange={(e) => setFormData({...formData, nama: e.target.value})} placeholder="Contoh: Colt Diesel (CDD)" required /></div>
-                <div className="space-y-1.5"><label className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Tipe Sumbu (Konfigurasi)</label><Input value={formData.jenistruk} onChange={(e) => setFormData({...formData, jenistruk: e.target.value})} placeholder="Contoh: 1.1 atau 1.2" required /></div>
+                <div className="space-y-1.5"><label className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Jenis Kendaraan</label><Input value={formData.jenistruk} onChange={(e) => setFormData({...formData, jenistruk: e.target.value})} placeholder="Contoh: Colt Diesel Double (CDD)" required /></div>
+                <div className="space-y-1.5"><label className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Tipe Sumbu</label><Input value={formData.nama} onChange={(e) => setFormData({...formData, nama: e.target.value})} placeholder="Contoh: 1.2 atau 1.2.2" required /></div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5"><label className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Muatan Standar (KG)</label><Input type="number" value={formData.muatan} onChange={(e) => setFormData({...formData, muatan: Number(e.target.value)})} required /></div>
                   <div className="space-y-1.5"><label className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Tahun</label><Input value={formData.tahun} onChange={(e) => setFormData({...formData, tahun: e.target.value})} /></div>
