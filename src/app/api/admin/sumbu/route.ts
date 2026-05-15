@@ -6,7 +6,7 @@ import { aspnetFetchServer } from "@/lib/api-client";
 function isAuthorized(session: any): boolean {
   const roles = (session?.user as any)?.roles || [];
   return !!session?.user && roles.some((r: string) =>
-    ["superadmin", "ti", "adminsumbu"].includes(r.toLowerCase())
+    ["superadmin", "ti", "adminsumbu", "adminarmada"].includes(r.toLowerCase())
   );
 }
 
