@@ -56,7 +56,7 @@ export default function DashboardViewerClient() {
       })
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [company]);
+  }, [company, apiTable]);
 
   if (!company) {
     return (
