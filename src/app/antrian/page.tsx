@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import {
@@ -71,6 +72,8 @@ export default function AntrianPage() {
   const { data: session } = useSession();
   const { apiJson, apiTable } = useApi();
   const { activeCompanyCode } = useCompany();
+  const searchParams = useSearchParams();
+  const companyFromUrl = searchParams.get("company") ?? "";
   const { addToast } = useToast();
   const queryClient = useQueryClient();
 
@@ -140,9 +143,9 @@ export default function AntrianPage() {
       position: filterPosition,
       storage: filterGudang,
       mode: "aktif",
-      companyCode: activeCompanyCode
+      companyCode: companyFromUrl || activeCompanyCode
     });
-  }, [apiTable, filterSD, filterED, filterProduk, filterPosition, filterGudang, activeCompanyCode]);
+  }, [apiTable, filterSD, filterED, filterProduk, filterPosition, filterGudang, companyFromUrl, activeCompanyCode]);
 
   const handleOpenPindahGudang = async (antrian: AntrianData) => {
     setSelectedAntrian(antrian);
@@ -469,7 +472,7 @@ export default function AntrianPage() {
         <CardContent className="p-0">
           <DataTable
             columns={columns}
-            queryKey={["antrian", filterSD, filterED, filterProduk, filterPosition, filterGudang, activeCompanyCode]}
+            queryKey={["antrian", filterSD, filterED, filterProduk, filterPosition, filterGudang, companyFromUrl || activeCompanyCode]}
             fetcher={fetchAntrian}
             rowKey={(r) => r.id}
             striped
