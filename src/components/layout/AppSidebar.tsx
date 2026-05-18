@@ -279,7 +279,7 @@ const AppSidebar: React.FC = () => {
         subItems: [
           { name: "Konfigurasi Plant", path: "/superadmin/settings/plants" },
           { name: "Master Sumbu", path: "/superadmin/settings/sumbu" },
-          { name: "Master Percepatan", path: "/superadmin/settings/percepatan" },
+          { name: "Sumbu Percepatan", path: "/superadmin/settings/percepatan" },
           { name: "Konfigurasi Armada", path: "/superadmin/settings/fleet" },
           { name: "Produk & Mapping", path: "/superadmin/settings/products" },
           { name: "Gudang & Mapping", path: "/superadmin/settings/warehouses" },
@@ -367,7 +367,7 @@ const AppSidebar: React.FC = () => {
           { name: "Konfigurasi Plant", path: "/superadmin/settings/plants" },
           { name: "Tambah Plant", path: "/superadmin/settings/plants/new" },
           { name: "Master Sumbu", path: "/superadmin/settings/sumbu" },
-          { name: "Master Percepatan", path: "/superadmin/settings/percepatan" },
+          { name: "Sumbu Percepatan", path: "/superadmin/settings/percepatan" },
           { name: "Konfigurasi Armada", path: "/superadmin/settings/fleet" },
           { name: "Produk & Mapping", path: "/superadmin/settings/products" },
           { name: "Gudang & Mapping", path: "/superadmin/settings/warehouses" },
@@ -458,6 +458,7 @@ const AppSidebar: React.FC = () => {
         name: "Administration",
         subItems: [
           { name: "Master Sumbu", path: "/superadmin/settings/sumbu" },
+          { name: "Sumbu Percepatan", path: "/superadmin/settings/percepatan" },
         ],
       },
     ];
@@ -678,6 +679,8 @@ const AppSidebar: React.FC = () => {
           { name: "Antrian UPP Lembar", path: "/antrian?company=LOMBOK" },
           { name: "Antrian UPP Makasar", path: "/antrian?company=MAKASAR2" },
           { name: "Antrian UPP Banjarmasin", path: "/antrian?company=BANJARMASIN2" },
+          { name: "Report PSP", path: "/antrian/report-psp" },
+          { name: "Report PKT", path: "/antrian/report-pkt" },
         ],
       },
       { icon: <ArrowRightLeft className="h-5 w-5" />, name: "Resume Transit", path: "/resume-transit" },
