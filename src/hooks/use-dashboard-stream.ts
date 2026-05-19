@@ -27,10 +27,9 @@ export function useDashboardStream(): UseDashboardStreamResult {
   const [status, setStatus] = useState<StreamStatus>("connecting");
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const esRef = useRef<EventSource | null>(null);
+  const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    let retryTimeout: ReturnType<typeof setTimeout>;
-
     const connect = () => {
       if (esRef.current) {
         esRef.current.close();
@@ -55,15 +54,17 @@ export function useDashboardStream(): UseDashboardStreamResult {
         setStatus("error");
         es.close();
         esRef.current = null;
+        // Clear any existing countdown first to prevent memory leak
+        clearTimeout(retryTimeoutRef.current ?? undefined);
         // Auto-reconnect after 5s
-        retryTimeout = setTimeout(connect, 5_000);
+        retryTimeoutRef.current = setTimeout(connect, 5_000);
       };
     };
 
     connect();
 
     return () => {
-      clearTimeout(retryTimeout);
+      clearTimeout(retryTimeoutRef.current ?? undefined);
       esRef.current?.close();
       esRef.current = null;
     };
