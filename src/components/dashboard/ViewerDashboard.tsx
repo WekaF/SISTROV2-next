@@ -11,7 +11,6 @@ import {
   AlertCircle,
   CheckCircle,
   Calendar,
-  ChevronLeft,
   ChevronRight,
   Sparkles,
   Lightbulb,
@@ -73,8 +72,6 @@ export default function ViewerDashboard() {
   const [activeDurasiTab, setActiveDurasiTab] = useState<"longest" | "fastest">("longest");
   const [isExporting, setIsExporting] = useState(false);
   const [showAllRankings, setShowAllRankings] = useState(false);
-  const [rankingPage, setRankingPage] = useState(1);
-  const RANKING_PAGE_SIZE = 5;
 
   const handleExport = async () => {
     setIsExporting(true);
@@ -1277,11 +1274,7 @@ export default function ViewerDashboard() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800 font-medium">
-                  {(() => {
-                    const startIndex = (rankingPage - 1) * RANKING_PAGE_SIZE;
-                    const paginatedRanking = (showAllRankings ? plantRanking : plantRanking.slice(0, 10)).slice(startIndex, startIndex + RANKING_PAGE_SIZE);
-                    return paginatedRanking.map((plant: any, relativeIndex: number) => {
-                      const index = startIndex + relativeIndex;
+                  {(showAllRankings ? plantRanking : plantRanking.slice(0, 10)).map((plant: any, index: number) => {
                       const isTopThree = index < 3;
                       const rankMedals = [
                         "🏅🥇 Gold Medal",
@@ -1334,8 +1327,7 @@ export default function ViewerDashboard() {
                           </td>
                         </tr>
                       );
-                    });
-                  })()}
+                    })}
                 </tbody>
               </table>
             </div>
@@ -1351,46 +1343,6 @@ export default function ViewerDashboard() {
               </div>
             )}
 
-            {/* Pagination Controls */}
-            {plantRanking.length > RANKING_PAGE_SIZE && (
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-5 pt-4 border-t border-gray-150 dark:border-gray-800">
-                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
-                  Menampilkan <span className="font-extrabold text-gray-800 dark:text-gray-200">{(rankingPage - 1) * RANKING_PAGE_SIZE + 1}</span> - <span className="font-extrabold text-gray-800 dark:text-gray-200">{Math.min(rankingPage * RANKING_PAGE_SIZE, plantRanking.length)}</span> dari <span className="font-extrabold text-gray-800 dark:text-gray-200">{plantRanking.length}</span> Plant
-                </span>
-                <div className="flex items-center gap-1.5">
-                  <button
-                    onClick={() => setRankingPage(p => Math.max(1, p - 1))}
-                    disabled={rankingPage === 1}
-                    className="p-2 border border-gray-200 dark:border-gray-800 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 text-gray-600 dark:text-gray-400 disabled:opacity-40 disabled:hover:bg-transparent transition-all cursor-pointer"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </button>
-                  {Array.from({ length: Math.ceil(plantRanking.length / RANKING_PAGE_SIZE) }).map((_, i) => {
-                    const pageNum = i + 1;
-                    return (
-                      <button
-                        key={pageNum}
-                        onClick={() => setRankingPage(pageNum)}
-                        className={`w-8.5 h-8.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
-                          rankingPage === pageNum
-                            ? "bg-brand-500 text-white shadow-sm"
-                            : "border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-white/5 text-gray-600 dark:text-gray-400"
-                        }`}
-                      >
-                        {pageNum}
-                      </button>
-                    );
-                  })}
-                  <button
-                    onClick={() => setRankingPage(p => Math.min(Math.ceil(plantRanking.length / RANKING_PAGE_SIZE), p + 1))}
-                    disabled={rankingPage === Math.ceil(plantRanking.length / RANKING_PAGE_SIZE)}
-                    className="p-2 border border-gray-200 dark:border-gray-800 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 text-gray-600 dark:text-gray-400 disabled:opacity-40 disabled:hover:bg-transparent transition-all cursor-pointer"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            )}
           </CardContent>
         </Card>
       )}
