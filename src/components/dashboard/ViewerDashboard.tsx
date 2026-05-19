@@ -379,7 +379,7 @@ export default function ViewerDashboard() {
 
   // Dynamic colors for charts and tables
   const COLORS = ["#3C50E0", "#10B981", "#36B9CC", "#F59E0B", "#EF4444", "#858796", "#EC4899", "#8B5CF6"];
-  const PLANT_CHART_LIMIT = 8;
+  const PLANT_CHART_LIMIT = 8; // max visible plant series in trendPerPlant line chart
 
   // ==========================================
   // ApexCharts Configurations
@@ -1099,7 +1099,7 @@ export default function ViewerDashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div style={{ height: `${Math.max(280, (durasiMuat?.length || 0) * 44)}px` }}>
+                <div style={{ height: `${Math.max(280, durasiMuat.length * 44)}px` }}>
                   <Chart
                     options={durasiMuatOptions}
                     series={durasiMuatSeries}
@@ -1145,7 +1145,7 @@ export default function ViewerDashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div style={{ height: `${Math.max(290, (slaPerPlant?.length || 0) * 44)}px` }}>
+                <div style={{ height: `${Math.max(290, slaPerPlant.length * 44)}px` }}>
                   <Chart
                     options={slaOptions}
                     series={slaSeries}
