@@ -24,7 +24,7 @@ interface CompanyStats {
   generatedAt?: string;
 }
 
-const fmt = (n: number) => n?.toLocaleString("id-ID") ?? "0";
+const fmt = (n: number | null | undefined) => (n ?? 0).toLocaleString("id-ID");
 
 export default function StaffAreaDashboard() {
   const [stats, setStats] = useState<CompanyStats | null>(null);
@@ -92,7 +92,7 @@ export default function StaffAreaDashboard() {
     },
     {
       label: "Total Tonase",
-      value: stats ? `${stats.totalTonase.toLocaleString("id-ID")}` : "—",
+      value: stats ? `${(stats.totalTonase ?? 0).toLocaleString("id-ID")}` : "—",
       sub: "Ton — realisasi hari ini",
       icon: Weight, color: "text-purple-500", bg: "bg-purple-50 dark:bg-purple-950/20",
       alert: false, alertMsg: "",
