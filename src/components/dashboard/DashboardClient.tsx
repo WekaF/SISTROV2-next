@@ -6,6 +6,7 @@ import { PodDashboard } from "@/components/dashboard/PodDashboard";
 import { TransportDashboard } from "@/components/dashboard/TransportDashboard";
 import { LogisticsMetrics } from "@/components/dashboard/LogisticsMetrics";
 import ViewerDashboard from "@/components/dashboard/ViewerDashboard";
+import StaffAreaDashboard from "@/components/dashboard/StaffAreaDashboard";
 
 import { ClipboardList, TrendingUp, Clock, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,8 @@ export default function DashboardClient({ session, dbRole }: { session: any, dbR
     ? "Central Command Dashboard"
     : role === "pod"
       ? "POD Operations Center"
+      : role === "staffarea"
+        ? "Staff Area Operations"
       : role === "security"
         ? "Security Checkpoint Dashboard"
         : role === "jembatan_timbang"
@@ -54,6 +57,8 @@ export default function DashboardClient({ session, dbRole }: { session: any, dbR
     ? "Global monitoring across all plants and regions."
     : role === "pod"
       ? "Real-time plant operations monitoring and inventory."
+      : role === "staffarea"
+        ? "Pantau antrian, tonase, dan kinerja gudang plant Anda."
       : role === "security"
         ? "Personnel entry/exit and vehicle verification."
         : role === "jembatan_timbang"
@@ -68,34 +73,15 @@ export default function DashboardClient({ session, dbRole }: { session: any, dbR
 
   return (
     <div className="space-y-6">
-      {/* Header Area */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            {title}
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            {description}
-          </p>
-        </div>
-        
-        <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm">
-            <Filter className="h-4 w-4" />
-            Filter
-          </Button>
-          <Button size="sm">
-            <ClipboardList className="h-4 w-4" />
-            Generate Report
-          </Button>
-        </div>
-      </div>
+
 
       {/* Dynamic Content based on Role */}
       {role === "admin" || role === "superadmin" ? (
         <AdminDashboard />
       ) : role === "pod" ? (
         <PodDashboard />
+      ) : role === "staffarea" ? (
+        <StaffAreaDashboard />
       ) : (role === "rekanan" || role === "transport") ? (
         <TransportDashboard />
       ) : role === "viewer" ? (
