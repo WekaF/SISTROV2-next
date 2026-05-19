@@ -72,6 +72,7 @@ export default function ViewerDashboard() {
   const [durasiTickets, setDurasiTickets] = useState<{ longest: any[], fastest: any[] } | null>(null);
   const [activeDurasiTab, setActiveDurasiTab] = useState<"longest" | "fastest">("longest");
   const [isExporting, setIsExporting] = useState(false);
+  const [showAllRankings, setShowAllRankings] = useState(false);
   const [rankingPage, setRankingPage] = useState(1);
   const RANKING_PAGE_SIZE = 5;
 
@@ -1276,63 +1277,120 @@ export default function ViewerDashboard() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800 font-medium">
-                  {plantRanking.map((plant: any, index: number) => {
-                    const isTopThree = index < 3;
-                    const rankMedals = [
-                      "🏅🥇 Gold Medal",
-                      "🥈 Silver Medal",
-                      "🥉 Bronze Medal"
-                    ];
-                    const bgColors = [
-                      "bg-yellow-500/10 text-yellow-600 hover:bg-yellow-500/15",
-                      "bg-slate-300/20 text-slate-500 hover:bg-slate-300/30",
-                      "bg-amber-600/10 text-amber-700 hover:bg-amber-600/15"
-                    ];
+                  {(() => {
+                    const startIndex = (rankingPage - 1) * RANKING_PAGE_SIZE;
+                    const paginatedRanking = (showAllRankings ? plantRanking : plantRanking.slice(0, 10)).slice(startIndex, startIndex + RANKING_PAGE_SIZE);
+                    return paginatedRanking.map((plant: any, relativeIndex: number) => {
+                      const index = startIndex + relativeIndex;
+                      const isTopThree = index < 3;
+                      const rankMedals = [
+                        "🏅🥇 Gold Medal",
+                        "🥈 Silver Medal",
+                        "🥉 Bronze Medal"
+                      ];
+                      const bgColors = [
+                        "bg-yellow-500/10 text-yellow-600 hover:bg-yellow-500/15",
+                        "bg-slate-300/20 text-slate-500 hover:bg-slate-300/30",
+                        "bg-amber-600/10 text-amber-700 hover:bg-amber-600/15"
+                      ];
 
-                    const rankStyle = isTopThree ? bgColors[index] : "bg-gray-100 text-gray-500 hover:bg-gray-200";
+                      const rankStyle = isTopThree ? bgColors[index] : "bg-gray-100 text-gray-500 hover:bg-gray-200";
 
-                    return (
-                      <tr key={plant.CompanyName} className="bg-white dark:bg-transparent hover:bg-gray-50/50 dark:hover:bg-white/[0.01] transition-all">
-                        <td className="px-6 py-4 text-center">
-                          <span className={`inline-block px-3 py-1.5 rounded-full text-xs font-extrabold ${rankStyle}`}>
-                            {isTopThree ? rankMedals[index].split(" ")[0] : plant.Rank}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 font-bold text-gray-900 dark:text-white">
-                          {plant.CompanyName}
-                        </td>
-                        <td className="px-6 py-4 text-right font-semibold text-gray-700 dark:text-gray-300">
-                          {fmt(plant.TotalTiket)}
-                        </td>
-                        <td className="px-6 py-4 text-right font-semibold text-gray-700 dark:text-gray-300">
-                          {fmt(plant.TotalTonase)} T
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <span className={`inline-block px-2.5 py-1 rounded-lg text-xs font-bold ${plant.AvgDurasi <= 35 ? "bg-emerald-50 text-emerald-600" :
-                            plant.AvgDurasi <= 45 ? "bg-amber-50 text-amber-600" : "bg-rose-50 text-rose-600"
-                            }`}>
-                            {plant.AvgDurasi} Menit
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <span className={`inline-block px-2.5 py-1 rounded-lg text-xs font-bold ${plant.SlaPercent >= 85 ? "bg-emerald-50 text-emerald-600" :
-                            plant.SlaPercent >= 70 ? "bg-amber-50 text-amber-600" : "bg-rose-50 text-rose-600"
-                            }`}>
-                            {plant.SlaPercent}%
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-right font-semibold text-rose-500">
-                          {plant.CancelRate}%
-                        </td>
-                        <td className="px-6 py-4 text-right pr-8">
-                          <span className="text-sm font-black text-brand-500">{plant.Score}</span>
-                        </td>
-                      </tr>
-                    );
-                  })}
+                      return (
+                        <tr key={plant.CompanyName} className="bg-white dark:bg-transparent hover:bg-gray-50/50 dark:hover:bg-white/[0.01] transition-all">
+                          <td className="px-6 py-4 text-center">
+                            <span className={`inline-block px-3 py-1.5 rounded-full text-xs font-extrabold ${rankStyle}`}>
+                              {isTopThree ? rankMedals[index].split(" ")[0] : plant.Rank}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 font-bold text-gray-900 dark:text-white">
+                            {plant.CompanyName}
+                          </td>
+                          <td className="px-6 py-4 text-right font-semibold text-gray-700 dark:text-gray-300">
+                            {fmt(plant.TotalTiket)}
+                          </td>
+                          <td className="px-6 py-4 text-right font-semibold text-gray-700 dark:text-gray-300">
+                            {fmt(plant.TotalTonase)} T
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <span className={`inline-block px-2.5 py-1 rounded-lg text-xs font-bold ${plant.AvgDurasi <= 35 ? "bg-emerald-50 text-emerald-600" :
+                              plant.AvgDurasi <= 45 ? "bg-amber-50 text-amber-600" : "bg-rose-50 text-rose-600"
+                              }`}>
+                              {plant.AvgDurasi} Menit
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <span className={`inline-block px-2.5 py-1 rounded-lg text-xs font-bold ${plant.SlaPercent >= 85 ? "bg-emerald-50 text-emerald-600" :
+                              plant.SlaPercent >= 70 ? "bg-amber-50 text-amber-600" : "bg-rose-50 text-rose-600"
+                              }`}>
+                              {plant.SlaPercent}%
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-right font-semibold text-rose-500">
+                            {plant.CancelRate}%
+                          </td>
+                          <td className="px-6 py-4 text-right pr-8">
+                            <span className="text-sm font-black text-brand-500">{plant.Score}</span>
+                          </td>
+                        </tr>
+                      );
+                    });
+                  })()}
                 </tbody>
               </table>
             </div>
+            {plantRanking.length > 10 && (
+              <div className="flex justify-center pt-4 pb-1">
+                <button
+                  onClick={() => setShowAllRankings(prev => !prev)}
+                  className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-brand-500 border border-brand-200 dark:border-brand-900/50 hover:bg-brand-50 dark:hover:bg-brand-950/20 rounded-xl transition-all"
+                >
+                  <ChevronRight className={`h-3.5 w-3.5 transition-transform duration-200 ${showAllRankings ? "rotate-90" : ""}`} />
+                  {showAllRankings ? "Sembunyikan" : `Tampilkan Semua (${plantRanking.length} Plant)`}
+                </button>
+              </div>
+            )}
+
+            {/* Pagination Controls */}
+            {plantRanking.length > RANKING_PAGE_SIZE && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-5 pt-4 border-t border-gray-150 dark:border-gray-800">
+                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+                  Menampilkan <span className="font-extrabold text-gray-800 dark:text-gray-200">{(rankingPage - 1) * RANKING_PAGE_SIZE + 1}</span> - <span className="font-extrabold text-gray-800 dark:text-gray-200">{Math.min(rankingPage * RANKING_PAGE_SIZE, plantRanking.length)}</span> dari <span className="font-extrabold text-gray-800 dark:text-gray-200">{plantRanking.length}</span> Plant
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setRankingPage(p => Math.max(1, p - 1))}
+                    disabled={rankingPage === 1}
+                    className="p-2 border border-gray-200 dark:border-gray-800 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 text-gray-600 dark:text-gray-400 disabled:opacity-40 disabled:hover:bg-transparent transition-all cursor-pointer"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  {Array.from({ length: Math.ceil(plantRanking.length / RANKING_PAGE_SIZE) }).map((_, i) => {
+                    const pageNum = i + 1;
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setRankingPage(pageNum)}
+                        className={`w-8.5 h-8.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                          rankingPage === pageNum
+                            ? "bg-brand-500 text-white shadow-sm"
+                            : "border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-white/5 text-gray-600 dark:text-gray-400"
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                  <button
+                    onClick={() => setRankingPage(p => Math.min(Math.ceil(plantRanking.length / RANKING_PAGE_SIZE), p + 1))}
+                    disabled={rankingPage === Math.ceil(plantRanking.length / RANKING_PAGE_SIZE)}
+                    className="p-2 border border-gray-200 dark:border-gray-800 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 text-gray-600 dark:text-gray-400 disabled:opacity-40 disabled:hover:bg-transparent transition-all cursor-pointer"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
