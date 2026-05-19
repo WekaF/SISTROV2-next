@@ -25,7 +25,6 @@ import {
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import Badge from "@/components/ui/badge/Badge";
 import { useDashboardStream } from "@/hooks/use-dashboard-stream";
-import type { StreamStatus } from "@/hooks/use-dashboard-stream";
 
 // Dynamic import for Leaflet Map to avoid SSR compilation issues
 const InteractiveLeafletMap = dynamic(
@@ -203,24 +202,25 @@ export default function ViewerDashboard() {
     if (trendHourRes?.status === "success" && Array.isArray(trendHourRes.data) && trendHourRes.data.length > 0) {
       const raw = trendHourRes.data;
       const hours = Array.from(new Set<string>(raw.map((item: any) => `${item.Jam}:00`))).sort();
-      const plants = Array.from(new Set<string>(raw.map((item: any) => item.CompanyName || item.CompanyCode)));
-      const series = plants.map((plant: string) => ({
-        name: plant,
-        data: hours.map((h: string) => {
-          const hour = parseInt(h);
-          const entry = raw.find((item: any) => (item.CompanyName || item.CompanyCode) === plant && item.Jam === hour);
-          return entry ? (entry.TotalTiket || 0) : 0;
-        }),
-      }));
-      setTrendPerHour({ hours, series });
+      const antrian = hours.map((h: string) => {
+        const jam = parseInt(h);
+        return raw.filter((item: any) => item.Jam === jam)
+                  .reduce((sum: number, item: any) => sum + (item.TotalTiket || item.TotalAntrian || 0), 0);
+      });
+      const selesai = hours.map((h: string) => {
+        const jam = parseInt(h);
+        return raw.filter((item: any) => item.Jam === jam)
+                  .reduce((sum: number, item: any) => sum + (item.TotalSelesai || 0), 0);
+      });
+      setTrendPerHour({ hours, antrian, selesai });
     }
 
     // ── Durasi Muat ───────────────────────────────────────────────────────────
     if (durasiRes?.status === "success" && Array.isArray(durasiRes.data) && durasiRes.data.length > 0) {
-      setDurasiMuat({
-        companies: durasiRes.data.map((item: any) => item.CompanyName || item.CompanyCode),
-        avgDurasi: durasiRes.data.map((item: any) => Math.round(item.AvgDurasiMenit || 0)),
-      });
+      setDurasiMuat(durasiRes.data.map((item: any) => ({
+        CompanyName: item.CompanyName || item.CompanyCode,
+        AvgDurasiMenit: Math.round(item.AvgDurasiMenit || 0),
+      })));
     }
 
     // ── Top Durasi Tickets ────────────────────────────────────────────────────
