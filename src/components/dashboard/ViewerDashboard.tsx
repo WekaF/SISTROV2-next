@@ -296,14 +296,28 @@ export default function ViewerDashboard() {
         new Date(d).toLocaleDateString("id-ID", { day: "2-digit", month: "short" })
       );
       const plants = Array.from(new Set<string>(raw.map((item: any) => item.CompanyName || item.CompanyCode)));
-      const series = plants.map((plant: string) => ({
+      const allSeries = plants.map((plant: string) => ({
         name: plant,
         data: uniqueDates.map((dateStr: string) => {
           const entry = raw.find((item: any) => (item.CompanyName || item.CompanyCode) === plant && item.Tanggal === dateStr);
           return entry ? (entry.TotalTiket || 0) : 0;
         }),
       }));
-      setTrendPerPlant({ dates: formattedDates, series });
+
+      // Cap at PLANT_CHART_LIMIT — sort by total tickets desc, group remainder as "Lainnya"
+      const sorted = [...allSeries].sort(
+        (a, b) => b.data.reduce((s, v) => s + v, 0) - a.data.reduce((s, v) => s + v, 0)
+      );
+      const topSeries = sorted.slice(0, PLANT_CHART_LIMIT);
+      const rest = sorted.slice(PLANT_CHART_LIMIT);
+      if (rest.length > 0) {
+        const lainnyaData = formattedDates.map((_: string, i: number) =>
+          rest.reduce((sum: number, s: any) => sum + (s.data[i] || 0), 0)
+        );
+        topSeries.push({ name: `Lainnya (${rest.length} plant)`, data: lainnyaData });
+      }
+
+      setTrendPerPlant({ dates: formattedDates, series: topSeries });
     }
 
     // ── Trend Per Hour ────────────────────────────────────────────────────────
