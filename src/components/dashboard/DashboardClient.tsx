@@ -7,21 +7,22 @@ import { TransportDashboard } from "@/components/dashboard/TransportDashboard";
 import { LogisticsMetrics } from "@/components/dashboard/LogisticsMetrics";
 import ViewerDashboard from "@/components/dashboard/ViewerDashboard";
 import StaffAreaDashboard from "@/components/dashboard/StaffAreaDashboard";
+import { normalizeRole } from "@/lib/role-utils";
 
 import { ClipboardList, TrendingUp, Clock, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function DashboardClient({ session, dbRole }: { session: any, dbRole: string }) {
-  const [role, setRole] = useState(dbRole?.toLowerCase());
+  const [role, setRole] = useState(normalizeRole(dbRole));
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
     const primaryRole = (session?.user as any)?.role as string | undefined;
     if (primaryRole) {
-      setRole(primaryRole.toLowerCase());
+      setRole(normalizeRole(primaryRole));
     } else {
-      setRole(dbRole?.toLowerCase());
+      setRole(normalizeRole(dbRole));
     }
   }, [session, dbRole]);
 
