@@ -14,6 +14,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/com
 import Badge from "@/components/ui/badge/Badge";
 import dynamic from "next/dynamic";
 import { IndonesiaMap } from "./IndonesiaMap";
+import ActivityMonitorPanel from "@/components/dashboard/ActivityMonitorPanel";
 
 // Dynamic import for ApexCharts to avoid SSR issues
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
@@ -215,9 +216,8 @@ export const AdminDashboard = () => {
           </CardContent>
         </Card>
         
-        {/* Placeholder for future detailed widgets */}
-        <div className="lg:col-span-2 rounded-2xl border border-gray-200 dark:border-gray-800 p-8 flex items-center justify-center text-gray-400">
-           Additional Warehouse & Transit Stats Will Appear Here
+        <div className="lg:col-span-2">
+          <ActivityMonitorPanel />
         </div>
       </div>
     </div>
