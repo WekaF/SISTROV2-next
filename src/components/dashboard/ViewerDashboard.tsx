@@ -47,6 +47,11 @@ export default function ViewerDashboard() {
   const { data: streamData, status: streamStatus, lastUpdated: streamLastUpdated } = useDashboardStream();
   const [isSimulated, setIsSimulated] = useState(false);
   const [mapPlants, setMapPlants] = useState<any[]>([]);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // States for all dashboard metrics
   const [activeTab, setActiveTab] = useState<"traffic" | "performance" | "all">("traffic");
@@ -63,14 +68,117 @@ export default function ViewerDashboard() {
   const [cancelTrend, setCancelTrend] = useState<any>(null);
   const [durasiTickets, setDurasiTickets] = useState<{ longest: any[], fastest: any[] } | null>(null);
   const [activeDurasiTab, setActiveDurasiTab] = useState<"longest" | "fastest">("longest");
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const XLSX = await import("xlsx");
+      const wb = XLSX.utils.book_new();
+      const ts = streamLastUpdated?.toLocaleString("id-ID") ?? new Date().toLocaleString("id-ID");
+
+      // Sheet 1: KPI Summary
+      if (stats) {
+        const kpiRows = [
+          ["Metrik", "Nilai"],
+          ["Total Antrian", stats.total_antrian ?? 0],
+          ["Total Selesai", stats.total_selesai ?? 0],
+          ["Total Tonase (Ton)", stats.total_tonase ?? 0],
+          ["Avg Durasi (Menit)", stats.avg_tiket_minutes ?? 0],
+          ["Durasi Terlama (Menit)", stats.durasi_terlama ?? 0],
+          ["Durasi Tercepat (Menit)", stats.durasi_tercepat ?? 0],
+          [],
+          ["Diekspor pada", ts],
+        ];
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(kpiRows), "KPI Summary");
+      }
+
+      // Sheet 2: Plant Ranking
+      if (Array.isArray(plantRanking) && plantRanking.length > 0) {
+        const rows = [
+          ["Rank", "Plant", "Total Tiket", "Total Tonase", "Avg Durasi (mnt)", "SLA %", "Cancel Rate %", "Score"],
+          ...plantRanking.map((r: any) => [
+            r.Rank, r.CompanyName, r.TotalTiket, r.TotalTonase,
+            r.AvgDurasi, r.SlaPercent, r.CancelRate, r.Score,
+          ]),
+        ];
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), "Plant Ranking");
+      }
+
+      // Sheet 3: SLA per Plant
+      if (Array.isArray(slaPerPlant) && slaPerPlant.length > 0) {
+        const rows = [
+          ["Plant", "SLA %", "Total Selesai", "Dalam SLA"],
+          ...slaPerPlant.map((r: any) => [
+            r.CompanyName, r.SlaCompliancePercent, r.TotalSelesai, r.TotalDalamSla,
+          ]),
+        ];
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), "SLA per Plant");
+      }
+
+      // Sheet 4: Top Produk
+      if (Array.isArray(topProduk) && topProduk.length > 0) {
+        const rows = [
+          ["Produk", "Total Tonase"],
+          ...topProduk.map((r: any) => [r.NamaProduk || r.name, r.TotalTonase]),
+        ];
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), "Top Produk");
+      }
+
+      // Sheet 5: Avg Durasi Muat
+      if (Array.isArray(durasiMuat) && durasiMuat.length > 0) {
+        const rows = [
+          ["Plant", "Avg Durasi (mnt)"],
+          ...durasiMuat.map((r: any) => [r.CompanyName, r.AvgDurasiMenit]),
+        ];
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), "Durasi Muat");
+      }
+
+      // Sheet 6: Kuota Utilisasi
+      if (Array.isArray(kuotaUtilization) && kuotaUtilization.length > 0) {
+        const rows = [
+          ["Plant", "Utilisasi %", "Realisasi (Ton)", "Kuota (Ton)"],
+          ...kuotaUtilization.map((r: any) => [
+            r.CompanyCode, r.UtilizationPercent, r.TotalRealisasi, r.TotalKuota,
+          ]),
+        ];
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), "Kuota Utilisasi");
+      }
+
+      // Sheet 7: Tiket Durasi Ekstrim
+      if (durasiTickets) {
+        const longestRows = [
+          ["=== TERLAMA ==="],
+          ["No Tiket", "Nopol", "Driver", "Qty", "Check In", "Check Out", "Plant", "Durasi (mnt)"],
+          ...(durasiTickets.longest || []).map((r: any) => [
+            r.TiketNo, r.Nopol, r.Driver, r.Qty, r.CheckIn, r.CheckOut, r.CompanyName, r.DurationMinutes,
+          ]),
+          [],
+          ["=== TERCEPAT ==="],
+          ["No Tiket", "Nopol", "Driver", "Qty", "Check In", "Check Out", "Plant", "Durasi (mnt)"],
+          ...(durasiTickets.fastest || []).map((r: any) => [
+            r.TiketNo, r.Nopol, r.Driver, r.Qty, r.CheckIn, r.CheckOut, r.CompanyName, r.DurationMinutes,
+          ]),
+        ];
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(longestRows), "Durasi Ekstrim");
+      }
+
+      const fileName = `laporan-dashboard-${new Date().toISOString().slice(0, 10)}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+    } catch (err) {
+      console.error("Export failed:", err);
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   // SSE stream data transformation — replaces the old loadDashboardData fetch loop
   useEffect(() => {
     if (!streamData) return;
 
     const { stats: statsRes, trendPlant: trendPlantRes, trendHour: trendHourRes,
-            durasi: durasiRes, monthly: monthlyRes, leaderboard: leaderboardRes,
-            durasiTickets: durasiTicketsRes, topProduk: topProdukRes, mapData: mapDataRes } = streamData;
+      durasi: durasiRes, monthly: monthlyRes, leaderboard: leaderboardRes,
+      durasiTickets: durasiTicketsRes, topProduk: topProdukRes, mapData: mapDataRes } = streamData;
 
     // ── MonitorStats ──────────────────────────────────────────────────────────
     let finalStats = {
@@ -205,12 +313,12 @@ export default function ViewerDashboard() {
       const antrian = hours.map((h: string) => {
         const jam = parseInt(h);
         return raw.filter((item: any) => item.Jam === jam)
-                  .reduce((sum: number, item: any) => sum + (item.TotalTiket || item.TotalAntrian || 0), 0);
+          .reduce((sum: number, item: any) => sum + (item.TotalTiket || item.TotalAntrian || 0), 0);
       });
       const selesai = hours.map((h: string) => {
         const jam = parseInt(h);
         return raw.filter((item: any) => item.Jam === jam)
-                  .reduce((sum: number, item: any) => sum + (item.TotalSelesai || 0), 0);
+          .reduce((sum: number, item: any) => sum + (item.TotalSelesai || 0), 0);
       });
       setTrendPerHour({ hours, antrian, selesai });
     }
@@ -271,6 +379,7 @@ export default function ViewerDashboard() {
 
   // Dynamic colors for charts and tables
   const COLORS = ["#3C50E0", "#10B981", "#36B9CC", "#F59E0B", "#EF4444", "#858796", "#EC4899", "#8B5CF6"];
+  const PLANT_CHART_LIMIT = 8;
 
   // ==========================================
   // ApexCharts Configurations
@@ -528,9 +637,9 @@ export default function ViewerDashboard() {
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b border-gray-150 pb-5 dark:border-gray-800">
         <div>
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="bg-brand-500/10 text-brand-500 rounded-md p-1">
+            {/* <span className="bg-brand-500/10 text-brand-500 rounded-md p-1">
               <Globe className="h-5 w-5" />
-            </span>
+            </span> */}
             <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
               SISTRO Command Center
             </h1>
@@ -540,26 +649,24 @@ export default function ViewerDashboard() {
           </p>
           <div className="flex items-center gap-2 mt-2">
             <span
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${
-                streamStatus === "live"
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${streamStatus === "live"
                   ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400"
                   : streamStatus === "error"
-                  ? "bg-red-100 text-red-600 dark:bg-red-500/10 dark:text-red-400"
-                  : "bg-gray-100 text-gray-500 dark:bg-white/5 dark:text-gray-400"
-              }`}
+                    ? "bg-red-100 text-red-600 dark:bg-red-500/10 dark:text-red-400"
+                    : "bg-gray-100 text-gray-500 dark:bg-white/5 dark:text-gray-400"
+                }`}
             >
               <span
-                className={`h-1.5 w-1.5 rounded-full ${
-                  streamStatus === "live"
+                className={`h-1.5 w-1.5 rounded-full ${streamStatus === "live"
                     ? "bg-emerald-500 animate-pulse"
                     : streamStatus === "error"
-                    ? "bg-red-500"
-                    : "bg-gray-400 animate-pulse"
-                }`}
+                      ? "bg-red-500"
+                      : "bg-gray-400 animate-pulse"
+                  }`}
               />
               {streamStatus === "live" ? "Live" : streamStatus === "error" ? "Offline" : "Connecting..."}
             </span>
-            {streamLastUpdated && (
+            {mounted && streamLastUpdated && (
               <span className="text-xs text-gray-400">
                 Update: {streamLastUpdated.toLocaleTimeString("id-ID")}
               </span>
@@ -573,12 +680,20 @@ export default function ViewerDashboard() {
             className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-gray-700 bg-white border border-gray-200 dark:bg-gray-900 dark:border-gray-800 dark:text-gray-300 rounded-xl shadow-sm opacity-60 cursor-default"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${streamStatus === "connecting" ? "animate-spin text-brand-500" : ""}`} />
-            Perbarui {streamLastUpdated && `(${streamLastUpdated.toLocaleTimeString("id-ID")})`}
+            Perbarui {mounted && streamLastUpdated && `(${streamLastUpdated.toLocaleTimeString("id-ID")})`}
           </button>
 
-          <button className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-brand-500 hover:bg-brand-600 rounded-xl transition-all shadow-sm hover:shadow active:scale-95 cursor-pointer">
-            <Download className="h-3.5 w-3.5" />
-            Ekspor Laporan
+          <button
+            onClick={handleExport}
+            disabled={isExporting || !stats}
+            className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-brand-500 hover:bg-brand-600 disabled:opacity-60 disabled:cursor-not-allowed rounded-xl transition-all shadow-sm hover:shadow active:scale-95 cursor-pointer"
+          >
+            {isExporting ? (
+              <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Download className="h-3.5 w-3.5" />
+            )}
+            {isExporting ? "Mengekspor..." : "Ekspor Laporan"}
           </button>
         </div>
       </div>
@@ -633,7 +748,7 @@ export default function ViewerDashboard() {
 
                 <div className="space-y-3.5">
                   <h4 className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Ringkasan Kinerja Hari Ini</h4>
-                  
+
                   <div className="space-y-2.5">
                     <div className="p-3 bg-white dark:bg-white/[0.02] border border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between">
                       <div>
@@ -672,7 +787,11 @@ export default function ViewerDashboard() {
 
               <div className="border-t border-gray-150 dark:border-gray-800 pt-3 flex items-center justify-between text-[10px] font-bold text-gray-400 uppercase tracking-wider">
                 <span>Terakhir Diperbarui</span>
-                <span className="text-brand-500">{streamLastUpdated ? streamLastUpdated.toLocaleTimeString("id-ID") : new Date().toLocaleTimeString("id-ID")}</span>
+                <span className="text-brand-500">
+                  {mounted
+                    ? (streamLastUpdated ? streamLastUpdated.toLocaleTimeString("id-ID") : new Date().toLocaleTimeString("id-ID"))
+                    : "--:--:--"}
+                </span>
               </div>
             </div>
           </div>
@@ -980,7 +1099,7 @@ export default function ViewerDashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-[280px]">
+                <div style={{ height: `${Math.max(280, (durasiMuat?.length || 0) * 44)}px` }}>
                   <Chart
                     options={durasiMuatOptions}
                     series={durasiMuatSeries}
@@ -1026,7 +1145,7 @@ export default function ViewerDashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-[290px]">
+                <div style={{ height: `${Math.max(290, (slaPerPlant?.length || 0) * 44)}px` }}>
                   <Chart
                     options={slaOptions}
                     series={slaSeries}
