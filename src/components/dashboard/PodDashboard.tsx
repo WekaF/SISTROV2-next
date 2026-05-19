@@ -1,224 +1,209 @@
 "use client";
-import React from "react";
-import { 
-  Building2, 
-  Warehouse, 
-  Ticket, 
-  Clock, 
-  Users, 
-  ArrowUpRight, 
-  ArrowDownRight,
-  TrendingUp,
-  Package,
-  Truck,
+import React, { useState, useEffect } from "react";
+import {
   BarChart3,
-  Timer
+  Timer,
+  CheckCircle2,
+  ClipboardList,
+  AlertTriangle,
+  TrendingDown,
+  Weight,
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
-import Badge from "@/components/ui/badge/Badge";
 import dynamic from "next/dynamic";
 
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
-export const PodDashboard = () => {
-  const [data, setData] = React.useState<any>(null);
-  const [loading, setLoading] = React.useState(true);
+interface CompanyStats {
+  antriAktif: number;
+  selesai: number;
+  proses: number;
+  cancel: number;
+  totalTonase: number;
+  avgDurasiMenit: number;
+  cancelRate: number;
+  overdueCount: number;
+  gudangBreakdown: { gudang: string; count: number }[];
+  shiftBreakdown: { pagi: number; siang: number; malam: number };
+  companyCode: string;
+}
 
-  React.useEffect(() => {
-    const fetchData = async () => {
+export const PodDashboard = () => {
+  const [stats, setStats] = useState<CompanyStats | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
       try {
-        const res = await fetch("/api/pod/dashboard/metrics");
-        const json = await res.json();
-        setData(json);
+        const res = await fetch("/api/pod/dashboard/company-stats");
+        if (!res.ok) throw new Error("fetch failed");
+        const data = await res.json();
+        setStats(data);
       } catch (e) {
-        console.error("POD fetch error:", e);
+        console.error("[PodDashboard]", e);
       } finally {
         setLoading(false);
       }
     };
-    fetchData();
+    load();
+    const interval = setInterval(load, 60_000);
+    return () => clearInterval(interval);
   }, []);
 
-  // 1. Daily Summary Metrics
-  const dailyMetrics = [
-    { name: "Total Tonase Hari Ini", value: `${data?.tonnage?.toLocaleString() || '8,450'} Ton`, trend: "+12%", color: "text-blue-500", bg: "bg-blue-50" },
-    { name: "Total Tiket", value: data?.totalTickets?.toLocaleString() || "1,280", trend: "+5%", color: "text-purple-500", bg: "bg-purple-50" },
-    { name: "Selesai Muat", value: data?.completed?.toLocaleString() || "945", trend: "+8%", color: "text-emerald-500", bg: "bg-emerald-50" },
-    { name: "Sedang Proses", value: data?.inProcess?.toLocaleString() || "335", trend: "-2%", color: "text-orange-500", bg: "bg-orange-50" },
+  const kpis = [
+    {
+      label: "Antrian Aktif",
+      value: stats?.antriAktif ?? "—",
+      icon: ClipboardList,
+      color: "text-orange-500",
+      bg: "bg-orange-50 dark:bg-orange-950/20",
+    },
+    {
+      label: "Selesai Hari Ini",
+      value: stats?.selesai ?? "—",
+      icon: CheckCircle2,
+      color: "text-emerald-500",
+      bg: "bg-emerald-50 dark:bg-emerald-950/20",
+    },
+    {
+      label: "Sedang Proses",
+      value: stats?.proses ?? "—",
+      icon: Timer,
+      color: "text-blue-500",
+      bg: "bg-blue-50 dark:bg-blue-950/20",
+    },
+    {
+      label: "Total Tonase",
+      value: stats ? `${stats.totalTonase.toLocaleString("id-ID")} Ton` : "—",
+      icon: Weight,
+      color: "text-purple-500",
+      bg: "bg-purple-50 dark:bg-purple-950/20",
+    },
+    {
+      label: "Avg Durasi",
+      value: stats ? `${stats.avgDurasiMenit} Mnt` : "—",
+      icon: Timer,
+      color: "text-sky-500",
+      bg: "bg-sky-50 dark:bg-sky-950/20",
+    },
+    {
+      label: "Cancel Rate 7hr",
+      value: stats ? `${stats.cancelRate}%` : "—",
+      icon: TrendingDown,
+      color: "text-red-500",
+      bg: "bg-red-50 dark:bg-red-950/20",
+    },
   ];
 
-  // 2. Charts Data
-  const trendOptions: any = {
-    chart: { type: 'area', toolbar: { show: false }, fontFamily: 'inherit' },
-    stroke: { curve: 'smooth', width: 2 },
-    xaxis: { categories: ['1 Mar', '5 Mar', '10 Mar', '15 Mar', '20 Mar', '25 Mar', '30 Mar'] },
-    colors: ['#3C50E0'],
-    dataLabels: { enabled: false },
-    fill: { type: 'gradient', gradient: { opacityFrom: 0.3, opacityTo: 0 } },
+  const gudangCategories = stats?.gudangBreakdown.map((g) => g.gudang) ?? [];
+  const gudangData = stats?.gudangBreakdown.map((g) => g.count) ?? [];
+
+  const gudangChartOptions: any = {
+    chart: { type: "bar", toolbar: { show: false }, fontFamily: "inherit" },
+    plotOptions: { bar: { horizontal: true, borderRadius: 4, distributed: true } },
+    colors: ["#3C50E0", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899", "#36B9CC", "#858796"],
+    xaxis: { categories: gudangCategories, labels: { style: { fontSize: "11px" } } },
+    legend: { show: false },
+    dataLabels: { enabled: true, style: { fontSize: "11px" } },
+    tooltip: { y: { formatter: (v: number) => `${v} tiket` } },
   };
 
-  const transportirOptions: any = {
-    chart: { type: 'bar', toolbar: { show: false } },
-    plotOptions: { bar: { horizontal: true, borderRadius: 4 } },
-    xaxis: { categories: ['TIKI', 'JNE', 'Pos Logistik', 'Siba Surya', 'Puninar'] },
-    colors: ['#3C50E0'],
+  const shiftSeries = [
+    stats?.shiftBreakdown.pagi ?? 0,
+    stats?.shiftBreakdown.siang ?? 0,
+    stats?.shiftBreakdown.malam ?? 0,
+  ];
+
+  const shiftOptions: any = {
+    chart: { type: "donut", fontFamily: "inherit" },
+    labels: ["Pagi (06–14)", "Siang (14–22)", "Malam (22–06)"],
+    colors: ["#F59E0B", "#3C50E0", "#1E293B"],
+    legend: { position: "bottom", fontSize: "12px" },
+    dataLabels: { enabled: true, formatter: (val: number) => `${Math.round(val)}%` },
   };
 
-  const productOptions: any = {
-    chart: { type: 'donut' },
-    labels: ['Urea Sub', 'Urea Non-Sub', 'NPK Phonska', 'ZA', 'SP-36'],
-    colors: ['#3C50E0', '#80CAEE', '#0FADCF', '#F0950C', '#6577F3'],
-    legend: { position: 'bottom' }
-  };
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64 text-gray-400 text-sm">
+        Memuat data POD dashboard...
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      {/* Daily Metrics Grid */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 md:gap-6">
-        {dailyMetrics.map((item) => (
-          <Card key={item.name} className="shadow-theme-xs">
-            <CardContent className="p-6">
-              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">{item.name}</span>
-              <div className="flex items-center justify-between mt-2">
-                <h4 className="text-2xl font-bold text-gray-900 dark:text-white">{item.value}</h4>
-                <div className={`flex items-center text-xs font-medium ${item.trend.startsWith('+') ? 'text-emerald-500' : 'text-red-500'}`}>
-                  {item.trend.startsWith('+') ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownRight className="h-4 w-4" />}
-                  {item.trend}
-                </div>
+      {(stats?.overdueCount ?? 0) > 0 && (
+        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-400 text-sm font-medium">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <span>
+            <strong>{stats?.overdueCount}</strong> tiket &gt;2 jam belum selesai — eskalasi diperlukan.
+          </span>
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+        {kpis.map((kpi) => (
+          <Card key={kpi.label} className="shadow-theme-xs">
+            <CardContent className="p-4">
+              <div className={`inline-flex p-2 rounded-lg ${kpi.bg} mb-3`}>
+                <kpi.icon className={`h-4 w-4 ${kpi.color}`} />
               </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight">{kpi.label}</p>
+              <p className="text-xl font-bold text-gray-900 dark:text-white mt-0.5">{kpi.value}</p>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      {/* Main Content: Trends and Stok */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <Card className="lg:col-span-8 shadow-theme-xs">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle>Statistik Tiket (30 Hari)</CardTitle>
-                <CardDescription>Volume pengeluaran barang per hari.</CardDescription>
+                <CardTitle>Antrian per Gudang</CardTitle>
+                <CardDescription>Distribusi tiket antri aktif per lokasi gudang.</CardDescription>
               </div>
               <BarChart3 className="h-5 w-5 text-gray-400" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="h-[300px]">
-               <Chart options={trendOptions} series={[{ name: "Ticket Volume", data: [450, 520, 490, 600, 580, 710, 680] }]} type="area" height="100%" />
-            </div>
+            {gudangCategories.length > 0 ? (
+              <div style={{ height: `${Math.max(200, gudangCategories.length * 44)}px` }}>
+                <Chart
+                  options={gudangChartOptions}
+                  series={[{ name: "Antri", data: gudangData }]}
+                  type="bar"
+                  height="100%"
+                  width="100%"
+                />
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-40 text-gray-400 text-sm">
+                Tidak ada tiket antri saat ini.
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* Stok Gudang Widget */}
         <Card className="lg:col-span-4 shadow-theme-xs">
           <CardHeader>
-            <CardTitle>Stock Gudang (Plant Assigned)</CardTitle>
-            <CardDescription>Ketersediaan stok di unit Anda.</CardDescription>
+            <CardTitle>Distribusi Shift</CardTitle>
+            <CardDescription>Tiket masuk berdasarkan shift hari ini.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            {[
-              { label: "Gudang I - Gresik", value: 85, color: "bg-brand-500" },
-              { label: "Gudang II - Gresik", value: 62, color: "bg-purple-500" },
-              { label: "Gudang Penyangga A", value: 34, color: "bg-orange-500" },
-            ].map((stok) => (
-              <div key={stok.label} className="space-y-2">
-                <div className="flex items-center justify-between text-xs font-medium">
-                  <span className="text-gray-600 dark:text-gray-400">{stok.label}</span>
-                  <span className="text-gray-900 dark:text-white">{stok.value}%</span>
-                </div>
-                <div className="w-full h-2 bg-gray-100 dark:bg-gray-800 rounded-full">
-                  <div className={`h-full rounded-full ${stok.color}`} style={{ width: `${stok.value}%` }} />
-                </div>
-              </div>
-            ))}
-            <div className="pt-4 border-t border-gray-100 dark:border-gray-800">
-               <div className="flex items-center gap-2 text-xs text-brand-500 font-medium cursor-pointer hover:underline">
-                 Lihat Detail Semua Gudang <ArrowUpRight className="h-3 w-3" />
-               </div>
+          <CardContent>
+            <div className="h-[250px] flex items-center justify-center">
+              {shiftSeries.some((v) => v > 0) ? (
+                <Chart
+                  options={shiftOptions}
+                  series={shiftSeries}
+                  type="donut"
+                  height="100%"
+                  width="100%"
+                />
+              ) : (
+                <p className="text-sm text-gray-400">Belum ada tiket hari ini.</p>
+              )}
             </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Rankings and Product Distribution */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="shadow-theme-xs">
-          <CardHeader>
-            <CardTitle>Transportir Paling Aktif</CardTitle>
-            <CardDescription>Berdasarkan volume tiket yang diselesaikan.</CardDescription>
-          </CardHeader>
-          <CardContent>
-             <div className="h-[250px]">
-                <Chart options={transportirOptions} series={[{ name: "Total Tiket", data: [440, 320, 210, 180, 150] }]} type="bar" height="100%" />
-             </div>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-theme-xs">
-          <CardHeader>
-            <CardTitle>Distribusi Produk</CardTitle>
-            <CardDescription>Produk yang paling sering dipesan.</CardDescription>
-          </CardHeader>
-          <CardContent>
-             <div className="h-[250px] flex items-center justify-center">
-                <Chart options={productOptions} series={[44, 30, 15, 7, 4]} type="donut" height="100%" />
-             </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Speed and Queue Performance */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <Card className="lg:col-span-12 shadow-theme-xs">
-          <CardHeader>
-             <CardTitle>Operational Performance (Speed & Queue)</CardTitle>
-          </CardHeader>
-          <CardContent>
-             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {/* Speed Card */}
-                <div className="space-y-4">
-                   <div className="flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-white">
-                      <Timer className="h-4 w-4 text-emerald-500" />
-                      Ticket Speed Analytics
-                   </div>
-                   <div className="space-y-3">
-                      <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-white/[0.02] rounded-lg">
-                         <span className="text-xs text-gray-500 uppercase">Fastest Loading</span>
-                         <span className="text-sm font-bold text-emerald-500">28 Menit</span>
-                      </div>
-                      <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-white/[0.02] rounded-lg">
-                         <span className="text-xs text-gray-500 uppercase">Slowest Loading</span>
-                         <span className="text-sm font-bold text-red-500">2.5 Jam</span>
-                      </div>
-                      <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-white/[0.02] rounded-lg">
-                         <span className="text-xs text-gray-500 uppercase">Average Process</span>
-                         <span className="text-sm font-bold text-blue-500">45 Menit</span>
-                      </div>
-                   </div>
-                </div>
-
-                {/* Queue Distribution */}
-                <div className="md:col-span-2 space-y-4">
-                   <div className="flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-white">
-                      <Users className="h-4 w-4 text-brand-500" />
-                      Queue Distribution (Gate vs Warehouse)
-                   </div>
-                   <div className="h-[180px] w-full border-2 border-dashed border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-center text-gray-400 text-sm">
-                      Detailed Queue Heatmap Visualization
-                   </div>
-                   <div className="grid grid-cols-2 gap-4">
-                      <div className="p-3 bg-gray-50 dark:bg-white/[0.02] rounded-lg text-center">
-                         <p className="text-xs text-gray-500 mb-1">Gate Wait</p>
-                         <p className="text-lg font-bold text-gray-900 dark:text-white">15m</p>
-                      </div>
-                      <div className="p-3 bg-gray-50 dark:bg-white/[0.02] rounded-lg text-center">
-                         <p className="text-xs text-gray-500 mb-1">Warehouse Wait</p>
-                         <p className="text-lg font-bold text-gray-900 dark:text-white">35m</p>
-                      </div>
-                   </div>
-                </div>
-             </div>
           </CardContent>
         </Card>
       </div>
