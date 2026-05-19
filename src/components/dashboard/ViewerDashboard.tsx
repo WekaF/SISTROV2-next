@@ -24,7 +24,8 @@ import {
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import Badge from "@/components/ui/badge/Badge";
-import { useApi } from "@/hooks/use-api";
+import { useDashboardStream } from "@/hooks/use-dashboard-stream";
+import type { StreamStatus } from "@/hooks/use-dashboard-stream";
 
 // Dynamic import for Leaflet Map to avoid SSR compilation issues
 const InteractiveLeafletMap = dynamic(
@@ -44,10 +45,9 @@ const InteractiveLeafletMap = dynamic(
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
 export default function ViewerDashboard() {
-  const { apiJson, token } = useApi();
-  const [loading, setLoading] = useState(true);
-  const [lastUpdated, setLastUpdated] = useState<string>("");
+  const { data: streamData, status: streamStatus, lastUpdated: streamLastUpdated } = useDashboardStream();
   const [isSimulated, setIsSimulated] = useState(false);
+  const [mapPlants, setMapPlants] = useState<any[]>([]);
 
   // States for all dashboard metrics
   const [activeTab, setActiveTab] = useState<"traffic" | "performance" | "all">("traffic");
@@ -65,424 +65,206 @@ export default function ViewerDashboard() {
   const [durasiTickets, setDurasiTickets] = useState<{ longest: any[], fastest: any[] } | null>(null);
   const [activeDurasiTab, setActiveDurasiTab] = useState<"longest" | "fastest">("longest");
 
-  // Fetch all dashboard data from the ASP.NET backend
-  const loadDashboardData = async () => {
-    setLoading(true);
-    try {
-      // 1. Fetch KPI Stats from optimized real database endpoint
-      const statsRes = await apiJson("/api/Home/MonitorStats").catch(() => null);
-      // 2. Fetch Trend Per Plant (Active API)
-      const trendPlantRes = await apiJson("/api/Home/GetTiketTrendPerPlant").catch(() => null);
-      // 3. Fetch Trend Per Hour (Active API)
-      const trendHourRes = await apiJson("/api/Home/GetTiketTrendPerHour").catch(() => null);
-      // 4. Fetch Avg Durasi Muat (Active API)
-      const durasiRes = await apiJson("/api/Home/GetDurasiProsesMuat").catch(() => null);
-      // 5. Fetch Monthly Overview (NEW real API!)
-      const monthlyRes = await apiJson("/api/Home/GetMonthlyOverview").catch(() => null);
-      // 6. Fetch Leaderboard Performance (NEW real API!)
-      const leaderboardRes = await apiJson("/api/Home/GetPlantLeaderboard").catch(() => null);
-      // 7. Fetch Top Duration Tickets (NEW real API!)
-      const durasiTicketsRes = await apiJson("/api/Home/GetTopDurasiTiket").catch(() => null);
-      // 8. Fetch Top Product Volume (NEW real API!)
-      const topProdukRes = await apiJson("/api/Home/GetTopProdukVolume").catch(() => null);
+  // SSE stream data transformation — replaces the old loadDashboardData fetch loop
+  useEffect(() => {
+    if (!streamData) return;
 
-      // Baseline with beautiful high-fidelity simulated values for the deleted/unavailable endpoints
-      // KPI Metrics Fallback
-      let finalStats = {
-        total_antrian: 1205,
-        total_tonase: 48900,
-        avg_tiket_minutes: 42,
-        durasi_terlama: 145,
-        durasi_tercepat: 12,
-        total_selesai: 980,
-        tiket_cancelled: [
-          { Alasan: "Armada Tidak Layak", Jumlah: 14 },
-          { Alasan: "Overload Berat Muat", Jumlah: 9 },
-          { Alasan: "Pembatalan Driver", Jumlah: 7 },
-          { Alasan: "Kesalahan Dokumen", Jumlah: 5 },
-        ]
-      };
+    const { stats: statsRes, trendPlant: trendPlantRes, trendHour: trendHourRes,
+            durasi: durasiRes, monthly: monthlyRes, leaderboard: leaderboardRes,
+            durasiTickets: durasiTicketsRes, topProduk: topProdukRes, mapData: mapDataRes } = streamData;
 
-      // Set Monthly MoM comparison using real database or fallback simulated
-      if (monthlyRes?.status === "success" && monthlyRes.BulanIni?.TotalTiket > 0) {
-        setMonthlyComp({
-          BulanIniLabel: monthlyRes.BulanIniLabel,
-          BulanLaluLabel: monthlyRes.BulanLaluLabel,
-          BulanIni: monthlyRes.BulanIni,
-          BulanLalu: monthlyRes.BulanLalu,
-          TiketChange: monthlyRes.TiketChange,
-          TonaseChange: monthlyRes.TonaseChange
-        });
-      } else {
-        setMonthlyComp({
-          BulanIniLabel: "Mei 2026",
-          BulanLaluLabel: "April 2026",
-          BulanIni: { TotalTiket: 32540, TotalTonase: 1301600, TotalSelesai: 28900, TotalCancel: 640 },
-          BulanLalu: { TotalTiket: 30120, TotalTonase: 1204800, TotalSelesai: 27200, TotalCancel: 710 },
-          TiketChange: 8.0,
-          TonaseChange: 8.3
-        });
-      }
-
-      // Set Top Products volume using real database or fallback simulated
-      if (topProdukRes?.status === "success" && Array.isArray(topProdukRes.data) && topProdukRes.data.length > 0) {
-        setTopProduk(topProdukRes.data);
-      } else {
-        setTopProduk([
-          { NamaProduk: "Urea Curah", TotalTonase: 546200 },
-          { NamaProduk: "NPK Phonska", TotalTonase: 364100 },
-          { name: "ZA", TotalTonase: 195100 },
-          { NamaProduk: "SP-36", TotalTonase: 130000 },
-          { NamaProduk: "Pupuk Organik", TotalTonase: 65000 },
-        ]);
-      }
-
-      // Set Leaderboard related states using real database or fallback simulated
-      if (leaderboardRes?.status === "success" && Array.isArray(leaderboardRes.data) && leaderboardRes.data.length > 0) {
-        setPlantRanking(leaderboardRes.data);
-
-        // Map SLA Compliance per Plant dynamically from real C# data
-        const mappedSla = leaderboardRes.data.map((item: any) => ({
-          CompanyName: item.CompanyName,
-          SlaCompliancePercent: item.SlaPercent,
-          TotalSelesai: item.TotalSelesai,
-          TotalDalamSla: Math.round((item.SlaPercent / 100) * item.TotalSelesai)
-        }));
-        setSlaPerPlant(mappedSla);
-
-        // Map Quota Utilization per Plant dynamically from real C# data
-        const mappedKuota = leaderboardRes.data.slice(0, 5).map((item: any) => {
-          const simulatedKuota = Math.max(5000, Math.round((item.TotalTonase * 1.2) / 1000) * 1000);
-          const percent = simulatedKuota > 0 ? Math.round((item.TotalTonase / simulatedKuota) * 100) : 0;
-          return {
-            CompanyCode: item.CompanyCode,
-            UtilizationPercent: percent > 100 ? 100 : percent,
-            TotalRealisasi: Math.round(item.TotalTonase),
-            TotalKuota: simulatedKuota
-          };
-        });
-        setKuotaUtilization(mappedKuota);
-      } else {
-        setSlaPerPlant([
-          { CompanyName: "DC Makassar", SlaCompliancePercent: 92, TotalSelesai: 1540, TotalDalamSla: 1416 },
-          { CompanyName: "Petrokimia Gresik (PKG)", SlaCompliancePercent: 88, TotalSelesai: 4850, TotalDalamSla: 4268 },
-          { CompanyName: "Pupuk Kujang (PKC)", SlaCompliancePercent: 81, TotalSelesai: 2980, TotalDalamSla: 2413 },
-          { CompanyName: "Logistics Meneng", SlaCompliancePercent: 75, TotalSelesai: 1820, TotalDalamSla: 1365 },
-          { CompanyName: "Pupuk Iskandar Muda (PIM)", SlaCompliancePercent: 68, TotalSelesai: 2150, TotalDalamSla: 1462 },
-          { CompanyName: "UPP Semarang", SlaCompliancePercent: 64, TotalSelesai: 1100, TotalDalamSla: 704 },
-        ]);
-
-        setKuotaUtilization([
-          { CompanyCode: "PKG", UtilizationPercent: 89, TotalRealisasi: 8900, TotalKuota: 10000 },
-          { CompanyCode: "LOG4MENENG", UtilizationPercent: 82, TotalRealisasi: 4100, TotalKuota: 5000 },
-          { CompanyCode: "PKC", UtilizationPercent: 76, TotalRealisasi: 5700, TotalKuota: 7500 },
-          { CompanyCode: "PIM", UtilizationPercent: 54, TotalRealisasi: 3240, TotalKuota: 6000 },
-          { CompanyCode: "D243", UtilizationPercent: 45, TotalRealisasi: 1800, TotalKuota: 4000 },
-        ]);
-
-        setPlantRanking([
-          { Rank: 1, CompanyName: "DC Makassar", TotalTiket: 1540, TotalTonase: 61600, AvgDurasi: 32, SlaPercent: 92, CancelRate: 0.8, Score: 92.5 },
-          { Rank: 2, CompanyName: "Petrokimia Gresik (PKG)", TotalTiket: 4850, TotalTonase: 194000, AvgDurasi: 38, SlaPercent: 88, CancelRate: 1.2, Score: 89.8 },
-          { Rank: 3, CompanyName: "Pupuk Kujang Cikampek (PKC)", TotalTiket: 2980, TotalTonase: 119200, AvgDurasi: 45, SlaPercent: 81, CancelRate: 1.6, Score: 84.2 },
-          { Rank: 4, CompanyName: "UPP Meneng Banyuwangi", TotalTiket: 1820, TotalTonase: 72800, AvgDurasi: 41, SlaPercent: 75, CancelRate: 2.3, Score: 78.4 },
-          { Rank: 5, CompanyName: "Pupuk Iskandar Muda (PIM)", TotalTiket: 2150, TotalTonase: 86000, AvgDurasi: 52, SlaPercent: 68, CancelRate: 2.8, Score: 71.9 },
-          { Rank: 6, CompanyName: "UPP Semarang", TotalTiket: 1100, TotalTonase: 44000, AvgDurasi: 48, SlaPercent: 64, CancelRate: 3.5, Score: 65.1 },
-        ]);
-      }
-
-      setThroughputShift({
-        dates: ["12 Mei", "13 Mei", "14 Mei", "15 Mei", "16 Mei", "17 Mei", "18 Mei"],
-        shift1: [4200, 4800, 4500, 5100, 4900, 4400, 5200],
-        shift2: [3800, 4100, 3900, 4600, 4300, 3900, 4500],
-        shift3: [2400, 2800, 2600, 3100, 2950, 2500, 3200],
-      });
-
-      setCancelTrend({
-        dates: ["12 Mei", "13 Mei", "14 Mei", "15 Mei", "16 Mei", "17 Mei", "18 Mei"],
-        series: [
-          { name: "Petrokimia Gresik (PKG)", data: [1.2, 1.5, 1.1, 1.4, 1.2, 1.3, 1.2] },
-          { name: "Pupuk Kujang (PKC)", data: [1.8, 2.1, 1.7, 1.9, 1.6, 1.5, 1.6] },
-          { name: "Pupuk Iskandar Muda (PIM)", data: [2.5, 3.0, 2.8, 3.2, 2.7, 2.9, 2.8] },
-        ]
-      });
-
-      // Override with real database statistics if returned successfully
-      let realDataFetched = false;
-      if (statsRes && statsRes.Success && statsRes.totalTiket > 0) {
-        finalStats = {
-          total_antrian: statsRes.totalAntrian ?? 0,
-          total_selesai: statsRes.totalSelesai ?? 0,
-          total_tonase: statsRes.totalTonase ?? 0,
-          avg_tiket_minutes: statsRes.avgDurasiMenit ?? 0,
-          durasi_terlama: statsRes.durasiTerlama ?? 0,
-          durasi_tercepat: statsRes.durasiTercepat ?? 0,
-          tiket_cancelled: statsRes.totalCancel && statsRes.totalCancel > 0 ? [
-            { Alasan: "Dibatalkan / Kadaluwarsa", Jumlah: statsRes.totalCancel }
-          ] : []
-        };
-        realDataFetched = true;
-      }
-      setStats(finalStats);
-
-      // 3. Transform Trend Per Plant using real database query
-      if (trendPlantRes?.status === "success" && Array.isArray(trendPlantRes.data) && trendPlantRes.data.length > 0) {
-        const raw = trendPlantRes.data;
-        const uniqueDates = Array.from(new Set(raw.map((item: any) => item.Tanggal))).sort();
-        const formattedDates = uniqueDates.map((d: any) => {
-          const date = new Date(d);
-          return date.toLocaleDateString("id-ID", { day: "2-digit", month: "short" });
-        });
-
-        const plants = Array.from(new Set(raw.map((item: any) => item.CompanyName || item.CompanyCode)));
-
-        const series = plants.map((plant: any) => {
-          const plantData = uniqueDates.map((dateStr: any) => {
-            const match = raw.find((item: any) => (item.CompanyName || item.CompanyCode) === plant && item.Tanggal === dateStr);
-            return match ? match.TotalAntrian : 0;
-          });
-          return { name: plant, data: plantData };
-        });
-
-        setTrendPerPlant({ dates: formattedDates, series });
-      } else {
-        // Fallback simulated trend per plant
-        setTrendPerPlant({
-          dates: ["12 Mei", "13 Mei", "14 Mei", "15 Mei", "16 Mei", "17 Mei", "18 Mei"],
-          series: [
-            { name: "Petrokimia Gresik (PKG)", data: [180, 210, 195, 240, 220, 205, 250] },
-            { name: "Pupuk Kujang (PKC)", data: [110, 125, 115, 140, 130, 120, 145] },
-            { name: "Pupuk Iskandar Muda (PIM)", data: [75, 90, 85, 105, 95, 88, 110] },
-            { name: "Logistics Meneng", data: [60, 72, 68, 85, 78, 70, 92] },
-            { name: "DC Makassar", data: [40, 55, 48, 65, 58, 52, 70] },
-          ]
-        });
-      }
-
-      // 4. Transform Trend Per Hour using real database query
-      if (trendHourRes?.status === "success" && Array.isArray(trendHourRes.data) && trendHourRes.data.length > 0) {
-        const raw = trendHourRes.data.sort((a: any, b: any) => a.Jam - b.Jam);
-        const hours = raw.map((item: any) => `${item.Jam.toString().padStart(2, '0')}:00`);
-        const antrian = raw.map((item: any) => item.TotalAntrian);
-        const selesai = raw.map((item: any) => item.TotalSelesai);
-        setTrendPerHour({ hours, antrian, selesai });
-      } else {
-        // Fallback simulated trend per hour
-        setTrendPerHour({
-          hours: ["06:00", "08:00", "10:00", "12:00", "14:00", "16:00", "18:00", "20:00", "22:00", "00:00"],
-          antrian: [25, 48, 72, 85, 90, 68, 52, 38, 20, 10],
-          selesai: [15, 30, 55, 68, 82, 75, 60, 42, 28, 15]
-        });
-      }
-
-      // 5. Avg Durasi Muat using real database query
-      if (durasiRes?.status === "success" && Array.isArray(durasiRes.data) && durasiRes.data.length > 0) {
-        setDurasiMuat(durasiRes.data);
-      } else {
-        // Fallback simulated average duration
-        setDurasiMuat([
-          { CompanyName: "DC Makassar", AvgDurasiMenit: 32 },
-          { CompanyName: "Petrokimia Gresik (PKG)", AvgDurasiMenit: 38 },
-          { CompanyName: "Logistics Meneng", AvgDurasiMenit: 41 },
-          { CompanyName: "Pupuk Kujang (PKC)", AvgDurasiMenit: 45 },
-          { CompanyName: "UPP Semarang", AvgDurasiMenit: 48 },
-          { CompanyName: "Pupuk Iskandar Muda (PIM)", AvgDurasiMenit: 52 },
-        ]);
-      }
-
-      // 6. Set Top Duration Tickets using real database or fallback simulated
-      if (durasiTicketsRes?.status === "success" && (durasiTicketsRes.longest?.length > 0 || durasiTicketsRes.fastest?.length > 0)) {
-        setDurasiTickets({
-          longest: durasiTicketsRes.longest,
-          fastest: durasiTicketsRes.fastest
-        });
-      } else {
-        setDurasiTickets({
-          longest: [
-            { TiketNo: "T-20260519-0012", Nopol: "L 9812 UI", Driver: "Budiono", Qty: 28.5, CheckIn: "2026-05-18 08:12:00", CheckOut: "2026-05-18 10:45:00", CompanyName: "Petrokimia Gresik (PKG)", DurationMinutes: 153.0 },
-            { TiketNo: "T-20260519-0045", Nopol: "W 1290 NM", Driver: "Hariyanto", Qty: 30.0, CheckIn: "2026-05-18 09:05:00", CheckOut: "2026-05-18 11:25:00", CompanyName: "UPP Semarang", DurationMinutes: 140.0 },
-            { TiketNo: "T-20260519-0023", Nopol: "B 9043 KPA", Driver: "Ahmad", Qty: 25.0, CheckIn: "2026-05-18 08:30:00", CheckOut: "2026-05-18 10:42:00", CompanyName: "Pupuk Kujang (PKC)", DurationMinutes: 132.0 },
-            { TiketNo: "T-20260519-0089", Nopol: "N 8931 UR", Driver: "Rian", Qty: 27.2, CheckIn: "2026-05-18 10:15:00", CheckOut: "2026-05-18 12:20:00", CompanyName: "UPP Meneng Banyuwangi", DurationMinutes: 125.0 },
-            { TiketNo: "T-20260519-0112", Nopol: "BK 4829 OP", Driver: "Syarif", Qty: 24.5, CheckIn: "2026-05-18 11:00:00", CheckOut: "2026-05-18 12:58:00", CompanyName: "Pupuk Iskandar Muda (PIM)", DurationMinutes: 118.0 },
-            { TiketNo: "T-20260519-0034", Nopol: "DD 8721 XY", Driver: "Jufri", Qty: 22.0, CheckIn: "2026-05-18 08:45:00", CheckOut: "2026-05-18 10:35:00", CompanyName: "DC Makassar", DurationMinutes: 110.0 },
-            { TiketNo: "T-20260519-0056", Nopol: "L 9022 TY", Driver: "Slamet", Qty: 28.0, CheckIn: "2026-05-18 09:20:00", CheckOut: "2026-05-18 11:05:00", CompanyName: "Petrokimia Gresik (PKG)", DurationMinutes: 105.0 },
-            { TiketNo: "T-20260519-0078", Nopol: "W 3942 KL", Driver: "Eko", Qty: 29.5, CheckIn: "2026-05-18 09:50:00", CheckOut: "2026-05-18 11:32:00", CompanyName: "UPP Semarang", DurationMinutes: 102.0 },
-            { TiketNo: "T-20260519-0130", Nopol: "B 9801 PL", Driver: "Agus", Qty: 26.0, CheckIn: "2026-05-18 12:10:00", CheckOut: "2026-05-18 13:48:00", CompanyName: "Pupuk Kujang (PKC)", DurationMinutes: 98.0 },
-            { TiketNo: "T-20260519-0145", Nopol: "N 7821 JK", Driver: "Joko", Qty: 28.0, CheckIn: "2026-05-18 12:40:00", CheckOut: "2026-05-18 14:15:00", CompanyName: "UPP Meneng Banyuwangi", DurationMinutes: 95.0 }
-          ],
-          fastest: [
-            { TiketNo: "T-20260519-0210", Nopol: "DD 9182 AA", Driver: "Daeng", Qty: 20.0, CheckIn: "2026-05-18 14:30:00", CheckOut: "2026-05-18 14:42:00", CompanyName: "DC Makassar", DurationMinutes: 12.0 },
-            { TiketNo: "T-20260519-0254", Nopol: "L 8931 UI", Driver: "Agung", Qty: 24.5, CheckIn: "2026-05-18 15:15:00", CheckOut: "2026-05-18 15:30:00", CompanyName: "Petrokimia Gresik (PKG)", DurationMinutes: 15.0 },
-            { TiketNo: "T-20260519-0230", Nopol: "W 1902 OP", Driver: "Dwi", Qty: 22.0, CheckIn: "2026-05-18 14:50:00", CheckOut: "2026-05-18 15:07:00", CompanyName: "UPP Semarang", DurationMinutes: 17.0 },
-            { TiketNo: "T-20260519-0288", Nopol: "B 9088 TT", Driver: "Toni", Qty: 25.0, CheckIn: "2026-05-18 15:40:00", CheckOut: "2026-05-18 15:58:00", CompanyName: "Pupuk Kujang (PKC)", DurationMinutes: 18.0 },
-            { TiketNo: "T-20260519-0312", Nopol: "N 9831 YY", Driver: "Budi", Qty: 27.0, CheckIn: "2026-05-18 16:10:00", CheckOut: "2026-05-18 16:29:00", CompanyName: "UPP Meneng Banyuwangi", DurationMinutes: 19.0 },
-            { TiketNo: "T-20260519-0340", Nopol: "BK 2309 JK", Driver: "Taufik", Qty: 24.0, CheckIn: "2026-05-18 16:30:00", CheckOut: "2026-05-18 16:51:00", CompanyName: "Pupuk Iskandar Muda (PIM)", DurationMinutes: 21.0 },
-            { TiketNo: "T-20260519-0220", Nopol: "DD 8931 BG", Driver: "Aris", Qty: 21.5, CheckIn: "2026-05-18 14:40:00", CheckOut: "2026-05-18 15:02:00", CompanyName: "DC Makassar", DurationMinutes: 22.0 },
-            { TiketNo: "T-20260519-0260", Nopol: "L 7812 KL", Driver: "Anton", Qty: 23.0, CheckIn: "2026-05-18 15:20:00", CheckOut: "2026-05-18 15:43:00", CompanyName: "Petrokimia Gresik (PKG)", DurationMinutes: 23.0 },
-            { TiketNo: "T-20260519-0275", Nopol: "W 9081 UU", Driver: "Edi", Qty: 25.5, CheckIn: "2026-05-18 15:35:00", CheckOut: "2026-05-18 15:59:00", CompanyName: "UPP Semarang", DurationMinutes: 24.0 },
-            { TiketNo: "T-20260519-0299", Nopol: "B 7802 BB", Driver: "Sony", Qty: 26.0, CheckIn: "2026-05-18 15:55:00", CheckOut: "2026-05-18 16:20:00", CompanyName: "Pupuk Kujang (PKC)", DurationMinutes: 25.0 }
-          ]
-        });
-      }
-
-      setIsSimulated(!realDataFetched);
-    } catch (err) {
-      console.warn("Failed to retrieve metrics from backend API. Loading high-fidelity simulation model.", err);
-      loadSimulatedData();
-    } finally {
-      setLoading(false);
-      setLastUpdated(new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
-    }
-  };
-
-  // High-fidelity fallback simulated data representing Pupuk Indonesia logistics
-  const loadSimulatedData = () => {
-    setIsSimulated(true);
-
-    // KPI Metrics
-    setStats({
-      total_antrian: 1205,
-      total_tonase: 48900,
-      avg_tiket_minutes: 42,
-      durasi_terlama: 145,
-      durasi_tercepat: 12,
-      total_selesai: 980,
+    // ── MonitorStats ──────────────────────────────────────────────────────────
+    let finalStats = {
+      total_antrian: 1205, total_tonase: 48900, avg_tiket_minutes: 42,
+      durasi_terlama: 145, durasi_tercepat: 12, total_selesai: 980,
       tiket_cancelled: [
         { Alasan: "Armada Tidak Layak", Jumlah: 14 },
         { Alasan: "Overload Berat Muat", Jumlah: 9 },
         { Alasan: "Pembatalan Driver", Jumlah: 7 },
         { Alasan: "Kesalahan Dokumen", Jumlah: 5 },
       ]
-    });
+    };
 
-    // Monthly MoM Comparison
-    setMonthlyComp({
-      BulanIniLabel: "Mei 2026",
-      BulanLaluLabel: "April 2026",
-      BulanIni: { TotalTiket: 32540, TotalTonase: 1301600, TotalSelesai: 28900, TotalCancel: 640 },
-      BulanLalu: { TotalTiket: 30120, TotalTonase: 1204800, TotalSelesai: 27200, TotalCancel: 710 },
-      TiketChange: 8.0,
-      TonaseChange: 8.3
-    });
+    // ── MonitorStats ──────────────────────────────────────────────────────────
+    let realDataFetched = false;
+    if (statsRes?.Success && statsRes.totalTiket > 0) {
+      finalStats = {
+        total_antrian: statsRes.totalAntrian ?? 0,
+        total_selesai: statsRes.totalSelesai ?? 0,
+        total_tonase: statsRes.totalTonase ?? 0,
+        avg_tiket_minutes: statsRes.avgDurasiMenit ?? 0,
+        durasi_terlama: statsRes.durasiTerlama ?? 0,
+        durasi_tercepat: statsRes.durasiTercepat ?? 0,
+        tiket_cancelled: statsRes.totalCancel > 0
+          ? [{ Alasan: "Dibatalkan / Kadaluwarsa", Jumlah: statsRes.totalCancel }]
+          : []
+      };
+      realDataFetched = true;
+    }
+    setStats(finalStats);
+    setIsSimulated(!realDataFetched);
 
-    // Trend Per Plant (7 Days)
-    const dates = ["12 Mei", "13 Mei", "14 Mei", "15 Mei", "16 Mei", "17 Mei", "18 Mei"];
-    setTrendPerPlant({
-      dates,
-      series: [
-        { name: "Petrokimia Gresik (PKG)", data: [180, 210, 195, 240, 220, 205, 250] },
-        { name: "Pupuk Kujang (PKC)", data: [110, 125, 115, 140, 130, 120, 145] },
-        { name: "Pupuk Iskandar Muda (PIM)", data: [75, 90, 85, 105, 95, 88, 110] },
-        { name: "Logistics Meneng", data: [60, 72, 68, 85, 78, 70, 92] },
-        { name: "DC Makassar", data: [40, 55, 48, 65, 58, 52, 70] },
-      ]
-    });
+    // ── Monthly Overview ──────────────────────────────────────────────────────
+    if (monthlyRes?.status === "success" && monthlyRes.BulanIni?.TotalTiket > 0) {
+      setMonthlyComp({
+        BulanIniLabel: monthlyRes.BulanIniLabel,
+        BulanLaluLabel: monthlyRes.BulanLaluLabel,
+        BulanIni: monthlyRes.BulanIni,
+        BulanLalu: monthlyRes.BulanLalu,
+        TiketChange: monthlyRes.TiketChange,
+        TonaseChange: monthlyRes.TonaseChange,
+      });
+    } else {
+      setMonthlyComp({
+        BulanIniLabel: "Mei 2026", BulanLaluLabel: "April 2026",
+        BulanIni: { TotalTiket: 32540, TotalTonase: 1301600, TotalSelesai: 28900, TotalCancel: 640 },
+        BulanLalu: { TotalTiket: 30120, TotalTonase: 1204800, TotalSelesai: 27200, TotalCancel: 710 },
+        TiketChange: 8.0, TonaseChange: 8.3,
+      });
+    }
 
-    // Trend Per Hour (Today)
-    setTrendPerHour({
-      hours: ["06:00", "08:00", "10:00", "12:00", "14:00", "16:00", "18:00", "20:00", "22:00", "00:00"],
-      antrian: [25, 48, 72, 85, 90, 68, 52, 38, 20, 10],
-      selesai: [15, 30, 55, 68, 82, 75, 60, 42, 28, 15]
-    });
+    // ── Top Produk ────────────────────────────────────────────────────────────
+    if (topProdukRes?.status === "success" && Array.isArray(topProdukRes.data) && topProdukRes.data.length > 0) {
+      setTopProduk(topProdukRes.data);
+    } else {
+      setTopProduk([
+        { NamaProduk: "Urea Curah", TotalTonase: 546200 },
+        { NamaProduk: "NPK Phonska", TotalTonase: 364100 },
+        { NamaProduk: "ZA", TotalTonase: 195100 },
+        { NamaProduk: "SP-36", TotalTonase: 130000 },
+        { NamaProduk: "Pupuk Organik", TotalTonase: 65000 },
+      ]);
+    }
 
-    // Avg Durasi Muat per Plant
-    setDurasiMuat([
-      { CompanyName: "DC Makassar", AvgDurasiMenit: 32 },
-      { CompanyName: "Petrokimia Gresik (PKG)", AvgDurasiMenit: 38 },
-      { CompanyName: "Logistics Meneng", AvgDurasiMenit: 41 },
-      { CompanyName: "Pupuk Kujang (PKC)", AvgDurasiMenit: 45 },
-      { CompanyName: "UPP Semarang", AvgDurasiMenit: 48 },
-      { CompanyName: "Pupuk Iskandar Muda (PIM)", AvgDurasiMenit: 52 },
-    ]);
+    // ── Leaderboard ───────────────────────────────────────────────────────────
+    if (leaderboardRes?.status === "success" && Array.isArray(leaderboardRes.data) && leaderboardRes.data.length > 0) {
+      setPlantRanking(leaderboardRes.data);
+      setSlaPerPlant(leaderboardRes.data.map((item: any) => ({
+        CompanyName: item.CompanyName,
+        SlaCompliancePercent: item.SlaPercent,
+        TotalSelesai: item.TotalSelesai,
+        TotalDalamSla: Math.round((item.SlaPercent / 100) * item.TotalSelesai),
+      })));
+      setKuotaUtilization(leaderboardRes.data.slice(0, 5).map((item: any) => {
+        const simulatedKuota = Math.max(5000, Math.round((item.TotalTonase * 1.2) / 1000) * 1000);
+        const percent = simulatedKuota > 0 ? Math.round((item.TotalTonase / simulatedKuota) * 100) : 0;
+        return {
+          CompanyCode: item.CompanyCode,
+          UtilizationPercent: percent > 100 ? 100 : percent,
+          TotalRealisasi: Math.round(item.TotalTonase),
+          TotalKuota: simulatedKuota,
+        };
+      }));
+    } else {
+      setSlaPerPlant([
+        { CompanyName: "DC Makassar", SlaCompliancePercent: 92, TotalSelesai: 1540, TotalDalamSla: 1416 },
+        { CompanyName: "Petrokimia Gresik (PKG)", SlaCompliancePercent: 88, TotalSelesai: 4850, TotalDalamSla: 4268 },
+        { CompanyName: "Pupuk Kujang (PKC)", SlaCompliancePercent: 81, TotalSelesai: 2980, TotalDalamSla: 2413 },
+        { CompanyName: "Logistics Meneng", SlaCompliancePercent: 75, TotalSelesai: 1820, TotalDalamSla: 1365 },
+        { CompanyName: "Pupuk Iskandar Muda (PIM)", SlaCompliancePercent: 68, TotalSelesai: 2150, TotalDalamSla: 1462 },
+        { CompanyName: "UPP Semarang", SlaCompliancePercent: 64, TotalSelesai: 1100, TotalDalamSla: 704 },
+      ]);
+      setKuotaUtilization([
+        { CompanyCode: "PKG", UtilizationPercent: 89, TotalRealisasi: 8900, TotalKuota: 10000 },
+        { CompanyCode: "LOG4MENENG", UtilizationPercent: 82, TotalRealisasi: 4100, TotalKuota: 5000 },
+        { CompanyCode: "PKC", UtilizationPercent: 76, TotalRealisasi: 5700, TotalKuota: 7500 },
+        { CompanyCode: "PIM", UtilizationPercent: 54, TotalRealisasi: 3240, TotalKuota: 6000 },
+        { CompanyCode: "D243", UtilizationPercent: 45, TotalRealisasi: 1800, TotalKuota: 4000 },
+      ]);
+      setPlantRanking([
+        { Rank: 1, CompanyName: "DC Makassar", TotalTiket: 1540, TotalTonase: 61600, AvgDurasi: 32, SlaPercent: 92, CancelRate: 0.8, Score: 92.5 },
+        { Rank: 2, CompanyName: "Petrokimia Gresik (PKG)", TotalTiket: 4850, TotalTonase: 194000, AvgDurasi: 38, SlaPercent: 88, CancelRate: 1.2, Score: 89.8 },
+        { Rank: 3, CompanyName: "Pupuk Kujang Cikampek (PKC)", TotalTiket: 2980, TotalTonase: 119200, AvgDurasi: 45, SlaPercent: 81, CancelRate: 1.6, Score: 84.2 },
+        { Rank: 4, CompanyName: "UPP Meneng Banyuwangi", TotalTiket: 1820, TotalTonase: 72800, AvgDurasi: 41, SlaPercent: 75, CancelRate: 2.3, Score: 78.4 },
+        { Rank: 5, CompanyName: "Pupuk Iskandar Muda (PIM)", TotalTiket: 2150, TotalTonase: 86000, AvgDurasi: 52, SlaPercent: 68, CancelRate: 2.8, Score: 71.9 },
+        { Rank: 6, CompanyName: "UPP Semarang", TotalTiket: 1100, TotalTonase: 44000, AvgDurasi: 48, SlaPercent: 64, CancelRate: 3.5, Score: 65.1 },
+      ]);
+    }
 
-    // Top 5 Product Volume (30 Days)
-    setTopProduk([
-      { NamaProduk: "Urea Curah", TotalTonase: 546200 },
-      { NamaProduk: "NPK Phonska", TotalTonase: 364100 },
-      { name: "ZA", TotalTonase: 195100 },
-      { NamaProduk: "SP-36", TotalTonase: 130000 },
-      { NamaProduk: "Pupuk Organik", TotalTonase: 65000 },
-    ]);
+    // ── Trend Per Plant ───────────────────────────────────────────────────────
+    if (trendPlantRes?.status === "success" && Array.isArray(trendPlantRes.data) && trendPlantRes.data.length > 0) {
+      const raw = trendPlantRes.data;
+      const uniqueDates = Array.from(new Set<string>(raw.map((item: any) => item.Tanggal))).sort();
+      const formattedDates = uniqueDates.map((d: string) =>
+        new Date(d).toLocaleDateString("id-ID", { day: "2-digit", month: "short" })
+      );
+      const plants = Array.from(new Set<string>(raw.map((item: any) => item.CompanyName || item.CompanyCode)));
+      const series = plants.map((plant: string) => ({
+        name: plant,
+        data: uniqueDates.map((dateStr: string) => {
+          const entry = raw.find((item: any) => (item.CompanyName || item.CompanyCode) === plant && item.Tanggal === dateStr);
+          return entry ? (entry.TotalTiket || 0) : 0;
+        }),
+      }));
+      setTrendPerPlant({ dates: formattedDates, series });
+    }
 
-    // SLA Compliance (30 Days)
-    setSlaPerPlant([
-      { CompanyName: "DC Makassar", SlaCompliancePercent: 92, TotalSelesai: 1540, TotalDalamSla: 1416 },
-      { CompanyName: "Petrokimia Gresik (PKG)", SlaCompliancePercent: 88, TotalSelesai: 4850, TotalDalamSla: 4268 },
-      { CompanyName: "Pupuk Kujang (PKC)", SlaCompliancePercent: 81, TotalSelesai: 2980, TotalDalamSla: 2413 },
-      { CompanyName: "Logistics Meneng", SlaCompliancePercent: 75, TotalSelesai: 1820, TotalDalamSla: 1365 },
-      { CompanyName: "Pupuk Iskandar Muda (PIM)", SlaCompliancePercent: 68, TotalSelesai: 2150, TotalDalamSla: 1462 },
-      { CompanyName: "UPP Semarang", SlaCompliancePercent: 64, TotalSelesai: 1100, TotalDalamSla: 704 },
-    ]);
+    // ── Trend Per Hour ────────────────────────────────────────────────────────
+    if (trendHourRes?.status === "success" && Array.isArray(trendHourRes.data) && trendHourRes.data.length > 0) {
+      const raw = trendHourRes.data;
+      const hours = Array.from(new Set<string>(raw.map((item: any) => `${item.Jam}:00`))).sort();
+      const plants = Array.from(new Set<string>(raw.map((item: any) => item.CompanyName || item.CompanyCode)));
+      const series = plants.map((plant: string) => ({
+        name: plant,
+        data: hours.map((h: string) => {
+          const hour = parseInt(h);
+          const entry = raw.find((item: any) => (item.CompanyName || item.CompanyCode) === plant && item.Jam === hour);
+          return entry ? (entry.TotalTiket || 0) : 0;
+        }),
+      }));
+      setTrendPerHour({ hours, series });
+    }
 
-    // Throughput per Shift (30 Days)
+    // ── Durasi Muat ───────────────────────────────────────────────────────────
+    if (durasiRes?.status === "success" && Array.isArray(durasiRes.data) && durasiRes.data.length > 0) {
+      setDurasiMuat({
+        companies: durasiRes.data.map((item: any) => item.CompanyName || item.CompanyCode),
+        avgDurasi: durasiRes.data.map((item: any) => Math.round(item.AvgDurasiMenit || 0)),
+      });
+    }
+
+    // ── Top Durasi Tickets ────────────────────────────────────────────────────
+    if (durasiTicketsRes?.status === "success" && Array.isArray(durasiTicketsRes.longest) && durasiTicketsRes.longest.length > 0) {
+      setDurasiTickets({ longest: durasiTicketsRes.longest, fastest: durasiTicketsRes.fastest || [] });
+    }
+
+    // ── Static simulated data (no real API) ──────────────────────────────────
     setThroughputShift({
       dates: ["12 Mei", "13 Mei", "14 Mei", "15 Mei", "16 Mei", "17 Mei", "18 Mei"],
       shift1: [4200, 4800, 4500, 5100, 4900, 4400, 5200],
       shift2: [3800, 4100, 3900, 4600, 4300, 3900, 4500],
       shift3: [2400, 2800, 2600, 3100, 2950, 2500, 3200],
     });
-
-    // Quota Utilization
-    setKuotaUtilization([
-      { CompanyCode: "PKG", UtilizationPercent: 89, TotalRealisasi: 8900, TotalKuota: 10000 },
-      { CompanyCode: "LOG4MENENG", UtilizationPercent: 82, TotalRealisasi: 4100, TotalKuota: 5000 },
-      { CompanyCode: "PKC", UtilizationPercent: 76, TotalRealisasi: 5700, TotalKuota: 7500 },
-      { CompanyCode: "PIM", UtilizationPercent: 54, TotalRealisasi: 3240, TotalKuota: 6000 },
-      { CompanyCode: "D243", UtilizationPercent: 45, TotalRealisasi: 1800, TotalKuota: 4000 },
-    ]);
-
-    // Performance Ranking
-    setPlantRanking([
-      { Rank: 1, CompanyName: "DC Makassar", TotalTiket: 1540, TotalTonase: 61600, AvgDurasi: 32, SlaPercent: 92, CancelRate: 0.8, Score: 92.5 },
-      { Rank: 2, CompanyName: "Petrokimia Gresik (PKG)", TotalTiket: 4850, TotalTonase: 194000, AvgDurasi: 38, SlaPercent: 88, CancelRate: 1.2, Score: 89.8 },
-      { Rank: 3, CompanyName: "Pupuk Kujang Cikampek (PKC)", TotalTiket: 2980, TotalTonase: 119200, AvgDurasi: 45, SlaPercent: 81, CancelRate: 1.6, Score: 84.2 },
-      { Rank: 4, CompanyName: "UPP Meneng Banyuwangi", TotalTiket: 1820, TotalTonase: 72800, AvgDurasi: 41, SlaPercent: 75, CancelRate: 2.3, Score: 78.4 },
-      { Rank: 5, CompanyName: "Pupuk Iskandar Muda (PIM)", TotalTiket: 2150, TotalTonase: 86000, AvgDurasi: 52, SlaPercent: 68, CancelRate: 2.8, Score: 71.9 },
-      { Rank: 6, CompanyName: "UPP Semarang", TotalTiket: 1100, TotalTonase: 44000, AvgDurasi: 48, SlaPercent: 64, CancelRate: 3.5, Score: 65.1 },
-    ]);
-
-    // Cancel rate trend (7 Days)
     setCancelTrend({
       dates: ["12 Mei", "13 Mei", "14 Mei", "15 Mei", "16 Mei", "17 Mei", "18 Mei"],
       series: [
-        { name: "Petrokimia Gresik (PKG)", data: [1.5, 1.2, 1.8, 1.4, 1.1, 1.6, 1.2] },
-        { name: "Pupuk Kujang (PKC)", data: [2.1, 1.8, 2.5, 2.0, 1.6, 2.2, 1.6] },
-        { name: "Pupuk Iskandar Muda (PIM)", data: [3.2, 2.9, 3.5, 3.1, 2.7, 3.4, 2.8] },
-        { name: "UPP Semarang", data: [4.1, 3.8, 4.5, 3.9, 3.6, 4.2, 3.5] },
-      ]
-    });
-
-    setDurasiTickets({
-      longest: [
-        { TiketNo: "T-20260519-0012", Nopol: "L 9812 UI", Driver: "Budiono", Qty: 28.5, CheckIn: "2026-05-18 08:12:00", CheckOut: "2026-05-18 10:45:00", CompanyName: "Petrokimia Gresik (PKG)", DurationMinutes: 153.0 },
-        { TiketNo: "T-20260519-0045", Nopol: "W 1290 NM", Driver: "Hariyanto", Qty: 30.0, CheckIn: "2026-05-18 09:05:00", CheckOut: "2026-05-18 11:25:00", CompanyName: "UPP Semarang", DurationMinutes: 140.0 },
-        { TiketNo: "T-20260519-0023", Nopol: "B 9043 KPA", Driver: "Ahmad", Qty: 25.0, CheckIn: "2026-05-18 08:30:00", CheckOut: "2026-05-18 10:42:00", CompanyName: "Pupuk Kujang (PKC)", DurationMinutes: 132.0 },
-        { TiketNo: "T-20260519-0089", Nopol: "N 8931 UR", Driver: "Rian", Qty: 27.2, CheckIn: "2026-05-18 10:15:00", CheckOut: "2026-05-18 12:20:00", CompanyName: "UPP Meneng Banyuwangi", DurationMinutes: 125.0 },
-        { TiketNo: "T-20260519-0112", Nopol: "BK 4829 OP", Driver: "Syarif", Qty: 24.5, CheckIn: "2026-05-18 11:00:00", CheckOut: "2026-05-18 12:58:00", CompanyName: "Pupuk Iskandar Muda (PIM)", DurationMinutes: 118.0 },
-        { TiketNo: "T-20260519-0034", Nopol: "DD 8721 XY", Driver: "Jufri", Qty: 22.0, CheckIn: "2026-05-18 08:45:00", CheckOut: "2026-05-18 10:35:00", CompanyName: "DC Makassar", DurationMinutes: 110.0 },
-        { TiketNo: "T-20260519-0056", Nopol: "L 9022 TY", Driver: "Slamet", Qty: 28.0, CheckIn: "2026-05-18 09:20:00", CheckOut: "2026-05-18 11:05:00", CompanyName: "Petrokimia Gresik (PKG)", DurationMinutes: 105.0 },
-        { TiketNo: "T-20260519-0078", Nopol: "W 3942 KL", Driver: "Eko", Qty: 29.5, CheckIn: "2026-05-18 09:50:00", CheckOut: "2026-05-18 11:32:00", CompanyName: "UPP Semarang", DurationMinutes: 102.0 },
-        { TiketNo: "T-20260519-0130", Nopol: "B 9801 PL", Driver: "Agus", Qty: 26.0, CheckIn: "2026-05-18 12:10:00", CheckOut: "2026-05-18 13:48:00", CompanyName: "Pupuk Kujang (PKC)", DurationMinutes: 98.0 },
-        { TiketNo: "T-20260519-0145", Nopol: "N 7821 JK", Driver: "Joko", Qty: 28.0, CheckIn: "2026-05-18 12:40:00", CheckOut: "2026-05-18 14:15:00", CompanyName: "UPP Meneng Banyuwangi", DurationMinutes: 95.0 }
+        { name: "Petrokimia Gresik (PKG)", data: [1.2, 1.5, 1.1, 1.4, 1.2, 1.3, 1.2] },
+        { name: "Pupuk Kujang (PKC)", data: [1.8, 2.1, 1.7, 1.9, 1.6, 1.5, 1.6] },
+        { name: "Pupuk Iskandar Muda (PIM)", data: [2.5, 3.0, 2.8, 3.2, 2.7, 2.9, 2.8] },
       ],
-      fastest: [
-        { TiketNo: "T-20260519-0210", Nopol: "DD 9182 AA", Driver: "Daeng", Qty: 20.0, CheckIn: "2026-05-18 14:30:00", CheckOut: "2026-05-18 14:42:00", CompanyName: "DC Makassar", DurationMinutes: 12.0 },
-        { TiketNo: "T-20260519-0254", Nopol: "L 8931 UI", Driver: "Agung", Qty: 24.5, CheckIn: "2026-05-18 15:15:00", CheckOut: "2026-05-18 15:30:00", CompanyName: "Petrokimia Gresik (PKG)", DurationMinutes: 15.0 },
-        { TiketNo: "T-20260519-0230", Nopol: "W 1902 OP", Driver: "Dwi", Qty: 22.0, CheckIn: "2026-05-18 14:50:00", CheckOut: "2026-05-18 15:07:00", CompanyName: "UPP Semarang", DurationMinutes: 17.0 },
-        { TiketNo: "T-20260519-0288", Nopol: "B 9088 TT", Driver: "Toni", Qty: 25.0, CheckIn: "2026-05-18 15:40:00", CheckOut: "2026-05-18 15:58:00", CompanyName: "Pupuk Kujang (PKC)", DurationMinutes: 18.0 },
-        { TiketNo: "T-20260519-0312", Nopol: "N 9831 YY", Driver: "Budi", Qty: 27.0, CheckIn: "2026-05-18 16:10:00", CheckOut: "2026-05-18 16:29:00", CompanyName: "UPP Meneng Banyuwangi", DurationMinutes: 19.0 },
-        { TiketNo: "T-20260519-0340", Nopol: "BK 2309 JK", Driver: "Taufik", Qty: 24.0, CheckIn: "2026-05-18 16:30:00", CheckOut: "2026-05-18 16:51:00", CompanyName: "Pupuk Iskandar Muda (PIM)", DurationMinutes: 21.0 },
-        { TiketNo: "T-20260519-0220", Nopol: "DD 8931 BG", Driver: "Aris", Qty: 21.5, CheckIn: "2026-05-18 14:40:00", CheckOut: "2026-05-18 15:02:00", CompanyName: "DC Makassar", DurationMinutes: 22.0 },
-        { TiketNo: "T-20260519-0260", Nopol: "L 7812 KL", Driver: "Anton", Qty: 23.0, CheckIn: "2026-05-18 15:20:00", CheckOut: "2026-05-18 15:43:00", CompanyName: "Petrokimia Gresik (PKG)", DurationMinutes: 23.0 },
-        { TiketNo: "T-20260519-0275", Nopol: "W 9081 UU", Driver: "Edi", Qty: 25.5, CheckIn: "2026-05-18 15:35:00", CheckOut: "2026-05-18 15:59:00", CompanyName: "UPP Semarang", DurationMinutes: 24.0 },
-        { TiketNo: "T-20260519-0299", Nopol: "B 7802 BB", Driver: "Sony", Qty: 26.0, CheckIn: "2026-05-18 15:55:00", CheckOut: "2026-05-18 16:20:00", CompanyName: "Pupuk Kujang (PKC)", DurationMinutes: 25.0 }
-      ]
     });
-  };
 
-  useEffect(() => {
-    if (!token) return; // Wait for session token before fetching
-    loadDashboardData();
-  }, [token]);
+    // ── Map Data ──────────────────────────────────────────────────────────────
+    if (mapDataRes?.Success && Array.isArray(mapDataRes.data) && mapDataRes.data.length > 0) {
+      const parsedMap = mapDataRes.data.map((p: any) => {
+        let cleanLat = (p.lat || "0").toString();
+        let cleanLng = (p.lng || "0").toString();
+        if (cleanLat.includes(",") && cleanLat.includes(".")) cleanLat = cleanLat.replace(/,/g, "");
+        else if (cleanLat.includes(",")) cleanLat = cleanLat.replace(/,/g, ".");
+        if (cleanLng.includes(",") && cleanLng.includes(".")) cleanLng = cleanLng.replace(/,/g, "");
+        else if (cleanLng.includes(",")) cleanLng = cleanLng.replace(/,/g, ".");
+        return {
+          name: p.name || p.company_code,
+          lat: cleanLat,
+          lng: cleanLng,
+          address: `Antrian Aktif: ${p.antrian} Truk`,
+          kodePlant: p.company_code || "UNKNOWN",
+          phase: p.antrian > 0 ? 1 : 2,
+        };
+      });
+      setMapPlants(parsedMap);
+    }
+  }, [streamData]);
 
   // Format currency or standard numbers
   const fmt = (n: number) => new Intl.NumberFormat("id-ID").format(n);
@@ -756,15 +538,42 @@ export default function ViewerDashboard() {
           <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
             {"Global Viewer & API Monitoring Dashboard untuk Semua Plant Pupuk Indonesia Group"}
           </p>
+          <div className="flex items-center gap-2 mt-2">
+            <span
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${
+                streamStatus === "live"
+                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400"
+                  : streamStatus === "error"
+                  ? "bg-red-100 text-red-600 dark:bg-red-500/10 dark:text-red-400"
+                  : "bg-gray-100 text-gray-500 dark:bg-white/5 dark:text-gray-400"
+              }`}
+            >
+              <span
+                className={`h-1.5 w-1.5 rounded-full ${
+                  streamStatus === "live"
+                    ? "bg-emerald-500 animate-pulse"
+                    : streamStatus === "error"
+                    ? "bg-red-500"
+                    : "bg-gray-400 animate-pulse"
+                }`}
+              />
+              {streamStatus === "live" ? "Live" : streamStatus === "error" ? "Offline" : "Connecting..."}
+            </span>
+            {streamLastUpdated && (
+              <span className="text-xs text-gray-400">
+                Update: {streamLastUpdated.toLocaleTimeString("id-ID")}
+              </span>
+            )}
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
           <button
-            onClick={loadDashboardData}
-            className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 dark:bg-gray-900 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800 rounded-xl transition-all shadow-sm active:scale-95 cursor-pointer"
+            disabled
+            className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-gray-700 bg-white border border-gray-200 dark:bg-gray-900 dark:border-gray-800 dark:text-gray-300 rounded-xl shadow-sm opacity-60 cursor-default"
           >
-            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-brand-500" : ""}`} />
-            Perbarui {lastUpdated && `(${lastUpdated})`}
+            <RefreshCw className={`h-3.5 w-3.5 ${streamStatus === "connecting" ? "animate-spin text-brand-500" : ""}`} />
+            Perbarui {streamLastUpdated && `(${streamLastUpdated.toLocaleTimeString("id-ID")})`}
           </button>
 
           <button className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-brand-500 hover:bg-brand-600 rounded-xl transition-all shadow-sm hover:shadow active:scale-95 cursor-pointer">
@@ -798,7 +607,7 @@ export default function ViewerDashboard() {
           <div className="grid grid-cols-1 xl:grid-cols-12">
             {/* The Map itself */}
             <div className="xl:col-span-9 h-[500px] w-full relative overflow-hidden">
-              <InteractiveLeafletMap />
+              <InteractiveLeafletMap externalData={mapPlants.length > 0 ? mapPlants : undefined} />
             </div>
 
             {/* Side summary panel for high-tech look */}
@@ -863,7 +672,7 @@ export default function ViewerDashboard() {
 
               <div className="border-t border-gray-150 dark:border-gray-800 pt-3 flex items-center justify-between text-[10px] font-bold text-gray-400 uppercase tracking-wider">
                 <span>Terakhir Diperbarui</span>
-                <span className="text-brand-500">{lastUpdated || new Date().toLocaleTimeString("id-ID")}</span>
+                <span className="text-brand-500">{streamLastUpdated ? streamLastUpdated.toLocaleTimeString("id-ID") : new Date().toLocaleTimeString("id-ID")}</span>
               </div>
             </div>
           </div>
