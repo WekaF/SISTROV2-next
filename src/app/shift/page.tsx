@@ -89,13 +89,14 @@ export default function ShiftPage() {
           }
           return timeStr;
         };
+        const data = detail.response || detail;
         setFormData({
-          abbrev: detail.response.abbrev,
-          keterangan: detail.response.keterangan,
-          scope: detail.response.scope,
-          level: detail.response.level,
-          starttime: formatTime(detail.response.starttime),
-          endtime: formatTime(detail.response.endtime),
+          abbrev: data.abbrev,
+          keterangan: data.keterangan,
+          scope: data.scope,
+          level: data.level,
+          starttime: formatTime(data.starttime),
+          endtime: formatTime(data.endtime),
         });
         setShowModal(true);
       } else {

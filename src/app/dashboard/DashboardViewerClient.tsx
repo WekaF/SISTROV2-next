@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { useApi } from "@/hooks/use-api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Truck, Package, Clock, AlertCircle } from "lucide-react";
+import ViewerDashboard from "@/components/dashboard/ViewerDashboard";
 
 const COMPANY_LABELS: Record<string, string> = {
   PKG: "Petrokimia Gresik",
@@ -59,13 +60,7 @@ export default function DashboardViewerClient() {
   }, [company, apiTable]);
 
   if (!company) {
-    return (
-      <div className="p-6">
-        <p className="text-muted-foreground">
-          Pilih perusahaan dari menu sidebar untuk melihat dashboard.
-        </p>
-      </div>
-    );
+    return <ViewerDashboard />;
   }
 
   return (

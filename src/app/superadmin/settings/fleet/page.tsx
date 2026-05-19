@@ -506,7 +506,7 @@ export default function FleetSettingsPage() {
                 <div className="flex gap-2 items-start">
                   <MultiSelect
                     className="flex-1"
-                    options={companies.map((c: { company_code: string; company: string }) => ({ value: c.company_code, label: `${c.company} (${c.company_code})` }))}
+                    options={companies.map((c: { code: string; name: string }) => ({ value: c.code, label: `${c.name} (${c.code})` }))}
                     selected={selectedCompanies}
                     onChange={setSelectedCompanies}
                     placeholder="Pilih satu atau lebih plant..."

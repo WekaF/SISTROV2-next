@@ -9,8 +9,6 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
-import { Separator } from "@/components/ui/separator"
-import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import {
   Table,
@@ -67,10 +65,8 @@ const recentTickets = [
 export default function TicketPilihPeriodePage() {
   return (
     <div className="flex flex-col h-full bg-slate-50/50">
-      <header className="flex h-16 shrink-0 items-center justify-between gap-2 border-b bg-white px-4">
-        <div className="flex items-center gap-2">
-          <SidebarTrigger className="-ml-1" />
-          <Separator orientation="vertical" className="mr-2 h-4" />
+      <main className="flex-1 p-4 md:p-8 space-y-8">
+        <div className="flex items-center justify-between">
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
@@ -86,16 +82,14 @@ export default function TicketPilihPeriodePage() {
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm">History</Button>
+            <Button size="sm" className="bg-[#005FA4]">
+              <Plus className="mr-2 h-4 w-4" /> New Booking
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-           <Button variant="outline" size="sm">History</Button>
-           <Button size="sm" className="bg-[#005FA4]">
-            <Plus className="mr-2 h-4 w-4" /> New Booking
-          </Button>
-        </div>
-      </header>
 
-      <main className="flex-1 p-4 md:p-8 space-y-8">
         {/* Stats Row */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card className="border-l-4 border-l-blue-600 shadow-sm">

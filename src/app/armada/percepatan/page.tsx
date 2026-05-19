@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   Zap, Plus, Search, RefreshCw, Loader2, X, Weight, Truck
 } from "lucide-react";
@@ -32,18 +32,12 @@ interface TarikItem {
   muatanPercepatan: number | null;
 }
 
-interface Plant {
-  code: string;
-  name: string;
-}
 
 export default function ArmadaPercepatanPage() {
   const { data: session } = useSession();
   const { addToast } = useToast();
   const queryClient = useQueryClient();
 
-  const userRoles: string[] = ((session?.user as any)?.roles || []).map((r: string) => r.toLowerCase());
-  const isPod = userRoles.includes("adminarmada") && !userRoles.some((r: string) => ["superadmin", "ti", "adminsumbu"].includes(r));
   const sessionPlant: string = (session?.user as any)?.companyCode || "";
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -64,22 +58,15 @@ export default function ArmadaPercepatanPage() {
     },
   });
 
-  const { data: plants } = useQuery({
-    queryKey: ["plants"],
-    queryFn: async () => {
-      const res = await fetch("/api/admin/plants");
-      const data = await res.json();
-      return (data.data || []) as Plant[];
-    },
-    enabled: !isPod,
-  });
 
-  const filteredData = (percepatanData || []).filter(
-    (p) =>
-      p.jenistruk?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-      p.nama?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-      p.KodePlant?.toLowerCase().includes(debouncedSearch.toLowerCase())
-  );
+  const filteredData = Array.isArray(percepatanData)
+    ? percepatanData.filter(
+        (p) =>
+          p.jenistruk?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+          p.nama?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+          p.KodePlant?.toLowerCase().includes(debouncedSearch.toLowerCase())
+      )
+    : [];
 
   const [showModal, setShowModal] = useState(false);
   const [selectedPlant, setSelectedPlant] = useState(sessionPlant);
@@ -90,7 +77,7 @@ export default function ArmadaPercepatanPage() {
   const [isSaving, setIsSaving] = useState(false);
 
   const openModal = () => {
-    setSelectedPlant(isPod ? sessionPlant : "");
+    setSelectedPlant(sessionPlant);
     setValidFrom("");
     setValidTo("");
     setTarikItems([]);
@@ -103,8 +90,9 @@ export default function ArmadaPercepatanPage() {
       const res = await fetch("/api/armada/percepatan/tarik");
       const data = await res.json();
       if (!data.success) throw new Error(data.error);
+      const items = Array.isArray(data.data) ? data.data : [];
       setTarikItems(
-        (data.data as TarikItem[]).map((item) => ({
+        items.map((item: TarikItem) => ({
           ...item,
           inputValue: item.muatanPercepatan ? String(item.muatanPercepatan) : "",
         }))
@@ -287,28 +275,10 @@ export default function ArmadaPercepatanPage() {
 
             <div className="p-6 space-y-6">
               <div className="bg-gray-50 dark:bg-white/[0.02] rounded-xl p-4 space-y-4">
-                {isPod ? (
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Kode Plant</label>
-                    <Input value={selectedPlant} readOnly className="bg-gray-100 dark:bg-white/5 cursor-not-allowed" />
-                  </div>
-                ) : (
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Plant</label>
-                    <select
-                      className="w-full h-10 px-3 rounded-lg border border-gray-200 dark:border-white/5 bg-white dark:bg-white/[0.02] text-sm"
-                      value={selectedPlant}
-                      onChange={(e) => setSelectedPlant(e.target.value)}
-                    >
-                      <option value="">Pilih Plant...</option>
-                      {plants?.map((p) => (
-                        <option key={p.code} value={p.code}>
-                          {p.name} ({p.code})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Kode Plant</label>
+                  <Input value={selectedPlant} readOnly className="bg-gray-100 dark:bg-white/5 cursor-not-allowed font-mono font-bold" />
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest">

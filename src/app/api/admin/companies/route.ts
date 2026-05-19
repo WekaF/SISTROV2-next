@@ -21,8 +21,16 @@ export async function GET() {
       throw new Error(`API error: ${res.status} ${errText}`);
     }
 
-    const data = await res.json();
-    return NextResponse.json({ success: true, data });
+    const json = await res.json();
+    const rawData = json.data ?? json;
+    const items = Array.isArray(rawData) ? rawData : [];
+
+    const mapped = items.map((c: any) => ({
+      code: c.Kode ?? c.kode ?? c.company_code ?? c.code ?? "",
+      name: c.Nama ?? c.nama ?? c.company ?? c.name ?? ""
+    }));
+
+    return NextResponse.json({ success: true, data: mapped });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }

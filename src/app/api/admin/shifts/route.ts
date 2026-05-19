@@ -37,7 +37,22 @@ export async function GET() {
 
     const data = await res.json();
     const result = data.data || data;
-    return NextResponse.json(Array.isArray(result) ? result : []);
+    const safeData = Array.isArray(result) ? result : [];
+    
+    // Normalize casing for the frontend to prevent undefined/null properties
+    const normalizedData = safeData.map(item => ({
+      ...item,
+      abbrev: item.abbrev ?? item.Abbrev,
+      keterangan: item.keterangan ?? item.Keterangan,
+      scope: item.scope ?? item.Scope,
+      level: item.level ?? item.Level,
+      starttime: item.starttime ?? item.Starttime,
+      endtime: item.endtime ?? item.Endtime,
+      tglstartString: item.tglstartString ?? item.TglstartString,
+      tglendString: item.tglendString ?? item.TglendString,
+    }));
+
+    return NextResponse.json(normalizedData);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

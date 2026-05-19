@@ -5,6 +5,8 @@ import { AdminDashboard } from "@/components/dashboard/AdminDashboard";
 import { PodDashboard } from "@/components/dashboard/PodDashboard";
 import { TransportDashboard } from "@/components/dashboard/TransportDashboard";
 import { LogisticsMetrics } from "@/components/dashboard/LogisticsMetrics";
+import ViewerDashboard from "@/components/dashboard/ViewerDashboard";
+
 import { ClipboardList, TrendingUp, Clock, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -96,6 +98,8 @@ export default function DashboardClient({ session, dbRole }: { session: any, dbR
         <PodDashboard />
       ) : (role === "rekanan" || role === "transport") ? (
         <TransportDashboard />
+      ) : role === "viewer" ? (
+        <ViewerDashboard />
       ) : (
         <>
           <LogisticsMetrics />

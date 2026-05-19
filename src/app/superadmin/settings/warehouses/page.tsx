@@ -607,7 +607,7 @@ export default function WarehouseMasterPage() {
                    <div className="flex gap-2 items-start">
                       <MultiSelect
                         className="flex-1"
-                        options={companies.map((c: any) => ({ value: c.company_code, label: `${c.company} (${c.company_code})` }))}
+                        options={companies.map((c: any) => ({ value: c.code, label: `${c.name} (${c.code})` }))}
                         selected={selectedCompanies}
                         onChange={setSelectedCompanies}
                         placeholder="Pilih satu atau lebih company..."

@@ -132,9 +132,9 @@ export default function AntrianAllPlantPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    apiJson<Company[]>("/api/Company/getCompanyListFitur").then(data => {
-      if (data) setCompanies(data);
-    });
+    apiJson<Company[]>("/api/Company/getCompanyListFitur")
+      .then(data => { if (data) setCompanies(data); })
+      .catch(() => {});
   }, [apiJson]);
 
   const fetchReport = useCallback(async (code: string) => {

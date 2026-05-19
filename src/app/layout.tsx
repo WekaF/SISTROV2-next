@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Outfit } from "next/font/google";
+import "@fontsource-variable/outfit";
 import "./globals.css";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { SidebarProvider } from "@/context/SidebarContext";
@@ -8,11 +8,6 @@ import LayoutWrapper from "@/components/layout/LayoutWrapper";
 import AuthProvider from "@/components/auth/AuthProvider";
 import { ToastProvider } from "@/components/ui/toast";
 import QueryProvider from "@/providers/QueryProvider";
-
-const outfit = Outfit({
-  subsets: ["latin"],
-  variable: "--font-outfit",
-});
 
 export const metadata: Metadata = {
   title: "SISTRO | Logistics Management System",
@@ -26,7 +21,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${outfit.variable} font-outfit antialiased`} suppressHydrationWarning>
+      <body className="font-outfit antialiased" suppressHydrationWarning>
         <AuthProvider>
           <ThemeProvider>
             <SidebarProvider>

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { RefreshCw, Truck, ChevronDown, ChevronUp, Search } from "lucide-react";
+import { RefreshCw, Truck, Search } from "lucide-react";
 import { useApi } from "@/hooks/use-api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +27,36 @@ interface ReportPKTResponse {
   data: Record<string, TruckItem[]>;
   Date: string;
   Company: string;
+}
+
+function getBorderColor(color: string): string {
+  switch (color?.toLowerCase()) {
+    case "crimson":
+      return "#DC143C";
+    case "gold":
+      return "#FFD700";
+    case "darkcyan":
+      return "#008B8B";
+    case "royalblue":
+      return "#4169E1";
+    default:
+      return "#9CA3AF";
+  }
+}
+
+function getStatusLabel(color: string): string {
+  switch (color?.toLowerCase()) {
+    case "crimson":
+      return "Merah";
+    case "gold":
+      return "Kuning";
+    case "darkcyan":
+      return "Hijau";
+    case "royalblue":
+      return "Biru";
+    default:
+      return "Normal";
+  }
 }
 
 function parseTanggalMuat(val: string): string {
@@ -57,114 +87,57 @@ function parseTanggalMuat(val: string): string {
 }
 
 function TruckCard({ truck }: { truck: TruckItem }) {
-  const color = truck.Color || "gray";
+  const borderColor = getBorderColor(truck.Color);
+  const statusLabel = getStatusLabel(truck.Color);
 
   const detailRows: { label: string; value: string }[] = [
     { label: "Booking", value: truck.KodeBooking },
     { label: "Tanggal Muat", value: parseTanggalMuat(truck.TanggalMuat) },
     { label: "Produk", value: truck.Produk },
     { label: "POSTO", value: truck.NoPosto },
-    { label: "Kabupaten Tujuan", value: truck.NamaKabupaten || truck.Kabupaten },
-    { label: "Gudang Tujuan", value: truck.GudangTujuanDesk },
-    { label: "Tonase", value: `${Number(truck.Tonase).toLocaleString("id-ID")} kg` },
+    { label: "Tujuan", value: truck.NamaKabupaten || truck.Kabupaten || "-" },
+    { label: "Gudang", value: truck.GudangTujuanDesk || "-" },
+    { label: "Tonase", value: `${Number(truck.Tonase).toLocaleString("id-ID")} Ton` },
   ];
 
   return (
     <div
-      className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border-2 overflow-hidden flex-shrink-0"
-      style={{ width: 250, borderColor: color }}
+      className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden w-full flex-shrink-0"
+      style={{ borderLeftWidth: 4, borderLeftColor: borderColor, borderLeftStyle: "solid" }}
     >
-      {/* Icon badge + nopol header */}
-      <div
-        className="flex items-center gap-3 px-3 py-2.5"
-        style={{ backgroundColor: color + "18" }}
-      >
-        <div
-          className="flex items-center justify-center rounded-full flex-shrink-0"
-          style={{ width: 44, height: 44, backgroundColor: color }}
-        >
-          <Truck className="h-5 w-5 text-white" />
-        </div>
-        <div className="overflow-hidden">
-          <p
-            className="text-[13px] font-black font-mono uppercase tracking-widest leading-none"
-            style={{ color }}
-          >
+      <div className="p-3.5 space-y-2">
+        {/* NoPol + Status */}
+        <div className="flex items-start justify-between gap-2">
+          <div className="inline-flex items-center px-2 py-0.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-[13px] font-mono font-black text-slate-800 dark:text-slate-200 uppercase tracking-widest">
             {truck.NoPol}
-          </p>
-          <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase truncate mt-0.5">
-            {truck.Sopir}
-          </p>
-        </div>
-      </div>
-
-      {/* Detail table */}
-      <div className="px-3 py-2 space-y-1">
-        {detailRows.map((row) => (
-          <div key={row.label} className="grid grid-cols-2 gap-1 items-start">
-            <span className="text-[9px] font-black text-slate-400 uppercase tracking-wide leading-relaxed">
-              {row.label}
-            </span>
-            <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 text-right leading-relaxed break-words">
-              {row.value || "-"}
-            </span>
           </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function CheckpointAccordion({
-  name,
-  trucks,
-  defaultOpen = true,
-}: {
-  name: string;
-  trucks: TruckItem[];
-  defaultOpen?: boolean;
-}) {
-  const [open, setOpen] = useState(defaultOpen);
-
-  return (
-    <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-      {/* Accordion header */}
-      <button
-        className="w-full flex items-center justify-between px-5 py-3 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-        onClick={() => setOpen((v) => !v)}
-      >
-        <div className="flex items-center gap-3">
-          <Truck className="h-4 w-4 text-slate-400" />
-          <span className="text-[12px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-200">
-            {name}
-          </span>
-          <span className="text-[10px] font-black text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">
-            {trucks.length} truk
+          <span
+            className="text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded"
+            style={{ backgroundColor: borderColor + "22", color: borderColor }}
+          >
+            {statusLabel}
           </span>
         </div>
-        {open ? (
-          <ChevronUp className="h-4 w-4 text-slate-400" />
-        ) : (
-          <ChevronDown className="h-4 w-4 text-slate-400" />
-        )}
-      </button>
 
-      {/* Truck cards row */}
-      {open && (
-        <div className="bg-slate-50 dark:bg-slate-950 px-5 py-4">
-          {trucks.length === 0 ? (
-            <p className="text-center text-[10px] text-slate-400 font-bold uppercase tracking-widest py-6">
-              Tidak ada truk di checkpoint ini
-            </p>
-          ) : (
-            <div className="flex flex-wrap gap-4">
-              {trucks.map((truck, idx) => (
-                <TruckCard key={`${truck.NoPol}-${idx}`} truck={truck} />
-              ))}
+        {/* Sopir */}
+        <p className="text-[11px] font-black text-slate-600 dark:text-slate-400 uppercase truncate">
+          {truck.Sopir}
+        </p>
+
+        {/* Detail list */}
+        <div className="border-t border-slate-100 dark:border-slate-800 pt-2 space-y-1">
+          {detailRows.map((row) => (
+            <div key={row.label} className="flex justify-between items-start gap-2">
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wide flex-shrink-0">
+                {row.label}
+              </span>
+              <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 text-right leading-tight max-w-[170px] break-words">
+                {row.value}
+              </span>
             </div>
-          )}
+          ))}
         </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -201,23 +174,60 @@ function ReportSection({
 
   if (checkpoints.length === 0) {
     return (
-      <div className="text-center text-[11px] text-slate-400 font-bold uppercase tracking-widest py-10">
+      <div className="text-center text-[11px] text-slate-400 font-bold uppercase tracking-widest py-10 bg-slate-50 dark:bg-slate-950 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
         Belum ada data.
       </div>
     );
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
+      {/* Summary */}
       <div className="flex items-center gap-3">
         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
           {totalTrucks} truk aktif
         </span>
         <div className="h-px flex-1 bg-slate-100 dark:bg-slate-800" />
       </div>
-      {checkpoints.map((cp) => (
-        <CheckpointAccordion key={cp} name={cp} trucks={data[cp] ?? []} defaultOpen />
-      ))}
+
+      {/* Horizontal Kanban Grid */}
+      <div className="flex gap-6 overflow-x-auto pb-6 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800 scrollbar-track-transparent">
+        {checkpoints.map((cp) => {
+          const trucks = data[cp] ?? [];
+          return (
+            <div
+              key={cp}
+              className="w-[320px] flex-shrink-0 flex flex-col bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm"
+            >
+              {/* Column Header */}
+              <div className="flex items-center justify-between px-4 py-3 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+                <div className="flex items-center gap-2">
+                  <Truck className="h-4 w-4 text-slate-400 flex-shrink-0" />
+                  <span className="text-[12px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-200 truncate max-w-[200px]">
+                    {cp}
+                  </span>
+                </div>
+                <span className="text-[10px] font-black text-slate-500 bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 rounded-full flex-shrink-0">
+                  {trucks.length}
+                </span>
+              </div>
+
+              {/* Column Body - Vertical List of Cards */}
+              <div className="p-3 flex flex-col gap-3 overflow-y-auto max-h-[65vh] custom-scrollbar">
+                {trucks.length === 0 ? (
+                  <p className="text-center text-[10px] text-slate-400 font-bold uppercase tracking-widest py-8">
+                    Kosong
+                  </p>
+                ) : (
+                  trucks.map((truck, idx) => (
+                    <TruckCard key={`${truck.NoPol}-${idx}`} truck={truck} />
+                  ))
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -245,9 +255,11 @@ export default function ReportPKTPage() {
     setRealtimeError(null);
     try {
       const res = await apiJson<ReportPKTResponse>("/api/Antrian/ReportPKT");
-      if (res.Success) {
+      // Defensively support both uppercase and lowercase properties
+      const isSuccess = res?.Success || (res as any)?.success || res?.data;
+      if (isSuccess) {
         setRealtimeData(res.data || {});
-        setRealtimeDate(res.Date || "");
+        setRealtimeDate(res.Date || (res as any).date || "");
       } else {
         setRealtimeError("Server mengembalikan respons tidak berhasil.");
       }
@@ -271,9 +283,11 @@ export default function ReportPKTPage() {
       const res = await apiJson<ReportPKTResponse>(
         `/api/Antrian/ReportPKTHistory?startDate=${startDate}&endDate=${endDate}`
       );
-      if (res.Success) {
+      // Defensively support both uppercase and lowercase properties
+      const isSuccess = res?.Success || (res as any)?.success || res?.data;
+      if (isSuccess) {
         setHistoryData(res.data || {});
-        setHistoryDate(res.Date || "");
+        setHistoryDate(res.Date || (res as any).date || "");
         setHistoryFetched(true);
       } else {
         setHistoryError("Server mengembalikan respons tidak berhasil.");
@@ -286,7 +300,7 @@ export default function ReportPKTPage() {
   }, [apiJson, startDate, endDate]);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
@@ -396,6 +410,24 @@ export default function ReportPKTPage() {
           </div>
         )}
       </section>
+
+      <style jsx global>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 5px;
+          height: 5px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background-color: rgba(156, 163, 175, 0.4);
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background-color: rgba(107, 114, 128, 0.6);
+        }
+      `}</style>
     </div>
   );
 }
+

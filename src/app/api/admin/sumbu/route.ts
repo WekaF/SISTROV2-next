@@ -16,11 +16,21 @@ export async function GET() {
     if (!isAuthorized(session)) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
 
     const token = (session?.user as any)?.aspnetToken as string;
-    const res = await aspnetFetchServer('/api/Sumbu/DataTable', token, { method: 'POST', body: JSON.stringify({}) });
+    const params = new URLSearchParams({
+      draw: '1', start: '0', length: '9999',
+      'search[value]': '', 'search[regex]': 'false',
+      'order[0][column]': '0', 'order[0][dir]': 'asc',
+      'columns[0][name]': 'Id',
+    });
+    const res = await aspnetFetchServer('/api/Sumbu/DataTable', token, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params.toString(),
+    });
     if (!res.ok) throw new Error("Failed to fetch sumbu from API");
-    
+
     const data = await res.json();
-    return NextResponse.json({ success: true, data });
+    return NextResponse.json({ success: true, data: data.data ?? data });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }

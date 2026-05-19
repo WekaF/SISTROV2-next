@@ -9,8 +9,6 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
-import { Separator } from "@/components/ui/separator"
-import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Table,
@@ -22,10 +20,9 @@ import {
 } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { 
-  Plus, 
-  Search, 
-  Settings2, 
+import {
+  Search,
+  Settings2,
   MoreHorizontal,
   CheckCircle2,
   XCircle,
@@ -93,27 +90,6 @@ export default function PlantPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <header className="flex h-16 shrink-0 items-center justify-between gap-2 border-b px-4">
-        <div className="flex items-center gap-2">
-          <SidebarTrigger className="-ml-1" />
-          <Separator orientation="vertical" className="mr-2 h-4" />
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbLink href="/">SISTRO</BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbPage>Plant Management</BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-        </div>
-        <Button size="sm" className="bg-[#005FA4]">
-          <Plus className="mr-2 h-4 w-4" /> Add New Plant
-        </Button>
-      </header>
-      
       <main className="flex-1 p-4 md:p-8 space-y-6">
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-bold tracking-tight">Plant Management</h1>
