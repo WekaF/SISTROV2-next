@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { Suspense, useEffect, useState, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { useApi } from "@/hooks/use-api";
 import JsBarcode from "jsbarcode";
@@ -30,7 +30,7 @@ interface TicketData {
   };
 }
 
-export default function SecurityPrintPage() {
+function SecurityPrintContent() {
   const searchParams = useSearchParams();
   const bookingno = searchParams.get("bookingno");
   const { apiFetch } = useApi();
@@ -236,8 +236,8 @@ export default function SecurityPrintPage() {
 
         {/* Manual Print Button (Hidden on print) */}
         <div className="no-print pt-6 pb-10 w-full flex justify-center">
-          <Button 
-            onClick={() => window.print()} 
+          <Button
+            onClick={() => window.print()}
             className="w-full flex items-center justify-center gap-2"
           >
             <Printer className="w-4 h-4" /> Print Ulang
@@ -245,5 +245,13 @@ export default function SecurityPrintPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SecurityPrintPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center py-12"><div className="animate-spin h-8 w-8 border-2 border-blue-500 border-t-transparent rounded-full" /></div>}>
+      <SecurityPrintContent />
+    </Suspense>
   );
 }

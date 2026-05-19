@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, Suspense } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useApi } from "@/hooks/use-api";
@@ -53,7 +53,7 @@ function buildBarOptions(categories: string[], stacked: boolean, colors: string[
   };
 }
 
-export default function DashboardReportPage() {
+function ReportContent() {
   const { apiJson } = useApi();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -223,5 +223,13 @@ export default function DashboardReportPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function DashboardReportPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center py-12"><div className="animate-spin h-8 w-8 border-2 border-blue-500 border-t-transparent rounded-full" /></div>}>
+      <ReportContent />
+    </Suspense>
   );
 }

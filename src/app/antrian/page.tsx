@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
@@ -68,7 +68,7 @@ interface GudangPilihan {
   stok: number;
 }
 
-export default function AntrianPage() {
+function AntrianContent() {
   const { data: session } = useSession();
   const { apiJson, apiTable } = useApi();
   const { activeCompanyCode } = useCompany();
@@ -632,7 +632,7 @@ export default function AntrianPage() {
                 <div className="h-px w-4 bg-slate-200" />
                 Pilih Titik Tujuan
               </h4>
-              
+
               <div className="grid grid-cols-2 gap-3">
                 {[
                   { id: "02", label: "Timbang Kosong", icon: Weight, available: posAsal <= 1 },
@@ -640,14 +640,14 @@ export default function AntrianPage() {
                   { id: "06", label: "Timbang Isi", icon: Weight, available: posAsal <= 4 },
                   { id: "07", label: "Keluar Security", icon: ShieldCheck, available: posAsal <= 6 },
                 ].map((pos) => (
-                  <button 
+                  <button
                     key={pos.id}
                     disabled={!pos.available || isSaving}
                     onClick={() => handleBypass(pos.id)}
                     className={cn(
                       "flex items-center gap-4 p-5 rounded-3xl border-2 transition-all duration-300 text-left group",
-                      pos.available 
-                        ? "bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 hover:border-orange-500 hover:shadow-xl hover:shadow-orange-500/10 active:scale-95" 
+                      pos.available
+                        ? "bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 hover:border-orange-500 hover:shadow-xl hover:shadow-orange-500/10 active:scale-95"
                         : "bg-slate-50 dark:bg-slate-900 opacity-40 cursor-not-allowed border-transparent"
                     )}
                   >
@@ -679,6 +679,14 @@ export default function AntrianPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+export default function AntrianPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center py-12"><div className="animate-spin h-8 w-8 border-2 border-blue-500 border-t-transparent rounded-full" /></div>}>
+      <AntrianContent />
+    </Suspense>
   );
 }
 
