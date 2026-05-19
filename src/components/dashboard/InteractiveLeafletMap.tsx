@@ -39,7 +39,7 @@ const FALLBACK_PLANTS: PlantMarker[] = [
   { name: "DC Lampung", lat: "-5.4292", lng: "105.2611", address: "Bandar Lampung, Lampung", kodePlant: "B205", phase: 3 },
 ];
 
-export default function InteractiveLeafletMap() {
+function InteractiveLeafletMap() {
   const { apiJson, token } = useApi();
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -125,6 +125,7 @@ export default function InteractiveLeafletMap() {
       zoom: 5,
       zoomControl: true,
       attributionControl: true,
+      scrollWheelZoom: false,
     });
 
     mapInstanceRef.current = map;
@@ -229,3 +230,5 @@ export default function InteractiveLeafletMap() {
     </div>
   );
 }
+
+export default React.memo(InteractiveLeafletMap);

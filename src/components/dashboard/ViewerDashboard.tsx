@@ -1,25 +1,25 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import { 
-  Building2, 
-  Warehouse, 
-  Ticket, 
-  Clock, 
-  TrendingUp, 
+import {
+  Building2,
+  Warehouse,
+  Ticket,
+  Clock,
+  TrendingUp,
   TrendingDown,
-  AlertCircle, 
-  CheckCircle, 
-  Calendar, 
-  ChevronRight, 
-  Sparkles, 
-  Lightbulb, 
-  Percent, 
-  Ban, 
-  Activity, 
-  Download, 
-  RefreshCw, 
-  Globe, 
+  AlertCircle,
+  CheckCircle,
+  Calendar,
+  ChevronRight,
+  Sparkles,
+  Lightbulb,
+  Percent,
+  Ban,
+  Activity,
+  Download,
+  RefreshCw,
+  Globe,
   Layers
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
@@ -29,14 +29,14 @@ import { useApi } from "@/hooks/use-api";
 // Dynamic import for Leaflet Map to avoid SSR compilation issues
 const InteractiveLeafletMap = dynamic(
   () => import("./InteractiveLeafletMap"),
-  { 
-    ssr: false, 
+  {
+    ssr: false,
     loading: () => (
       <div className="h-full w-full flex flex-col items-center justify-center text-muted-foreground bg-gray-50 dark:bg-white/[0.02] rounded-xl gap-2 min-h-[450px]">
         <RefreshCw className="h-6 w-6 animate-spin text-brand-500" />
         <span className="text-sm font-medium">Memuat peta interaktif...</span>
       </div>
-    ) 
+    )
   }
 );
 
@@ -140,7 +140,7 @@ export default function ViewerDashboard() {
       // Set Leaderboard related states using real database or fallback simulated
       if (leaderboardRes?.status === "success" && Array.isArray(leaderboardRes.data) && leaderboardRes.data.length > 0) {
         setPlantRanking(leaderboardRes.data);
-        
+
         // Map SLA Compliance per Plant dynamically from real C# data
         const mappedSla = leaderboardRes.data.map((item: any) => ({
           CompanyName: item.CompanyName,
@@ -566,7 +566,7 @@ export default function ViewerDashboard() {
         borderRadius: 4
       }
     },
-    colors: durasiMuat?.map((d: any) => 
+    colors: durasiMuat?.map((d: any) =>
       d.AvgDurasiMenit <= 35 ? "#10B981" : d.AvgDurasiMenit <= 45 ? "#F59E0B" : "#EF4444"
     ) || COLORS,
     xaxis: {
@@ -644,7 +644,7 @@ export default function ViewerDashboard() {
         borderRadius: 4
       }
     },
-    colors: slaPerPlant?.map((s: any) => 
+    colors: slaPerPlant?.map((s: any) =>
       s.SlaCompliancePercent >= 85 ? "#10B981" : s.SlaCompliancePercent >= 70 ? "#F59E0B" : "#EF4444"
     ) || COLORS,
     xaxis: {
@@ -740,8 +740,8 @@ export default function ViewerDashboard() {
   const globalSla = getGlobalSlaValue();
 
   return (
-    <div className="space-y-6 max-w-[1600px] mx-auto p-4 md:p-6 transition-all duration-300">
-      
+    <div className="space-y-6 max-w-[1600px] mx-auto p-4 md:p-6">
+
       {/* 1. Sleek Modern Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b border-gray-150 pb-5 dark:border-gray-800">
         <div>
@@ -757,16 +757,16 @@ export default function ViewerDashboard() {
             {"Global Viewer & API Monitoring Dashboard untuk Semua Plant Pupuk Indonesia Group"}
           </p>
         </div>
-        
+
         <div className="flex flex-wrap items-center gap-2.5">
-          <button 
+          <button
             onClick={loadDashboardData}
             className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 dark:bg-gray-900 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800 rounded-xl transition-all shadow-sm active:scale-95 cursor-pointer"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-brand-500" : ""}`} />
             Perbarui {lastUpdated && `(${lastUpdated})`}
           </button>
-          
+
           <button className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-brand-500 hover:bg-brand-600 rounded-xl transition-all shadow-sm hover:shadow active:scale-95 cursor-pointer">
             <Download className="h-3.5 w-3.5" />
             Ekspor Laporan
@@ -803,9 +803,9 @@ export default function ViewerDashboard() {
 
             {/* Side summary panel for high-tech look */}
             <div className="xl:col-span-3 p-5 bg-gray-50/50 dark:bg-white/[0.01] border-l border-gray-100 dark:border-gray-800 flex flex-col justify-between">
-              <div className="space-y-6">
+              <div className="space-y-5">
                 <div>
-                  <h4 className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Metrik Logistik Wilayah</h4>
+                  <h4 className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Statistik Logistik Utama</h4>
                   <div className="grid grid-cols-2 gap-3 mt-3">
                     <div className="bg-white dark:bg-white/[0.02] border border-gray-150 dark:border-gray-800/80 rounded-xl p-3">
                       <span className="text-[9px] uppercase font-bold text-gray-400 block">Total Antrian</span>
@@ -822,54 +822,48 @@ export default function ViewerDashboard() {
                   </div>
                 </div>
 
-                <div>
-                  <h4 className="text-[10px] uppercase font-bold text-gray-400 tracking-wider font-extrabold">Status Rollout SISTRO</h4>
-                  <div className="space-y-2 mt-3">
-                    <div className="flex justify-between items-center text-xs p-2 rounded-lg bg-white dark:bg-white/[0.02] border border-gray-100 dark:border-gray-800">
-                      <span className="flex items-center gap-1.5 font-bold">
-                        <span className="w-2 h-2 rounded-full bg-[#3C50E0]"></span>
-                        Phase 1 (PKG, PKC)
-                      </span>
-                      <span className="text-[9px] bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400 px-2 py-0.5 rounded font-extrabold">STABIL</span>
+                <div className="space-y-3.5">
+                  <h4 className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Ringkasan Kinerja Hari Ini</h4>
+                  
+                  <div className="space-y-2.5">
+                    <div className="p-3 bg-white dark:bg-white/[0.02] border border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between">
+                      <div>
+                        <span className="text-[9.5px] uppercase font-bold text-gray-400 block">Volume Penyaluran</span>
+                        <span className="text-sm font-black text-gray-800 dark:text-gray-100 mt-0.5 block">
+                          {stats ? `${fmt(stats.total_tonase)} Ton` : "48.900 Ton"}
+                        </span>
+                      </div>
+                      <span className="text-xs bg-emerald-50 dark:bg-emerald-950/20 text-emerald-500 px-2 py-0.5 rounded-lg font-bold">Real-time</span>
                     </div>
-                    <div className="flex justify-between items-center text-xs p-2 rounded-lg bg-white dark:bg-white/[0.02] border border-gray-100 dark:border-gray-800">
-                      <span className="flex items-center gap-1.5 font-bold">
-                        <span className="w-2 h-2 rounded-full bg-[#10B981]"></span>
-                        Phase 2 (PIM, Meneng)
-                      </span>
-                      <span className="text-[9px] bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400 px-2 py-0.5 rounded font-extrabold">AKTIF</span>
+
+                    <div className="p-3 bg-white dark:bg-white/[0.02] border border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between">
+                      <div>
+                        <span className="text-[9.5px] uppercase font-bold text-gray-400 block">Rata-rata Durasi Muat</span>
+                        <span className="text-sm font-black text-gray-800 dark:text-gray-100 mt-0.5 block">
+                          {stats ? `${stats.avg_tiket_minutes} Menit` : "42 Menit"}
+                        </span>
+                      </div>
+                      <span className="text-xs bg-brand-50 dark:bg-brand-950/20 text-brand-500 px-2 py-0.5 rounded-lg font-bold">Efisien</span>
                     </div>
-                    <div className="flex justify-between items-center text-xs p-2 rounded-lg bg-white dark:bg-white/[0.02] border border-gray-100 dark:border-gray-800">
-                      <span className="flex items-center gap-1.5 font-bold">
-                        <span className="w-2 h-2 rounded-full bg-[#F59E0B]"></span>
-                        Phase 3 (Semarang)
+
+                    <div className="p-3 bg-white dark:bg-white/[0.02] border border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between">
+                      <div>
+                        <span className="text-[9.5px] uppercase font-bold text-gray-400 block">SLA Compliance Global</span>
+                        <span className="text-sm font-black text-gray-800 dark:text-gray-100 mt-0.5 block">
+                          {globalSla}%
+                        </span>
+                      </div>
+                      <span className={`text-xs px-2 py-0.5 rounded-lg font-bold ${globalSla >= 80 ? "bg-emerald-50 text-emerald-500" : "bg-amber-50 text-amber-500"}`}>
+                        {globalSla >= 80 ? "Sangat Baik" : "Monitor"}
                       </span>
-                      <span className="text-[9px] bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400 px-2 py-0.5 rounded font-extrabold">ROLLOUT</span>
                     </div>
                   </div>
                 </div>
-
-                <div className="p-3 bg-brand-50/50 dark:bg-brand-950/10 rounded-xl border border-brand-100/50 dark:border-brand-900/10 text-[11px] font-semibold text-gray-500">
-                  <span className="font-extrabold text-brand-500 block mb-0.5">ℹ️ PANEL KONTROL</span>
-                  Peta ini mengintegrasikan seluruh Lini 1, Lini 2, dan Lini 3 distribusi pupuk bersubsidi secara nasional.
-                </div>
               </div>
 
-              {/* Map Legend */}
-              <div className="border-t border-gray-150 dark:border-gray-800 pt-3.5 flex flex-col gap-2 mt-4 text-[10px] font-bold text-gray-400">
-                <span className="uppercase tracking-wider block">LEGENDA STATUS:</span>
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#3C50E0]"></span>
-                  <span>Implementasi Selesai</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#10B981]"></span>
-                  <span>Operasional Stabil</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#F59E0B]"></span>
-                  <span>Sosialisasi & Rollout</span>
-                </div>
+              <div className="border-t border-gray-150 dark:border-gray-800 pt-3 flex items-center justify-between text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                <span>Terakhir Diperbarui</span>
+                <span className="text-brand-500">{lastUpdated || new Date().toLocaleTimeString("id-ID")}</span>
               </div>
             </div>
           </div>
@@ -910,7 +904,7 @@ export default function ViewerDashboard() {
                 <div>
                   <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Tonase Bulanan ({monthlyComp.BulanIniLabel})</span>
                   <h3 className="text-2xl font-black text-gray-900 dark:text-white mt-1.5 tracking-tight">
-                    {fmt(Math.round(monthlyComp.BulanIni.TotalTonase / 1000))}k T
+                    {fmt(Math.round(monthlyComp.BulanIni.TotalTonase / 1000))}k Ton
                   </h3>
                 </div>
                 <div className="p-2.5 bg-emerald-50 text-emerald-500 rounded-xl dark:bg-emerald-950/20">
@@ -922,7 +916,7 @@ export default function ViewerDashboard() {
                   <TrendingUp className="h-3 w-3" />
                   +{monthlyComp.TonaseChange}%
                 </span>
-                <span>vs {fmt(Math.round(monthlyComp.BulanLalu.TotalTonase / 1000))}k T ({monthlyComp.BulanLaluLabel})</span>
+                <span>vs {fmt(Math.round(monthlyComp.BulanLalu.TotalTonase / 1000))}k Ton ({monthlyComp.BulanLaluLabel})</span>
               </div>
             </CardContent>
           </Card>
@@ -942,9 +936,8 @@ export default function ViewerDashboard() {
                 </div>
               </div>
               <div className="flex items-center gap-2 mt-4 text-xs font-semibold">
-                <span className={`px-2 py-0.5 rounded-full ${
-                  globalSla >= 80 ? "text-emerald-600 bg-emerald-50" : "text-amber-600 bg-amber-50"
-                }`}>
+                <span className={`px-2 py-0.5 rounded-full ${globalSla >= 80 ? "text-emerald-600 bg-emerald-50" : "text-amber-600 bg-amber-50"
+                  }`}>
                   {globalSla >= 80 ? "Sangat Baik" : "Perlu Optimasi"}
                 </span>
                 <span className="text-gray-500">{"Target SLA Global >= 80%"}</span>
@@ -959,9 +952,9 @@ export default function ViewerDashboard() {
                 <div>
                   <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Cancel Rate (Mei 2026)</span>
                   <h3 className="text-2xl font-black text-gray-900 dark:text-white mt-1.5 tracking-tight">
-                    {stats?.total_antrian && stats?.total_selesai ? 
-                      ((stats.tiket_cancelled?.reduce((s: number, x: any) => s + x.Jumlah, 0) || 0) / 
-                      (stats.total_antrian + stats.total_selesai) * 100).toFixed(1) : "2.0"}%
+                    {stats?.total_antrian && stats?.total_selesai ?
+                      ((stats.tiket_cancelled?.reduce((s: number, x: any) => s + x.Jumlah, 0) || 0) /
+                        (stats.total_antrian + stats.total_selesai) * 100).toFixed(1) : "2.0"}%
                   </h3>
                 </div>
                 <div className="p-2.5 bg-rose-50 text-rose-500 rounded-xl dark:bg-rose-950/20">
@@ -1015,7 +1008,7 @@ export default function ViewerDashboard() {
             <div>
               <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider block">Total Tonase Keluar</span>
               <h4 className="text-2xl font-extrabold text-gray-800 dark:text-white leading-tight mt-0.5">
-                {fmt(stats.total_tonase)} T
+                {fmt(stats.total_tonase)} Ton
               </h4>
               <span className="text-[11px] text-gray-400 font-medium">Pupuk tersalurkan hari ini</span>
             </div>
@@ -1069,31 +1062,28 @@ export default function ViewerDashboard() {
           <div className="inline-flex p-1 bg-gray-100 dark:bg-white/[0.03] border border-gray-200/50 dark:border-gray-800/80 rounded-xl">
             <button
               onClick={() => setActiveTab("traffic")}
-              className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all duration-200 cursor-pointer relative z-10 ${
-                activeTab === "traffic"
-                  ? "bg-white text-brand-500 shadow-sm dark:bg-gray-800 dark:text-white"
-                  : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-              }`}
+              className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all duration-200 cursor-pointer relative z-10 ${activeTab === "traffic"
+                ? "bg-white text-brand-500 shadow-sm dark:bg-gray-800 dark:text-white"
+                : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                }`}
             >
               Trafik & Antrian
             </button>
             <button
               onClick={() => setActiveTab("performance")}
-              className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all duration-200 cursor-pointer relative z-10 ${
-                activeTab === "performance"
-                  ? "bg-white text-brand-500 shadow-sm dark:bg-gray-800 dark:text-white"
-                  : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-              }`}
+              className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all duration-200 cursor-pointer relative z-10 ${activeTab === "performance"
+                ? "bg-white text-brand-500 shadow-sm dark:bg-gray-800 dark:text-white"
+                : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                }`}
             >
               Kinerja & Durasi
             </button>
             <button
               onClick={() => setActiveTab("all")}
-              className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all duration-200 cursor-pointer relative z-10 ${
-                activeTab === "all"
-                  ? "bg-white text-brand-500 shadow-sm dark:bg-gray-800 dark:text-white"
-                  : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-              }`}
+              className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all duration-200 cursor-pointer relative z-10 ${activeTab === "all"
+                ? "bg-white text-brand-500 shadow-sm dark:bg-gray-800 dark:text-white"
+                : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                }`}
             >
               Semua Grafik
             </button>
@@ -1101,7 +1091,7 @@ export default function ViewerDashboard() {
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          
+
           {/* Trend Tiket per Plant Line Chart */}
           {trendPerPlant && (activeTab === "traffic" || activeTab === "all") && (
             <Card className="shadow-theme-xs dashboard-card-hover border border-gray-100 dark:border-gray-800 animate-slide-up-fade">
@@ -1113,7 +1103,7 @@ export default function ViewerDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="h-[290px]">
-                  <Chart 
+                  <Chart
                     options={trendPlantOptions}
                     series={trendPerPlant.series}
                     type="line"
@@ -1136,7 +1126,7 @@ export default function ViewerDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="h-[290px]">
-                  <Chart 
+                  <Chart
                     options={trendHourOptions}
                     series={trendHourSeries}
                     type="bar"
@@ -1159,7 +1149,7 @@ export default function ViewerDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="h-[300px]">
-                  <Chart 
+                  <Chart
                     options={throughputOptions}
                     series={throughputSeries}
                     type="bar"
@@ -1182,7 +1172,7 @@ export default function ViewerDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="h-[280px]">
-                  <Chart 
+                  <Chart
                     options={durasiMuatOptions}
                     series={durasiMuatSeries}
                     type="bar"
@@ -1205,7 +1195,7 @@ export default function ViewerDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="h-[280px] flex items-center justify-center">
-                  <Chart 
+                  <Chart
                     options={topProdukOptions}
                     series={topProdukSeries}
                     type="donut"
@@ -1228,7 +1218,7 @@ export default function ViewerDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="h-[290px]">
-                  <Chart 
+                  <Chart
                     options={slaOptions}
                     series={slaSeries}
                     type="bar"
@@ -1245,7 +1235,7 @@ export default function ViewerDashboard() {
 
       {/* 7. Quota Utilization Progress UI & Cancel Rate Trend */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
+
         {/* Quota Utilization Bars */}
         <Card className="lg:col-span-5 shadow-theme-xs hover:shadow-md transition-all duration-300">
           <CardHeader>
@@ -1260,9 +1250,9 @@ export default function ViewerDashboard() {
               {kuotaUtilization?.map((item: any) => {
                 const percentage = item.UtilizationPercent;
                 // Green for healthy utilization, amber for high, red for overload
-                const color = percentage >= 85 ? "bg-rose-500 text-rose-600" : 
-                              percentage >= 60 ? "bg-amber-500 text-amber-600" : 
-                              "bg-emerald-500 text-emerald-600";
+                const color = percentage >= 85 ? "bg-rose-500 text-rose-600" :
+                  percentage >= 60 ? "bg-amber-500 text-amber-600" :
+                    "bg-emerald-500 text-emerald-600";
 
                 return (
                   <div key={item.CompanyCode} className="space-y-1.5 p-2 rounded-lg border border-gray-50 hover:bg-gray-50/55 dark:border-gray-800/40 transition-all">
@@ -1298,7 +1288,7 @@ export default function ViewerDashboard() {
             </CardHeader>
             <CardContent>
               <div className="h-[275px]">
-                <Chart 
+                <Chart
                   options={cancelTrendOptions}
                   series={cancelTrend.series}
                   type="line"
@@ -1372,18 +1362,16 @@ export default function ViewerDashboard() {
                           {fmt(plant.TotalTonase)} T
                         </td>
                         <td className="px-6 py-4 text-right">
-                          <span className={`inline-block px-2.5 py-1 rounded-lg text-xs font-bold ${
-                            plant.AvgDurasi <= 35 ? "bg-emerald-50 text-emerald-600" :
+                          <span className={`inline-block px-2.5 py-1 rounded-lg text-xs font-bold ${plant.AvgDurasi <= 35 ? "bg-emerald-50 text-emerald-600" :
                             plant.AvgDurasi <= 45 ? "bg-amber-50 text-amber-600" : "bg-rose-50 text-rose-600"
-                          }`}>
+                            }`}>
                             {plant.AvgDurasi} Menit
                           </span>
                         </td>
                         <td className="px-6 py-4 text-right">
-                          <span className={`inline-block px-2.5 py-1 rounded-lg text-xs font-bold ${
-                            plant.SlaPercent >= 85 ? "bg-emerald-50 text-emerald-600" :
+                          <span className={`inline-block px-2.5 py-1 rounded-lg text-xs font-bold ${plant.SlaPercent >= 85 ? "bg-emerald-50 text-emerald-600" :
                             plant.SlaPercent >= 70 ? "bg-amber-50 text-amber-600" : "bg-rose-50 text-rose-600"
-                          }`}>
+                            }`}>
                             {plant.SlaPercent}%
                           </span>
                         </td>
@@ -1422,22 +1410,20 @@ export default function ViewerDashboard() {
               <div className="inline-flex p-1 bg-gray-100 dark:bg-white/[0.03] border border-gray-200/50 dark:border-gray-800/80 rounded-xl self-start sm:self-center">
                 <button
                   onClick={() => setActiveDurasiTab("longest")}
-                  className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-1.5 ${
-                    activeDurasiTab === "longest"
-                      ? "bg-rose-500 text-white shadow-sm"
-                      : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-                  }`}
+                  className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-1.5 ${activeDurasiTab === "longest"
+                    ? "bg-rose-500 text-white shadow-sm"
+                    : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                    }`}
                 >
                   <TrendingUp className="h-3.5 w-3.5" />
                   10 Tiket Terlama
                 </button>
                 <button
                   onClick={() => setActiveDurasiTab("fastest")}
-                  className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-1.5 ${
-                    activeDurasiTab === "fastest"
-                      ? "bg-emerald-500 text-white shadow-sm"
-                      : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-                  }`}
+                  className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-1.5 ${activeDurasiTab === "fastest"
+                    ? "bg-emerald-500 text-white shadow-sm"
+                    : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                    }`}
                 >
                   <TrendingDown className="h-3.5 w-3.5" />
                   10 Tiket Tercepat

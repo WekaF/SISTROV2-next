@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useCallback } from "react";
+import React, { Suspense, useState, useEffect, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useApi } from "@/hooks/use-api";
 
@@ -118,7 +118,7 @@ function SectionAccordion({ section, defaultOpen }: { section: Section; defaultO
   );
 }
 
-export default function AntrianAllPlantPage() {
+function AntrianAllPlantContent() {
   const { apiJson } = useApi();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -215,5 +215,13 @@ export default function AntrianAllPlantPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function AntrianAllPlantPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center py-12"><div className="animate-spin h-8 w-8 border-2 border-blue-500 border-t-transparent rounded-full" /></div>}>
+      <AntrianAllPlantContent />
+    </Suspense>
   );
 }
