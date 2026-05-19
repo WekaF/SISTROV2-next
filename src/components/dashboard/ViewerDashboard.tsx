@@ -11,6 +11,7 @@ import {
   AlertCircle,
   CheckCircle,
   Calendar,
+  ChevronLeft,
   ChevronRight,
   Sparkles,
   Lightbulb,
@@ -43,6 +44,8 @@ const InteractiveLeafletMap = dynamic(
 // Dynamic import for ApexCharts to avoid SSR compilation issues
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
+const PLANT_CHART_LIMIT = 8; // max visible plant series in trendPerPlant line chart
+
 export default function ViewerDashboard() {
   const { data: streamData, status: streamStatus, lastUpdated: streamLastUpdated } = useDashboardStream();
   const [isSimulated, setIsSimulated] = useState(false);
@@ -69,6 +72,8 @@ export default function ViewerDashboard() {
   const [durasiTickets, setDurasiTickets] = useState<{ longest: any[], fastest: any[] } | null>(null);
   const [activeDurasiTab, setActiveDurasiTab] = useState<"longest" | "fastest">("longest");
   const [isExporting, setIsExporting] = useState(false);
+  const [rankingPage, setRankingPage] = useState(1);
+  const RANKING_PAGE_SIZE = 5;
 
   const handleExport = async () => {
     setIsExporting(true);
@@ -393,7 +398,6 @@ export default function ViewerDashboard() {
 
   // Dynamic colors for charts and tables
   const COLORS = ["#3C50E0", "#10B981", "#36B9CC", "#F59E0B", "#EF4444", "#858796", "#EC4899", "#8B5CF6"];
-  const PLANT_CHART_LIMIT = 8; // max visible plant series in trendPerPlant line chart
 
   // ==========================================
   // ApexCharts Configurations
