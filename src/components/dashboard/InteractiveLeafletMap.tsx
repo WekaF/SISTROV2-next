@@ -25,6 +25,10 @@ interface PlantMarker {
   phase?: number;
 }
 
+interface InteractiveLeafletMapProps {
+  externalData?: PlantMarker[];
+}
+
 // Fallback coordinate data in case API is unavailable or empty
 const FALLBACK_PLANTS: PlantMarker[] = [
   { name: "Petrokimia Gresik (PKG)", lat: "-7.1593", lng: "112.6489", address: "Gresik, Jawa Timur", kodePlant: "PKG", phase: 1 },
@@ -39,7 +43,7 @@ const FALLBACK_PLANTS: PlantMarker[] = [
   { name: "DC Lampung", lat: "-5.4292", lng: "105.2611", address: "Bandar Lampung, Lampung", kodePlant: "B205", phase: 3 },
 ];
 
-function InteractiveLeafletMap() {
+function InteractiveLeafletMap({ externalData }: InteractiveLeafletMapProps) {
   const { apiJson, token } = useApi();
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -49,6 +53,13 @@ function InteractiveLeafletMap() {
 
   useEffect(() => {
     fixLeafletIcon();
+
+    // If parent provides SSE-driven map data, skip internal fetch
+    if (externalData && externalData.length > 0) {
+      setPlants(externalData);
+      setIsSimulated(false);
+      return;
+    }
 
     // Fetch plant coordinate markers from the backend
     const fetchMarkers = async () => {
@@ -107,7 +118,7 @@ function InteractiveLeafletMap() {
     if (!token) return; // Wait for session token before fetching
 
     fetchMarkers();
-  }, [apiJson, token]);
+  }, [apiJson, token, externalData]);
 
   // Initialize and update the leaflet map
   useEffect(() => {
