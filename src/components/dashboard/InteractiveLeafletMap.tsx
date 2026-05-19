@@ -56,7 +56,10 @@ function InteractiveLeafletMap({ externalData }: InteractiveLeafletMapProps) {
 
     // If parent provides SSE-driven map data, skip internal fetch
     if (externalData && externalData.length > 0) {
-      setPlants(externalData);
+      setPlants(prev => {
+        if (JSON.stringify(prev) === JSON.stringify(externalData)) return prev;
+        return externalData;
+      });
       setIsSimulated(false);
       return;
     }
