@@ -21,7 +21,8 @@ async function fetchAllDashboardData(token: string) {
       const res = await aspnetFetchServer(path, token);
       if (!res.ok) return null;
       return res.json();
-    } catch {
+    } catch (err) {
+      console.error("[SSE Dashboard] fetch error for", path, err);
       return null;
     }
   };
@@ -49,17 +50,22 @@ export async function GET(req: Request) {
   }
 
   const token = (session?.user as any)?.aspnetToken as string;
+  if (!token) {
+    return NextResponse.json({ error: "Missing auth token" }, { status: 401 });
+  }
+
   const encoder = new TextEncoder();
 
   const stream = new ReadableStream({
     async start(controller) {
       const send = async () => {
+        if (req.signal.aborted) return;
         try {
           const payload = await fetchAllDashboardData(token);
           const line = `data: ${JSON.stringify(payload)}\n\n`;
           controller.enqueue(encoder.encode(line));
-        } catch {
-          // silent — next tick will retry
+        } catch (err) {
+          console.error("[SSE Dashboard] send error:", err);
         }
       };
 
@@ -68,10 +74,10 @@ export async function GET(req: Request) {
 
       const interval = setInterval(send, STREAM_INTERVAL_MS);
 
-      req.signal.addEventListener("abort", () => {
+      req.signal.onabort = () => {
         clearInterval(interval);
         controller.close();
-      });
+      };
     },
   });
 
