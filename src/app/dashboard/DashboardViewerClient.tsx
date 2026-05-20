@@ -1,10 +1,13 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { useApi } from "@/hooks/use-api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Truck, Package, Clock, AlertCircle } from "lucide-react";
 import ViewerDashboard from "@/components/dashboard/ViewerDashboard";
+import StaffAreaDashboard from "@/components/dashboard/StaffAreaDashboard";
+import { normalizeRole } from "@/lib/role-utils";
 
 const COMPANY_LABELS: Record<string, string> = {
   PKG: "Petrokimia Gresik",
@@ -31,9 +34,15 @@ interface Stats {
 export default function DashboardViewerClient() {
   const searchParams = useSearchParams();
   const company = searchParams.get("company") ?? "";
+  const { data: session } = useSession();
   const { apiTable } = useApi();
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const allRoles: string[] = ((session?.user as any)?.roles as string[] | undefined) ?? [(session?.user as any)?.role ?? ""];
+  const normalizedRoles = allRoles.map(r => normalizeRole(r));
+  const isStaffArea = normalizedRoles.includes("staffarea");
+  const isViewer = normalizedRoles.includes("viewer") || normalizedRoles.includes("superadmin");
 
   useEffect(() => {
     if (!company) return;
@@ -58,6 +67,10 @@ export default function DashboardViewerClient() {
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [company, apiTable]);
+
+  if (isStaffArea) {
+    return <StaffAreaDashboard />;
+  }
 
   if (!company) {
     return <ViewerDashboard />;
