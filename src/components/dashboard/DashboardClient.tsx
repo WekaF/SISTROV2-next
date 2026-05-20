@@ -17,6 +17,9 @@ export default function DashboardClient({ session, dbRole }: { session: any, dbR
   const router = useRouter();
   const pathname = usePathname();
 
+  // Full normalized roles array — used to detect secondary dashboard-eligible roles
+  const allRoles: string[] = ((session?.user as any)?.roles as string[] | undefined ?? []).map(normalizeRole);
+
   useEffect(() => {
     const primaryRole = (session?.user as any)?.role as string | undefined;
     if (primaryRole) {
@@ -81,7 +84,7 @@ export default function DashboardClient({ session, dbRole }: { session: any, dbR
         <AdminDashboard />
       ) : role === "pod" ? (
         <PodDashboard />
-      ) : role === "staffarea" ? (
+      ) : (role === "staffarea" || allRoles.includes("staffarea")) ? (
         <StaffAreaDashboard />
       ) : (role === "rekanan" || role === "transport") ? (
         <TransportDashboard />
