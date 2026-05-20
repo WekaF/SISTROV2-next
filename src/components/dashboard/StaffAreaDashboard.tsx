@@ -29,6 +29,7 @@ const fmt = (n: number | null | undefined) => (n ?? 0).toLocaleString("id-ID");
 export default function StaffAreaDashboard() {
   const [stats, setStats] = useState<CompanyStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -36,12 +37,19 @@ export default function StaffAreaDashboard() {
     if (showSpinner) setRefreshing(true);
     try {
       const res = await fetch("/api/staffarea/dashboard");
-      if (!res.ok) throw new Error("fetch failed");
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        const msg = body?.error ?? `HTTP ${res.status}`;
+        const detail = body?.detail ? ` — ${body.detail}` : "";
+        throw new Error(`${msg}${detail}`);
+      }
       const data = await res.json();
       setStats(data);
+      setError(null);
       setLastUpdated(new Date());
-    } catch (e) {
-      console.error("[StaffAreaDashboard]", e);
+    } catch (e: any) {
+      console.error("[StaffAreaDashboard]", e.message);
+      setError(e.message ?? "Unknown error");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -166,6 +174,26 @@ export default function StaffAreaDashboard() {
           <div className="lg:col-span-8 h-64 bg-slate-200 dark:bg-slate-800 rounded-2xl" />
           <div className="lg:col-span-4 h-64 bg-slate-200 dark:bg-slate-800 rounded-2xl" />
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
+        <div className="p-4 bg-red-50 dark:bg-red-950/20 rounded-2xl">
+          <AlertTriangle className="h-8 w-8 text-red-500" />
+        </div>
+        <div>
+          <p className="font-semibold text-gray-900 dark:text-white">Gagal memuat data dashboard</p>
+          <p className="text-sm text-red-500 mt-1 font-mono">{error}</p>
+        </div>
+        <button
+          onClick={() => load(true)}
+          className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-brand-500 hover:bg-brand-600 rounded-xl transition-colors"
+        >
+          <RefreshCw className="h-4 w-4" /> Coba Lagi
+        </button>
       </div>
     );
   }

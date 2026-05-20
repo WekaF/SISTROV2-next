@@ -20,11 +20,18 @@ export async function GET() {
       ? `/api/CompanyDashboard/GetStats?companyCode=${encodeURIComponent(companyCode)}`
       : "/api/CompanyDashboard/GetStats";
     const res = await aspnetFetchServer(url, token);
-    if (!res.ok) throw new Error(`ASP.NET returned ${res.status}`);
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      console.error(`[StaffArea Dashboard] backend ${res.status}: ${body}`);
+      return NextResponse.json(
+        { error: `Backend error ${res.status}`, detail: body },
+        { status: res.status === 401 ? 401 : 502 }
+      );
+    }
     const data = await res.json();
     return NextResponse.json(data);
   } catch (error: any) {
-    console.error("[StaffArea Dashboard]", error.message);
-    return NextResponse.json({ error: "Failed to fetch dashboard stats" }, { status: 500 });
+    console.error("[StaffArea Dashboard] fetch threw:", error.message);
+    return NextResponse.json({ error: error.message }, { status: 503 });
   }
 }
