@@ -142,7 +142,7 @@ export default function ArmadaPercepatanPage() {
       if (!data.success) throw new Error(data.error);
       addToast({ title: "Konfigurasi Disimpan", variant: "success" });
       setShowModal(false);
-      queryClient.invalidateQueries({ queryKey: ["armada-percepatan"] });
+      queryClient.invalidateQueries({ queryKey: ["armada-percepatan", sessionPlant] });
     } catch (err: any) {
       addToast({ title: "Gagal Menyimpan", description: err.message, variant: "destructive" });
     } finally {
