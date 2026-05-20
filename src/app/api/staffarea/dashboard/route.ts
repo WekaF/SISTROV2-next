@@ -15,7 +15,11 @@ export async function GET() {
   if (!allowed) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
     const token = (session?.user as any)?.aspnetToken as string;
-    const res = await aspnetFetchServer("/api/CompanyDashboard/GetStats", token);
+    const companyCode = (session?.user as any)?.companyCode as string | undefined;
+    const url = companyCode
+      ? `/api/CompanyDashboard/GetStats?companyCode=${encodeURIComponent(companyCode)}`
+      : "/api/CompanyDashboard/GetStats";
+    const res = await aspnetFetchServer(url, token);
     if (!res.ok) throw new Error(`ASP.NET returned ${res.status}`);
     const data = await res.json();
     return NextResponse.json(data);
