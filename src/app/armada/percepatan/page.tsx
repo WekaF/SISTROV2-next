@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import Badge from "@/components/ui/badge/Badge";
 import { useToast } from "@/components/ui/toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useSession } from "next-auth/react";
+import { useCompany } from "@/context/CompanyContext";
 
 interface PercepatanRecord {
   KodePlant: string;
@@ -34,11 +34,11 @@ interface TarikItem {
 
 
 export default function ArmadaPercepatanPage() {
-  const { data: session } = useSession();
   const { addToast } = useToast();
   const queryClient = useQueryClient();
+  const { activeCompanyCode } = useCompany();
 
-  const sessionPlant: string = (session?.user as any)?.companyCode || "";
+  const sessionPlant: string = activeCompanyCode || "";
 
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -49,7 +49,7 @@ export default function ArmadaPercepatanPage() {
   }, [searchTerm]);
 
   const { data: percepatanData, isLoading } = useQuery({
-    queryKey: ["armada-percepatan"],
+    queryKey: ["armada-percepatan", sessionPlant],
     queryFn: async () => {
       const res = await fetch("/api/armada/percepatan");
       const data = await res.json();
