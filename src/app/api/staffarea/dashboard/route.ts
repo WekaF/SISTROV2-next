@@ -2,13 +2,17 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { aspnetFetchServer } from "@/lib/api-client";
+import { normalizeRole } from "@/lib/role-utils";
+
+const ALLOWED = new Set(["staffarea", "gudang", "pod"]);
 
 export async function GET() {
   const session = await getServerSession(authOptions);
-  const role = (session?.user as any)?.role as string | undefined;
-  if (!session?.user || !role || !["staffarea", "gudang", "pod"].includes(role.toLowerCase())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const allRoles: string[] = ((session.user as any)?.roles as string[] | undefined) ?? [(session.user as any)?.role];
+  const allowed = allRoles.some(r => ALLOWED.has(normalizeRole(r)));
+  if (!allowed) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
     const token = (session?.user as any)?.aspnetToken as string;
     const res = await aspnetFetchServer("/api/CompanyDashboard/GetStats", token);
