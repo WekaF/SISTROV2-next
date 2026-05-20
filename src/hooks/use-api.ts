@@ -1,5 +1,6 @@
 "use client";
 
+import { useCompanySafe } from "@/context/CompanyContext";
 import { useSession } from "next-auth/react";
 import { useCallback } from "react";
 import { API_BASE } from "@/lib/api-client";
@@ -14,7 +15,12 @@ import { API_BASE } from "@/lib/api-client";
  */
 export function useApi() {
   const { data: session } = useSession();
-  const token = (session?.user as any)?.aspnetToken as string | undefined;
+  const companyCtx = useCompanySafe();
+
+  // Prefer CompanyContext token (updated immediately on switch)
+  // Fall back to session token (may lag by one NextAuth round-trip)
+  const sessionToken = (session?.user as any)?.aspnetToken as string | undefined;
+  const token = (companyCtx?.aspnetToken ?? sessionToken) as string | undefined;
 
   const apiFetch = useCallback(
     (path: string, options: RequestInit = {}): Promise<Response> => {
