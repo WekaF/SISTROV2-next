@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import { Plus, Eye, FileEdit, Trash2, Calendar, Package, Ticket } from "lucide-react";
+import { Plus, Eye, FileEdit, Trash2, Calendar, Package, Ticket, Printer } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -248,6 +248,15 @@ export default function PostoPage() {
               onClick={() => handleView(id, noposto)}
             >
               <Eye className="h-4 w-4 mr-1" /> {isRekanan ? "Riwayat" : "View"}
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-slate-600 border-slate-200 hover:bg-slate-50 rounded-none h-8 text-[10px] uppercase tracking-wider"
+              onClick={() => window.open(`/posto/print?noposto=${encodeURIComponent(noposto)}`, "_blank")}
+            >
+              <Printer className="h-4 w-4 mr-1" /> Print
             </Button>
 
             {!isRekanan && (
