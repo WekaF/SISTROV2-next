@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import {
-  Users, Edit, X, Loader2, Mail, Check, Lock, Building, 
+  Users, Edit, X, Loader2, Mail, Check, Lock, Building,
   ShieldCheck, Fingerprint, Activity, Plus, UserCheck
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
@@ -10,19 +10,19 @@ import { Input } from "@/components/ui/input";
 import Badge from "@/components/ui/badge/Badge";
 import { useToast } from "@/components/ui/toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSession } from "next-auth/react";
+import { useCompany } from "@/context/CompanyContext";
 import { DataTable, type DataTableColumn, type DataTableParams } from "@/components/ui/DataTable";
 
 export default function AdminUserPage() {
-  const { data: session } = useSession();
+  const { activeCompanyCode } = useCompany();
   const { addToast } = useToast();
   const queryClient = useQueryClient();
-  
+
   const [showModal, setShowModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [adminPassword, setAdminPassword] = useState("");
-  
-  const companyCode = (session?.user as any)?.companyCode || "";
+
+  const companyCode = activeCompanyCode || "";
 
   const emptyForm = {
     id: "",
