@@ -20,6 +20,12 @@ export default function DashboardClient({ session, dbRole }: { session: any, dbR
   // Full normalized roles array — used to detect secondary dashboard-eligible roles
   const allRoles: string[] = ((session?.user as any)?.roles as string[] | undefined ?? []).map(normalizeRole);
 
+  // Staffarea/Pod take priority over admin UNLESS user is a genuine superadmin (ti/superadmin role).
+  // Prevents admin-also-staffarea users from landing on AdminDashboard (which has global map).
+  const isGenuineSuperadmin = allRoles.includes("superadmin");
+  const showAsStaffArea = !isGenuineSuperadmin && (role === "staffarea" || allRoles.includes("staffarea"));
+  const showAsPod = !isGenuineSuperadmin && !showAsStaffArea && (role === "pod" || allRoles.includes("pod"));
+
   useEffect(() => {
     const primaryRole = (session?.user as any)?.role as string | undefined;
     if (primaryRole) {
@@ -80,12 +86,12 @@ export default function DashboardClient({ session, dbRole }: { session: any, dbR
 
 
       {/* Dynamic Content based on Role */}
-      {role === "admin" || role === "superadmin" ? (
-        <AdminDashboard />
-      ) : role === "pod" ? (
-        <PodDashboard />
-      ) : (role === "staffarea" || allRoles.includes("staffarea")) ? (
+      {showAsStaffArea ? (
         <StaffAreaDashboard />
+      ) : showAsPod ? (
+        <PodDashboard />
+      ) : role === "admin" || role === "superadmin" ? (
+        <AdminDashboard />
       ) : (role === "rekanan" || role === "transport") ? (
         <TransportDashboard />
       ) : role === "viewer" ? (
