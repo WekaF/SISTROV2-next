@@ -20,6 +20,7 @@ export interface Company {
 interface CompanyContextValue {
   companies: Company[];
   activeCompanyCode: string | null;
+  aspnetToken: string | null;        // <-- tambah ini
   isLoading: boolean;
   switchCompany: (code: string) => Promise<void>;
 }
@@ -34,6 +35,11 @@ export function useCompany(): CompanyContextValue {
   return ctx;
 }
 
+/** Aman dipakai di luar CompanyProvider — kembalikan null jika di luar konteks */
+export function useCompanySafe(): CompanyContextValue | null {
+  return useContext(CompanyContext) ?? null;
+}
+
 // ──────────────────────────── provider ─────────────────────────────────────
 
 export function CompanyProvider({ children }: { children: React.ReactNode }) {
@@ -46,6 +52,11 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
 
   // Fallback: companyCode from JWT session
   const sessionCompanyCode = (session?.user as any)?.companyCode as string | null | undefined;
+
+  // Fallback: aspnetToken from JWT session
+  const sessionAspnetToken = (session?.user as any)?.aspnetToken as string | null | undefined;
+
+  const [activeAspnetToken, setActiveAspnetToken] = useState<string | null>(null);
 
   // ── fetch companies from /api/user/active-company (which calls ASP.NET) ─
   const fetchCompanies = useCallback(async () => {
@@ -76,7 +87,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     }
   }, [status, fetchCompanies]);
 
-  // ── switchCompany: re-auth ASP.NET → update session token → bust queries ─
+  // ── switchCompany: re-auth ASP.NET → update token state immediately → bust queries ─
   const switchCompany = useCallback(
     async (code: string) => {
       if (code === activeCompanyCode) return;
@@ -92,12 +103,18 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
           throw new Error(json.error || "Gagal berganti plant");
         }
 
-        // Update NextAuth session with new ASP.NET token (only if available)
+        // Update token state SEGERA (sebelum invalidateQueries)
+        // sehingga saat queries refetch, useApi() sudah punya token baru
         if (json.aspnetToken) {
-          await updateSession({
+          setActiveAspnetToken(json.aspnetToken);
+          // Update NextAuth session async (untuk persistence setelah page reload)
+          // Tidak di-await — jangan delay query invalidation
+          updateSession({
             aspnetToken: json.aspnetToken,
             companyCode: json.companyCode,
-          });
+          }).catch((err) =>
+            console.warn("[CompanyContext] updateSession error:", err)
+          );
         }
 
         // Update local state & bust all query caches
@@ -113,12 +130,15 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
 
   // Effective code: context state → session fallback
   const effectiveCompanyCode = activeCompanyCode ?? sessionCompanyCode ?? null;
+  // Effective token: context state → session fallback
+  const effectiveAspnetToken = activeAspnetToken ?? sessionAspnetToken ?? null;
 
   return (
     <CompanyContext.Provider
       value={{
         companies,
         activeCompanyCode: effectiveCompanyCode,
+        aspnetToken: effectiveAspnetToken,
         isLoading,
         switchCompany,
       }}
@@ -127,5 +147,3 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     </CompanyContext.Provider>
   );
 }
-
-
