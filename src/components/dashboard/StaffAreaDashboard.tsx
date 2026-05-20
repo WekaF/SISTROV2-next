@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
+import { useSession } from "next-auth/react";
 import {
   AlertTriangle, CheckCircle2, ClipboardList, RefreshCw,
   Timer, TrendingDown, Weight, Zap,
@@ -27,6 +28,9 @@ interface CompanyStats {
 const fmt = (n: number | null | undefined) => (n ?? 0).toLocaleString("id-ID");
 
 export default function StaffAreaDashboard() {
+  const { data: session } = useSession();
+  const companyCode = (session?.user as any)?.companyCode as string | undefined;
+
   const [stats, setStats] = useState<CompanyStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -60,7 +64,7 @@ export default function StaffAreaDashboard() {
     load();
     const interval = setInterval(() => load(), 60_000);
     return () => clearInterval(interval);
-  }, [load]);
+  }, [load, companyCode]); // re-fetch immediately when company switches
 
   // ── Derived values ─────────────────────────────────────────────────────────
   const totalToday = (stats?.antriAktif ?? 0) + (stats?.selesai ?? 0) + (stats?.proses ?? 0) + (stats?.cancel ?? 0);
