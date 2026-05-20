@@ -7,9 +7,9 @@ import {
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import dynamic from "next/dynamic";
+import OverdueTicketsModal from "@/components/dashboard/OverdueTicketsModal";
 
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
-import OverdueTicketsModal from "@/components/dashboard/OverdueTicketsModal";
 
 interface CompanyStats {
   antriAktif: number;
@@ -38,6 +38,15 @@ export default function StaffAreaDashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [overdueModalOpen, setOverdueModalOpen] = useState(false);
 
+  // 30-day realisasi chart
+  const [produkList, setProdukList] = useState<{ id: string; nama: string }[]>([]);
+  const [selectedProduk, setSelectedProduk] = useState("all");
+  const [chartData, setChartData] = useState<{
+    json: { kuota: number; shift1: number; shift2: number; shift3: number }[];
+    date: string[];
+  } | null>(null);
+  const [chartLoading, setChartLoading] = useState(false);
+
   const load = useCallback(async (showSpinner = false) => {
     if (showSpinner) setRefreshing(true);
     try {
@@ -47,9 +56,7 @@ export default function StaffAreaDashboard() {
       const res = await fetch(url);
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        const msg = body?.error ?? `HTTP ${res.status}`;
-        const detail = body?.detail ? ` — ${body.detail}` : "";
-        throw new Error(`${msg}${detail}`);
+        throw new Error(`${body?.error ?? `HTTP ${res.status}`}${body?.detail ? ` — ${body.detail}` : ""}`);
       }
       const data = await res.json();
       setStats(data);
@@ -64,6 +71,27 @@ export default function StaffAreaDashboard() {
     }
   }, [activeCompanyCode]);
 
+  // Load product filter list once per company
+  useEffect(() => {
+    const qs = activeCompanyCode ? `?companyCode=${encodeURIComponent(activeCompanyCode)}` : "";
+    fetch(`/api/staffarea/produk-filter${qs}`)
+      .then(r => r.json())
+      .then(d => setProdukList(d?.products ?? []))
+      .catch(() => setProdukList([]));
+  }, [activeCompanyCode]);
+
+  // Load chart data when company or product filter changes
+  useEffect(() => {
+    setChartLoading(true);
+    const params = new URLSearchParams({ idproduk: selectedProduk });
+    if (activeCompanyCode) params.set("companyCode", activeCompanyCode);
+    fetch(`/api/staffarea/realisasi-chart?${params.toString()}`)
+      .then(r => r.json())
+      .then(d => setChartData(d))
+      .catch(() => setChartData(null))
+      .finally(() => setChartLoading(false));
+  }, [activeCompanyCode, selectedProduk]);
+
   useEffect(() => {
     load();
     const interval = setInterval(() => load(), 60_000);
@@ -75,7 +103,6 @@ export default function StaffAreaDashboard() {
 
   const gudangCategories = stats?.gudangBreakdown.map(g => g.gudang) ?? [];
   const gudangData = stats?.gudangBreakdown.map(g => g.count) ?? [];
-
   const gudangOptions: any = {
     chart: { type: "bar", toolbar: { show: false }, fontFamily: "inherit" },
     plotOptions: { bar: { horizontal: true, borderRadius: 4, distributed: true } },
@@ -93,7 +120,6 @@ export default function StaffAreaDashboard() {
     stats?.shiftBreakdown.siang ?? 0,
     stats?.shiftBreakdown.malam ?? 0,
   ];
-
   const shiftOptions: any = {
     chart: { type: "donut", fontFamily: "inherit" },
     labels: ["Pagi (06–14)", "Siang (14–22)", "Malam (22–06)"],
@@ -101,6 +127,42 @@ export default function StaffAreaDashboard() {
     legend: { position: "bottom", fontSize: "12px" },
     dataLabels: { enabled: true, formatter: (val: number) => `${Math.round(val)}%` },
   };
+
+  // 30-day realisasi mixed chart (area kuota + stacked bars per shift)
+  const realisasiOptions: any = {
+    chart: {
+      type: "bar",
+      stacked: true,
+      toolbar: { show: false },
+      fontFamily: "inherit",
+      animations: { enabled: false },
+    },
+    plotOptions: { bar: { columnWidth: "60%", borderRadius: 2 } },
+    colors: ["#3C50E0", "#1cc88a", "#f6c23e", "#ef4444"],
+    xaxis: {
+      categories: chartData?.date ?? [],
+      labels: { style: { fontSize: "10px" }, rotate: -30 },
+      tickAmount: 10,
+    },
+    yaxis: { labels: { style: { fontSize: "11px" } } },
+    legend: { position: "top", fontSize: "11px" },
+    dataLabels: { enabled: false },
+    tooltip: { shared: true, intersect: false },
+    stroke: { width: [3, 0, 0, 0], curve: "smooth" },
+    fill: {
+      type: ["gradient", "solid", "solid", "solid"],
+      gradient: { shade: "light", type: "vertical", opacityFrom: 0.7, opacityTo: 0.1 },
+    },
+    grid: { borderColor: "#f1f5f9" },
+  };
+  const realisasiSeries = chartData
+    ? [
+        { name: "Kuota",   type: "area", data: chartData.json.map(d => d.kuota)  },
+        { name: "Shift 1", type: "bar",  data: chartData.json.map(d => d.shift1) },
+        { name: "Shift 2", type: "bar",  data: chartData.json.map(d => d.shift2) },
+        { name: "Shift 3", type: "bar",  data: chartData.json.map(d => d.shift3) },
+      ]
+    : [];
 
   if (loading) {
     return (
@@ -113,6 +175,7 @@ export default function StaffAreaDashboard() {
           <div className="lg:col-span-8 h-64 bg-slate-200 dark:bg-slate-800 rounded-2xl" />
           <div className="lg:col-span-4 h-64 bg-slate-200 dark:bg-slate-800 rounded-2xl" />
         </div>
+        <div className="h-80 bg-slate-200 dark:bg-slate-800 rounded-2xl" />
       </div>
     );
   }
@@ -147,9 +210,8 @@ export default function StaffAreaDashboard() {
             Operasional{stats?.companyCode ? ` — ${stats.companyCode}` : ""}
           </h2>
           <p className="text-xs text-gray-400 mt-0.5">
-            {lastUpdated
-              ? `Update: ${lastUpdated.toLocaleTimeString("id-ID")}`
-              : "Memuat..."}{" · "}Auto-refresh 60 detik
+            {lastUpdated ? `Update: ${lastUpdated.toLocaleTimeString("id-ID")}` : "Memuat..."}
+            {" · "}Auto-refresh 60 detik
           </p>
         </div>
         <button
@@ -164,29 +226,27 @@ export default function StaffAreaDashboard() {
 
       {/* ── Overdue alert ──────────────────────────────────────────────────── */}
       {(stats?.overdueCount ?? 0) > 0 && (
-        <>
-          <button
-            onClick={() => setOverdueModalOpen(true)}
-            className="w-full text-left flex items-start gap-3 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-400 text-sm font-medium hover:bg-red-100 dark:hover:bg-red-950/40 transition-colors cursor-pointer"
-          >
-            <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
-            <div className="flex-1 min-w-0">
-              <p className="font-bold">Eskalasi Diperlukan — <strong>{stats?.overdueCount}</strong> tiket &gt;2 jam belum selesai</p>
-              <p className="text-xs font-normal mt-0.5 text-red-500">
-                Klik untuk lihat daftar tiket · Koordinasikan dengan Gudang segera.
-              </p>
-            </div>
-          </button>
-
-          <OverdueTicketsModal
-            open={overdueModalOpen}
-            onClose={() => setOverdueModalOpen(false)}
-            companyCode={activeCompanyCode ?? stats?.companyCode}
-          />
-        </>
+        <button
+          onClick={() => setOverdueModalOpen(true)}
+          className="w-full text-left flex items-start gap-3 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-400 text-sm font-medium hover:bg-red-100 dark:hover:bg-red-950/40 transition-colors cursor-pointer"
+        >
+          <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="font-bold">Eskalasi Diperlukan — <strong>{stats?.overdueCount}</strong> tiket &gt;2 jam belum selesai</p>
+            <p className="text-xs font-normal mt-0.5 text-red-500">
+              Klik untuk lihat daftar tiket · Koordinasikan dengan Gudang segera.
+            </p>
+          </div>
+        </button>
       )}
 
-      {/* ── Ringkasan Harian (Index.cshtml-style hero) ─────────────────────── */}
+      <OverdueTicketsModal
+        open={overdueModalOpen}
+        onClose={() => setOverdueModalOpen(false)}
+        companyCode={activeCompanyCode ?? stats?.companyCode}
+      />
+
+      {/* ── Ringkasan Harian hero ──────────────────────────────────────────── */}
       <Card className="shadow-theme-xs overflow-hidden">
         <CardContent className="p-0">
           <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 dark:border-gray-800">
@@ -195,13 +255,9 @@ export default function StaffAreaDashboard() {
               {new Date().toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" })}
             </span>
           </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-gray-100 dark:divide-gray-800">
-            {/* Left: big tonase number */}
             <div className="flex flex-col items-center justify-center py-8 px-6 text-center">
-              <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3">
-                Total Tonase Tiket (Hari Ini)
-              </p>
+              <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3">Total Tonase Tiket (Hari Ini)</p>
               <div className="flex items-end gap-2">
                 <span className="text-5xl font-black text-emerald-500 leading-none tabular-nums">
                   {fmt(stats?.totalTonase ?? 0)}
@@ -210,8 +266,6 @@ export default function StaffAreaDashboard() {
               </div>
               <p className="text-xs text-gray-400 mt-3">{totalToday} tiket masuk hari ini</p>
             </div>
-
-            {/* Right: 3-col activity */}
             <div className="flex flex-col justify-center py-6 px-6">
               <p className="text-xs text-gray-400 font-semibold mb-4">Aktivitas Tiket Hari Ini:</p>
               <div className="grid grid-cols-3 gap-3">
@@ -227,7 +281,9 @@ export default function StaffAreaDashboard() {
                 </div>
                 <div className="flex flex-col items-center gap-1.5 p-3 bg-amber-50 dark:bg-amber-950/20 rounded-xl">
                   <Truck className="h-6 w-6 text-amber-500" />
-                  <span className="text-xl font-black text-gray-900 dark:text-white tabular-nums">{fmt((stats?.antriAktif ?? 0) + (stats?.proses ?? 0))}</span>
+                  <span className="text-xl font-black text-gray-900 dark:text-white tabular-nums">
+                    {fmt((stats?.antriAktif ?? 0) + (stats?.proses ?? 0))}
+                  </span>
                   <span className="text-[10px] text-gray-500 font-medium text-center leading-tight">Dalam Proses</span>
                 </div>
               </div>
@@ -286,9 +342,8 @@ export default function StaffAreaDashboard() {
         ))}
       </div>
 
-      {/* ── Charts row ─────────────────────────────────────────────────────── */}
+      {/* ── Gudang + Shift charts ───────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-
         <Card className="lg:col-span-8 shadow-theme-xs">
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -302,13 +357,7 @@ export default function StaffAreaDashboard() {
           <CardContent>
             {gudangCategories.length > 0 ? (
               <div style={{ height: `${Math.max(200, gudangCategories.length * 44)}px` }}>
-                <Chart
-                  options={gudangOptions}
-                  series={[{ name: "Antri", data: gudangData }]}
-                  type="bar"
-                  height="100%"
-                  width="100%"
-                />
+                <Chart options={gudangOptions} series={[{ name: "Antri", data: gudangData }]} type="bar" height="100%" width="100%" />
               </div>
             ) : (
               <div className="flex items-center justify-center h-40 text-gray-400 text-sm">
@@ -326,13 +375,7 @@ export default function StaffAreaDashboard() {
           <CardContent>
             <div className="h-[250px] flex items-center justify-center">
               {shiftSeries.some(v => v > 0) ? (
-                <Chart
-                  options={shiftOptions}
-                  series={shiftSeries}
-                  type="donut"
-                  height="100%"
-                  width="100%"
-                />
+                <Chart options={shiftOptions} series={shiftSeries} type="donut" height="100%" width="100%" />
               ) : (
                 <p className="text-sm text-gray-400">Belum ada tiket hari ini.</p>
               )}
@@ -340,7 +383,7 @@ export default function StaffAreaDashboard() {
             {shiftSeries.some(v => v > 0) && (
               <div className="grid grid-cols-3 text-center mt-2 gap-2">
                 {[
-                  { label: "Pagi", val: shiftSeries[0], color: "text-amber-500" },
+                  { label: "Pagi",  val: shiftSeries[0], color: "text-amber-500" },
                   { label: "Siang", val: shiftSeries[1], color: "text-blue-500" },
                   { label: "Malam", val: shiftSeries[2], color: "text-slate-600 dark:text-slate-300" },
                 ].map(s => (
@@ -353,8 +396,48 @@ export default function StaffAreaDashboard() {
             )}
           </CardContent>
         </Card>
-
       </div>
+
+      {/* ── Grafik Realisasi Tiket 30 Hari Terakhir ────────────────────────── */}
+      <Card className="shadow-theme-xs">
+        <CardHeader>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <CardTitle>Grafik Realisasi Tiket 30 Hari Terakhir</CardTitle>
+              <CardDescription>Kuota vs realisasi per shift selama 30 hari.</CardDescription>
+            </div>
+            <select
+              value={selectedProduk}
+              onChange={e => setSelectedProduk(e.target.value)}
+              className="w-full sm:w-48 text-sm border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
+            >
+              <option value="all">All Produk</option>
+              {produkList.map(p => (
+                <option key={p.id} value={p.id}>{p.nama}</option>
+              ))}
+            </select>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {chartLoading ? (
+            <div className="h-64 bg-slate-100 dark:bg-slate-800 animate-pulse rounded-xl" />
+          ) : realisasiSeries.length > 0 ? (
+            <div className="h-80">
+              <Chart
+                options={realisasiOptions}
+                series={realisasiSeries}
+                type="bar"
+                height="100%"
+                width="100%"
+              />
+            </div>
+          ) : (
+            <div className="h-64 flex items-center justify-center text-sm text-gray-400">
+              Tidak ada data untuk periode ini.
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
     </div>
   );

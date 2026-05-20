@@ -40,14 +40,16 @@ export default function OverdueTicketsModal({ open, onClose, companyCode }: Over
 
   useEffect(() => {
     if (!open) return;
+    const controller = new AbortController();
     setLoading(true);
     setError(null);
+    setData(null);
 
     const url = companyCode
       ? `/api/staffarea/overdue-alerts?companyCode=${encodeURIComponent(companyCode)}`
       : "/api/staffarea/overdue-alerts";
 
-    fetch(url)
+    fetch(url, { signal: controller.signal })
       .then(async res => {
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));
@@ -56,8 +58,12 @@ export default function OverdueTicketsModal({ open, onClose, companyCode }: Over
         return res.json() as Promise<OverdueAlertsResponse>;
       })
       .then(setData)
-      .catch(e => setError(e.message ?? "Gagal memuat data"))
+      .catch(e => {
+        if (e.name !== "AbortError") setError(e.message ?? "Gagal memuat data");
+      })
       .finally(() => setLoading(false));
+
+    return () => controller.abort();
   }, [open, companyCode]);
 
   if (!open) return null;
