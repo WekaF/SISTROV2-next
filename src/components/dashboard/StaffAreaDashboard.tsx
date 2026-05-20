@@ -1,14 +1,15 @@
 "use client";
-import React, { useState, useEffect, useCallback } from "react";
-import { useSession } from "next-auth/react";
+import { useState, useEffect, useCallback, ChangeEvent } from "react";
+import { useCompany } from "@/context/CompanyContext";
 import {
   AlertTriangle, CheckCircle2, ClipboardList, RefreshCw,
-  Timer, TrendingDown, Weight, Zap,
+  Timer, TrendingDown, Weight, Zap, TicketCheck, Truck,
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import dynamic from "next/dynamic";
 
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
+import OverdueTicketsModal from "@/components/dashboard/OverdueTicketsModal";
 
 interface CompanyStats {
   antriAktif: number;
@@ -28,19 +29,22 @@ interface CompanyStats {
 const fmt = (n: number | null | undefined) => (n ?? 0).toLocaleString("id-ID");
 
 export default function StaffAreaDashboard() {
-  const { data: session } = useSession();
-  const companyCode = (session?.user as any)?.companyCode as string | undefined;
+  const { activeCompanyCode } = useCompany();
 
   const [stats, setStats] = useState<CompanyStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [overdueModalOpen, setOverdueModalOpen] = useState(false);
 
   const load = useCallback(async (showSpinner = false) => {
     if (showSpinner) setRefreshing(true);
     try {
-      const res = await fetch("/api/staffarea/dashboard");
+      const url = activeCompanyCode
+        ? `/api/staffarea/dashboard?companyCode=${encodeURIComponent(activeCompanyCode)}`
+        : "/api/staffarea/dashboard";
+      const res = await fetch(url);
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         const msg = body?.error ?? `HTTP ${res.status}`;
@@ -58,68 +62,17 @@ export default function StaffAreaDashboard() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [activeCompanyCode]);
 
   useEffect(() => {
     load();
     const interval = setInterval(() => load(), 60_000);
     return () => clearInterval(interval);
-  }, [load, companyCode]); // re-fetch immediately when company switches
+  }, [load]);
 
-  // ── Derived values ─────────────────────────────────────────────────────────
   const totalToday = (stats?.antriAktif ?? 0) + (stats?.selesai ?? 0) + (stats?.proses ?? 0) + (stats?.cancel ?? 0);
   const completionRate = totalToday > 0 ? Math.round(((stats?.selesai ?? 0) / totalToday) * 100) : 0;
 
-  const kpis = [
-    {
-      label: "Antrian Aktif",
-      value: stats?.antriAktif ?? "—",
-      sub: stats ? `${totalToday} total masuk hari ini` : "",
-      icon: ClipboardList, color: "text-orange-500", bg: "bg-orange-50 dark:bg-orange-950/20",
-      alert: (stats?.antriAktif ?? 0) > 15,
-      alertMsg: "Antrian tinggi!",
-    },
-    {
-      label: "Selesai Hari Ini",
-      value: stats?.selesai ?? "—",
-      sub: stats ? `${completionRate}% completion rate` : "",
-      icon: CheckCircle2, color: "text-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-950/20",
-      alert: false, alertMsg: "",
-    },
-    {
-      label: "Sedang Proses",
-      value: stats?.proses ?? "—",
-      sub: stats?.overdueCount ? `${stats.overdueCount} overdue >2 jam` : "Semua dalam batas",
-      icon: Timer, color: "text-blue-500", bg: "bg-blue-50 dark:bg-blue-950/20",
-      alert: (stats?.overdueCount ?? 0) > 0,
-      alertMsg: `${stats?.overdueCount} overdue!`,
-    },
-    {
-      label: "Dibatalkan",
-      value: stats?.cancel ?? "—",
-      sub: stats ? `Cancel rate 7hr: ${stats.cancelRate}%` : "",
-      icon: TrendingDown, color: "text-red-500", bg: "bg-red-50 dark:bg-red-950/20",
-      alert: (stats?.cancelRate ?? 0) > 5,
-      alertMsg: "Cancel rate >5%",
-    },
-    {
-      label: "Total Tonase",
-      value: stats ? `${(stats.totalTonase ?? 0).toLocaleString("id-ID")}` : "—",
-      sub: "Ton — realisasi hari ini",
-      icon: Weight, color: "text-purple-500", bg: "bg-purple-50 dark:bg-purple-950/20",
-      alert: false, alertMsg: "",
-    },
-    {
-      label: "Avg Durasi Bongkar",
-      value: stats ? `${stats.avgDurasiMenit} mnt` : "—",
-      sub: stats ? (stats.avgDurasiMenit <= 35 ? "Efisien" : stats.avgDurasiMenit <= 45 ? "Sedang" : "Perlu perhatian") : "",
-      icon: Zap, color: "text-sky-500", bg: "bg-sky-50 dark:bg-sky-950/20",
-      alert: (stats?.avgDurasiMenit ?? 0) > 90,
-      alertMsg: "Durasi rata-rata sangat tinggi",
-    },
-  ];
-
-  // ── Chart options ──────────────────────────────────────────────────────────
   const gudangCategories = stats?.gudangBreakdown.map(g => g.gudang) ?? [];
   const gudangData = stats?.gudangBreakdown.map(g => g.count) ?? [];
 
@@ -149,32 +102,14 @@ export default function StaffAreaDashboard() {
     dataLabels: { enabled: true, formatter: (val: number) => `${Math.round(val)}%` },
   };
 
-  // Completion rate radial
-  const radialOptions: any = {
-    chart: { type: "radialBar", fontFamily: "inherit", toolbar: { show: false } },
-    plotOptions: {
-      radialBar: {
-        startAngle: -135, endAngle: 135,
-        hollow: { size: "65%" },
-        dataLabels: {
-          name: { show: true, fontSize: "11px", color: "#9ca3af", offsetY: -10 },
-          value: { fontSize: "22px", fontWeight: 700, formatter: (v: number) => `${v}%` },
-        },
-        track: { background: "#f1f5f9", strokeWidth: "97%", margin: 5 },
-      }
-    },
-    fill: { type: "gradient", gradient: { shade: "light", type: "horizontal", gradientToColors: ["#10B981"], stops: [0, 100] } },
-    colors: ["#3C50E0"],
-    labels: ["Completion"],
-  };
-
   if (loading) {
     return (
-      <div className="space-y-6 animate-pulse">
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-          {[1,2,3,4,5,6].map(i => <div key={i} className="h-28 bg-slate-200 dark:bg-slate-800 rounded-2xl" />)}
+      <div className="space-y-5 p-1 animate-pulse">
+        <div className="h-48 bg-slate-200 dark:bg-slate-800 rounded-2xl" />
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          {[1,2,3,4].map(i => <div key={i} className="h-28 bg-slate-200 dark:bg-slate-800 rounded-2xl" />)}
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
           <div className="lg:col-span-8 h-64 bg-slate-200 dark:bg-slate-800 rounded-2xl" />
           <div className="lg:col-span-4 h-64 bg-slate-200 dark:bg-slate-800 rounded-2xl" />
         </div>
@@ -203,17 +138,18 @@ export default function StaffAreaDashboard() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
 
-      {/* ── Header ──────────────────────────────────────────────────────────── */}
+      {/* ── Header bar ─────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-extrabold text-gray-900 dark:text-white tracking-tight">
-            Operasional Plant {stats?.companyCode ? `— ${stats.companyCode}` : ""}
+            Operasional{stats?.companyCode ? ` — ${stats.companyCode}` : ""}
           </h2>
           <p className="text-xs text-gray-400 mt-0.5">
-            {lastUpdated ? `Update: ${lastUpdated.toLocaleTimeString("id-ID")}` : "Memuat..."}
-            {" · "}Auto-refresh setiap 60 detik
+            {lastUpdated
+              ? `Update: ${lastUpdated.toLocaleTimeString("id-ID")}`
+              : "Memuat..."}{" · "}Auto-refresh 60 detik
           </p>
         </div>
         <button
@@ -226,55 +162,153 @@ export default function StaffAreaDashboard() {
         </button>
       </div>
 
-      {/* ── Overdue Alert ────────────────────────────────────────────────────── */}
+      {/* ── Overdue alert ──────────────────────────────────────────────────── */}
       {(stats?.overdueCount ?? 0) > 0 && (
-        <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-400 text-sm font-medium">
-          <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
-          <div>
-            <p className="font-bold">Eskalasi Diperlukan — <strong>{stats?.overdueCount}</strong> tiket &gt;2 jam belum selesai</p>
-            <p className="text-xs font-normal mt-0.5 text-red-500 dark:text-red-400/80">
-              Tiket-tiket ini sudah melebihi batas waktu. Cek status di Terminal dan koordinasikan dengan Gudang segera.
-            </p>
-          </div>
-        </div>
+        <>
+          <button
+            onClick={() => setOverdueModalOpen(true)}
+            className="w-full text-left flex items-start gap-3 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-400 text-sm font-medium hover:bg-red-100 dark:hover:bg-red-950/40 transition-colors cursor-pointer"
+          >
+            <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="font-bold">Eskalasi Diperlukan — <strong>{stats?.overdueCount}</strong> tiket &gt;2 jam belum selesai</p>
+              <p className="text-xs font-normal mt-0.5 text-red-500">
+                Klik untuk lihat daftar tiket · Koordinasikan dengan Gudang segera.
+              </p>
+            </div>
+          </button>
+
+          <OverdueTicketsModal
+            open={overdueModalOpen}
+            onClose={() => setOverdueModalOpen(false)}
+            companyCode={activeCompanyCode ?? stats?.companyCode}
+          />
+        </>
       )}
 
-      {/* ── KPI Grid ─────────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-        {kpis.map(kpi => (
-          <Card key={kpi.label} className="shadow-theme-xs">
+      {/* ── Ringkasan Harian (Index.cshtml-style hero) ─────────────────────── */}
+      <Card className="shadow-theme-xs overflow-hidden">
+        <CardContent className="p-0">
+          <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 dark:border-gray-800">
+            <h5 className="font-bold text-gray-800 dark:text-white text-sm">Ringkasan Harian</h5>
+            <span className="text-xs text-gray-400">
+              {new Date().toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" })}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-gray-100 dark:divide-gray-800">
+            {/* Left: big tonase number */}
+            <div className="flex flex-col items-center justify-center py-8 px-6 text-center">
+              <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3">
+                Total Tonase Tiket (Hari Ini)
+              </p>
+              <div className="flex items-end gap-2">
+                <span className="text-5xl font-black text-emerald-500 leading-none tabular-nums">
+                  {fmt(stats?.totalTonase ?? 0)}
+                </span>
+                <span className="text-lg font-bold text-emerald-400 mb-1">Ton</span>
+              </div>
+              <p className="text-xs text-gray-400 mt-3">{totalToday} tiket masuk hari ini</p>
+            </div>
+
+            {/* Right: 3-col activity */}
+            <div className="flex flex-col justify-center py-6 px-6">
+              <p className="text-xs text-gray-400 font-semibold mb-4">Aktivitas Tiket Hari Ini:</p>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="flex flex-col items-center gap-1.5 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                  <TicketCheck className="h-6 w-6 text-blue-500" />
+                  <span className="text-xl font-black text-gray-900 dark:text-white tabular-nums">{fmt(totalToday)}</span>
+                  <span className="text-[10px] text-gray-500 font-medium text-center leading-tight">Total Tiket</span>
+                </div>
+                <div className="flex flex-col items-center gap-1.5 p-3 bg-emerald-50 dark:bg-emerald-950/20 rounded-xl">
+                  <CheckCircle2 className="h-6 w-6 text-emerald-500" />
+                  <span className="text-xl font-black text-gray-900 dark:text-white tabular-nums">{fmt(stats?.selesai ?? 0)}</span>
+                  <span className="text-[10px] text-gray-500 font-medium text-center leading-tight">Selesai</span>
+                </div>
+                <div className="flex flex-col items-center gap-1.5 p-3 bg-amber-50 dark:bg-amber-950/20 rounded-xl">
+                  <Truck className="h-6 w-6 text-amber-500" />
+                  <span className="text-xl font-black text-gray-900 dark:text-white tabular-nums">{fmt((stats?.antriAktif ?? 0) + (stats?.proses ?? 0))}</span>
+                  <span className="text-[10px] text-gray-500 font-medium text-center leading-tight">Dalam Proses</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ── KPI cards ──────────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        {[
+          {
+            label: "Antrian Aktif",
+            value: fmt(stats?.antriAktif ?? 0),
+            sub: stats ? `${stats.proses} sedang proses` : "",
+            icon: ClipboardList, color: "text-orange-500", bg: "bg-orange-50 dark:bg-orange-950/20",
+            alert: (stats?.antriAktif ?? 0) > 15,
+          },
+          {
+            label: "Avg Durasi Bongkar",
+            value: stats ? `${stats.avgDurasiMenit} mnt` : "—",
+            sub: stats
+              ? stats.avgDurasiMenit <= 35 ? "Efisien" : stats.avgDurasiMenit <= 45 ? "Sedang" : "Perlu perhatian"
+              : "",
+            icon: Zap, color: "text-sky-500", bg: "bg-sky-50 dark:bg-sky-950/20",
+            alert: (stats?.avgDurasiMenit ?? 0) > 45,
+          },
+          {
+            label: "Cancel Rate (7 Hari)",
+            value: stats ? `${stats.cancelRate}%` : "—",
+            sub: (stats?.cancelRate ?? 0) > 5 ? "Di atas target >5%" : "Dalam batas",
+            icon: TrendingDown, color: "text-red-500", bg: "bg-red-50 dark:bg-red-950/20",
+            alert: (stats?.cancelRate ?? 0) > 5,
+          },
+          {
+            label: "Completion Rate",
+            value: `${completionRate}%`,
+            sub: completionRate >= 70 ? "Target tercapai" : "Di bawah 70%",
+            icon: Timer, color: "text-purple-500", bg: "bg-purple-50 dark:bg-purple-950/20",
+            alert: completionRate < 70 && totalToday > 0,
+          },
+        ].map(kpi => (
+          <Card key={kpi.label} className={`shadow-theme-xs ${kpi.alert ? "ring-1 ring-red-300 dark:ring-red-800" : ""}`}>
             <CardContent className="p-4">
               <div className={`inline-flex p-2 rounded-lg ${kpi.bg} mb-3`}>
                 <kpi.icon className={`h-4 w-4 ${kpi.color}`} />
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight">{kpi.label}</p>
-              <p className="text-xl font-bold text-gray-900 dark:text-white mt-0.5">{kpi.value}</p>
-              {kpi.sub && !kpi.alert && (
-                <p className="text-[10px] text-gray-400 mt-0.5 leading-tight">{kpi.sub}</p>
-              )}
-              {kpi.alert && (
-                <p className="text-xs text-red-500 font-medium mt-1 flex items-center gap-1">
-                  <AlertTriangle className="h-3 w-3" />{kpi.alertMsg}
-                </p>
-              )}
+              <p className="text-2xl font-black text-gray-900 dark:text-white mt-0.5 tabular-nums">{kpi.value}</p>
+              <p className={`text-xs mt-1 font-medium ${kpi.alert ? "text-red-500" : "text-gray-400"}`}>
+                {kpi.alert && <AlertTriangle className="inline h-3 w-3 mr-0.5" />}
+                {kpi.sub}
+              </p>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      {/* ── Main Charts Row ──────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      {/* ── Charts row ─────────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
 
-        {/* Gudang Breakdown */}
-        <Card className="lg:col-span-7 shadow-theme-xs">
+        <Card className="lg:col-span-8 shadow-theme-xs">
           <CardHeader>
-            <CardTitle>Antrian per Gudang</CardTitle>
-            <CardDescription>Jumlah tiket antri aktif per lokasi gudang hari ini.</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Antrian per Gudang</CardTitle>
+                <CardDescription>Jumlah tiket antri aktif per lokasi gudang hari ini.</CardDescription>
+              </div>
+              <Weight className="h-4 w-4 text-gray-400" />
+            </div>
           </CardHeader>
           <CardContent>
             {gudangCategories.length > 0 ? (
               <div style={{ height: `${Math.max(200, gudangCategories.length * 44)}px` }}>
-                <Chart options={gudangOptions} series={[{ name: "Antri", data: gudangData }]} type="bar" height="100%" width="100%" />
+                <Chart
+                  options={gudangOptions}
+                  series={[{ name: "Antri", data: gudangData }]}
+                  type="bar"
+                  height="100%"
+                  width="100%"
+                />
               </div>
             ) : (
               <div className="flex items-center justify-center h-40 text-gray-400 text-sm">
@@ -284,62 +318,43 @@ export default function StaffAreaDashboard() {
           </CardContent>
         </Card>
 
-        {/* Right column: shift donut + radial completion */}
-        <div className="lg:col-span-5 flex flex-col gap-6">
-          <Card className="shadow-theme-xs flex-1">
-            <CardHeader>
-              <CardTitle>Distribusi Shift</CardTitle>
-              <CardDescription>Tiket masuk berdasarkan shift hari ini.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[180px] flex items-center justify-center">
-                {shiftSeries.some(v => v > 0) ? (
-                  <Chart options={shiftOptions} series={shiftSeries} type="donut" height="100%" width="100%" />
-                ) : (
-                  <p className="text-sm text-gray-400">Belum ada tiket hari ini.</p>
-                )}
+        <Card className="lg:col-span-4 shadow-theme-xs">
+          <CardHeader>
+            <CardTitle>Distribusi Shift</CardTitle>
+            <CardDescription>Tiket masuk berdasarkan shift hari ini.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[250px] flex items-center justify-center">
+              {shiftSeries.some(v => v > 0) ? (
+                <Chart
+                  options={shiftOptions}
+                  series={shiftSeries}
+                  type="donut"
+                  height="100%"
+                  width="100%"
+                />
+              ) : (
+                <p className="text-sm text-gray-400">Belum ada tiket hari ini.</p>
+              )}
+            </div>
+            {shiftSeries.some(v => v > 0) && (
+              <div className="grid grid-cols-3 text-center mt-2 gap-2">
+                {[
+                  { label: "Pagi", val: shiftSeries[0], color: "text-amber-500" },
+                  { label: "Siang", val: shiftSeries[1], color: "text-blue-500" },
+                  { label: "Malam", val: shiftSeries[2], color: "text-slate-600 dark:text-slate-300" },
+                ].map(s => (
+                  <div key={s.label} className="bg-slate-50 dark:bg-slate-800/50 rounded-lg py-2">
+                    <span className={`block text-base font-black tabular-nums ${s.color}`}>{s.val}</span>
+                    <span className="text-[10px] text-gray-400">{s.label}</span>
+                  </div>
+                ))}
               </div>
-            </CardContent>
-          </Card>
+            )}
+          </CardContent>
+        </Card>
 
-          <Card className="shadow-theme-xs flex-1">
-            <CardHeader>
-              <CardTitle>Completion Rate Hari Ini</CardTitle>
-              <CardDescription>Persentase tiket selesai dari total masuk.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[160px] flex items-center justify-center">
-                <Chart options={radialOptions} series={[completionRate]} type="radialBar" height="100%" width="100%" />
-              </div>
-              <div className="grid grid-cols-3 text-center mt-1 text-[10px] text-gray-400">
-                <div><span className="block text-sm font-bold text-emerald-500">{fmt(stats?.selesai ?? 0)}</span>Selesai</div>
-                <div><span className="block text-sm font-bold text-blue-500">{fmt(stats?.proses ?? 0)}</span>Proses</div>
-                <div><span className="block text-sm font-bold text-orange-500">{fmt(stats?.antriAktif ?? 0)}</span>Antri</div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
       </div>
-
-      {/* ── Performance Summary Bar ──────────────────────────────────────────── */}
-      <Card className="shadow-theme-xs">
-        <CardContent className="p-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {[
-              { label: "Cancel Rate (7 Hari)", value: `${stats?.cancelRate ?? 0}%`, threshold: `${(stats?.cancelRate ?? 0) > 5 ? "⚠ Di atas target (>5%)" : "✓ Dalam batas"}`, bad: (stats?.cancelRate ?? 0) > 5 },
-              { label: "Overdue Tiket", value: `${stats?.overdueCount ?? 0}`, threshold: (stats?.overdueCount ?? 0) === 0 ? "✓ Tidak ada overdue" : `⚠ ${stats?.overdueCount} perlu eskalasi`, bad: (stats?.overdueCount ?? 0) > 0 },
-              { label: "Completion Rate", value: `${completionRate}%`, threshold: completionRate >= 70 ? "✓ Baik" : "⚠ Di bawah 70%", bad: completionRate < 70 },
-              { label: "Avg Durasi vs Target", value: `${stats?.avgDurasiMenit ?? 0} mnt`, threshold: (stats?.avgDurasiMenit ?? 0) <= 45 ? "✓ Dalam SLA (≤45 mnt)" : "⚠ Melebihi target", bad: (stats?.avgDurasiMenit ?? 0) > 45 },
-            ].map(item => (
-              <div key={item.label}>
-                <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">{item.label}</p>
-                <p className="text-2xl font-black text-gray-900 dark:text-white mt-1">{item.value}</p>
-                <p className={`text-xs font-semibold mt-0.5 ${item.bad ? "text-red-500" : "text-emerald-500"}`}>{item.threshold}</p>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
 
     </div>
   );
