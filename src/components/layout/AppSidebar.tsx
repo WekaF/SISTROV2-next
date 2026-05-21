@@ -32,18 +32,14 @@ type NavItem = {
   subItems?: { name: string; path: string; pro?: boolean; new?: boolean }[];
 };
 
-// Normalize raw backend role (already lowercased) to canonical sidebar role
 function normalizeRole(raw: string | undefined): string {
   if (!raw) return "eksternal";
   const r = raw.toLowerCase().replace(/\s+/g, "");
   const map: Record<string, string> = {
-    // Superadmin / TI
     ti: "superadmin",
     superadmin: "superadmin",
-    // Admin
     admin: "admin",
     adminsumbu: "admin",
-    // Candal
     candalkuota: "candal",
     candaltruk: "candal",
     candaltruck: "candal",
@@ -51,14 +47,12 @@ function normalizeRole(raw: string | undefined): string {
     candalgudangposto: "candal",
     candaldept: "candal",
     candalkapal: "candal",
-    // Staff Area
     staffarea: "staffarea",
     staffarealayah1: "staffarea",
     staffarealayah2: "staffarea",
     staffarewilayah1: "staffarea",
     staffarewilayah2: "staffarea",
     staffareajatim: "staffarea",
-    // DataAreaBagian* → staffarea (area monitoring)
     dataareabagianpoall: "staffarea",
     dataareabagiansoall: "staffarea",
     dataareabagianpojateng: "staffarea",
@@ -73,234 +67,64 @@ function normalizeRole(raw: string | undefined): string {
     dataareababagianjateng: "staffarea",
     dataareababagianjatim: "staffarea",
     dataareababagiansoall: "staffarea",
-    // Viewer
     viewer: "viewer",
     pkg: "viewer",
     viewerposto: "viewer",
     viewerarmada: "viewer",
-    // Transport / Rekanan
     transport: "transport",
     transportsuraljalan: "transport",
     rekanan: "rekanan",
-    // Security
     security: "security",
     securitylini3: "security",
-    // Gudang
     gudang: "gudang",
     candalgudang: "gudang",
     gudanglini3: "gudang",
     chekerlini3: "gudang",
     checkerlini3: "gudang",
-    // Jembatan Timbang
+    admingudang: "gudang",
+    admingudangcandalgudang: "gudang",
     timbangan: "jembatan_timbang",
     jembatan_timbang: "jembatan_timbang",
-    // POD / AdminArmada
     adminarmada: "pod",
     pod: "pod",
-    // PKD / Pelabuhan
     pelabuhanapp: "pkd",
     pelabuhanuppp: "pkd",
     terminal1: "pkd",
     terminal2: "pkd",
     pkd: "pkd",
-    admingudang: "gudang",
-    admingudangcandalgudang: "gudang",
   };
-  // Handle DataAreaBagian* pattern dynamically
   if (r.startsWith("dataareabagian")) return "staffarea";
   return map[r] ?? "eksternal";
 }
 
-// Base items available to all/admin by default
-const defaultNavItems: NavItem[] = [
-  {
-    icon: <LayoutGrid className="h-5 w-5" />,
-    name: "Dashboard",
-    path: "/",
-  },
-  {
-    icon: <Scan className="h-5 w-5" />,
-    name: "Operational Scans",
-    subItems: [
-      { name: "Security (Gate)", path: "/scan/security" },
-      { name: "Weighbridge (JBT)", path: "/scan/weighbridge" },
-      { name: "Warehouse (Gudang)", path: "/scan/warehouse" },
-    ],
-  },
-  {
-    icon: <Monitor className="h-5 w-5" />,
-    name: "Monitoring & Stats",
-    subItems: [
-      { name: "Plant Monitoring", path: "/plant" },
-      { name: "Ticket History", path: "/ticket/pilih-periode" },
-      { name: "Activity Logs", path: "/monitoring" },
-    ],
-  },
-];
+// Merge nav items from multiple groups — dedup by name (case-insensitive), merge subItems
+function mergeNavItems(itemsList: NavItem[][]): NavItem[] {
+  const resultMap = new Map<string, NavItem>();
+  for (const items of itemsList) {
+    for (const item of items) {
+      const key = item.name.toLowerCase();
+      if (resultMap.has(key)) {
+        const existing = resultMap.get(key)!;
+        if (existing.subItems && item.subItems) {
+          const existingPaths = new Set(existing.subItems.map((s) => s.path));
+          const newSubs = item.subItems.filter((s) => !existingPaths.has(s.path));
+          existing.subItems = [...existing.subItems, ...newSubs];
+        }
+      } else {
+        resultMap.set(key, {
+          ...item,
+          subItems: item.subItems ? [...item.subItems] : undefined,
+        });
+      }
+    }
+  }
+  return Array.from(resultMap.values());
+}
 
-const othersItems: NavItem[] = [
-  {
-    icon: <Settings className="h-5 w-5" />,
-    name: "User Management",
-    subItems: [
-      { name: "Users & Roles", path: "/admin/pengaturan/user" },
-      { name: "System Settings", path: "/admin/pengaturan/plant" },
-    ],
-  },
-];
-
-const AppSidebar: React.FC = () => {
-  const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
-  const pathname = usePathname();
-  const { data: session } = useSession();
-  const [openSubmenu, setOpenSubmenu] = useState<{ type: string; index: number } | null>(null);
-
-  const rawMenuGroup = (session?.user as any)?.menuGroup as string | undefined;
-  // Fallback to normalizeRole for users logged in before this feature shipped
-  const role = rawMenuGroup || normalizeRole((session?.user as any)?.role);
-
-  // Compute navigation dynamically based on role
-  let navItems = defaultNavItems;
-  let adminItems = othersItems;
-
-  if (role === "rekanan" || role === "transport") {
-    navItems = [
+const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> = {
+  superadmin: {
+    nav: [
       { icon: <LayoutGrid className="h-5 w-5" />, name: "Dashboard", path: "/" },
-      {
-        icon: <Package className="h-5 w-5" />,
-        name: "POSTO",
-        subItems: [
-          { name: "Datatable Posto", path: "/posto" },
-          { name: "Pengajuan Jatuh Tempo", path: "/pengajuan/jatuh-tempo" },
-        ],
-      },
-      {
-        icon: <ClipboardList className="h-5 w-5" />,
-        name: "Tiket",
-        subItems: [
-          { name: "Datatable Tiket", path: "/tiket" },
-          { name: "Booking Tiket", path: "/tiket/booking" },
-        ],
-      },
-      {
-        icon: <Truck className="h-5 w-5" />,
-        name: role === "transport" ? "Transport" : "Armada",
-        subItems: [
-          { name: "List Armada", path: "/armada" },
-          { name: "Pengajuan Armada Baru", path: "/armada/pengajuan" },
-        ],
-      },
-      {
-        icon: <FileText className="h-5 w-5" />,
-        name: "Laporan",
-        subItems: [
-          { name: "Report Pemesanan Tiket", path: "/reports/booking" },
-        ],
-      },
-    ];
-    adminItems = [];
-  } else if (role === "admin") {
-    navItems = [
-      {
-        icon: <LayoutGrid className="h-5 w-5" />,
-        name: "Dashboard",
-        path: "/",
-      },
-      {
-        icon: <Package className="h-5 w-5" />,
-        name: "POSTO",
-        subItems: [
-          { name: "Data POSTO", path: "/posto" },
-          { name: "Data SO", path: "/so" },
-          { name: "Cut Off POSTO", path: "/posto/cut-off" },
-          { name: "Prioritas Tujuan Muat", path: "/posto/priority" },
-          { name: "Upload POSTO / SO", path: "/posto/upload" },
-        ],
-      },
-      {
-        icon: <CalendarCheck className="h-5 w-5" />,
-        name: "KUOTA",
-        subItems: [
-          { name: "Penjadwalan Kuota", path: "/kuota/schedule" },
-          { name: "Kuota Per-shift", path: "/kuota/shifts" },
-        ],
-      },
-      {
-        icon: <TableProperties className="h-5 w-5" />,
-        name: "Gudang",
-        subItems: [
-          { name: "Antrian", path: "/antrian" },
-          { name: "List Gudang", path: "/gudang" },
-          { name: "Antrian Per Unit", path: "/gudang/unit-queue" },
-          { name: "Gudang Tujuan Bagian", path: "/gudang/tujuan-bagian" },
-          { name: "Monitoring Pemuatan", path: "/gudang/targets" },
-          { name: "Traffic Antrian", path: "/gudang/trafik" },
-          { name: "Bypass Antrian", path: "/gudang/bypass" },
-        ],
-      },
-      {
-        icon: <Truck className="h-5 w-5" />,
-        name: "Armada",
-        subItems: [
-          { name: "Datatable Armada", path: "/armada" },
-          { name: "Pengajuan Armada", path: "/armada/pengajuan" },
-          { name: "Upload Armada", path: "/armada/upload" },
-          { name: "Mapping Zero Odol", path: "/armada/mapping-zero-odol" },
-          { name: "Sumbu Percepatan", path: "/armada/percepatan" },
-        ],
-      },
-      {
-        icon: <ClipboardList className="h-5 w-5" />,
-        name: "Tiket",
-        path: "/admin/tickets",
-      },
-      {
-        icon: <Users className="h-5 w-5" />,
-        name: "User Plant",
-        path: "/superadmin/settings/users",
-      },
-      {
-        icon: <CalendarClock className="h-5 w-5" />,
-        name: "Manajemen Shift",
-        path: "/superadmin/settings/shifts",
-      },
-      {
-        icon: <FileText className="h-5 w-5" />,
-        name: "Laporan",
-        subItems: [
-          { name: "Summary Laporan", path: "/reports" },
-          { name: "Report Pemesanan Tiket", path: "/reports/booking" },
-          { name: "Report Realisasi Pemuatan", path: "/reports/loading" },
-          { name: "Report Pembatalan Tiket", path: "/reports/cancelation" },
-          { name: "Report By Pass", path: "/reports/bypass" },
-          { name: "Report Pembuatan Kuota", path: "/reports/kuota-log" },
-          { name: "Resume Booking Tiket", path: "/reports/resume" },
-        ],
-      },
-    ];
-    adminItems = [
-      {
-        icon: <ShieldCheck className="h-5 w-5" />,
-        name: "Administration",
-        subItems: [
-          { name: "Konfigurasi Plant", path: "/superadmin/settings/plants" },
-          { name: "Master Sumbu", path: "/superadmin/settings/sumbu" },
-          { name: "Sumbu Percepatan", path: "/superadmin/settings/percepatan" },
-          { name: "Konfigurasi Armada", path: "/superadmin/settings/fleet" },
-          { name: "Produk & Mapping", path: "/superadmin/settings/products" },
-          { name: "Gudang & Mapping", path: "/superadmin/settings/warehouses" },
-          { name: "Konfigurasi Rekanan", path: "/superadmin/settings/transport" },
-          { name: "Sumbu Kendaraan", path: "/armada/axle-setup" },
-        ],
-      },
-    ];
-  } else if (role === "superadmin") {
-    navItems = [
-      {
-        icon: <LayoutGrid className="h-5 w-5" />,
-        name: "Dashboard",
-        path: "/",
-      },
       {
         icon: <Package className="h-5 w-5" />,
         name: "POSTO",
@@ -376,8 +200,8 @@ const AppSidebar: React.FC = () => {
         name: "Resume Transit",
         path: "/resume-transit",
       },
-    ];
-    adminItems = [
+    ],
+    admin: [
       {
         icon: <ShieldCheck className="h-5 w-5" />,
         name: "Administration",
@@ -397,19 +221,408 @@ const AppSidebar: React.FC = () => {
           { name: "Role & Menu Group", path: "/superadmin/settings/role-menu" },
         ],
       },
-    ];
-  } else if (role === "pod") {
-    navItems = [
+    ],
+  },
+
+  admin: {
+    nav: [
+      { icon: <LayoutGrid className="h-5 w-5" />, name: "Dashboard", path: "/" },
+      {
+        icon: <Package className="h-5 w-5" />,
+        name: "POSTO",
+        subItems: [
+          { name: "Data POSTO", path: "/posto" },
+          { name: "Data SO", path: "/so" },
+          { name: "Cut Off POSTO", path: "/posto/cut-off" },
+          { name: "Prioritas Tujuan Muat", path: "/posto/priority" },
+          { name: "Upload POSTO / SO", path: "/posto/upload" },
+        ],
+      },
+      {
+        icon: <CalendarCheck className="h-5 w-5" />,
+        name: "KUOTA",
+        subItems: [
+          { name: "Penjadwalan Kuota", path: "/kuota/schedule" },
+          { name: "Kuota Per-shift", path: "/kuota/shifts" },
+        ],
+      },
+      {
+        icon: <TableProperties className="h-5 w-5" />,
+        name: "Gudang",
+        subItems: [
+          { name: "Antrian", path: "/antrian" },
+          { name: "List Gudang", path: "/gudang" },
+          { name: "Antrian Per Unit", path: "/gudang/unit-queue" },
+          { name: "Gudang Tujuan Bagian", path: "/gudang/tujuan-bagian" },
+          { name: "Monitoring Pemuatan", path: "/gudang/targets" },
+          { name: "Traffic Antrian", path: "/gudang/trafik" },
+          { name: "Bypass Antrian", path: "/gudang/bypass" },
+        ],
+      },
+      {
+        icon: <Truck className="h-5 w-5" />,
+        name: "Armada",
+        subItems: [
+          { name: "Datatable Armada", path: "/armada" },
+          { name: "Pengajuan Armada", path: "/armada/pengajuan" },
+          { name: "Upload Armada", path: "/armada/upload" },
+          { name: "Mapping Zero Odol", path: "/armada/mapping-zero-odol" },
+          { name: "Sumbu Percepatan", path: "/armada/percepatan" },
+        ],
+      },
+      { icon: <ClipboardList className="h-5 w-5" />, name: "Tiket", path: "/admin/tickets" },
+      { icon: <Users className="h-5 w-5" />, name: "User Plant", path: "/superadmin/settings/users" },
+      { icon: <CalendarClock className="h-5 w-5" />, name: "Manajemen Shift", path: "/superadmin/settings/shifts" },
+      {
+        icon: <FileText className="h-5 w-5" />,
+        name: "Laporan",
+        subItems: [
+          { name: "Summary Laporan", path: "/reports" },
+          { name: "Report Pemesanan Tiket", path: "/reports/booking" },
+          { name: "Report Realisasi Pemuatan", path: "/reports/loading" },
+          { name: "Report Pembatalan Tiket", path: "/reports/cancelation" },
+          { name: "Report By Pass", path: "/reports/bypass" },
+          { name: "Report Pembuatan Kuota", path: "/reports/kuota-log" },
+          { name: "Resume Booking Tiket", path: "/reports/resume" },
+        ],
+      },
+    ],
+    admin: [
+      {
+        icon: <ShieldCheck className="h-5 w-5" />,
+        name: "Administration",
+        subItems: [
+          { name: "Konfigurasi Plant", path: "/superadmin/settings/plants" },
+          { name: "Master Sumbu", path: "/superadmin/settings/sumbu" },
+          { name: "Sumbu Percepatan", path: "/superadmin/settings/percepatan" },
+          { name: "Konfigurasi Armada", path: "/superadmin/settings/fleet" },
+          { name: "Produk & Mapping", path: "/superadmin/settings/products" },
+          { name: "Gudang & Mapping", path: "/superadmin/settings/warehouses" },
+          { name: "Konfigurasi Rekanan", path: "/superadmin/settings/transport" },
+          { name: "Sumbu Kendaraan", path: "/armada/axle-setup" },
+        ],
+      },
+    ],
+  },
+
+  candal: {
+    nav: [
+      { icon: <LayoutGrid className="h-5 w-5" />, name: "Dashboard", path: "/" },
+      {
+        icon: <CalendarCheck className="h-5 w-5" />,
+        name: "KUOTA",
+        subItems: [
+          { name: "Penjadwalan Kuota", path: "/kuota/schedule" },
+          { name: "Kuota per Shift", path: "/kuota/shifts" },
+          { name: "Pengaturan Shift", path: "/shift" },
+        ],
+      },
+      {
+        icon: <Package className="h-5 w-5" />,
+        name: "POSTO",
+        subItems: [
+          { name: "Data POSTO", path: "/posto" },
+          { name: "Data SO", path: "/so" },
+          { name: "Prioritas Tujuan Muat", path: "/posto/priority" },
+        ],
+      },
+      { icon: <ClipboardList className="h-5 w-5" />, name: "Tiket", path: "/tiket" },
+      {
+        icon: <BarChart3 className="h-5 w-5" />,
+        name: "Gudang & Antrian",
+        subItems: [
+          { name: "Antrian", path: "/antrian" },
+          { name: "ByPass Antrian", path: "/antrian/bypass" },
+          { name: "Gudang", path: "/gudang" },
+          { name: "Trafik Antrian Gudang", path: "/gudang/trafik" },
+        ],
+      },
+      {
+        icon: <Truck className="h-5 w-5" />,
+        name: "Armada",
+        subItems: [
+          { name: "Datatable Armada", path: "/armada" },
+          { name: "Pengajuan Armada", path: "/armada/pengajuan" },
+          { name: "Sumbu Kendaraan", path: "/armada/axle-setup" },
+          { name: "Mapping Zero Odol", path: "/armada/mapping-zero-odol" },
+        ],
+      },
+      {
+        icon: <FileText className="h-5 w-5" />,
+        name: "Laporan",
+        subItems: [
+          { name: "Report Realisasi Pemuatan", path: "/reports/loading" },
+          { name: "Report By Pass", path: "/reports/bypass" },
+          { name: "Report Pembatalan Tiket", path: "/reports/cancelation" },
+          { name: "Report Pembuatan Kuota", path: "/reports/kuota-log" },
+          { name: "Report Pemesanan Tiket", path: "/reports/booking" },
+          { name: "Resume Booking Tiket", path: "/reports/resume" },
+        ],
+      },
+    ],
+    admin: [],
+  },
+
+  staffarea: {
+    nav: [
+      { icon: <LayoutGrid className="h-5 w-5" />, name: "Dashboard", path: "/" },
+      { icon: <BarChart3 className="h-5 w-5" />, name: "Antrian", path: "/antrian" },
+      {
+        icon: <Package className="h-5 w-5" />,
+        name: "POSTO",
+        subItems: [
+          { name: "Data Posto", path: "/posto" },
+          { name: "Upload Posto", path: "/posto/upload" },
+        ],
+      },
+      {
+        icon: <Ticket className="h-5 w-5" />,
+        name: "TIKET",
+        subItems: [{ name: "Datatable Tiket", path: "/admin/tickets" }],
+      },
+      { icon: <CalendarClock className="h-5 w-5" />, name: "Pengaturan Shift", path: "/shift" },
+      {
+        icon: <FileText className="h-5 w-5" />,
+        name: "Laporan",
+        subItems: [
+          { name: "Report Pemesanan Tiket", path: "/reports/booking" },
+          { name: "Report Realisasi Pemuatan", path: "/reports/loading" },
+          { name: "Report Pembatalan Tiket", path: "/reports/cancelation" },
+          { name: "Report By Pass", path: "/reports/bypass" },
+          { name: "Report Pembuatan Kuota", path: "/reports/kuota-log" },
+          { name: "Resume Booking Tiket", path: "/reports/resume" },
+        ],
+      },
+    ],
+    admin: [],
+  },
+
+  viewer: {
+    nav: [
       {
         icon: <LayoutGrid className="h-5 w-5" />,
         name: "Dashboard",
-        path: "/",
+        subItems: [
+          { name: "Dashboard Utama", path: "/" },
+          { name: "Report Plant", path: "/dashboard/report" },
+        ],
+      },
+      {
+        icon: <ClipboardList className="h-5 w-5" />,
+        name: "Tiket",
+        subItems: [
+          { name: "Dashboard Tiket", path: "/tiket/dashboard" },
+          { name: "Track Tiket Integrasi DO", path: "/tiket/track-do" },
+        ],
       },
       {
         icon: <BarChart3 className="h-5 w-5" />,
         name: "Antrian",
-        path: "/antrian",
+        subItems: [
+          { name: "Antrian All Plant", path: "/antrian/all-plant" },
+          { name: "Antrian PSP", path: "/antrian/report-psp" },
+          { name: "Antrian PKT", path: "/antrian/report-pkt" },
+        ],
       },
+      { icon: <ArrowRightLeft className="h-5 w-5" />, name: "Resume Transit", path: "/resume-transit" },
+      {
+        icon: <FileText className="h-5 w-5" />,
+        name: "Laporan",
+        subItems: [
+          { name: "Report Pemesanan Tiket", path: "/reports/booking" },
+          { name: "Report Realisasi Pemuatan", path: "/reports/loading" },
+          { name: "Report Pembatalan Tiket", path: "/reports/cancelation" },
+          { name: "Resume Booking Tiket", path: "/reports/resume" },
+        ],
+      },
+    ],
+    admin: [],
+  },
+
+  transport: {
+    nav: [
+      { icon: <LayoutGrid className="h-5 w-5" />, name: "Dashboard", path: "/" },
+      {
+        icon: <Package className="h-5 w-5" />,
+        name: "POSTO",
+        subItems: [
+          { name: "Datatable Posto", path: "/posto" },
+          { name: "Pengajuan Jatuh Tempo", path: "/pengajuan/jatuh-tempo" },
+        ],
+      },
+      {
+        icon: <ClipboardList className="h-5 w-5" />,
+        name: "Tiket",
+        subItems: [
+          { name: "Datatable Tiket", path: "/tiket" },
+          { name: "Booking Tiket", path: "/tiket/booking" },
+        ],
+      },
+      {
+        icon: <Truck className="h-5 w-5" />,
+        name: "Transport",
+        subItems: [
+          { name: "List Armada", path: "/armada" },
+          { name: "Pengajuan Armada Baru", path: "/armada/pengajuan" },
+        ],
+      },
+      {
+        icon: <FileText className="h-5 w-5" />,
+        name: "Laporan",
+        subItems: [{ name: "Report Pemesanan Tiket", path: "/reports/booking" }],
+      },
+    ],
+    admin: [],
+  },
+
+  rekanan: {
+    nav: [
+      { icon: <LayoutGrid className="h-5 w-5" />, name: "Dashboard", path: "/" },
+      {
+        icon: <Package className="h-5 w-5" />,
+        name: "POSTO",
+        subItems: [
+          { name: "Datatable Posto", path: "/posto" },
+          { name: "Pengajuan Jatuh Tempo", path: "/pengajuan/jatuh-tempo" },
+        ],
+      },
+      {
+        icon: <ClipboardList className="h-5 w-5" />,
+        name: "Tiket",
+        subItems: [
+          { name: "Datatable Tiket", path: "/tiket" },
+          { name: "Booking Tiket", path: "/tiket/booking" },
+        ],
+      },
+      {
+        icon: <Truck className="h-5 w-5" />,
+        name: "Armada",
+        subItems: [
+          { name: "List Armada", path: "/armada" },
+          { name: "Pengajuan Armada Baru", path: "/armada/pengajuan" },
+        ],
+      },
+      {
+        icon: <FileText className="h-5 w-5" />,
+        name: "Laporan",
+        subItems: [{ name: "Report Pemesanan Tiket", path: "/reports/booking" }],
+      },
+    ],
+    admin: [],
+  },
+
+  security: {
+    nav: [
+      { icon: <LayoutGrid className="h-5 w-5" />, name: "Dashboard", path: "/" },
+      {
+        icon: <ClipboardList className="h-5 w-5" />,
+        name: "Tiket",
+        subItems: [{ name: "Data Tiket", path: "/tiket" }],
+      },
+      {
+        icon: <Scan className="h-5 w-5" />,
+        name: "Scan",
+        subItems: [
+          { name: "Scan Tiket", path: "/scan/tiket" },
+          { name: "Track Tiket", path: "/track/tiket" },
+        ],
+      },
+      {
+        icon: <BarChart3 className="h-5 w-5" />,
+        name: "Gudang",
+        subItems: [
+          { name: "Antrian", path: "/antrian" },
+          { name: "Gudang", path: "/gudang" },
+        ],
+      },
+      {
+        icon: <FileText className="h-5 w-5" />,
+        name: "Laporan",
+        subItems: [
+          { name: "Report Pemesanan Tiket", path: "/reports/booking" },
+          { name: "Report Realisasi Pemuatan", path: "/reports/loading" },
+          { name: "Report Pembatalan Tiket", path: "/reports/cancelation" },
+        ],
+      },
+    ],
+    admin: [],
+  },
+
+  gudang: {
+    nav: [
+      { icon: <LayoutGrid className="h-5 w-5" />, name: "Dashboard", path: "/" },
+      { icon: <ClipboardList className="h-5 w-5" />, name: "Tiket", path: "/tiket" },
+      {
+        icon: <Scan className="h-5 w-5" />,
+        name: "Scan",
+        subItems: [
+          { name: "Scan Tiket", path: "/scan/tiket" },
+          { name: "Integrasi Tiket", path: "/scan/integrasi" },
+          { name: "Track Tiket", path: "/track/tiket" },
+        ],
+      },
+      {
+        icon: <BarChart3 className="h-5 w-5" />,
+        name: "Gudang",
+        subItems: [
+          { name: "Antrian", path: "/antrian" },
+          { name: "Gudang", path: "/gudang" },
+          { name: "Gudang Tujuan Bagian", path: "/gudang/tujuan-bagian" },
+          { name: "Trafik Antrian Gudang", path: "/gudang/trafik" },
+        ],
+      },
+      {
+        icon: <FileText className="h-5 w-5" />,
+        name: "Laporan",
+        subItems: [
+          { name: "Report Pemesanan Tiket", path: "/reports/booking" },
+          { name: "Report Realisasi Pemuatan", path: "/reports/loading" },
+          { name: "Report Pembatalan Tiket", path: "/reports/cancelation" },
+          { name: "Report By Pass", path: "/reports/bypass" },
+        ],
+      },
+    ],
+    admin: [],
+  },
+
+  jembatan_timbang: {
+    nav: [
+      { icon: <LayoutGrid className="h-5 w-5" />, name: "Dashboard", path: "/" },
+      { icon: <ClipboardList className="h-5 w-5" />, name: "Tiket", path: "/tiket" },
+      {
+        icon: <Scan className="h-5 w-5" />,
+        name: "Scan & Track",
+        subItems: [
+          { name: "Scan Tiket", path: "/scan/tiket" },
+          { name: "Track Tiket", path: "/track/tiket" },
+        ],
+      },
+      {
+        icon: <BarChart3 className="h-5 w-5" />,
+        name: "Gudang",
+        subItems: [
+          { name: "Antrian", path: "/antrian" },
+          { name: "ByPass Antrian", path: "/antrian/bypass" },
+          { name: "Gudang", path: "/gudang" },
+        ],
+      },
+      {
+        icon: <FileText className="h-5 w-5" />,
+        name: "Laporan",
+        subItems: [
+          { name: "Report Pemesanan Tiket", path: "/reports/booking" },
+          { name: "Report Realisasi Pemuatan", path: "/reports/loading" },
+          { name: "Report Pembatalan Tiket", path: "/reports/cancelation" },
+        ],
+      },
+    ],
+    admin: [],
+  },
+
+  pod: {
+    nav: [
+      { icon: <LayoutGrid className="h-5 w-5" />, name: "Dashboard", path: "/" },
+      { icon: <BarChart3 className="h-5 w-5" />, name: "Antrian", path: "/antrian" },
       {
         icon: <Package className="h-5 w-5" />,
         name: "POSTO",
@@ -423,9 +636,7 @@ const AppSidebar: React.FC = () => {
       {
         icon: <Ticket className="h-5 w-5" />,
         name: "TIKET",
-        subItems: [
-          { name: "Datatable Tiket", path: "/admin/tickets" },
-        ],
+        subItems: [{ name: "Datatable Tiket", path: "/admin/tickets" }],
       },
       {
         icon: <CalendarCheck className="h-5 w-5" />,
@@ -470,8 +681,8 @@ const AppSidebar: React.FC = () => {
           { name: "Laporan Posto", path: "/reports/posto" },
         ],
       },
-    ];
-    adminItems = [
+    ],
+    admin: [
       {
         icon: <ShieldCheck className="h-5 w-5" />,
         name: "Administration",
@@ -480,254 +691,11 @@ const AppSidebar: React.FC = () => {
           { name: "Sumbu Percepatan", path: "/superadmin/settings/percepatan" },
         ],
       },
-    ];
-  } else if (role === "staffarea") {
-    navItems = [
-      { icon: <LayoutGrid className="h-5 w-5" />, name: "Dashboard", path: "/" },
-      {
-        icon: <BarChart3 className="h-5 w-5" />,
-        name: "Antrian",
-        path: "/antrian",
-      },
-      {
-        icon: <Package className="h-5 w-5" />,
-        name: "POSTO",
-        subItems: [
-          { name: "Data Posto", path: "/posto" },
-          { name: "Upload Posto", path: "/posto/upload" },
-        ],
-      },
-      {
-        icon: <Ticket className="h-5 w-5" />,
-        name: "TIKET",
-        subItems: [
-          { name: "Datatable Tiket", path: "/admin/tickets" },
-        ],
-      },
-      {
-        icon: <CalendarClock className="h-5 w-5" />,
-        name: "Pengaturan Shift",
-        path: "/shift",
-      },
-      {
-        icon: <FileText className="h-5 w-5" />,
-        name: "Laporan",
-        subItems: [
-          { name: "Report Pemesanan Tiket", path: "/reports/booking" },
-          { name: "Report Realisasi Pemuatan", path: "/reports/loading" },
-          { name: "Report Pembatalan Tiket", path: "/reports/cancelation" },
-          { name: "Report By Pass", path: "/reports/bypass" },
-          { name: "Report Pembuatan Kuota", path: "/reports/kuota-log" },
-          { name: "Resume Booking Tiket", path: "/reports/resume" },
-        ],
-      },
-    ];
-    adminItems = [];
-  } else if (role === "security") {
-    navItems = [
-      { icon: <LayoutGrid className="h-5 w-5" />, name: "Dashboard", path: "/" },
-      {
-        icon: <ClipboardList className="h-5 w-5" />,
-        name: "Tiket",
-        subItems: [
-          { name: "Data Tiket", path: "/tiket" },
-        ],
-      },
-      {
-        icon: <Scan className="h-5 w-5" />,
-        name: "Scan",
-        subItems: [
-          { name: "Scan Tiket", path: "/scan/tiket" },
-          { name: "Track Tiket", path: "/track/tiket" },
-        ],
-      },
-      {
-        icon: <BarChart3 className="h-5 w-5" />,
-        name: "Gudang",
-        subItems: [
-          { name: "Antrian", path: "/antrian" },
-          { name: "Gudang", path: "/gudang" },
-        ],
-      },
-      {
-        icon: <FileText className="h-5 w-5" />,
-        name: "Laporan",
-        subItems: [
-          { name: "Report Pemesanan Tiket", path: "/reports/booking" },
-          { name: "Report Realisasi Pemuatan", path: "/reports/loading" },
-          { name: "Report Pembatalan Tiket", path: "/reports/cancelation" },
-        ],
-      },
-    ];
-    adminItems = [];
-  } else if (role === "jembatan_timbang") {
-    navItems = [
-      { icon: <LayoutGrid className="h-5 w-5" />, name: "Dashboard", path: "/" },
-      { icon: <ClipboardList className="h-5 w-5" />, name: "Tiket", path: "/tiket" },
-      {
-        icon: <Scan className="h-5 w-5" />,
-        name: "Scan & Track",
-        subItems: [
-          { name: "Scan Tiket", path: "/scan/tiket" },
-          { name: "Track Tiket", path: "/track/tiket" },
-        ],
-      },
-      {
-        icon: <BarChart3 className="h-5 w-5" />,
-        name: "Gudang",
-        subItems: [
-          { name: "Antrian", path: "/antrian" },
-          { name: "ByPass Antrian", path: "/antrian/bypass" },
-          { name: "Gudang", path: "/gudang" },
-        ],
-      },
-      {
-        icon: <FileText className="h-5 w-5" />,
-        name: "Laporan",
-        subItems: [
-          { name: "Report Pemesanan Tiket", path: "/reports/booking" },
-          { name: "Report Realisasi Pemuatan", path: "/reports/loading" },
-          { name: "Report Pembatalan Tiket", path: "/reports/cancelation" },
-        ],
-      },
-    ];
-    adminItems = [];
-  } else if (role === "gudang") {
-    navItems = [
-      { icon: <LayoutGrid className="h-5 w-5" />, name: "Dashboard", path: "/" },
-      { icon: <ClipboardList className="h-5 w-5" />, name: "Tiket", path: "/tiket" },
-      {
-        icon: <Scan className="h-5 w-5" />,
-        name: "Scan",
-        subItems: [
-          { name: "Scan Tiket", path: "/scan/tiket" },
-          { name: "Integrasi Tiket", path: "/scan/integrasi" },
-          { name: "Track Tiket", path: "/track/tiket" },
-        ],
-      },
-      {
-        icon: <BarChart3 className="h-5 w-5" />,
-        name: "Gudang",
-        subItems: [
-          { name: "Antrian", path: "/antrian" },
-          { name: "Gudang", path: "/gudang" },
-          // { name: "Batch Gudang Pemuatan", path: "/gudang/batch" },
-          { name: "Gudang Tujuan Bagian", path: "/gudang/tujuan-bagian" },
-          { name: "Trafik Antrian Gudang", path: "/gudang/trafik" },
-        ],
-      },
-      {
-        icon: <FileText className="h-5 w-5" />,
-        name: "Laporan",
-        subItems: [
-          { name: "Report Pemesanan Tiket", path: "/reports/booking" },
-          { name: "Report Realisasi Pemuatan", path: "/reports/loading" },
-          { name: "Report Pembatalan Tiket", path: "/reports/cancelation" },
-          { name: "Report By Pass", path: "/reports/bypass" },
-        ],
-      },
-    ];
-    adminItems = [];
-  } else if (role === "candal") {
-    navItems = [
-      { icon: <LayoutGrid className="h-5 w-5" />, name: "Dashboard", path: "/" },
-      {
-        icon: <CalendarCheck className="h-5 w-5" />,
-        name: "KUOTA",
-        subItems: [
-          { name: "Penjadwalan Kuota", path: "/kuota/schedule" },
-          { name: "Kuota per Shift", path: "/kuota/shifts" },
-          { name: "Pengaturan Shift", path: "/shift" },
-        ],
-      },
-      {
-        icon: <Package className="h-5 w-5" />,
-        name: "POSTO",
-        subItems: [
-          { name: "Data POSTO", path: "/posto" },
-          { name: "Data SO", path: "/so" },
-          { name: "Prioritas Tujuan Muat", path: "/posto/priority" },
-        ],
-      },
-      { icon: <ClipboardList className="h-5 w-5" />, name: "Tiket", path: "/tiket" },
-      {
-        icon: <BarChart3 className="h-5 w-5" />,
-        name: "Gudang & Antrian",
-        subItems: [
-          { name: "Antrian", path: "/antrian" },
-          { name: "ByPass Antrian", path: "/antrian/bypass" },
-          { name: "Gudang", path: "/gudang" },
-          { name: "Trafik Antrian Gudang", path: "/gudang/trafik" },
-        ],
-      },
-      {
-        icon: <Truck className="h-5 w-5" />,
-        name: "Armada",
-        subItems: [
-          { name: "Datatable Armada", path: "/armada" },
-          { name: "Pengajuan Armada", path: "/armada/pengajuan" },
-          // { name: "Persetujuan Armada", path: "/armada/approvals" },
-          { name: "Sumbu Kendaraan", path: "/armada/axle-setup" },
-          { name: "Mapping Zero Odol", path: "/armada/mapping-zero-odol" },
-        ],
-      },
-      {
-        icon: <FileText className="h-5 w-5" />,
-        name: "Laporan",
-        subItems: [
-          { name: "Report Realisasi Pemuatan", path: "/reports/loading" },
-          { name: "Report By Pass", path: "/reports/bypass" },
-          { name: "Report Pembatalan Tiket", path: "/reports/cancelation" },
-          { name: "Report Pembuatan Kuota", path: "/reports/kuota-log" },
-          { name: "Report Pemesanan Tiket", path: "/reports/booking" },
-          { name: "Resume Booking Tiket", path: "/reports/resume" },
-        ],
-      },
-    ];
-    adminItems = [];
-  } else if (role === "viewer") {
-    // Viewer = multi-company monitoring (Viewer + PKG roles in cshtml)
-    navItems = [
-      {
-        icon: <LayoutGrid className="h-5 w-5" />,
-        name: "Dashboard",
-        subItems: [
-          { name: "Dashboard Utama", path: "/" },
-          { name: "Report Plant", path: "/dashboard/report" },
-        ],
-      },
-      {
-        icon: <ClipboardList className="h-5 w-5" />,
-        name: "Tiket",
-        subItems: [
-          { name: "Dashboard Tiket", path: "/tiket/dashboard" },
-          { name: "Track Tiket Integrasi DO", path: "/tiket/track-do" },
-        ],
-      },
-      {
-        icon: <BarChart3 className="h-5 w-5" />,
-        name: "Antrian",
-        subItems: [
-          { name: "Antrian All Plant", path: "/antrian/all-plant" },
-          { name: "Antrian PSP", path: "/antrian/report-psp" },
-          { name: "Antrian PKT", path: "/antrian/report-pkt" },
-        ],
-      },
-      { icon: <ArrowRightLeft className="h-5 w-5" />, name: "Resume Transit", path: "/resume-transit" },
-      {
-        icon: <FileText className="h-5 w-5" />,
-        name: "Laporan",
-        subItems: [
-          { name: "Report Pemesanan Tiket", path: "/reports/booking" },
-          { name: "Report Realisasi Pemuatan", path: "/reports/loading" },
-          { name: "Report Pembatalan Tiket", path: "/reports/cancelation" },
-          { name: "Resume Booking Tiket", path: "/reports/resume" },
-        ],
-      },
-    ];
-    adminItems = [];
-  } else if (role === "pkd") {
-    navItems = [
+    ],
+  },
+
+  pkd: {
+    nav: [
       { icon: <LayoutGrid className="h-5 w-5" />, name: "Dashboard", path: "/" },
       {
         icon: <Package className="h-5 w-5" />,
@@ -760,9 +728,7 @@ const AppSidebar: React.FC = () => {
       {
         icon: <Truck className="h-5 w-5" />,
         name: "Armada",
-        subItems: [
-          { name: "List Armada", path: "/armada" },
-        ],
+        subItems: [{ name: "List Armada", path: "/armada" }],
       },
       {
         icon: <FileText className="h-5 w-5" />,
@@ -776,14 +742,37 @@ const AppSidebar: React.FC = () => {
           { name: "Resume Booking Tiket", path: "/reports/resume" },
         ],
       },
-    ];
-    adminItems = [];
-  } else if (role === "eksternal") {
-    navItems = [
-      { icon: <LayoutGrid className="h-5 w-5" />, name: "Dashboard", path: "/" },
-    ];
-    adminItems = [];
+    ],
+    admin: [],
+  },
+
+  eksternal: {
+    nav: [{ icon: <LayoutGrid className="h-5 w-5" />, name: "Dashboard", path: "/" }],
+    admin: [],
+  },
+};
+
+const AppSidebar: React.FC = () => {
+  const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
+  const pathname = usePathname();
+  const { data: session } = useSession();
+  const [openSubmenu, setOpenSubmenu] = useState<{ type: string; index: number } | null>(null);
+
+  const rawMenuGroups = (session?.user as any)?.menuGroups as string[] | undefined;
+  const rawMenuGroup = (session?.user as any)?.menuGroup as string | undefined;
+
+  // Priority: menuGroups array (multi-role) > single menuGroup > role normalization fallback
+  let activeGroups: string[];
+  if (rawMenuGroups && rawMenuGroups.length > 0) {
+    activeGroups = rawMenuGroups;
+  } else if (rawMenuGroup) {
+    activeGroups = [rawMenuGroup];
+  } else {
+    activeGroups = [normalizeRole((session?.user as any)?.role)];
   }
+
+  const navItems = mergeNavItems(activeGroups.map((g) => MENU_CONFIGS[g]?.nav ?? []));
+  const adminItems = mergeNavItems(activeGroups.map((g) => MENU_CONFIGS[g]?.admin ?? []));
 
   const isActive = useCallback((path: string) => path === pathname, [pathname]);
 
@@ -797,7 +786,7 @@ const AppSidebar: React.FC = () => {
     <ul className="flex flex-col gap-2">
       {items.map((nav, index) => {
         const isOpen = openSubmenu?.type === type && openSubmenu?.index === index;
-        const hasActiveSubItem = nav.subItems?.some(sub => isActive(sub.path));
+        const hasActiveSubItem = nav.subItems?.some((sub) => isActive(sub.path));
 
         return (
           <li key={nav.name}>
@@ -805,16 +794,23 @@ const AppSidebar: React.FC = () => {
               <div>
                 <button
                   onClick={() => handleSubmenuToggle(index, type)}
-                  className={`menu-item group ${isOpen || hasActiveSubItem ? "menu-item-active" : "menu-item-inactive"
-                    } ${!isExpanded && !isHovered ? "lg:justify-center" : "lg:justify-start"}`}
+                  className={`menu-item group ${
+                    isOpen || hasActiveSubItem ? "menu-item-active" : "menu-item-inactive"
+                  } ${!isExpanded && !isHovered ? "lg:justify-center" : "lg:justify-start"}`}
                 >
-                  <span className={`${isOpen || hasActiveSubItem ? "menu-item-icon-active" : "menu-item-icon-inactive"}`}>
+                  <span
+                    className={`${
+                      isOpen || hasActiveSubItem ? "menu-item-icon-active" : "menu-item-icon-inactive"
+                    }`}
+                  >
                     {nav.icon}
                   </span>
                   {(isExpanded || isHovered || isMobileOpen) && (
                     <>
                       <span className="menu-item-text ml-3 flex-grow text-left">{nav.name}</span>
-                      <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+                      <ChevronDown
+                        className={`h-4 w-4 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+                      />
                     </>
                   )}
                 </button>
@@ -824,8 +820,11 @@ const AppSidebar: React.FC = () => {
                       <li key={sub.name}>
                         <Link
                           href={sub.path}
-                          className={`menu-dropdown-item ${isActive(sub.path) ? "menu-dropdown-item-active" : "menu-dropdown-item-inactive"
-                            }`}
+                          className={`menu-dropdown-item ${
+                            isActive(sub.path)
+                              ? "menu-dropdown-item-active"
+                              : "menu-dropdown-item-inactive"
+                          }`}
                         >
                           {sub.name}
                         </Link>
@@ -837,10 +836,15 @@ const AppSidebar: React.FC = () => {
             ) : (
               <Link
                 href={nav.path || "#"}
-                className={`menu-item group ${isActive(nav.path || "") ? "menu-item-active" : "menu-item-inactive"
-                  } ${!isExpanded && !isHovered ? "lg:justify-center" : "lg:justify-start"}`}
+                className={`menu-item group ${
+                  isActive(nav.path || "") ? "menu-item-active" : "menu-item-inactive"
+                } ${!isExpanded && !isHovered ? "lg:justify-center" : "lg:justify-start"}`}
               >
-                <span className={`${isActive(nav.path || "") ? "menu-item-icon-active" : "menu-item-icon-inactive"}`}>
+                <span
+                  className={`${
+                    isActive(nav.path || "") ? "menu-item-icon-active" : "menu-item-icon-inactive"
+                  }`}
+                >
                   {nav.icon}
                 </span>
                 {(isExpanded || isHovered || isMobileOpen) && (
@@ -856,13 +860,17 @@ const AppSidebar: React.FC = () => {
 
   return (
     <aside
-      className={`fixed top-0 left-0 z-100 h-screen transition-all duration-300 ease-in-out bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 
+      className={`fixed top-0 left-0 z-100 h-screen transition-all duration-300 ease-in-out bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800
         ${isExpanded || isHovered || isMobileOpen ? "w-72" : "w-20"}
         ${isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
       onMouseEnter={() => !isExpanded && setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className={`flex items-center h-20 px-6 ${!isExpanded && !isHovered ? "lg:justify-center" : "justify-start"}`}>
+      <div
+        className={`flex items-center h-20 px-6 ${
+          !isExpanded && !isHovered ? "lg:justify-center" : "justify-start"
+        }`}
+      >
         <Link href="/" className="flex items-center gap-3">
           {!(isExpanded || isHovered || isMobileOpen) ? (
             <div className="flex items-center justify-center">
@@ -876,9 +884,21 @@ const AppSidebar: React.FC = () => {
             </div>
           ) : (
             <div className="flex items-center gap-2 min-w-[140px]">
-              <Image src="/images/logo/logosistro.png" alt="Sistro" width={70} height={32} className="object-contain" />
+              <Image
+                src="/images/logo/logosistro.png"
+                alt="Sistro"
+                width={70}
+                height={32}
+                className="object-contain"
+              />
               <div className="h-6 w-px bg-gray-200 dark:bg-gray-800" />
-              <Image src="/images/logo/logocompany.png" alt="Pupuk Indonesia" width={80} height={32} className="object-contain" />
+              <Image
+                src="/images/logo/logocompany.png"
+                alt="Pupuk Indonesia"
+                width={80}
+                height={32}
+                className="object-contain"
+              />
             </div>
           )}
         </Link>
@@ -887,7 +907,11 @@ const AppSidebar: React.FC = () => {
       <div className="flex flex-col px-4 py-4 h-[calc(100vh-80px)] overflow-y-auto no-scrollbar">
         <nav className="flex-grow">
           <div className="mb-6">
-            <h3 className={`mb-4 px-3 text-xs font-semibold uppercase text-gray-400 ${!isExpanded && !isHovered ? "lg:hidden" : "block"}`}>
+            <h3
+              className={`mb-4 px-3 text-xs font-semibold uppercase text-gray-400 ${
+                !isExpanded && !isHovered ? "lg:hidden" : "block"
+              }`}
+            >
               Main Menu
             </h3>
             {renderMenuItems(navItems, "main")}
@@ -895,7 +919,11 @@ const AppSidebar: React.FC = () => {
 
           {adminItems.length > 0 && (
             <div>
-              <h3 className={`mb-4 px-3 text-xs font-semibold uppercase text-gray-400 ${!isExpanded && !isHovered ? "lg:hidden" : "block"}`}>
+              <h3
+                className={`mb-4 px-3 text-xs font-semibold uppercase text-gray-400 ${
+                  !isExpanded && !isHovered ? "lg:hidden" : "block"
+                }`}
+              >
                 Administration
               </h3>
               {renderMenuItems(adminItems, "others")}

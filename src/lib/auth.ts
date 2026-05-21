@@ -133,11 +133,22 @@ export const authOptions: NextAuthOptions = {
         let roleMenuGroupsMap: Record<string, string> = {};
         try { roleMenuGroupsMap = JSON.parse(data.role_menu_groups || "{}"); } catch {}
 
-        // Derive menuGroup from highest-priority role
+        // Collect all unique menu_groups for all user roles, in priority order
+        const sortedRoles = [...roles].sort((a, b) => {
+          const pa = ROLE_PRIORITY.indexOf(a) === -1 ? ROLE_PRIORITY.length : ROLE_PRIORITY.indexOf(a);
+          const pb = ROLE_PRIORITY.indexOf(b) === -1 ? ROLE_PRIORITY.length : ROLE_PRIORITY.indexOf(b);
+          return pa - pb;
+        });
+        const menuGroups: string[] = [];
+        for (const r of sortedRoles) {
+          const key = Object.keys(roleMenuGroupsMap).find(k => k.toLowerCase() === r.toLowerCase());
+          const g = key ? roleMenuGroupsMap[key] : null;
+          if (g && !menuGroups.includes(g)) menuGroups.push(g);
+        }
+        if (menuGroups.length === 0) menuGroups.push("eksternal");
+
         const highestRole = pickHighestRole(roles);
-        const menuGroup = roleMenuGroupsMap[
-          Object.keys(roleMenuGroupsMap).find(k => k.toLowerCase() === highestRole.toLowerCase()) || ""
-        ] || "eksternal";
+        const menuGroup = menuGroups[0];
 
         return {
           id:            data.userid,
@@ -146,6 +157,7 @@ export const authOptions: NextAuthOptions = {
           role:          highestRole,
           roles,
           menuGroup,
+          menuGroups,
           companyCode:   data.companycode ?? null,
           aspnetToken:   data.access_token,
           username:      data.username,
@@ -167,6 +179,7 @@ export const authOptions: NextAuthOptions = {
         token.role          = (user as any).role;
         token.roles         = (user as any).roles;
         token.menuGroup     = (user as any).menuGroup;
+        token.menuGroups    = (user as any).menuGroups;
         token.id            = (user as any).id;
         token.companyCode   = (user as any).companyCode;
         token.aspnetToken   = (user as any).aspnetToken;
@@ -186,6 +199,7 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).role          = token.role;
         (session.user as any).roles         = token.roles;
         (session.user as any).menuGroup     = token.menuGroup;
+        (session.user as any).menuGroups    = token.menuGroups;
         (session.user as any).id            = token.id;
         (session.user as any).companyCode   = token.companyCode;
         (session.user as any).aspnetToken   = token.aspnetToken;
