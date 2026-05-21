@@ -34,6 +34,8 @@ import {
   ArrowLeftRight,
   FileText,
   Zap,
+  XCircle,
+  Database,
 } from "lucide-react"
 
 import {
@@ -193,6 +195,11 @@ const MENU_REPORTS = {
   items: [
     { title: "Summary Laporan", url: "/reports", icon: BarChart3 },
     { title: "Antrian Per Gudang", url: "/reports/antrian", icon: History },
+    { title: "Laporan Booking", url: "/reports/booking", icon: ClipboardList },
+    { title: "Laporan Loading", url: "/reports/loading", icon: Truck },
+    { title: "Laporan Pembatalan", url: "/reports/cancelation", icon: XCircle },
+    { title: "Log Bypass", url: "/reports/log-bypass", icon: AlertCircle },
+    { title: "Log Kuota", url: "/reports/log-kuota", icon: Database },
   ],
 }
 
@@ -263,7 +270,7 @@ const roleMenus: Record<Role, any[]> = {
     MENU_KUOTA_FULL,
     { title: "Antrian Gudang", url: "/antrian", icon: History },
     { title: "Tracking Truck", url: "/track/tiket", icon: Map },
-    { title: "Laporan", url: "/reports", icon: BarChart3 },
+    MENU_REPORTS,
   ],
 
   // ── Staff Area (StaffArea + StaffAreaWilayah) ─────────────────────────────
@@ -283,18 +290,34 @@ const roleMenus: Record<Role, any[]> = {
     },
     { title: "Antrian Gudang", url: "/antrian", icon: History },
     { title: "Tracking Truck", url: "/track/tiket", icon: Map },
-    { title: "Laporan", url: "/reports", icon: BarChart3 },
+    MENU_REPORTS,
   ],
 
   // ── Viewer — read-only, lihat semua company ────────────────────────────────
   viewer: [
-    { title: "Dashboard", url: "/", icon: LayoutDashboard },
-    { title: "Tiket", url: "/ticket", icon: Ticket },
+    {
+      title: "Dashboard",
+      url: "#",
+      icon: LayoutDashboard,
+      items: [
+        { title: "Dashboard Utama", url: "/", icon: LayoutDashboard },
+        { title: "Report Plant", url: "/dashboard/report", icon: BarChart3 },
+      ],
+    },
+    {
+      title: "Tiket",
+      url: "#",
+      icon: Ticket,
+      items: [
+        { title: "Dashboard Tiket", url: "/tiket/dashboard", icon: ClipboardList },
+        { title: "Track Tiket Integrasi DO", url: "/tiket/track-do", icon: Map },
+      ],
+    },
     MENU_POSTO_VIEW,
     { title: "Antrian Gudang", url: "/antrian", icon: History },
     { title: "Tracking Truck", url: "/track/tiket", icon: Map },
     { title: "Stock", url: "/stock", icon: Box },
-    { title: "Laporan", url: "/reports", icon: BarChart3 },
+    MENU_REPORTS,
   ],
 
   // ── Rekanan / Transport — operator kendaraan ──────────────────────────────
@@ -305,7 +328,7 @@ const roleMenus: Record<Role, any[]> = {
     { title: "Antrian Gudang", url: "/antrian", icon: History },
     { title: "Tracking Truck", url: "/track/tiket", icon: Map },
     { title: "Stock", url: "/stock", icon: Box },
-    { title: "Laporan", url: "/reports", icon: BarChart3 },
+    MENU_REPORTS,
     MENU_ARMADA_TRANSPORT,
   ],
 
@@ -316,7 +339,7 @@ const roleMenus: Record<Role, any[]> = {
     { title: "Antrian Gudang", url: "/antrian", icon: History },
     { title: "Tracking Truck", url: "/track/tiket", icon: Map },
     { title: "Stock", url: "/stock", icon: Box },
-    { title: "Laporan", url: "/reports", icon: BarChart3 },
+    MENU_REPORTS,
     MENU_ARMADA_TRANSPORT,
   ],
 
@@ -326,6 +349,7 @@ const roleMenus: Record<Role, any[]> = {
     { title: "Tiket", url: "/ticket", icon: Ticket },
     MENU_POSTO_VIEW,
     { title: "Scan Tiket", url: "/scan/tiket", icon: Scan },
+    MENU_REPORTS,
   ],
 
   // ── Gudang ────────────────────────────────────────────────────────────────
@@ -337,6 +361,7 @@ const roleMenus: Record<Role, any[]> = {
     MENU_GUDANG,
     { title: "Stock", url: "/stock", icon: Box },
     { title: "Scan Tiket", url: "/scan/tiket", icon: Scan },
+    MENU_REPORTS,
   ],
 
   // ── Jembatan Timbang ──────────────────────────────────────────────────────
@@ -346,6 +371,7 @@ const roleMenus: Record<Role, any[]> = {
     MENU_POSTO_VIEW,
     { title: "Antrian Gudang", url: "/antrian", icon: History },
     { title: "Scan Tiket", url: "/scan/tiket", icon: Scan },
+    MENU_REPORTS,
   ],
 
   // ── POD — AdminArmada + approver pengajuan ────────────────────────────────
@@ -370,7 +396,7 @@ const roleMenus: Record<Role, any[]> = {
     { title: "Antrian Gudang", url: "/antrian", icon: History },
     { title: "Tracking Truck", url: "/track/tiket", icon: Map },
     { title: "Stock", url: "/stock", icon: Box },
-    { title: "Laporan", url: "/reports", icon: BarChart3 },
+    MENU_REPORTS,
   ],
 
   // ── Eksternal — akses minimal ─────────────────────────────────────────────
