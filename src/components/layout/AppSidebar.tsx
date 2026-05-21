@@ -155,7 +155,9 @@ const AppSidebar: React.FC = () => {
   const { data: session } = useSession();
   const [openSubmenu, setOpenSubmenu] = useState<{ type: string; index: number } | null>(null);
 
-  const role = normalizeRole((session?.user as any)?.role);
+  const rawMenuGroup = (session?.user as any)?.menuGroup as string | undefined;
+  // Fallback to normalizeRole for users logged in before this feature shipped
+  const role = rawMenuGroup || normalizeRole((session?.user as any)?.role);
 
   // Compute navigation dynamically based on role
   let navItems = defaultNavItems;
@@ -267,8 +269,12 @@ const AppSidebar: React.FC = () => {
         name: "Laporan",
         subItems: [
           { name: "Summary Laporan", path: "/reports" },
-          { name: "Antrian Per Gudang", path: "/reports/antrian" },
-          { name: "Performance Analysis", path: "/admin/reports/performance" },
+          { name: "Report Pemesanan Tiket", path: "/reports/booking" },
+          { name: "Report Realisasi Pemuatan", path: "/reports/loading" },
+          { name: "Report Pembatalan Tiket", path: "/reports/cancelation" },
+          { name: "Report By Pass", path: "/reports/bypass" },
+          { name: "Report Pembuatan Kuota", path: "/reports/kuota-log" },
+          { name: "Resume Booking Tiket", path: "/reports/resume" },
         ],
       },
     ];
@@ -355,8 +361,20 @@ const AppSidebar: React.FC = () => {
       },
       {
         icon: <FileText className="h-5 w-5" />,
-        name: "Global Reports",
-        path: "/admin/reports",
+        name: "Laporan",
+        subItems: [
+          { name: "Report Pemesanan Tiket", path: "/reports/booking" },
+          { name: "Report Realisasi Pemuatan", path: "/reports/loading" },
+          { name: "Report Pembatalan Tiket", path: "/reports/cancelation" },
+          { name: "Report By Pass", path: "/reports/bypass" },
+          { name: "Report Pembuatan Kuota", path: "/reports/kuota-log" },
+          { name: "Resume Booking Tiket", path: "/reports/resume" },
+        ],
+      },
+      {
+        icon: <ArrowRightLeft className="h-5 w-5" />,
+        name: "Resume Transit",
+        path: "/resume-transit",
       },
     ];
     adminItems = [
@@ -375,6 +393,8 @@ const AppSidebar: React.FC = () => {
           { name: "Force Delete Tiket", path: "/superadmin/settings/tiket" },
           { name: "Konfigurasi All User", path: "/admin/pengaturan/user" },
           { name: "Sumbu Kendaraan", path: "/armada/axle-setup" },
+          { name: "Area Scope User", path: "/superadmin/settings/area-scope" },
+          { name: "Role & Menu Group", path: "/superadmin/settings/role-menu" },
         ],
       },
     ];
@@ -448,7 +468,6 @@ const AppSidebar: React.FC = () => {
           { name: "Laporan Armada", path: "/reports/fleet" },
           { name: "Laporan Gudang", path: "/reports/warehouses" },
           { name: "Laporan Posto", path: "/reports/posto" },
-          { name: "Laporan Statistik", path: "/reports/stats" },
         ],
       },
     ];
@@ -490,6 +509,18 @@ const AppSidebar: React.FC = () => {
         name: "Pengaturan Shift",
         path: "/shift",
       },
+      {
+        icon: <FileText className="h-5 w-5" />,
+        name: "Laporan",
+        subItems: [
+          { name: "Report Pemesanan Tiket", path: "/reports/booking" },
+          { name: "Report Realisasi Pemuatan", path: "/reports/loading" },
+          { name: "Report Pembatalan Tiket", path: "/reports/cancelation" },
+          { name: "Report By Pass", path: "/reports/bypass" },
+          { name: "Report Pembuatan Kuota", path: "/reports/kuota-log" },
+          { name: "Resume Booking Tiket", path: "/reports/resume" },
+        ],
+      },
     ];
     adminItems = [];
   } else if (role === "security") {
@@ -516,7 +547,15 @@ const AppSidebar: React.FC = () => {
         subItems: [
           { name: "Antrian", path: "/antrian" },
           { name: "Gudang", path: "/gudang" },
-          { name: "Antrian Per Gudang", path: "/reports/antrian" },
+        ],
+      },
+      {
+        icon: <FileText className="h-5 w-5" />,
+        name: "Laporan",
+        subItems: [
+          { name: "Report Pemesanan Tiket", path: "/reports/booking" },
+          { name: "Report Realisasi Pemuatan", path: "/reports/loading" },
+          { name: "Report Pembatalan Tiket", path: "/reports/cancelation" },
         ],
       },
     ];
@@ -540,8 +579,15 @@ const AppSidebar: React.FC = () => {
           { name: "Antrian", path: "/antrian" },
           { name: "ByPass Antrian", path: "/antrian/bypass" },
           { name: "Gudang", path: "/gudang" },
-          // { name: "Batch Gudang Pemuatan", path: "/gudang/batch" },
-          { name: "Antrian Per Gudang", path: "/reports/antrian" },
+        ],
+      },
+      {
+        icon: <FileText className="h-5 w-5" />,
+        name: "Laporan",
+        subItems: [
+          { name: "Report Pemesanan Tiket", path: "/reports/booking" },
+          { name: "Report Realisasi Pemuatan", path: "/reports/loading" },
+          { name: "Report Pembatalan Tiket", path: "/reports/cancelation" },
         ],
       },
     ];
@@ -567,8 +613,17 @@ const AppSidebar: React.FC = () => {
           { name: "Gudang", path: "/gudang" },
           // { name: "Batch Gudang Pemuatan", path: "/gudang/batch" },
           { name: "Gudang Tujuan Bagian", path: "/gudang/tujuan-bagian" },
-          { name: "Antrian Per Gudang", path: "/reports/antrian" },
           { name: "Trafik Antrian Gudang", path: "/gudang/trafik" },
+        ],
+      },
+      {
+        icon: <FileText className="h-5 w-5" />,
+        name: "Laporan",
+        subItems: [
+          { name: "Report Pemesanan Tiket", path: "/reports/booking" },
+          { name: "Report Realisasi Pemuatan", path: "/reports/loading" },
+          { name: "Report Pembatalan Tiket", path: "/reports/cancelation" },
+          { name: "Report By Pass", path: "/reports/bypass" },
         ],
       },
     ];
@@ -602,7 +657,6 @@ const AppSidebar: React.FC = () => {
           { name: "Antrian", path: "/antrian" },
           { name: "ByPass Antrian", path: "/antrian/bypass" },
           { name: "Gudang", path: "/gudang" },
-          { name: "Antrian Per Gudang", path: "/reports/antrian" },
           { name: "Trafik Antrian Gudang", path: "/gudang/trafik" },
         ],
       },
@@ -638,6 +692,7 @@ const AppSidebar: React.FC = () => {
         icon: <LayoutGrid className="h-5 w-5" />,
         name: "Dashboard",
         subItems: [
+          { name: "Dashboard Utama", path: "/" },
           { name: "Report Plant", path: "/dashboard/report" },
         ],
       },
@@ -646,6 +701,7 @@ const AppSidebar: React.FC = () => {
         name: "Tiket",
         subItems: [
           { name: "Dashboard Tiket", path: "/tiket/dashboard" },
+          { name: "Track Tiket Integrasi DO", path: "/tiket/track-do" },
         ],
       },
       {
@@ -658,16 +714,18 @@ const AppSidebar: React.FC = () => {
         ],
       },
       { icon: <ArrowRightLeft className="h-5 w-5" />, name: "Resume Transit", path: "/resume-transit" },
-    ];
-    adminItems = [
       {
-        icon: <Settings className="h-5 w-5" />,
-        name: "Admin",
+        icon: <FileText className="h-5 w-5" />,
+        name: "Laporan",
         subItems: [
-          { name: "Management Plant", path: "/admin/plant" },
+          { name: "Report Pemesanan Tiket", path: "/reports/booking" },
+          { name: "Report Realisasi Pemuatan", path: "/reports/loading" },
+          { name: "Report Pembatalan Tiket", path: "/reports/cancelation" },
+          { name: "Resume Booking Tiket", path: "/reports/resume" },
         ],
       },
     ];
+    adminItems = [];
   } else if (role === "pkd") {
     navItems = [
       { icon: <LayoutGrid className="h-5 w-5" />, name: "Dashboard", path: "/" },
@@ -696,7 +754,6 @@ const AppSidebar: React.FC = () => {
           { name: "Antrian", path: "/antrian" },
           { name: "ByPass Antrian", path: "/antrian/bypass" },
           { name: "Gudang", path: "/gudang" },
-          { name: "Antrian Per Gudang", path: "/reports/antrian" },
           { name: "Trafik Antrian Gudang", path: "/gudang/trafik" },
         ],
       },

@@ -129,12 +129,23 @@ export const authOptions: NextAuthOptions = {
           ? data.role.split(", ").map((r: string) => r.trim().toLowerCase())
           : [];
 
+        // Parse role→menu_group map from token response
+        let roleMenuGroupsMap: Record<string, string> = {};
+        try { roleMenuGroupsMap = JSON.parse(data.role_menu_groups || "{}"); } catch {}
+
+        // Derive menuGroup from highest-priority role
+        const highestRole = pickHighestRole(roles);
+        const menuGroup = roleMenuGroupsMap[
+          Object.keys(roleMenuGroupsMap).find(k => k.toLowerCase() === highestRole.toLowerCase()) || ""
+        ] || "eksternal";
+
         return {
           id:            data.userid,
           name:          data.fullname,
           email:         data.email,
-          role:          pickHighestRole(roles),
+          role:          highestRole,
           roles,
+          menuGroup,
           companyCode:   data.companycode ?? null,
           aspnetToken:   data.access_token,
           username:      data.username,
@@ -155,6 +166,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.role          = (user as any).role;
         token.roles         = (user as any).roles;
+        token.menuGroup     = (user as any).menuGroup;
         token.id            = (user as any).id;
         token.companyCode   = (user as any).companyCode;
         token.aspnetToken   = (user as any).aspnetToken;
@@ -173,6 +185,7 @@ export const authOptions: NextAuthOptions = {
       if (token && session.user) {
         (session.user as any).role          = token.role;
         (session.user as any).roles         = token.roles;
+        (session.user as any).menuGroup     = token.menuGroup;
         (session.user as any).id            = token.id;
         (session.user as any).companyCode   = token.companyCode;
         (session.user as any).aspnetToken   = token.aspnetToken;
