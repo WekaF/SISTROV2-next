@@ -1,0 +1,29 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model AuditLog {
+  id          Int      @id @default(autoincrement())
+  eventType   String
+  userId      String?
+  username    String?
+  role        String?
+  companyCode String?
+  ipAddress   String?
+  userAgent   String?
+  resource    String?
+  method      String?
+  statusCode  Int?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  @@index([eventType])
+  @@index([userId])
+  @@index([username])
+  @@index([createdAt])
+  @@index([companyCode])
+}
