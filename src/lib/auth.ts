@@ -1,5 +1,6 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import { logEvent } from "@/lib/audit-logger";
 
 // Priority order: index 0 = highest privilege
 const ROLE_PRIORITY = [
@@ -118,10 +119,22 @@ export const authOptions: NextAuthOptions = {
             const text = await res.text().catch(() => res.statusText);
             let errMsg = "Login gagal";
             try { errMsg = JSON.parse(text)?.error_description || text || errMsg; } catch {}
+            await logEvent({
+              eventType: "LOGIN_FAILED",
+              username:  credentials.username,
+              metadata:  { reason: errMsg },
+            });
             throw new Error(errMsg);
           }
           data = await res.json();
         } catch (err: any) {
+          if (err.message && !err.message.startsWith("Login gagal") && !(err.message.includes("error_description"))) {
+            await logEvent({
+              eventType: "LOGIN_FAILED",
+              username:  credentials.username,
+              metadata:  { reason: err.message },
+            });
+          }
           throw new Error(err?.message || "Tidak dapat terhubung ke server");
         }
 
@@ -200,6 +213,16 @@ export const authOptions: NextAuthOptions = {
       if (trigger === "update" && updateData) {
         if (updateData.aspnetToken) token.aspnetToken = updateData.aspnetToken;
         if (updateData.companyCode) token.companyCode = updateData.companyCode;
+        if (updateData.aspnetToken || updateData.companyCode) {
+          await logEvent({
+            eventType:   "COMPANY_SWITCH",
+            userId:      token.sub,
+            username:    token.username as string | undefined,
+            role:        token.role as string | undefined,
+            companyCode: updateData.companyCode as string | undefined,
+            metadata:    { previousCompany: token.companyCode },
+          });
+        }
       }
       return token;
     },
@@ -222,6 +245,27 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: "/login",
     error:  "/login",
+  },
+
+  events: {
+    async signIn({ user }) {
+      await logEvent({
+        eventType:   "LOGIN",
+        userId:      (user as any).id,
+        username:    (user as any).username,
+        role:        (user as any).role,
+        companyCode: (user as any).companyCode,
+      });
+    },
+    async signOut({ token }) {
+      await logEvent({
+        eventType:   "LOGOUT",
+        userId:      token?.sub,
+        username:    token?.username as string | undefined,
+        role:        token?.role as string | undefined,
+        companyCode: token?.companyCode as string | undefined,
+      });
+    },
   },
 
   secret: process.env.NEXTAUTH_SECRET,
