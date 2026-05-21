@@ -219,6 +219,7 @@ const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> = {
           { name: "Sumbu Kendaraan", path: "/armada/axle-setup" },
           { name: "Area Scope User", path: "/superadmin/settings/area-scope" },
           { name: "Role & Menu Group", path: "/superadmin/settings/role-menu" },
+          { name: "Menu Per User", path: "/superadmin/settings/user-menu" },
         ],
       },
     ],

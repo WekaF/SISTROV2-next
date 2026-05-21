@@ -133,19 +133,28 @@ export const authOptions: NextAuthOptions = {
         let roleMenuGroupsMap: Record<string, string> = {};
         try { roleMenuGroupsMap = JSON.parse(data.role_menu_groups || "{}"); } catch {}
 
-        // Collect all unique menu_groups for all user roles, in priority order
-        const sortedRoles = [...roles].sort((a, b) => {
-          const pa = ROLE_PRIORITY.indexOf(a) === -1 ? ROLE_PRIORITY.length : ROLE_PRIORITY.indexOf(a);
-          const pb = ROLE_PRIORITY.indexOf(b) === -1 ? ROLE_PRIORITY.length : ROLE_PRIORITY.indexOf(b);
-          return pa - pb;
-        });
-        const menuGroups: string[] = [];
-        for (const r of sortedRoles) {
-          const key = Object.keys(roleMenuGroupsMap).find(k => k.toLowerCase() === r.toLowerCase());
-          const g = key ? roleMenuGroupsMap[key] : null;
-          if (g && !menuGroups.includes(g)) menuGroups.push(g);
+        // Per-user explicit override takes priority
+        const userMenuGroup = (data.user_menu_group || "").trim();
+
+        let menuGroups: string[];
+        if (userMenuGroup) {
+          // Admin assigned a specific menu to this user — use it exclusively
+          menuGroups = [userMenuGroup];
+        } else {
+          // Derive from all roles, in priority order
+          const sortedRoles = [...roles].sort((a, b) => {
+            const pa = ROLE_PRIORITY.indexOf(a) === -1 ? ROLE_PRIORITY.length : ROLE_PRIORITY.indexOf(a);
+            const pb = ROLE_PRIORITY.indexOf(b) === -1 ? ROLE_PRIORITY.length : ROLE_PRIORITY.indexOf(b);
+            return pa - pb;
+          });
+          menuGroups = [];
+          for (const r of sortedRoles) {
+            const key = Object.keys(roleMenuGroupsMap).find(k => k.toLowerCase() === r.toLowerCase());
+            const g = key ? roleMenuGroupsMap[key] : null;
+            if (g && !menuGroups.includes(g)) menuGroups.push(g);
+          }
+          if (menuGroups.length === 0) menuGroups.push("eksternal");
         }
-        if (menuGroups.length === 0) menuGroups.push("eksternal");
 
         const highestRole = pickHighestRole(roles);
         const menuGroup = menuGroups[0];
