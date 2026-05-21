@@ -127,18 +127,18 @@ const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> = {
       { icon: <LayoutGrid className="h-5 w-5" />, name: "Dashboard", path: "/" },
       {
         icon: <Package className="h-5 w-5" />,
-        name: "POSTO",
+        name: "Posto",
         subItems: [
-          { name: "Data POSTO", path: "/posto" },
-          { name: "Data SO", path: "/so" },
-          { name: "Cut Off POSTO", path: "/posto/cut-off" },
+          { name: "Data Posto", path: "/posto" },
+          { name: "Data So", path: "/so" },
+          { name: "Cut Off Posto", path: "/posto/cut-off" },
           { name: "Prioritas Tujuan Muat", path: "/posto/priority" },
-          { name: "Upload POSTO / SO", path: "/posto/upload" },
+          { name: "Upload Posto / So", path: "/posto/upload" },
         ],
       },
       {
         icon: <CalendarCheck className="h-5 w-5" />,
-        name: "KUOTA",
+        name: "Kuota",
         subItems: [
           { name: "Penjadwalan Kuota", path: "/kuota/schedule" },
           { name: "Kuota Per-shift", path: "/kuota/shifts" },
@@ -230,18 +230,18 @@ const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> = {
       { icon: <LayoutGrid className="h-5 w-5" />, name: "Dashboard", path: "/" },
       {
         icon: <Package className="h-5 w-5" />,
-        name: "POSTO",
+        name: "Posto",
         subItems: [
-          { name: "Data POSTO", path: "/posto" },
-          { name: "Data SO", path: "/so" },
-          { name: "Cut Off POSTO", path: "/posto/cut-off" },
+          { name: "Data Posto", path: "/posto" },
+          { name: "Data So", path: "/so" },
+          { name: "Cut Off Posto", path: "/posto/cut-off" },
           { name: "Prioritas Tujuan Muat", path: "/posto/priority" },
-          { name: "Upload POSTO / SO", path: "/posto/upload" },
+          { name: "Upload Posto / So", path: "/posto/upload" },
         ],
       },
       {
         icon: <CalendarCheck className="h-5 w-5" />,
-        name: "KUOTA",
+        name: "Kuota",
         subItems: [
           { name: "Penjadwalan Kuota", path: "/kuota/schedule" },
           { name: "Kuota Per-shift", path: "/kuota/shifts" },
@@ -311,7 +311,7 @@ const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> = {
       { icon: <LayoutGrid className="h-5 w-5" />, name: "Dashboard", path: "/" },
       {
         icon: <CalendarCheck className="h-5 w-5" />,
-        name: "KUOTA",
+        name: "Kuota",
         subItems: [
           { name: "Penjadwalan Kuota", path: "/kuota/schedule" },
           { name: "Kuota per Shift", path: "/kuota/shifts" },
@@ -320,10 +320,10 @@ const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> = {
       },
       {
         icon: <Package className="h-5 w-5" />,
-        name: "POSTO",
+        name: "Posto",
         subItems: [
-          { name: "Data POSTO", path: "/posto" },
-          { name: "Data SO", path: "/so" },
+          { name: "Data Posto", path: "/posto" },
+          { name: "Data So", path: "/so" },
           { name: "Prioritas Tujuan Muat", path: "/posto/priority" },
         ],
       },
@@ -333,7 +333,7 @@ const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> = {
         name: "Gudang & Antrian",
         subItems: [
           { name: "Antrian", path: "/antrian" },
-          { name: "ByPass Antrian", path: "/antrian/bypass" },
+          { name: "Bypass Antrian", path: "/antrian/bypass" },
           { name: "Gudang", path: "/gudang" },
           { name: "Trafik Antrian Gudang", path: "/gudang/trafik" },
         ],
@@ -370,7 +370,7 @@ const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> = {
       { icon: <BarChart3 className="h-5 w-5" />, name: "Antrian", path: "/antrian" },
       {
         icon: <Package className="h-5 w-5" />,
-        name: "POSTO",
+        name: "Posto",
         subItems: [
           { name: "Data Posto", path: "/posto" },
           { name: "Upload Posto", path: "/posto/upload" },
@@ -378,7 +378,7 @@ const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> = {
       },
       {
         icon: <Ticket className="h-5 w-5" />,
-        name: "TIKET",
+        name: "Tiket",
         subItems: [{ name: "Datatable Tiket", path: "/admin/tickets" }],
       },
       { icon: <CalendarClock className="h-5 w-5" />, name: "Pengaturan Shift", path: "/shift" },
@@ -445,7 +445,7 @@ const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> = {
       { icon: <LayoutGrid className="h-5 w-5" />, name: "Dashboard", path: "/" },
       {
         icon: <Package className="h-5 w-5" />,
-        name: "POSTO",
+        name: "Posto",
         subItems: [
           { name: "Datatable Posto", path: "/posto" },
           { name: "Pengajuan Jatuh Tempo", path: "/pengajuan/jatuh-tempo" },
@@ -481,7 +481,7 @@ const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> = {
       { icon: <LayoutGrid className="h-5 w-5" />, name: "Dashboard", path: "/" },
       {
         icon: <Package className="h-5 w-5" />,
-        name: "POSTO",
+        name: "Posto",
         subItems: [
           { name: "Datatable Posto", path: "/posto" },
           { name: "Pengajuan Jatuh Tempo", path: "/pengajuan/jatuh-tempo" },
@@ -603,7 +603,7 @@ const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> = {
         name: "Gudang",
         subItems: [
           { name: "Antrian", path: "/antrian" },
-          { name: "ByPass Antrian", path: "/antrian/bypass" },
+          { name: "Bypass Antrian", path: "/antrian/bypass" },
           { name: "Gudang", path: "/gudang" },
         ],
       },
@@ -626,7 +626,7 @@ const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> = {
       { icon: <BarChart3 className="h-5 w-5" />, name: "Antrian", path: "/antrian" },
       {
         icon: <Package className="h-5 w-5" />,
-        name: "POSTO",
+        name: "Posto",
         subItems: [
           { name: "Upload Posto", path: "/posto/upload" },
           { name: "Data Posto", path: "/posto" },
@@ -636,12 +636,12 @@ const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> = {
       },
       {
         icon: <Ticket className="h-5 w-5" />,
-        name: "TIKET",
+        name: "Tiket",
         subItems: [{ name: "Datatable Tiket", path: "/admin/tickets" }],
       },
       {
         icon: <CalendarCheck className="h-5 w-5" />,
-        name: "KUOTA",
+        name: "Kuota",
         subItems: [
           { name: "Penjadwalan Kuota", path: "/kuota/schedule" },
           { name: "Kuota Per-shift", path: "/kuota/shifts" },
@@ -700,10 +700,10 @@ const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> = {
       { icon: <LayoutGrid className="h-5 w-5" />, name: "Dashboard", path: "/" },
       {
         icon: <Package className="h-5 w-5" />,
-        name: "POSTO",
+        name: "Posto",
         subItems: [
-          { name: "Data POSTO", path: "/posto" },
-          { name: "Data SO", path: "/so" },
+          { name: "Data Posto", path: "/posto" },
+          { name: "Data So", path: "/so" },
         ],
       },
       { icon: <ClipboardList className="h-5 w-5" />, name: "Tiket", path: "/tiket" },
@@ -721,7 +721,7 @@ const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> = {
         name: "Gudang & Antrian",
         subItems: [
           { name: "Antrian", path: "/antrian" },
-          { name: "ByPass Antrian", path: "/antrian/bypass" },
+          { name: "Bypass Antrian", path: "/antrian/bypass" },
           { name: "Gudang", path: "/gudang" },
           { name: "Trafik Antrian Gudang", path: "/gudang/trafik" },
         ],
@@ -742,6 +742,23 @@ const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> = {
           { name: "Report Pemesanan Tiket", path: "/reports/booking" },
           { name: "Resume Booking Tiket", path: "/reports/resume" },
         ],
+      },
+    ],
+    admin: [],
+  },
+
+  manager: {
+    nav: [
+      { icon: <LayoutGrid className="h-5 w-5" />, name: "Dashboard", path: "/manager" },
+      {
+        icon: <Ticket className="h-5 w-5" />,
+        name: "Dashboard Tiket",
+        path: "/manager/tiket",
+      },
+      {
+        icon: <FileText className="h-5 w-5" />,
+        name: "Laporan",
+        path: "/manager/laporan",
       },
     ],
     admin: [],

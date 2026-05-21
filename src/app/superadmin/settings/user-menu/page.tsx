@@ -15,6 +15,7 @@ const MENU_GROUP_OPTIONS = [
   { value: "candal", label: "Candal" },
   { value: "staffarea", label: "Staff Area" },
   { value: "viewer", label: "Viewer" },
+  { value: "manager", label: "Manager / Pimpinan" },
   { value: "transport", label: "Transport" },
   { value: "rekanan", label: "Rekanan" },
   { value: "security", label: "Security" },
