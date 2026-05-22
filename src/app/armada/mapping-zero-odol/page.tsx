@@ -65,9 +65,12 @@ export default function MappingZeroOdolPage() {
     tujuan: "",
   });
 
-  const rawRole = (session?.user as any)?.role;
-  const activeRole = normalizeRole(rawRole);
-  const canManage = ["superadmin", "staffarea", "pod", "admin", "candal", "ti"].includes(activeRole);
+  const allRoles: string[] = ((session?.user as any)?.roles as string[] | undefined) ?? [
+    (session?.user as any)?.role,
+  ].filter(Boolean);
+  const canManage = allRoles.some((r) =>
+    ["superadmin", "staffarea", "pod", "admin", "candal", "ti"].includes(normalizeRole(r))
+  );
 
   // Queries
   const { data: odolStatus, isLoading: isLoadingOdol } = useQuery({

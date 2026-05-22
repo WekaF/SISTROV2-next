@@ -68,34 +68,10 @@ const REPORTS: ReportItem[] = [
     icon: BookOpen,
   },
   {
-    title: "Laporan POSTO",
-    description: "Data POSTO berdasarkan tanggal — termasuk tujuan dan qty.",
-    url: "/reports/posto",
-    icon: Package,
-  },
-  {
-    title: "Laporan Tiket",
-    description: "Laporan tiket lengkap per periode dengan filter status.",
-    url: "/reports/tickets",
-    icon: Ticket,
-  },
-  {
-    title: "Laporan Antrian",
-    description: "Antrian kendaraan aktif dikelompokkan per gudang tujuan.",
-    url: "/reports/queue",
-    icon: History,
-  },
-  {
     title: "Laporan Armada",
     description: "Data seluruh armada aktif beserta informasi KIR.",
     url: "/reports/fleet",
     icon: Truck,
-  },
-  {
-    title: "Laporan Gudang",
-    description: "Daftar gudang terdaftar beserta lokasi dan wilayah.",
-    url: "/reports/warehouses",
-    icon: Warehouse,
   },
   {
     title: "POD (Proof of Delivery)",

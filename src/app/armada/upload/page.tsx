@@ -182,16 +182,11 @@ export default function ArmadaUploadPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitDone, setSubmitDone] = useState(false);
 
-  const role = normalizeRole((session?.user as any)?.role);
-  const canAccess = ALLOWED_ROLES.includes(role);
+  const allRoles: string[] = ((session?.user as any)?.roles as string[] | undefined) ?? [
+    (session?.user as any)?.role,
+  ].filter(Boolean);
+  const canAccess = allRoles.some((r) => ALLOWED_ROLES.includes(normalizeRole(r)));
 
-  if (session && !canAccess) {
-    return (
-      <div className="p-8 text-center text-red-500 font-semibold">
-        Akses ditolak. Halaman ini hanya untuk Admin Armada, Admin, atau Superadmin.
-      </div>
-    );
-  }
 
   const handleFile = useCallback((file: File) => {
     if (!file.name.match(/\.(xlsx|xls)$/i)) {
@@ -284,6 +279,14 @@ export default function ArmadaUploadPage() {
       setIsSubmitting(false);
     }
   };
+
+  if (session && !canAccess) {
+    return (
+      <div className="p-8 text-center text-red-500 font-semibold">
+        Akses ditolak. Halaman ini hanya untuk Admin Armada, Admin, atau Superadmin.
+      </div>
+    );
+  }
 
   const totalRows = rows.length;
   const validCount = rows.filter((r) => r.isValid).length;

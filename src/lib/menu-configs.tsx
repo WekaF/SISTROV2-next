@@ -701,11 +701,7 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
         icon: <FileText className="h-5 w-5" />,
         name: "Laporan",
         subItems: [
-          { name: "Laporan Tiket", path: "/reports/tickets" },
-          { name: "Laporan Antrian", path: "/reports/queue" },
           { name: "Laporan Armada", path: "/reports/fleet" },
-          { name: "Laporan Gudang", path: "/reports/warehouses" },
-          { name: "Laporan Posto", path: "/reports/posto" },
         ],
       },
     ],

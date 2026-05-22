@@ -48,17 +48,17 @@ const AppHeader: React.FC = () => {
             <Image
               width={60}
               height={24}
-              src="/images/logo/logosistro.png"
+              src="/images/logo/logo-text.png"
               alt="Logo"
-              className="object-contain"
+              className="object-contain dark:brightness-0 dark:invert"
             />
-            <div className="h-4 w-px bg-gray-200" />
+            <div className="h-4 w-px bg-gray-200 dark:bg-gray-800" />
             <Image
               width={70}
               height={24}
-              src="/images/logo/logocompany.png"
+              src="/images/logo/logopihd.png"
               alt="Logo"
-              className="object-contain"
+              className="object-contain dark:brightness-0 dark:invert"
             />
           </Link>
 

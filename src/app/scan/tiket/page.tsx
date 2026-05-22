@@ -312,7 +312,7 @@ export default function ScanTiketPage() {
 
         {/* Input Section */}
         <Card className="shadow-lg border-2 border-primary/10 overflow-hidden">
-          <CardHeader className="bg-white border-b pb-4 flex flex-row items-center justify-between">
+          <CardHeader className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 pb-4 flex flex-row items-center justify-between">
             <div>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Scan className="h-5 w-5 text-primary" /> Scan Tiket
@@ -322,13 +322,13 @@ export default function ScanTiketPage() {
             <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
               <button 
                 onClick={() => setScanMode("manual")}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black transition-all ${scanMode === "manual" ? 'bg-white shadow-sm text-primary' : 'text-slate-400 hover:text-slate-600'}`}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black transition-all ${scanMode === "manual" ? 'bg-white dark:bg-gray-700 shadow-sm text-primary' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
               >
                 <Keyboard className="h-4 w-4" /> MANUAL / BT
               </button>
               <button 
                 onClick={() => setScanMode("camera")}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black transition-all ${scanMode === "camera" ? 'bg-white shadow-sm text-primary' : 'text-slate-400 hover:text-slate-600'}`}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black transition-all ${scanMode === "camera" ? 'bg-white dark:bg-gray-700 shadow-sm text-primary' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
               >
                 <Camera className="h-4 w-4" /> KAMERA
               </button>
@@ -389,7 +389,7 @@ export default function ScanTiketPage() {
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <Card className="shadow-xl border-none overflow-hidden">
               {/* Logo & Header */}
-              <div className="bg-white px-6 py-4 flex items-center justify-between border-b">
+              <div className="bg-white dark:bg-gray-800 px-6 py-4 flex items-center justify-between border-b dark:border-gray-700">
                 <div className="flex items-center gap-3">
                   <Image src="/images/logo/logosistro.png" alt="Sistro Logo" width={80} height={36} className="object-contain" />
                   <div className="h-8 w-px bg-slate-200" />
@@ -426,7 +426,7 @@ export default function ScanTiketPage() {
               <div className="grid grid-cols-1 md:grid-cols-2">
 
                 {/* Left: Transportir */}
-                <div className="p-6 bg-white border-r border-slate-100">
+                <div className="p-6 bg-white dark:bg-gray-800 border-r border-slate-100 dark:border-gray-700">
                   <div className="flex items-center gap-2 mb-4 text-slate-400">
                     <Truck className="h-4 w-4" />
                     <span className="text-xs font-bold uppercase tracking-widest">Data Transportir</span>
@@ -583,8 +583,8 @@ export default function ScanTiketPage() {
             </Card>
 
             {/* Timeline Logs */}
-            <Card className="shadow-xl border-none bg-slate-50/50">
-              <CardHeader className="pb-4 border-b bg-white">
+            <Card className="shadow-xl border-none bg-slate-50/50 dark:bg-gray-900/50">
+              <CardHeader className="pb-4 border-b dark:border-gray-700 bg-white dark:bg-gray-800">
                 <CardTitle className="text-base flex items-center gap-2 text-slate-800">
                   <div className="p-2 bg-primary/10 rounded-lg">
                     <History className="h-5 w-5 text-primary" />
@@ -600,7 +600,7 @@ export default function ScanTiketPage() {
                       return (
                         <div
                           key={log.id}
-                          className={`flex items-start gap-4 p-4 transition-colors ${isLatest ? 'bg-white border-l-4 border-l-primary shadow-sm' : 'bg-transparent'
+                          className={`flex items-start gap-4 p-4 transition-colors ${isLatest ? 'bg-white dark:bg-gray-700/50 border-l-4 border-l-primary shadow-sm' : 'bg-transparent'
                             }`}
                         >
                           <div className="flex flex-col items-center gap-1 mt-1">
@@ -616,7 +616,7 @@ export default function ScanTiketPage() {
                                 }`}>
                                 {log.position}
                               </span>
-                              <div className="flex items-center gap-1.5 px-2 py-1 bg-white border border-slate-200 rounded text-[10px] font-black text-slate-400 shadow-sm whitespace-nowrap">
+                              <div className="flex items-center gap-1.5 px-2 py-1 bg-white dark:bg-gray-700 border border-slate-200 dark:border-gray-600 rounded text-[10px] font-black text-slate-400 dark:text-gray-400 shadow-sm whitespace-nowrap">
                                 <Timer className="h-3.3 w-3.3" />
                                 {format(new Date(log.updatedon), "dd MMM yyyy, HH:mm", { locale: id })}
                               </div>

@@ -10,8 +10,12 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-    const role = normalizeRole((session.user as any).role);
-    if (!ALLOWED.includes(role)) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+    const allRoles: string[] = ((session.user as any)?.roles as string[] | undefined) ?? [
+      (session.user as any)?.role,
+    ].filter(Boolean);
+    if (!allRoles.some((r) => ALLOWED.includes(normalizeRole(r)))) {
+      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+    }
 
     const token = (session.user as any).aspnetToken;
     const { records } = await req.json();

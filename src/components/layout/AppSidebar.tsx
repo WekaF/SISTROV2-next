@@ -160,19 +160,19 @@ const AppSidebar: React.FC = () => {
           ) : (
             <div className="flex items-center gap-2 min-w-[140px]">
               <Image
-                src="/images/logo/logosistro.png"
+                src="/images/logo/logo-text.png"
                 alt="Sistro"
                 width={70}
                 height={32}
-                className="object-contain"
+                className="object-contain dark:brightness-0 dark:invert"
               />
               <div className="h-6 w-px bg-gray-200 dark:bg-gray-800" />
               <Image
-                src="/images/logo/logocompany.png"
+                src="/images/logo/logopihd.png"
                 alt="Pupuk Indonesia"
                 width={80}
                 height={32}
-                className="object-contain"
+                className="object-contain dark:brightness-0 dark:invert"
               />
             </div>
           )}
