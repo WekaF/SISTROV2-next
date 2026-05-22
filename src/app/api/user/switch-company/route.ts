@@ -6,7 +6,7 @@ import { getToken } from "next-auth/jwt";
 import type { NextRequest } from "next/server";
 import { withAudit } from "@/lib/with-audit";
 
-const ASPNET_API_URL = process.env.ASPNET_API_URL || "http://192.168.188.170:8090";
+const ASPNET_API_URL = process.env.ASPNET_API_URL || "https://sistro-dev.pupuk-indonesia.com";
 const NEXTAUTH_SECRET = process.env.NEXTAUTH_SECRET || "sistro-dev-secret-change-in-production";
 
 export const POST = withAudit(async function(request: NextRequest) {

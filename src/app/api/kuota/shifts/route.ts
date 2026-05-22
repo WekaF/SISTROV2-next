@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { normalizeRole } from "@/lib/role-utils"
 
-const ASPNET = process.env.ASPNET_API_URL || "http://192.168.188.170:8090"
+const ASPNET = process.env.ASPNET_API_URL || "https://sistro-dev.pupuk-indonesia.com"
 
 export async function GET(req: NextRequest) {
   try {

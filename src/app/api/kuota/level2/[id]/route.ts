@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 
-const ASPNET = process.env.ASPNET_API_URL || "http://192.168.188.170:8090"
+const ASPNET = process.env.ASPNET_API_URL || "https://sistro-dev.pupuk-indonesia.com"
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {

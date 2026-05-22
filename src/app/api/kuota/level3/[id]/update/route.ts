@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { withAudit } from "@/lib/with-audit"
 
-const ASPNET = process.env.ASPNET_API_URL || "http://192.168.188.170:8090"
+const ASPNET = process.env.ASPNET_API_URL || "https://sistro-dev.pupuk-indonesia.com"
 
 export const PATCH = withAudit(async function(req: NextRequest, context: any) {
   const { params } = context as { params: Promise<{ id: string }> }

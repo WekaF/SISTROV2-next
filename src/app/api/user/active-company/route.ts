@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { cookies } from "next/headers";
 
-const ASPNET_API_URL = process.env.ASPNET_API_URL || "http://192.168.188.170:8090";
+const ASPNET_API_URL = process.env.ASPNET_API_URL || "https://sistro-dev.pupuk-indonesia.com";
 
 export async function GET() {
   try {

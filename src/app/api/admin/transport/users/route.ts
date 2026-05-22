@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
-const ASPNET = process.env.ASPNET_API_URL || "http://192.168.188.170:8090";
+const ASPNET = process.env.ASPNET_API_URL || "https://sistro-dev.pupuk-indonesia.com";
 
 function isAuthorized(session: any): boolean {
   const roles = (session?.user as any)?.roles || [];
