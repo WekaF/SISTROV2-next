@@ -4,9 +4,9 @@
  * - aspnetJson: helper JSON dengan error throw
  */
 
-const BASE_URL = typeof window !== 'undefined' 
-  ? "/aspnet-proxy" 
-  : (process.env.NEXT_PUBLIC_ASPNET_API_URL || process.env.ASPNET_API_URL || "http://192.168.188.170:8090");
+const BASE_URL = typeof window !== 'undefined'
+  ? "/aspnet-proxy"
+  : (process.env.NEXT_PUBLIC_ASPNET_API_URL || process.env.ASPNET_API_URL || "https://sistro-dev.pupuk-indonesia.com");
 
 type FetchOptions = Omit<RequestInit, "headers"> & {
   headers?: Record<string, string>;

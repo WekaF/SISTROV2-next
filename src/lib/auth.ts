@@ -82,7 +82,7 @@ function pickHighestRole(roles: string[]): string {
   return best;
 }
 
-const ASPNET_API_URL = process.env.ASPNET_API_URL || "http://192.168.188.170:8090";
+const ASPNET_API_URL = process.env.ASPNET_API_URL || "https://sistro-dev.pupuk-indonesia.com";
 
 export const authOptions: NextAuthOptions = {
   providers: [

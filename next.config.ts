@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 
-const ASPNET_URL = process.env.ASPNET_API_URL || "http://192.168.188.170:8090";
+const ASPNET_URL = process.env.ASPNET_API_URL || "https://sistro-dev.pupuk-indonesia.com";
 
 const nextConfig: NextConfig = {
   turbopack: {
