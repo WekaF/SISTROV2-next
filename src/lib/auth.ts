@@ -2,6 +2,10 @@ import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { logEvent } from "@/lib/audit-logger";
 
+if (typeof window === 'undefined') {
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+}
+
 // Priority order: index 0 = highest privilege
 const ROLE_PRIORITY = [
   // System / Admin
