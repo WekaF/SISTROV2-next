@@ -398,7 +398,7 @@ export default function UserMenuGroupPage() {
             ))}
           </div>
 
-          <DialogFooter className="border-t pt-4 gap-2 flex-row justify-between">
+          <DialogFooter className="border-t pt-4 gap-2 sm:flex-row justify-between">
             <Button
               variant="outline"
               size="sm"
