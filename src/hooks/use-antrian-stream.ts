@@ -15,51 +15,37 @@ interface UseAntrianStreamResult {
   lastUpdated: Date | null;
 }
 
+const POLL_INTERVAL_MS = 30_000;
+
 export function useAntrianStream(companyCode?: string): UseAntrianStreamResult {
   const [data, setData]               = useState<AntrianStreamData | null>(null);
   const [status, setStatus]           = useState<AntrianStreamStatus>("connecting");
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const esRef                         = useRef<EventSource | null>(null);
-  const retryRef                      = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const intervalRef                   = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    const connect = () => {
-      esRef.current?.close();
-      setStatus("connecting");
+    const url = companyCode
+      ? `/api/stream/antrian?companyCode=${encodeURIComponent(companyCode)}`
+      : "/api/stream/antrian";
 
-      const url = companyCode
-        ? `/api/stream/antrian?companyCode=${encodeURIComponent(companyCode)}`
-        : "/api/stream/antrian";
-
-      const es = new EventSource(url);
-      esRef.current = es;
-
-      es.onmessage = (event) => {
-        try {
-          const parsed: AntrianStreamData = JSON.parse(event.data);
-          setData(parsed);
-          setStatus("live");
-          setLastUpdated(new Date());
-        } catch {
-          // malformed payload — ignore
-        }
-      };
-
-      es.onerror = () => {
+    const fetchData = async () => {
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const parsed: AntrianStreamData = await res.json();
+        setData(parsed);
+        setStatus("live");
+        setLastUpdated(new Date());
+      } catch {
         setStatus("error");
-        es.close();
-        esRef.current = null;
-        clearTimeout(retryRef.current ?? undefined);
-        retryRef.current = setTimeout(connect, 5_000);
-      };
+      }
     };
 
-    connect();
+    fetchData();
+    intervalRef.current = setInterval(fetchData, POLL_INTERVAL_MS);
 
     return () => {
-      clearTimeout(retryRef.current ?? undefined);
-      esRef.current?.close();
-      esRef.current = null;
+      if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, [companyCode]);
 
