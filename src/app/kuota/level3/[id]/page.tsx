@@ -94,23 +94,51 @@ function KuotaLevel3Content() {
 
   const saveEdit = async () => {
     if (!editModal.row) return
+    const targetGuid = editModal.row.guid
+    const targetRow = editModal.row
+    const newKuota = Number(editKuota)
+
+    // Snapshot for rollback
+    const previousData = [...data]
+    const previousHeader = header ? { ...header } : null
+
     setSaving(true)
+
+    // Optimistic: update UI immediately, close modal
+    setData(prev => prev.map(row =>
+      row.guid === targetGuid ? { ...row, kuota: newKuota } : row
+    ))
+    setEditModal({ open: false, row: null })
+
     try {
-      const res = await fetch(`/api/kuota/level3/${editModal.row.guid}/update`, {
+      const res = await fetch(`/api/kuota/level3/${targetGuid}/update`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ kuota: Number(editKuota) }),
+        body: JSON.stringify({ kuota: newKuota }),
       })
       const json = await res.json()
-      if (json.success) {
-        setEditModal({ open: false, row: null })
+      if (!json.success) {
+        // Rollback
+        setData(previousData)
+        setHeader(previousHeader)
+        setEditModal({ open: true, row: targetRow })
+        setEditKuota(String(targetRow.kuota))
+        alert(json.error || "Gagal menyimpan")
+      } else {
+        // Background sync with server
         const refreshRes = await fetch(`/api/kuota/level3/${id}`)
         const refreshJson = await refreshRes.json()
-        if (refreshJson.success) { setHeader(refreshJson.header); setData(refreshJson.data) }
-      } else {
-        alert(json.error || "Gagal menyimpan")
+        if (refreshJson.success) {
+          setHeader(refreshJson.header)
+          setData(refreshJson.data)
+        }
       }
     } catch {
+      // Rollback
+      setData(previousData)
+      setHeader(previousHeader)
+      setEditModal({ open: true, row: targetRow })
+      setEditKuota(String(targetRow.kuota))
       alert("Terjadi kesalahan sistem")
     } finally {
       setSaving(false)
