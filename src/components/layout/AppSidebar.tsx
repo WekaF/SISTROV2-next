@@ -118,7 +118,26 @@ function mergeNavItems(itemsList: NavItem[][]): NavItem[] {
       }
     }
   }
-  return Array.from(resultMap.values());
+
+  const merged = Array.from(resultMap.values());
+
+  // Collect all paths that exist inside subItems of any dropdown menu
+  const subItemPaths = new Set<string>();
+  for (const item of merged) {
+    if (item.subItems) {
+      for (const sub of item.subItems) {
+        subItemPaths.add(sub.path);
+      }
+    }
+  }
+
+  // Filter out any root-level items (no subItems) whose path is already present in subItems of another dropdown menu
+  return merged.filter((item) => {
+    if (!item.subItems && item.path) {
+      return !subItemPaths.has(item.path);
+    }
+    return true;
+  });
 }
 
 function filterNavByPaths(items: NavItem[], allowedPaths: string[]): NavItem[] {
@@ -867,7 +886,7 @@ const AppSidebar: React.FC = () => {
                 {isOpen && (isExpanded || isHovered || isMobileOpen) && (
                   <ul className="mt-2 ml-11 space-y-1">
                     {nav.subItems.map((sub) => (
-                      <li key={sub.name}>
+                      <li key={sub.path}>
                         <Link
                           href={sub.path}
                           className={`menu-dropdown-item ${
