@@ -93,11 +93,10 @@ export default function TrackDoPage() {
   const [trackingError, setTrackingError] = useState<string | null>(null);
   const [activeNopol, setActiveNopol] = useState("");
 
-  // SSE Real-time Stream states and refs
+  // Polling states
   const [streamStatus, setStreamStatus] = useState<"connecting" | "live" | "error">("connecting");
   const [streamLastUpdated, setStreamLastUpdated] = useState<Date | null>(null);
-  const esRef = useRef<EventSource | null>(null);
-  const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Load integrated tickets list
   const fetchTickets = async () => {
@@ -124,49 +123,32 @@ export default function TrackDoPage() {
     }
   };
 
-  // Real-time EventSource SSE Stream Connection
+  // Polling for tiket integrasi
   useEffect(() => {
-    const connect = () => {
-      if (esRef.current) {
-        esRef.current.close();
-      }
-
-      setStreamStatus("connecting");
-      const es = new EventSource("/api/stream/tiket-integrasi");
-      esRef.current = es;
-
-      es.onmessage = (event) => {
-        try {
-          const parsed = JSON.parse(event.data);
-          if (parsed.status === "success" && parsed.data && parsed.data.list) {
-            setTickets(parsed.data.list);
-          } else {
-            setTickets([]);
-          }
-          setStreamStatus("live");
-          setStreamLastUpdated(new Date());
-          setIsLoading(false);
-        } catch (err) {
-          console.error("Failed to parse SSE payload:", err);
+    const fetchStream = async () => {
+      try {
+        const res = await fetch("/api/stream/tiket-integrasi");
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const parsed = await res.json();
+        if (parsed.status === "success" && parsed.data && parsed.data.list) {
+          setTickets(parsed.data.list);
+        } else {
+          setTickets([]);
         }
-      };
-
-      es.onerror = () => {
+        setStreamStatus("live");
+        setStreamLastUpdated(new Date());
+        setIsLoading(false);
+      } catch (err) {
+        console.error("Failed to fetch tiket integrasi:", err);
         setStreamStatus("error");
-        es.close();
-        esRef.current = null;
-        clearTimeout(retryTimeoutRef.current ?? undefined);
-        // Auto-reconnect after 5 seconds
-        retryTimeoutRef.current = setTimeout(connect, 5000);
-      };
+      }
     };
 
-    connect();
+    fetchStream();
+    intervalRef.current = setInterval(fetchStream, 30_000);
 
     return () => {
-      clearTimeout(retryTimeoutRef.current ?? undefined);
-      esRef.current?.close();
-      esRef.current = null;
+      if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, []);
 

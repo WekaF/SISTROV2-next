@@ -1,4 +1,3 @@
-// src/app/api/stream/staffarea/route.ts
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -6,7 +5,6 @@ import { aspnetFetchServer } from "@/lib/api-client";
 import { normalizeRole } from "@/lib/role-utils";
 import { cookies } from "next/headers";
 
-const STREAM_INTERVAL_MS = 30_000;
 const ALLOWED = new Set(["staffarea", "gudang", "pod", "superadmin", "ti", "admin"]);
 
 export async function GET(req: Request) {
@@ -26,7 +24,6 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Missing auth token" }, { status: 401 });
   }
 
-  // Get companyCode from query params, falling back to cookie then session
   const { searchParams } = new URL(req.url);
   let companyCode = searchParams.get("companyCode");
 
@@ -35,46 +32,19 @@ export async function GET(req: Request) {
     companyCode = cookieStore.get("sistro_active_company")?.value || (session?.user as any)?.companyCode || null;
   }
 
-  const encoder = new TextEncoder();
+  const url = companyCode
+    ? `/api/CompanyDashboard/GetStats?companyCode=${encodeURIComponent(companyCode)}`
+    : "/api/CompanyDashboard/GetStats";
 
-  const stream = new ReadableStream({
-    async start(controller) {
-      const send = async () => {
-        if (req.signal.aborted) return;
-        try {
-          const url = companyCode
-            ? `/api/CompanyDashboard/GetStats?companyCode=${encodeURIComponent(companyCode)}`
-            : "/api/CompanyDashboard/GetStats";
-          const res = await aspnetFetchServer(url, token);
-          if (res.ok) {
-            const data = await res.json();
-            const line = `data: ${JSON.stringify(data)}\n\n`;
-            controller.enqueue(encoder.encode(line));
-          } else {
-            console.error("[SSE Staff Area] Backend returned non-200:", res.status);
-          }
-        } catch (err) {
-          console.error("[SSE Staff Area] Send error:", err);
-        }
-      };
-
-      // Send immediately on connect
-      await send();
-
-      const interval = setInterval(send, STREAM_INTERVAL_MS);
-
-      req.signal.onabort = () => {
-        clearInterval(interval);
-        controller.close();
-      };
-    },
-  });
-
-  return new Response(stream, {
-    headers: {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache, no-transform",
-      Connection: "keep-alive",
-    },
-  });
+  try {
+    const res = await aspnetFetchServer(url, token);
+    if (!res.ok) {
+      return NextResponse.json({ error: "Backend error" }, { status: 502 });
+    }
+    const data = await res.json();
+    return NextResponse.json(data);
+  } catch (err) {
+    console.error("[StaffArea Dashboard] fetch error:", err);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
 }

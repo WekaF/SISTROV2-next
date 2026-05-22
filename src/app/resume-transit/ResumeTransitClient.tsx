@@ -140,50 +140,32 @@ export default function ResumeTransitClient() {
   const [historySearch, setHistorySearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
 
-  // Real-time EventSource Stream states and refs
+  // Polling states
   const [streamStatus, setStreamStatus] = useState<"connecting" | "live" | "error">("connecting");
   const [streamLastUpdated, setStreamLastUpdated] = useState<Date | null>(null);
-  const esRef = useRef<EventSource | null>(null);
-  const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    const connect = () => {
-      if (esRef.current) {
-        esRef.current.close();
-      }
-
-      setStreamStatus("connecting");
-      const es = new EventSource("/api/stream/resume-transit");
-      esRef.current = es;
-
-      es.onmessage = (event) => {
-        try {
-          const parsed = JSON.parse(event.data);
-          setSummary(parsed);
-          setStreamStatus("live");
-          setStreamLastUpdated(new Date());
-          setLoading(false);
-        } catch (err) {
-          console.error("Failed to parse SSE payload:", err);
-        }
-      };
-
-      es.onerror = () => {
+    const fetchData = async () => {
+      try {
+        const res = await fetch("/api/stream/resume-transit");
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const parsed = await res.json();
+        setSummary(parsed);
+        setStreamStatus("live");
+        setStreamLastUpdated(new Date());
+        setLoading(false);
+      } catch (err) {
+        console.error("Failed to fetch resume transit data:", err);
         setStreamStatus("error");
-        es.close();
-        esRef.current = null;
-        clearTimeout(retryTimeoutRef.current ?? undefined);
-        // Auto-reconnect after 5s
-        retryTimeoutRef.current = setTimeout(connect, 5000);
-      };
+      }
     };
 
-    connect();
+    fetchData();
+    intervalRef.current = setInterval(fetchData, 30_000);
 
     return () => {
-      clearTimeout(retryTimeoutRef.current ?? undefined);
-      esRef.current?.close();
-      esRef.current = null;
+      if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, []);
 

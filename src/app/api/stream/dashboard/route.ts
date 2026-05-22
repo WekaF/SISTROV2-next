@@ -1,10 +1,7 @@
-// src/app/api/stream/dashboard/route.ts
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { aspnetFetchServer } from "@/lib/api-client";
-
-const STREAM_INTERVAL_MS = 30_000;
 
 const VIEWER_ROLES = ["superadmin", "ti", "admin", "pod", "viewer", "adminarmada", "adminsumbu"];
 
@@ -22,7 +19,7 @@ async function fetchAllDashboardData(token: string) {
       if (!res.ok) return null;
       return res.json();
     } catch (err) {
-      console.error("[SSE Dashboard] fetch error for", path, err);
+      console.error("[Dashboard] fetch error for", path, err);
       return null;
     }
   };
@@ -43,7 +40,7 @@ async function fetchAllDashboardData(token: string) {
   return { stats, trendPlant, trendHour, durasi, monthly, leaderboard, durasiTickets, topProduk, mapData };
 }
 
-export async function GET(req: Request) {
+export async function GET() {
   const session = await getServerSession(authOptions);
   if (!isAuthorized(session)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -54,38 +51,6 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Missing auth token" }, { status: 401 });
   }
 
-  const encoder = new TextEncoder();
-
-  const stream = new ReadableStream({
-    async start(controller) {
-      const send = async () => {
-        if (req.signal.aborted) return;
-        try {
-          const payload = await fetchAllDashboardData(token);
-          const line = `data: ${JSON.stringify(payload)}\n\n`;
-          controller.enqueue(encoder.encode(line));
-        } catch (err) {
-          console.error("[SSE Dashboard] send error:", err);
-        }
-      };
-
-      // Send immediately on connect
-      await send();
-
-      const interval = setInterval(send, STREAM_INTERVAL_MS);
-
-      req.signal.onabort = () => {
-        clearInterval(interval);
-        controller.close();
-      };
-    },
-  });
-
-  return new Response(stream, {
-    headers: {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache, no-transform",
-      Connection: "keep-alive",
-    },
-  });
+  const data = await fetchAllDashboardData(token);
+  return NextResponse.json(data);
 }
