@@ -1,45 +1,64 @@
 "use client";
-import React, { useState } from "react";
+import React from "react";
 import dynamic from "next/dynamic";
-import { Ticket, Loader2, Clock, Activity } from "lucide-react";
+import { Ticket, Loader2, CheckCircle, Clock, TrendingUp } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 
-type Period = "today" | "week" | "month";
-
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
-const PERIOD_LABELS: Record<Period, string> = {
-  today: "Hari Ini", week: "7 Hari", month: "30 Hari",
-};
-
-interface ManagerStats {
-  totalTiket: number; realisasi: number; cancel: number; aktif: number;
-  tonase: number; rasio: number; overdue: number;
-  trend: { tanggal: string; total: number; selesai: number; dibatalkan: number }[];
+interface KuotaShiftRow {
+  shift: string;
+  kuota: number;
+  realisasi: number;
+  antriAktif: number;
+  persen: number;
 }
 
 interface KuotaProgress {
-  progress: { shift: string; kuota: number; realisasi: number; antriAktif: number; persen: number }[];
+  companyCode: string;
+  progress: KuotaShiftRow[];
+}
+
+function ProgressBar({ value, max, color }: { value: number; max: number; color: string }) {
+  const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
+  return (
+    <div className="w-full bg-muted rounded-full h-4 overflow-hidden">
+      <div
+        className={`h-4 rounded-full transition-all duration-700 ${color}`}
+        style={{ width: `${pct}%` }}
+      />
+    </div>
+  );
+}
+
+function shiftLabel(shift: string) {
+  const map: Record<string, string> = {
+    "1": "Shift 1 — Pagi (06:00–14:00)",
+    "2": "Shift 2 — Siang (14:00–22:00)",
+    "3": "Shift 3 — Malam (22:00–06:00)",
+  };
+  return map[shift] ?? `Shift ${shift}`;
+}
+
+function progressColor(persen: number) {
+  if (persen >= 80) return "bg-green-500";
+  if (persen >= 50) return "bg-yellow-500";
+  return "bg-red-500";
+}
+
+function progressTextColor(persen: number) {
+  if (persen >= 80) return "text-green-600";
+  if (persen >= 50) return "text-yellow-600";
+  return "text-red-600";
 }
 
 export default function ManagerTiketPage() {
   const { data: session } = useSession();
-  const [period, setPeriod] = useState<Period>("today");
-
   const token = (session?.user as any)?.aspnetToken as string;
 
-  const { data: stats, isLoading } = useQuery<ManagerStats>({
-    queryKey: ["manager-stats-tiket", period],
-    queryFn: async () => {
-      const res = await fetch(`/api/manager/stats?period=${period}`);
-      if (!res.ok) throw new Error("Gagal memuat");
-      return res.json();
-    },
-  });
-
-  const { data: kuota } = useQuery<KuotaProgress>({
+  const { data: kuota, isLoading } = useQuery<KuotaProgress>({
     queryKey: ["manager-kuota-progress"],
     queryFn: async () => {
       const res = await fetch("/aspnet-proxy/api/CompanyDashboard/GetKuotaProgress", {
@@ -49,133 +68,138 @@ export default function ManagerTiketPage() {
       return res.json();
     },
     enabled: !!token,
-    refetchInterval: 60_000,
+    refetchInterval: 30_000,
   });
 
-  const statusDonutOptions: ApexCharts.ApexOptions = {
-    chart: { type: "donut" },
-    labels: ["Aktif", "Selesai", "Dibatalkan"],
-    colors: ["#3b82f6", "#22c55e", "#ef4444"],
-    legend: { position: "bottom" },
-    dataLabels: { enabled: true },
-  };
-
-  const statusSeries = stats
-    ? [stats.aktif, stats.realisasi, stats.cancel]
-    : [0, 0, 0];
-
-  const kuotaBarOptions: ApexCharts.ApexOptions = {
+  const barOptions: ApexCharts.ApexOptions = {
     chart: { type: "bar", toolbar: { show: false } },
-    plotOptions: { bar: { horizontal: false, columnWidth: "50%" } },
-    colors: ["#6366f1", "#22c55e"],
+    plotOptions: { bar: { horizontal: false, columnWidth: "45%", borderRadius: 4 } },
+    colors: ["#6366f1", "#22c55e", "#3b82f6"],
     xaxis: { categories: kuota?.progress.map(p => `Shift ${p.shift}`) || [] },
     legend: { position: "top" },
     dataLabels: { enabled: false },
+    yaxis: { min: 0 },
+    tooltip: { shared: true },
   };
 
-  const kuotaSeries = [
-    { name: "Kuota",     data: kuota?.progress.map(p => p.kuota) || [] },
-    { name: "Realisasi", data: kuota?.progress.map(p => p.realisasi) || [] },
+  const barSeries = [
+    { name: "Kuota",      data: kuota?.progress.map(p => p.kuota) || [] },
+    { name: "Realisasi",  data: kuota?.progress.map(p => p.realisasi) || [] },
+    { name: "Aktif/Antri", data: kuota?.progress.map(p => p.antriAktif) || [] },
   ];
+
+  const totalKuota     = kuota?.progress.reduce((s, p) => s + p.kuota, 0) ?? 0;
+  const totalRealisasi = kuota?.progress.reduce((s, p) => s + p.realisasi, 0) ?? 0;
+  const totalAktif     = kuota?.progress.reduce((s, p) => s + p.antriAktif, 0) ?? 0;
+  const totalPersen    = totalKuota > 0 ? Math.round(totalRealisasi / totalKuota * 100) : 0;
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Ticket className="w-6 h-6 text-primary" />
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <Ticket className="w-6 h-6 text-primary" />
+        <div>
           <h1 className="text-xl font-bold">Dashboard Tiket</h1>
-        </div>
-        <div className="flex gap-1">
-          {(Object.keys(PERIOD_LABELS) as Period[]).map((p) => (
-            <button
-              key={p}
-              onClick={() => setPeriod(p)}
-              className={`px-3 py-1.5 text-sm rounded-md border transition-colors ${
-                period === p
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-background text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {PERIOD_LABELS[p]}
-            </button>
-          ))}
+          <p className="text-sm text-muted-foreground">Realisasi kuota per shift — Update tiap 30 detik</p>
         </div>
       </div>
 
-      {isLoading && <div className="flex items-center gap-2 text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin" /> Memuat...</div>}
+      {isLoading && (
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Loader2 className="w-4 h-4 animate-spin" /> Memuat data...
+        </div>
+      )}
 
-      {stats && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Status Donut */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <Activity className="w-4 h-4" /> Status Tiket — {PERIOD_LABELS[period]}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Chart type="donut" series={statusSeries} options={statusDonutOptions} height={280} />
-            </CardContent>
-          </Card>
-
-          {/* Kuota vs Realisasi per Shift */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <Clock className="w-4 h-4" /> Kuota vs Realisasi (Hari Ini)
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {kuota && kuota.progress.length > 0 ? (
-                <>
-                  <Chart type="bar" series={kuotaSeries} options={kuotaBarOptions} height={220} />
-                  <table className="w-full text-sm mt-3">
-                    <thead>
-                      <tr className="border-b text-muted-foreground text-xs">
-                        <th className="text-left py-1">Shift</th>
-                        <th className="text-right py-1">Kuota</th>
-                        <th className="text-right py-1">Realisasi</th>
-                        <th className="text-right py-1">%</th>
-                        <th className="text-right py-1">Aktif</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {kuota.progress.map((row) => (
-                        <tr key={row.shift} className="border-b last:border-0">
-                          <td className="py-1.5 font-medium">Shift {row.shift}</td>
-                          <td className="text-right py-1.5">{row.kuota}</td>
-                          <td className="text-right py-1.5 text-green-600">{row.realisasi}</td>
-                          <td className={`text-right py-1.5 font-medium ${row.persen >= 80 ? "text-green-600" : row.persen >= 50 ? "text-yellow-600" : "text-red-600"}`}>
-                            {row.persen}%
-                          </td>
-                          <td className="text-right py-1.5 text-blue-600">{row.antriAktif}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </>
-              ) : (
-                <p className="text-center text-muted-foreground text-sm py-8">Tidak ada data kuota hari ini</p>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Overdue Alert */}
-          {stats.overdue > 0 && (
-            <Card className="border-yellow-300 bg-yellow-50 dark:bg-yellow-900/10 lg:col-span-2">
-              <CardContent className="pt-4">
-                <div className="flex items-center gap-3">
-                  <Clock className="w-5 h-5 text-yellow-600" />
-                  <div>
-                    <p className="font-semibold text-yellow-800 dark:text-yellow-300">
-                      {stats.overdue} kendaraan overdue (&gt;2 jam)
-                    </p>
-                    <p className="text-xs text-yellow-600">Kendaraan yang sudah menunggu lebih dari 2 jam</p>
-                  </div>
-                </div>
+      {kuota && (
+        <>
+          {/* Summary KPI */}
+          <div className="grid grid-cols-3 gap-4">
+            <Card>
+              <CardContent className="pt-4 pb-4">
+                <p className="text-xs text-muted-foreground mb-1">Total Kuota Hari Ini</p>
+                <p className="text-3xl font-bold text-indigo-600">{totalKuota}</p>
               </CardContent>
             </Card>
-          )}
+            <Card>
+              <CardContent className="pt-4 pb-4 flex items-start justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Realisasi</p>
+                  <p className="text-3xl font-bold text-green-600">{totalRealisasi}</p>
+                  <p className={`text-sm font-semibold mt-1 ${progressTextColor(totalPersen)}`}>
+                    {totalPersen}% tercapai
+                  </p>
+                </div>
+                <TrendingUp className="w-5 h-5 text-green-500 mt-1" />
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4 pb-4 flex items-start justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Aktif / Antri</p>
+                  <p className="text-3xl font-bold text-blue-600">{totalAktif}</p>
+                  <p className="text-xs text-muted-foreground mt-1">truk dalam antrian</p>
+                </div>
+                <Clock className="w-5 h-5 text-blue-500 mt-1" />
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Per-shift progress bars */}
+          <div className="space-y-4">
+            {kuota.progress.map((row) => {
+              const sisa = Math.max(row.kuota - row.realisasi - row.antriAktif, 0);
+              return (
+                <Card key={row.shift}>
+                  <CardContent className="pt-5 pb-5">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="font-semibold">{shiftLabel(row.shift)}</span>
+                      <span className={`text-2xl font-bold ${progressTextColor(row.persen)}`}>
+                        {row.persen}%
+                      </span>
+                    </div>
+
+                    <ProgressBar value={row.realisasi} max={row.kuota} color={progressColor(row.persen)} />
+
+                    <div className="grid grid-cols-4 gap-4 mt-4 text-center">
+                      <div>
+                        <div className="text-xs text-muted-foreground mb-0.5">Kuota</div>
+                        <div className="text-xl font-bold text-indigo-600">{row.kuota}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-muted-foreground mb-0.5">Realisasi</div>
+                        <div className="text-xl font-bold text-green-600">{row.realisasi}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-muted-foreground mb-0.5">Aktif/Antri</div>
+                        <div className="text-xl font-bold text-blue-600">{row.antriAktif}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-muted-foreground mb-0.5">Sisa Slot</div>
+                        <div className="text-xl font-bold text-muted-foreground">{sisa}</div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+
+          {/* Bar chart comparison */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Perbandingan Kuota vs Realisasi per Shift</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Chart type="bar" series={barSeries} options={barOptions} height={240} />
+            </CardContent>
+          </Card>
+        </>
+      )}
+
+      {!isLoading && !kuota && (
+        <div className="text-center py-12 text-muted-foreground">
+          <CheckCircle className="w-10 h-10 mx-auto mb-3 opacity-30" />
+          <p>Tidak ada data kuota tersedia</p>
         </div>
       )}
     </div>
