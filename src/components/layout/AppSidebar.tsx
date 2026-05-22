@@ -756,6 +756,11 @@ const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> = {
         path: "/manager/tiket",
       },
       {
+        icon: <BarChart3 className="h-5 w-5" />,
+        name: "Antrian",
+        path: "/manager/antrian",
+      },
+      {
         icon: <FileText className="h-5 w-5" />,
         name: "Laporan",
         path: "/manager/laporan",
