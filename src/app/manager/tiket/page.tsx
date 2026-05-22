@@ -1,207 +1,361 @@
 "use client";
-import React from "react";
-import dynamic from "next/dynamic";
-import { Ticket, Loader2, CheckCircle, Clock, TrendingUp } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Ticket, Loader2, Search, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { useQuery } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 
-const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
+// ─── Types ───────────────────────────────────────────────────────────────────
 
-interface KuotaShiftRow {
-  shift: string;
+interface TiketRow {
+  number: number;
+  bookingno: string;
+  tiketno: string;
+  tanggalString: string;
+  nopol: string;
+  driver: string;
+  produkString: string;
+  tujuan: string;
+  qty: number | null;
+  positionString: string;
+  position: string;
+  transportString: string;
+}
+
+interface KuotaRow {
+  number: number;
+  tanggalString: string;
+  shift: number;
+  namaproduk: string;
   kuota: number;
-  realisasi: number;
-  antriAktif: number;
-  persen: number;
+  kuota_terpesan: number;
+  kuota_in: number | null;
+  kuota_out: number | null;
+  status: string;
+  wilayahString: string;
+  bagianString: string;
 }
 
-interface KuotaProgress {
-  companyCode: string;
-  progress: KuotaShiftRow[];
+interface DtResponse<T> {
+  data: T[];
+  draw: string;
+  recordsTotal: number;
+  recordsFiltered: number;
 }
 
-function ProgressBar({ value, max, color }: { value: number; max: number; color: string }) {
-  const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function positionColor(pos: string) {
+  const map: Record<string, string> = {
+    "01": "bg-blue-100 text-blue-700",
+    "02": "bg-indigo-100 text-indigo-700",
+    "03": "bg-green-100 text-green-700",
+    "04": "bg-emerald-100 text-emerald-700",
+    "05": "bg-yellow-100 text-yellow-700",
+    "06": "bg-red-100 text-red-700",
+    "07": "bg-gray-100 text-gray-500",
+  };
+  return map[pos] ?? "bg-muted text-muted-foreground";
+}
+
+function Pagination({
+  page, pageSize, total, onPage, onPageSize,
+}: {
+  page: number; pageSize: number; total: number;
+  onPage: (p: number) => void; onPageSize: (s: number) => void;
+}) {
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
+  const to = Math.min(page * pageSize, total);
   return (
-    <div className="w-full bg-muted rounded-full h-4 overflow-hidden">
-      <div
-        className={`h-4 rounded-full transition-all duration-700 ${color}`}
-        style={{ width: `${pct}%` }}
-      />
+    <div className="flex items-center justify-between flex-wrap gap-2 mt-3 text-sm">
+      <div className="flex items-center gap-2 text-muted-foreground">
+        <span>Tampil</span>
+        <select
+          className="border rounded px-2 py-1 text-sm bg-background"
+          value={pageSize}
+          onChange={(e) => { onPageSize(Number(e.target.value)); onPage(1); }}
+        >
+          {[10, 25, 50, 100].map((n) => <option key={n} value={n}>{n}</option>)}
+        </select>
+        <span>dari {total.toLocaleString()} data</span>
+        {total > 0 && <span>({from}–{to})</span>}
+      </div>
+      <div className="flex items-center gap-1">
+        <button
+          onClick={() => onPage(page - 1)} disabled={page <= 1}
+          className="p-1.5 rounded border hover:bg-muted disabled:opacity-30 transition-colors"
+        ><ChevronLeft className="w-4 h-4" /></button>
+        <span className="px-3 py-1 border rounded bg-muted text-xs font-medium">{page} / {totalPages}</span>
+        <button
+          onClick={() => onPage(page + 1)} disabled={page >= totalPages}
+          className="p-1.5 rounded border hover:bg-muted disabled:opacity-30 transition-colors"
+        ><ChevronRight className="w-4 h-4" /></button>
+      </div>
     </div>
   );
 }
 
-function shiftLabel(shift: string) {
-  const map: Record<string, string> = {
-    "1": "Shift 1 — Pagi (06:00–14:00)",
-    "2": "Shift 2 — Siang (14:00–22:00)",
-    "3": "Shift 3 — Malam (22:00–06:00)",
-  };
-  return map[shift] ?? `Shift ${shift}`;
+// ─── Tiket Datatable ──────────────────────────────────────────────────────────
+
+function TiketTable({ token }: { token: string }) {
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [rows, setRows] = useState<TiketRow[]>([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const drawRef = useRef(0);
+
+  const fetch_ = useCallback(async () => {
+    if (!token) return;
+    setLoading(true);
+    drawRef.current += 1;
+    const draw = drawRef.current;
+    const body = new URLSearchParams({
+      draw: String(draw),
+      start: String((page - 1) * pageSize),
+      length: String(pageSize),
+      "search[value]": search,
+      "order[0][column]": "0",
+      "order[0][dir]": "desc",
+      "columns[0][name]": "tanggal",
+    });
+    try {
+      const res = await fetch("/aspnet-proxy/api/Tiket/DataTableFilterLegacy", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/x-www-form-urlencoded" },
+        body: body.toString(),
+      });
+      if (!res.ok) throw new Error();
+      const json: DtResponse<TiketRow> = await res.json();
+      if (Number(json.draw) >= draw) {
+        setRows(json.data);
+        setTotal(json.recordsFiltered);
+      }
+    } catch { /* silent */ } finally {
+      setLoading(false);
+    }
+  }, [token, page, pageSize, search]);
+
+  useEffect(() => { fetch_(); }, [fetch_]);
+
+  function handleSearch() { setSearch(searchInput); setPage(1); }
+
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-3 flex-wrap">
+        <div className="relative flex-1 max-w-xs">
+          <Search className="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-muted-foreground" />
+          <input
+            className="w-full pl-8 pr-3 py-2 text-sm border rounded-md bg-background"
+            placeholder="Cari booking, nopol, produk..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+          />
+        </div>
+        <button onClick={handleSearch} className="px-3 py-2 text-sm border rounded-md hover:bg-muted transition-colors">
+          Cari
+        </button>
+        <button onClick={fetch_} className="p-2 border rounded-md hover:bg-muted transition-colors" title="Refresh">
+          <RefreshCw className="w-3.5 h-3.5" />
+        </button>
+        {loading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+      </div>
+
+      <div className="overflow-x-auto rounded-md border">
+        <table className="w-full text-sm">
+          <thead className="bg-muted/60 text-xs text-muted-foreground">
+            <tr>
+              {["#", "Booking", "Tiket", "Tanggal", "Nopol", "Driver", "Produk", "Gudang Tujuan", "Qty (ton)", "Status"].map((h) => (
+                <th key={h} className="text-left px-3 py-2 font-medium whitespace-nowrap">{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length === 0 && !loading && (
+              <tr><td colSpan={10} className="text-center py-10 text-muted-foreground">Tidak ada data</td></tr>
+            )}
+            {rows.map((r) => (
+              <tr key={r.bookingno + r.tiketno} className="border-t hover:bg-muted/30 transition-colors">
+                <td className="px-3 py-2 text-muted-foreground">{r.number}</td>
+                <td className="px-3 py-2 font-mono text-xs">{r.bookingno}</td>
+                <td className="px-3 py-2 font-mono text-xs">{r.tiketno}</td>
+                <td className="px-3 py-2 whitespace-nowrap">{r.tanggalString}</td>
+                <td className="px-3 py-2 font-semibold">{r.nopol}</td>
+                <td className="px-3 py-2">{r.driver}</td>
+                <td className="px-3 py-2">{r.produkString}</td>
+                <td className="px-3 py-2">{r.tujuan}</td>
+                <td className="px-3 py-2 text-right">{r.qty != null ? r.qty.toFixed(2) : "—"}</td>
+                <td className="px-3 py-2">
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${positionColor(r.position)}`}>
+                    {r.positionString}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <Pagination page={page} pageSize={pageSize} total={total} onPage={setPage} onPageSize={setPageSize} />
+    </div>
+  );
 }
 
-function progressColor(persen: number) {
-  if (persen >= 80) return "bg-green-500";
-  if (persen >= 50) return "bg-yellow-500";
-  return "bg-red-500";
+// ─── Kuota Datatable ──────────────────────────────────────────────────────────
+
+const SHIFT_LABEL: Record<number, string> = { 1: "Pagi (06–14)", 2: "Siang (14–22)", 3: "Malam (22–06)" };
+
+function KuotaTable({ token }: { token: string }) {
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [rows, setRows] = useState<KuotaRow[]>([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const drawRef = useRef(0);
+
+  const fetch_ = useCallback(async () => {
+    if (!token) return;
+    setLoading(true);
+    drawRef.current += 1;
+    const draw = drawRef.current;
+    const body = new URLSearchParams({
+      draw: String(draw),
+      start: String((page - 1) * pageSize),
+      length: String(pageSize),
+      "search[value]": search,
+      "order[0][column]": "0",
+      "order[0][dir]": "desc",
+      "columns[0][name]": "tanggal",
+    });
+    try {
+      const res = await fetch("/aspnet-proxy/api/KuotaLevel4/DataTable", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/x-www-form-urlencoded" },
+        body: body.toString(),
+      });
+      if (!res.ok) throw new Error();
+      const json: DtResponse<KuotaRow> = await res.json();
+      if (Number(json.draw) >= draw) {
+        setRows(json.data);
+        setTotal(json.recordsFiltered);
+      }
+    } catch { /* silent */ } finally {
+      setLoading(false);
+    }
+  }, [token, page, pageSize, search]);
+
+  useEffect(() => { fetch_(); }, [fetch_]);
+
+  function handleSearch() { setSearch(searchInput); setPage(1); }
+
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-3 flex-wrap">
+        <div className="relative flex-1 max-w-xs">
+          <Search className="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-muted-foreground" />
+          <input
+            className="w-full pl-8 pr-3 py-2 text-sm border rounded-md bg-background"
+            placeholder="Cari produk, wilayah, bagian..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+          />
+        </div>
+        <button onClick={handleSearch} className="px-3 py-2 text-sm border rounded-md hover:bg-muted transition-colors">
+          Cari
+        </button>
+        <button onClick={fetch_} className="p-2 border rounded-md hover:bg-muted transition-colors" title="Refresh">
+          <RefreshCw className="w-3.5 h-3.5" />
+        </button>
+        {loading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+      </div>
+
+      <div className="overflow-x-auto rounded-md border">
+        <table className="w-full text-sm">
+          <thead className="bg-muted/60 text-xs text-muted-foreground">
+            <tr>
+              {["#", "Tanggal", "Shift", "Produk", "Bagian", "Kuota", "Terpesan", "Masuk", "Keluar", "Status"].map((h) => (
+                <th key={h} className="text-left px-3 py-2 font-medium whitespace-nowrap">{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length === 0 && !loading && (
+              <tr><td colSpan={10} className="text-center py-10 text-muted-foreground">Tidak ada data</td></tr>
+            )}
+            {rows.map((r, i) => (
+              <tr key={i} className="border-t hover:bg-muted/30 transition-colors">
+                <td className="px-3 py-2 text-muted-foreground">{r.number}</td>
+                <td className="px-3 py-2 whitespace-nowrap">{r.tanggalString}</td>
+                <td className="px-3 py-2 whitespace-nowrap text-xs">{SHIFT_LABEL[r.shift] ?? `Shift ${r.shift}`}</td>
+                <td className="px-3 py-2 font-medium">{r.namaproduk}</td>
+                <td className="px-3 py-2 text-xs text-muted-foreground">{r.bagianString}</td>
+                <td className="px-3 py-2 text-right font-semibold text-indigo-600">{r.kuota}</td>
+                <td className="px-3 py-2 text-right text-yellow-700">{r.kuota_terpesan}</td>
+                <td className="px-3 py-2 text-right text-green-700">{r.kuota_in ?? "—"}</td>
+                <td className="px-3 py-2 text-right text-red-700">{r.kuota_out ?? "—"}</td>
+                <td className="px-3 py-2">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground">
+                    {r.status}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <Pagination page={page} pageSize={pageSize} total={total} onPage={setPage} onPageSize={setPageSize} />
+    </div>
+  );
 }
 
-function progressTextColor(persen: number) {
-  if (persen >= 80) return "text-green-600";
-  if (persen >= 50) return "text-yellow-600";
-  return "text-red-600";
-}
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function ManagerTiketPage() {
   const { data: session } = useSession();
   const token = (session?.user as any)?.aspnetToken as string;
 
-  const { data: kuota, isLoading } = useQuery<KuotaProgress>({
-    queryKey: ["manager-kuota-progress"],
-    queryFn: async () => {
-      const res = await fetch("/aspnet-proxy/api/CompanyDashboard/GetKuotaProgress", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error("Gagal memuat kuota");
-      return res.json();
-    },
-    enabled: !!token,
-    refetchInterval: 30_000,
-  });
-
-  const barOptions: ApexCharts.ApexOptions = {
-    chart: { type: "bar", toolbar: { show: false } },
-    plotOptions: { bar: { horizontal: false, columnWidth: "45%", borderRadius: 4 } },
-    colors: ["#6366f1", "#22c55e", "#3b82f6"],
-    xaxis: { categories: kuota?.progress.map(p => `Shift ${p.shift}`) || [] },
-    legend: { position: "top" },
-    dataLabels: { enabled: false },
-    yaxis: { min: 0 },
-    tooltip: { shared: true },
-  };
-
-  const barSeries = [
-    { name: "Kuota",      data: kuota?.progress.map(p => p.kuota) || [] },
-    { name: "Realisasi",  data: kuota?.progress.map(p => p.realisasi) || [] },
-    { name: "Aktif/Antri", data: kuota?.progress.map(p => p.antriAktif) || [] },
-  ];
-
-  const totalKuota     = kuota?.progress.reduce((s, p) => s + p.kuota, 0) ?? 0;
-  const totalRealisasi = kuota?.progress.reduce((s, p) => s + p.realisasi, 0) ?? 0;
-  const totalAktif     = kuota?.progress.reduce((s, p) => s + p.antriAktif, 0) ?? 0;
-  const totalPersen    = totalKuota > 0 ? Math.round(totalRealisasi / totalKuota * 100) : 0;
-
   return (
     <div className="p-6 space-y-6">
-      {/* Header */}
       <div className="flex items-center gap-3">
         <Ticket className="w-6 h-6 text-primary" />
         <div>
-          <h1 className="text-xl font-bold">Dashboard Tiket</h1>
-          <p className="text-sm text-muted-foreground">Realisasi kuota per shift — Update tiap 30 detik</p>
+          <h1 className="text-xl font-bold">Data Tiket & Kuota</h1>
+          <p className="text-sm text-muted-foreground">Rekap tiket dan kuota shift perusahaan</p>
         </div>
       </div>
 
-      {isLoading && (
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Loader2 className="w-4 h-4 animate-spin" /> Memuat data...
-        </div>
-      )}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Datatable Tiket</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {token ? <TiketTable token={token} /> : (
+            <div className="flex items-center gap-2 text-muted-foreground py-6">
+              <Loader2 className="w-4 h-4 animate-spin" /> Memuat sesi...
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-      {kuota && (
-        <>
-          {/* Summary KPI */}
-          <div className="grid grid-cols-3 gap-4">
-            <Card>
-              <CardContent className="pt-4 pb-4">
-                <p className="text-xs text-muted-foreground mb-1">Total Kuota Hari Ini</p>
-                <p className="text-3xl font-bold text-indigo-600">{totalKuota}</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-4 pb-4 flex items-start justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">Realisasi</p>
-                  <p className="text-3xl font-bold text-green-600">{totalRealisasi}</p>
-                  <p className={`text-sm font-semibold mt-1 ${progressTextColor(totalPersen)}`}>
-                    {totalPersen}% tercapai
-                  </p>
-                </div>
-                <TrendingUp className="w-5 h-5 text-green-500 mt-1" />
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-4 pb-4 flex items-start justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">Aktif / Antri</p>
-                  <p className="text-3xl font-bold text-blue-600">{totalAktif}</p>
-                  <p className="text-xs text-muted-foreground mt-1">truk dalam antrian</p>
-                </div>
-                <Clock className="w-5 h-5 text-blue-500 mt-1" />
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Per-shift progress bars */}
-          <div className="space-y-4">
-            {kuota.progress.map((row) => {
-              const sisa = Math.max(row.kuota - row.realisasi - row.antriAktif, 0);
-              return (
-                <Card key={row.shift}>
-                  <CardContent className="pt-5 pb-5">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="font-semibold">{shiftLabel(row.shift)}</span>
-                      <span className={`text-2xl font-bold ${progressTextColor(row.persen)}`}>
-                        {row.persen}%
-                      </span>
-                    </div>
-
-                    <ProgressBar value={row.realisasi} max={row.kuota} color={progressColor(row.persen)} />
-
-                    <div className="grid grid-cols-4 gap-4 mt-4 text-center">
-                      <div>
-                        <div className="text-xs text-muted-foreground mb-0.5">Kuota</div>
-                        <div className="text-xl font-bold text-indigo-600">{row.kuota}</div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-muted-foreground mb-0.5">Realisasi</div>
-                        <div className="text-xl font-bold text-green-600">{row.realisasi}</div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-muted-foreground mb-0.5">Aktif/Antri</div>
-                        <div className="text-xl font-bold text-blue-600">{row.antriAktif}</div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-muted-foreground mb-0.5">Sisa Slot</div>
-                        <div className="text-xl font-bold text-muted-foreground">{sisa}</div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-
-          {/* Bar chart comparison */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">Perbandingan Kuota vs Realisasi per Shift</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Chart type="bar" series={barSeries} options={barOptions} height={240} />
-            </CardContent>
-          </Card>
-        </>
-      )}
-
-      {!isLoading && !kuota && (
-        <div className="text-center py-12 text-muted-foreground">
-          <CheckCircle className="w-10 h-10 mx-auto mb-3 opacity-30" />
-          <p>Tidak ada data kuota tersedia</p>
-        </div>
-      )}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Datatable Kuota per Shift</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {token ? <KuotaTable token={token} /> : (
+            <div className="flex items-center gap-2 text-muted-foreground py-6">
+              <Loader2 className="w-4 h-4 animate-spin" /> Memuat sesi...
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
