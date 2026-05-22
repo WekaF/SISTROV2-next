@@ -152,7 +152,8 @@ export const authOptions: NextAuthOptions = {
         const userMenuItemsRaw = (data.user_menu_items || "").trim();
         let menuItems: string[] | null = null;
         if (userMenuItemsRaw) {
-          try { menuItems = JSON.parse(userMenuItemsRaw); } catch {}
+          try { menuItems = JSON.parse(userMenuItemsRaw); }
+          catch { console.error("Failed to parse user_menu_items:", userMenuItemsRaw); }
         }
 
         let menuGroups: string[];
