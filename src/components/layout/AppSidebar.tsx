@@ -68,7 +68,7 @@ function normalizeRole(raw: string | undefined): string {
     dataareababagianjatim: "staffarea",
     dataareababagiansoall: "staffarea",
     viewer: "viewer",
-    pkg: "viewer",
+    pkg: "manager",
     viewerposto: "viewer",
     viewerarmada: "viewer",
     transport: "transport",
