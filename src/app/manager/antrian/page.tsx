@@ -1,107 +1,164 @@
 "use client";
-import React from "react";
-import dynamic from "next/dynamic";
-import {
-  BarChart3,
-  Loader2,
-  Truck,
-  CheckCircle,
-  Ban,
-  AlertTriangle,
-  Clock,
-  Layers,
-  RefreshCw,
-} from "lucide-react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { useQuery } from "@tanstack/react-query";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { BarChart3, Loader2, RefreshCw } from "lucide-react";
 import { useSession } from "next-auth/react";
 
-const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
-
-interface GetStatsResult {
-  companyCode: string;
-  antriAktif: number;
-  proses: number;
-  selesai: number;
-  cancel: number;
-  totalTonase: number;
-  overdueCount: number;
-  gudangBreakdown: { gudang: string; count: number }[];
-  shiftBreakdown: { pagi: number; siang: number; malam: number };
+interface Truck {
+  nopol: string;
+  driver: string;
+  bookingno: string;
+  produk: string;
+  posto: string;
+  kabupatenTujuan: string;
+  gudangTujuan: string;
+  tonase: string;
+  color: string;
 }
 
-function StatusBadge({ count, variant }: { count: number; variant: "blue" | "indigo" | "green" | "red" | "yellow" | "gray" }) {
-  const styles: Record<string, string> = {
-    blue:   "bg-blue-100 text-blue-700 border-blue-200",
-    indigo: "bg-indigo-100 text-indigo-700 border-indigo-200",
-    green:  "bg-green-100 text-green-700 border-green-200",
-    red:    "bg-red-100 text-red-700 border-red-200",
-    yellow: "bg-yellow-100 text-yellow-700 border-yellow-200",
-    gray:   "bg-muted text-muted-foreground border-border",
-  };
+interface Section {
+  id: string;
+  name: string;
+  type: string;
+  trucks: Truck[];
+}
+
+interface ReportQ2Response {
+  Success: boolean;
+  company: string;
+  company_code: string;
+  date: string;
+  sections: Section[];
+}
+
+function TruckCard({ truck }: { truck: Truck }) {
+  const color = truck.color || "gray";
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-semibold border ${styles[variant]}`}>
-      {count}
-    </span>
+    <div
+      className="flex-shrink-0 rounded-lg overflow-hidden shadow-sm border"
+      style={{ width: 160, height: 290, borderColor: color, borderWidth: 1 }}
+    >
+      <div
+        className="flex items-center justify-center"
+        style={{ backgroundColor: color, height: 68, width: 68, borderRadius: "50%", margin: "10px auto 0" }}
+      >
+        <svg viewBox="0 0 24 24" fill="white" width="30" height="30">
+          <path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9l1.96 2.5H17V9.5h2.5zm-1.5 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z" />
+        </svg>
+      </div>
+      <div className="px-2 mt-2">
+        <p className="font-bold text-sm leading-tight">{truck.nopol}</p>
+        <p className="text-xs text-gray-500 leading-tight">{truck.driver}</p>
+      </div>
+      <div className="mx-1 mt-1 rounded px-1 py-1" style={{ backgroundColor: color, minHeight: 170 }}>
+        <table className="w-full text-white" style={{ fontSize: 9, tableLayout: "fixed" }}>
+          <tbody>
+            <tr><td className="font-bold" style={{ width: "42%" }}>Booking</td><td style={{ width: "5%" }}>:</td><td style={{ width: "53%" }}>{truck.bookingno}</td></tr>
+            <tr><td className="font-bold">Produk</td><td>:</td><td>{truck.produk}</td></tr>
+            <tr><td className="font-bold">POSTO</td><td>:</td><td>{truck.posto}</td></tr>
+            <tr><td className="font-bold">Kab. Tujuan</td><td>:</td><td>{truck.kabupatenTujuan}</td></tr>
+            <tr><td className="font-bold">Gudang</td><td>:</td><td>{truck.gudangTujuan}</td></tr>
+            <tr><td className="font-bold">Tonase</td><td>:</td><td>{truck.tonase}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function SectionAccordion({ section, defaultOpen }: { section: Section; defaultOpen: boolean }) {
+  const [open, setOpen] = useState(defaultOpen);
+  const colorCounts = section.trucks.reduce<Record<string, number>>((acc, t) => {
+    acc[t.color] = (acc[t.color] ?? 0) + 1;
+    return acc;
+  }, {});
+
+  return (
+    <div className="border rounded-lg overflow-hidden mb-3">
+      <button
+        className="w-full flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-left"
+        onClick={() => setOpen((o) => !o)}
+      >
+        <div className="flex items-center gap-3">
+          <span className="font-semibold text-sm">{section.name}</span>
+          <span className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">
+            {section.trucks.length} truk
+          </span>
+        </div>
+        <div className="flex items-center gap-1">
+          {(["royalblue", "darkcyan", "gold", "crimson"] as const).map((c) =>
+            colorCounts[c] ? (
+              <span key={c} className="text-xs text-white px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: c }}>
+                {colorCounts[c]}
+              </span>
+            ) : null
+          )}
+          <svg
+            className={`h-4 w-4 ml-2 transition-transform ${open ? "rotate-180" : ""}`}
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </div>
+      </button>
+      {open && (
+        <div className="bg-gray-50 dark:bg-gray-900 px-4 py-3 overflow-x-auto">
+          {section.trucks.length === 0 ? (
+            <div className="text-sm text-gray-500 italic py-2">Tidak ada antrian</div>
+          ) : (
+            <div className="flex gap-3 flex-nowrap">
+              {section.trucks.map((t, i) => <TruckCard key={i} truck={t} />)}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
 export default function ManagerAntrianPage() {
   const { data: session } = useSession();
   const token = (session?.user as any)?.aspnetToken as string;
+  const companyCode = (session?.user as any)?.companyCode as string;
 
-  const { data: stats, isLoading, dataUpdatedAt, refetch, isFetching } = useQuery<GetStatsResult>({
-    queryKey: ["manager-antrian-stats"],
-    queryFn: async () => {
-      const res = await fetch("/aspnet-proxy/api/CompanyDashboard/GetStats", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error("Gagal memuat data antrian");
-      return res.json();
-    },
-    enabled: !!token,
-    refetchInterval: 30_000,
-  });
+  const [report, setReport] = useState<ReportQ2Response | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [lastUpdate, setLastUpdate] = useState<string>("");
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const updatedTime = dataUpdatedAt
-    ? new Date(dataUpdatedAt).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" })
-    : null;
+  const fetchReport = useCallback(async () => {
+    if (!token || !companyCode) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(
+        `/aspnet-proxy/api/Antrian/ReportHorizontalQ2?company=${companyCode}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (!res.ok) throw new Error("Gagal mengambil data antrian");
+      const data: ReportQ2Response = await res.json();
+      if (data.Success) {
+        setReport(data);
+        setLastUpdate(new Date().toLocaleTimeString("id-ID"));
+      } else {
+        setError("Server mengembalikan data tidak valid");
+      }
+    } catch (e: any) {
+      setError(e.message ?? "Error mengambil data antrian");
+    } finally {
+      setLoading(false);
+    }
+  }, [token, companyCode]);
 
-  const gudangOptions: ApexCharts.ApexOptions = {
-    chart: { type: "bar", toolbar: { show: false }, animations: { speed: 400 } },
-    plotOptions: { bar: { horizontal: true, borderRadius: 4, dataLabels: { position: "right" } } },
-    colors: ["#6366f1"],
-    dataLabels: {
-      enabled: true,
-      formatter: (v: number) => (v > 0 ? `${v} truk` : ""),
-      style: { fontSize: "11px", fontWeight: "600" },
-      offsetX: 4,
-    },
-    xaxis: { labels: { show: false }, axisBorder: { show: false }, axisTicks: { show: false } },
-    yaxis: { labels: { style: { fontSize: "12px" } } },
-    grid: { show: false },
-    tooltip: { y: { formatter: (v: number) => `${v} truk` } },
-  };
-
-  const gudangSeries = [{
-    name: "Truk",
-    data: stats?.gudangBreakdown.map(g => ({ x: g.gudang, y: g.count })) || [],
-  }];
-
-  const totalAntri = stats ? stats.antriAktif + stats.proses : 0;
-
-  const kpis = [
-    { label: "Menunggu di Gate", value: stats?.antriAktif ?? "—", icon: <Truck className="w-4 h-4 text-blue-500" />, variant: "blue" as const },
-    { label: "Dalam Proses Muat", value: stats?.proses ?? "—", icon: <Layers className="w-4 h-4 text-indigo-500" />, variant: "indigo" as const },
-    { label: "Selesai Hari Ini", value: stats?.selesai ?? "—", icon: <CheckCircle className="w-4 h-4 text-green-500" />, variant: "green" as const },
-    { label: "Dibatalkan", value: stats?.cancel ?? "—", icon: <Ban className="w-4 h-4 text-red-500" />, variant: "red" as const },
-    { label: "Total Aktif", value: stats ? totalAntri : "—", icon: <Clock className="w-4 h-4 text-muted-foreground" />, variant: "gray" as const },
-    { label: "Overdue >2 jam", value: stats?.overdueCount ?? "—", icon: <AlertTriangle className="w-4 h-4 text-yellow-500" />, variant: (stats && stats.overdueCount > 0 ? "yellow" : "gray") as "yellow" | "gray" },
-  ];
+  useEffect(() => {
+    if (!token || !companyCode) return;
+    fetchReport();
+    timerRef.current = setInterval(fetchReport, 30_000);
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [fetchReport, token, companyCode]);
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
@@ -109,16 +166,18 @@ export default function ManagerAntrianPage() {
           <div>
             <h1 className="text-xl font-bold">Monitor Antrian</h1>
             <p className="text-sm text-muted-foreground">
-              {stats?.companyCode ?? "—"} — Status real-time antrian truk
+              {report?.company ?? companyCode ?? "—"} — update tiap 30 detik
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          {isFetching && <Loader2 className="w-3 h-3 animate-spin" />}
-          {updatedTime && <span>Update: {updatedTime}</span>}
+          {loading && <Loader2 className="w-3 h-3 animate-spin" />}
+          {lastUpdate && <span>Update: {lastUpdate}</span>}
+          {report && <span className="text-muted-foreground/60">{report.date}</span>}
           <button
-            onClick={() => refetch()}
-            className="p-1.5 rounded hover:bg-muted transition-colors"
+            onClick={fetchReport}
+            disabled={loading}
+            className="p-1.5 rounded hover:bg-muted transition-colors disabled:opacity-50"
             title="Refresh manual"
           >
             <RefreshCw className="w-3.5 h-3.5" />
@@ -126,219 +185,29 @@ export default function ManagerAntrianPage() {
         </div>
       </div>
 
-      {isLoading && (
-        <div className="flex items-center gap-2 text-muted-foreground py-8 justify-center">
-          <Loader2 className="w-5 h-5 animate-spin" /> Memuat data antrian...
+      {/* Loading initial */}
+      {loading && !report && (
+        <div className="flex justify-center py-16">
+          <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" />
         </div>
       )}
 
-      {stats && (
-        <>
-          {/* KPI Row */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            {kpis.map((k) => (
-              <Card key={k.label}>
-                <CardContent className="pt-4 pb-4">
-                  <div className="flex items-start justify-between gap-1 mb-2">
-                    <p className="text-xs text-muted-foreground leading-tight">{k.label}</p>
-                    <div className="p-1.5 rounded-lg bg-muted shrink-0">{k.icon}</div>
-                  </div>
-                  {typeof k.value === "number" ? (
-                    <StatusBadge count={k.value} variant={k.variant} />
-                  ) : (
-                    <span className="text-2xl font-bold text-muted-foreground">—</span>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {/* Overdue alert */}
-          {stats.overdueCount > 0 && (
-            <div className="flex items-center gap-3 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
-              <AlertTriangle className="w-5 h-5 text-yellow-600 shrink-0" />
-              <div>
-                <p className="font-semibold text-yellow-800">
-                  {stats.overdueCount} truk telah menunggu lebih dari 2 jam
-                </p>
-                <p className="text-sm text-yellow-700">Segera lakukan pemeriksaan antrian untuk menghindari keterlambatan.</p>
-              </div>
-            </div>
-          )}
-
-          {/* Horizontal gudang lanes */}
-          {stats.gudangBreakdown.length > 0 && (
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                Antrian per Gudang — Live
-              </p>
-              <div className="flex gap-3 overflow-x-auto pb-1">
-                {stats.gudangBreakdown
-                  .slice()
-                  .sort((a, b) => b.count - a.count)
-                  .map((g) => {
-                    const max = Math.max(...stats.gudangBreakdown.map((x) => x.count), 1);
-                    const pct = Math.round((g.count / max) * 100);
-                    const intensity =
-                      g.count === 0 ? "border-border bg-muted/40 text-muted-foreground"
-                      : pct >= 75 ? "border-red-300 bg-red-50 text-red-700"
-                      : pct >= 40 ? "border-yellow-300 bg-yellow-50 text-yellow-700"
-                      : "border-indigo-300 bg-indigo-50 text-indigo-700";
-                    return (
-                      <div
-                        key={g.gudang}
-                        className={`shrink-0 flex flex-col items-center rounded-xl border-2 px-5 py-4 min-w-[110px] ${intensity}`}
-                      >
-                        <span className="text-3xl font-bold">{g.count}</span>
-                        <span className="text-xs font-medium mt-1 text-center leading-tight">{g.gudang}</span>
-                        <span className="text-[10px] mt-1.5 opacity-60">truk</span>
-                      </div>
-                    );
-                  })}
-
-                {/* Total tile */}
-                <div className="shrink-0 flex flex-col items-center rounded-xl border-2 border-dashed border-border bg-background px-5 py-4 min-w-[110px]">
-                  <span className="text-3xl font-bold text-foreground">{totalAntri}</span>
-                  <span className="text-xs font-medium mt-1 text-muted-foreground">Total Aktif</span>
-                  <span className="text-[10px] mt-1.5 opacity-60">truk</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Gudang Breakdown chart + Shift + Tonase */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Gudang chart — takes 2 cols */}
-            <Card className="lg:col-span-2">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">Antrian per Gudang</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {stats.gudangBreakdown.length > 0 ? (
-                  <Chart
-                    type="bar"
-                    series={gudangSeries}
-                    options={gudangOptions}
-                    height={Math.max(stats.gudangBreakdown.length * 42 + 20, 120)}
-                  />
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-10 text-muted-foreground gap-2">
-                    <CheckCircle className="w-8 h-8 opacity-30" />
-                    <p className="text-sm">Tidak ada antrian aktif di gudang</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Shift + Tonase column */}
-            <div className="space-y-4">
-              {/* Shift breakdown */}
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base">Distribusi Shift</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {[
-                      { label: "Pagi (06–14)", value: stats.shiftBreakdown.pagi, color: "bg-amber-500", text: "text-amber-700" },
-                      { label: "Siang (14–22)", value: stats.shiftBreakdown.siang, color: "bg-blue-500", text: "text-blue-700" },
-                      { label: "Malam (22–06)", value: stats.shiftBreakdown.malam, color: "bg-violet-500", text: "text-violet-700" },
-                    ].map((s) => {
-                      const total = stats.shiftBreakdown.pagi + stats.shiftBreakdown.siang + stats.shiftBreakdown.malam;
-                      const pct = total > 0 ? Math.round((s.value / total) * 100) : 0;
-                      return (
-                        <div key={s.label}>
-                          <div className="flex justify-between text-sm mb-1">
-                            <span className="text-muted-foreground">{s.label}</span>
-                            <span className={`font-semibold ${s.text}`}>{s.value} truk</span>
-                          </div>
-                          <div className="w-full bg-muted rounded-full h-2">
-                            <div
-                              className={`h-2 rounded-full ${s.color} transition-all duration-700`}
-                              style={{ width: `${pct}%` }}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Tonase */}
-              <Card>
-                <CardContent className="pt-5 pb-5">
-                  <p className="text-xs text-muted-foreground mb-1">Total Tonase Selesai</p>
-                  <p className="text-3xl font-bold text-green-600">
-                    {stats.totalTonase.toLocaleString("id-ID", { maximumFractionDigits: 1 })}
-                  </p>
-                  <p className="text-sm text-muted-foreground mt-0.5">ton hari ini</p>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-
-          {/* Gudang detail table */}
-          {stats.gudangBreakdown.length > 0 && (
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">Detail Antrian per Gudang</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b text-xs text-muted-foreground">
-                        <th className="text-left py-2">Gudang</th>
-                        <th className="text-right py-2">Jumlah Truk</th>
-                        <th className="text-right py-2">% dari Total</th>
-                        <th className="py-2" />
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {stats.gudangBreakdown
-                        .slice()
-                        .sort((a, b) => b.count - a.count)
-                        .map((row) => {
-                          const pct = totalAntri > 0 ? Math.round((row.count / totalAntri) * 100) : 0;
-                          return (
-                            <tr key={row.gudang} className="border-b last:border-0 hover:bg-muted/30">
-                              <td className="py-2 font-medium">{row.gudang || "—"}</td>
-                              <td className="text-right py-2">
-                                <StatusBadge count={row.count} variant="indigo" />
-                              </td>
-                              <td className="text-right py-2 text-muted-foreground">{pct}%</td>
-                              <td className="py-2 pl-4 w-32">
-                                <div className="w-full bg-muted rounded-full h-1.5">
-                                  <div
-                                    className="h-1.5 rounded-full bg-indigo-400 transition-all duration-700"
-                                    style={{ width: `${pct}%` }}
-                                  />
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                    </tbody>
-                    <tfoot>
-                      <tr className="border-t font-semibold bg-muted/20">
-                        <td className="py-2">Total</td>
-                        <td className="text-right py-2">{totalAntri} truk</td>
-                        <td colSpan={2} />
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </>
+      {/* Error */}
+      {error && !loading && (
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 text-sm text-red-700 dark:text-red-400">
+          {error}
+        </div>
       )}
 
-      {!isLoading && !stats && (
-        <div className="text-center py-16 text-muted-foreground">
-          <BarChart3 className="w-10 h-10 mx-auto mb-3 opacity-30" />
-          <p>Tidak ada data antrian tersedia</p>
+      {/* Sections */}
+      {report && (
+        <div>
+          {report.sections.map((sec, i) => (
+            <SectionAccordion key={sec.id} section={sec} defaultOpen={i < 3} />
+          ))}
+          {report.sections.length === 0 && (
+            <div className="text-center py-12 text-muted-foreground">Tidak ada data antrian</div>
+          )}
         </div>
       )}
     </div>
