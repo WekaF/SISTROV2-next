@@ -14,7 +14,10 @@ export async function GET() {
     if (!isSuperAdmin(session)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const token = (session?.user as any)?.aspnetToken as string;
     const res = await aspnetFetchServer("/api/RoleMenuGroup/List", token);
-    if (!res.ok) throw new Error("Failed to fetch role menu groups");
+    if (!res.ok) {
+      const body = await res.text().catch(() => res.statusText);
+      throw new Error(`Backend ${res.status}: ${body}`);
+    }
     return NextResponse.json(await res.json());
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

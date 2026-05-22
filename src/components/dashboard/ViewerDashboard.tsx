@@ -11,6 +11,7 @@ import {
   AlertCircle,
   CheckCircle,
   Calendar,
+  ChevronLeft,
   ChevronRight,
   Sparkles,
   Lightbulb,
@@ -20,7 +21,9 @@ import {
   Download,
   RefreshCw,
   Globe,
-  Layers
+  Layers,
+  Trophy,
+  AlertTriangle
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import Badge from "@/components/ui/badge/Badge";
@@ -58,6 +61,8 @@ export default function ViewerDashboard() {
   // States for all dashboard metrics
   const [activeTab, setActiveTab] = useState<"traffic" | "performance" | "all">("traffic");
   const [stats, setStats] = useState<any>(null);
+  const [durasiPage, setDurasiPage] = useState(0);
+  const [slaPage, setSlaPage] = useState(0);
   const [monthlyComp, setMonthlyComp] = useState<any>(null);
   const [trendPerPlant, setTrendPerPlant] = useState<any>(null);
   const [trendPerHour, setTrendPerHour] = useState<any>(null);
@@ -71,7 +76,8 @@ export default function ViewerDashboard() {
   const [durasiTickets, setDurasiTickets] = useState<{ longest: any[], fastest: any[] } | null>(null);
   const [activeDurasiTab, setActiveDurasiTab] = useState<"longest" | "fastest">("longest");
   const [isExporting, setIsExporting] = useState(false);
-  const [showAllRankings, setShowAllRankings] = useState(false);
+  const [rankingPage, setRankingPage] = useState(0);
+  const [rankingTab, setRankingTab] = useState<"top" | "bottom">("top");
 
   const handleExport = async () => {
     setIsExporting(true);
@@ -401,27 +407,67 @@ export default function ViewerDashboard() {
   // ApexCharts Configurations
   // ==========================================
 
-  // 1. Trend Tiket per Plant (7 Hari) - Line Chart
-  const trendPlantOptions: any = {
+  // 1. Heatmap Aktivitas Muat per Plant (7 Hari)
+  // Transform: { name, data: number[] } → { name, data: [{x: date, y: number}] }
+  const heatmapSeries = (trendPerPlant?.series || []).map((s: any) => ({
+    name: s.name,
+    data: (trendPerPlant?.dates || []).map((date: string, i: number) => ({
+      x: date,
+      y: s.data[i] ?? 0
+    }))
+  }));
+
+  const heatmapOptions: any = {
     chart: {
-      type: "line",
+      type: "heatmap",
       fontFamily: "Outfit, sans-serif",
       toolbar: { show: false },
-      zoom: { enabled: false }
+      animations: { enabled: true, speed: 600 }
     },
-    stroke: { curve: "smooth", width: 3 },
-    colors: COLORS.slice(0, trendPerPlant?.series?.length || 5),
+    dataLabels: {
+      enabled: true,
+      style: { fontSize: "10px", fontWeight: "bold", colors: ["#fff"] },
+      formatter: (val: number) => val > 0 ? String(val) : ""
+    },
     xaxis: {
-      categories: trendPerPlant?.dates || [],
+      type: "category",
       axisBorder: { show: false },
       axisTicks: { show: false },
+      labels: { style: { fontSize: "11px", fontWeight: 600 } }
     },
     yaxis: {
-      title: { text: "Jumlah Antrian", style: { fontWeight: 500 } }
+      labels: { style: { fontSize: "11px", fontWeight: 600 } }
     },
-    grid: { borderColor: "rgba(226, 232, 240, 0.5)", strokeDashArray: 4 },
-    legend: { position: "top", horizontalAlign: "left" },
-    tooltip: { shared: true, intersect: false }
+    plotOptions: {
+      heatmap: {
+        radius: 6,
+        enableShades: false,
+        colorScale: {
+          ranges: [
+            { from: 0,  to: 0,   name: "Tidak Ada",    color: "#F1F5F9" },
+            { from: 1,  to: 10,  name: "Rendah",        color: "#A7F3D0" },
+            { from: 11, to: 30,  name: "Sedang",        color: "#34D399" },
+            { from: 31, to: 60,  name: "Tinggi",        color: "#059669" },
+            { from: 61, to: 9999, name: "Sangat Tinggi", color: "#065F46" }
+          ]
+        }
+      }
+    },
+    grid: { show: false },
+    legend: { show: false },
+    tooltip: {
+      custom: ({ seriesIndex, dataPointIndex, w }: any) => {
+        const plant = w.globals.seriesNames[seriesIndex];
+        const point = w.globals.initialSeries[seriesIndex]?.data?.[dataPointIndex];
+        const date  = point?.x ?? "";
+        const val   = point?.y ?? 0;
+        return `<div style="padding:8px 12px;font-size:12px;font-family:Outfit,sans-serif;border-radius:8px">
+          <b style="color:#111">${plant}</b><br/>
+          <span style="color:#6B7280;font-size:11px">${date}</span><br/>
+          <span style="color:#10B981;font-weight:800">${val} tiket muat</span>
+        </div>`;
+      }
+    }
   };
 
   // 2. Distribusi Tiket per Jam (Hari Ini) - Stacked Column Chart
@@ -459,6 +505,11 @@ export default function ViewerDashboard() {
   ];
 
   // 3. Avg Durasi Muat per Plant - Horizontal Column Chart
+  // 3.5. Paginated Average Loading Duration Dataset
+  const durasiItemsPerPage = 5;
+  const totalDurasiPages = durasiMuat ? Math.ceil(durasiMuat.length / durasiItemsPerPage) : 0;
+  const paginatedDurasiMuat = durasiMuat ? durasiMuat.slice(durasiPage * durasiItemsPerPage, (durasiPage + 1) * durasiItemsPerPage) : [];
+
   const durasiMuatOptions: any = {
     chart: {
       type: "bar",
@@ -473,11 +524,11 @@ export default function ViewerDashboard() {
         borderRadius: 4
       }
     },
-    colors: durasiMuat?.map((d: any) =>
+    colors: paginatedDurasiMuat?.map((d: any) =>
       d.AvgDurasiMenit <= 35 ? "#10B981" : d.AvgDurasiMenit <= 45 ? "#F59E0B" : "#EF4444"
     ) || COLORS,
     xaxis: {
-      categories: durasiMuat?.map((d: any) => d.CompanyName) || [],
+      categories: paginatedDurasiMuat?.map((d: any) => d.CompanyName) || [],
       axisBorder: { show: false },
       title: { text: "Menit", style: { fontWeight: 500 } }
     },
@@ -495,7 +546,7 @@ export default function ViewerDashboard() {
 
   const durasiMuatSeries = [{
     name: "Avg Durasi (mnt)",
-    data: durasiMuat?.map((d: any) => Math.round(d.AvgDurasiMenit)) || []
+    data: paginatedDurasiMuat?.map((d: any) => Math.round(d.AvgDurasiMenit)) || []
   }];
 
   // 4. Top 5 Produk by Volume - Doughnut Chart
@@ -506,7 +557,7 @@ export default function ViewerDashboard() {
     },
     labels: topProduk?.map((p: any) => p.NamaProduk || p.name) || [],
     colors: COLORS.slice(0, topProduk?.length || 5),
-    legend: { position: "bottom", fontSize: "12px" },
+    legend: { show: false },
     stroke: { width: 2 },
     dataLabels: { enabled: true, formatter: (val: any) => `${Math.round(val)}%` },
     plotOptions: {
@@ -537,6 +588,11 @@ export default function ViewerDashboard() {
   const topProdukSeries = topProduk?.map((p: any) => p.TotalTonase) || [];
 
   // 5. SLA Compliance per Plant - Horizontal Column Chart
+  // 4.5. Paginated SLA Dataset
+  const slaItemsPerPage = 5;
+  const totalSlaPages = slaPerPlant ? Math.ceil(slaPerPlant.length / slaItemsPerPage) : 0;
+  const paginatedSlaPerPlant = slaPerPlant ? slaPerPlant.slice(slaPage * slaItemsPerPage, (slaPage + 1) * slaItemsPerPage) : [];
+
   const slaOptions: any = {
     chart: {
       type: "bar",
@@ -551,11 +607,11 @@ export default function ViewerDashboard() {
         borderRadius: 4
       }
     },
-    colors: slaPerPlant?.map((s: any) =>
+    colors: paginatedSlaPerPlant?.map((s: any) =>
       s.SlaCompliancePercent >= 85 ? "#10B981" : s.SlaCompliancePercent >= 70 ? "#F59E0B" : "#EF4444"
     ) || COLORS,
     xaxis: {
-      categories: slaPerPlant?.map((s: any) => s.CompanyName) || [],
+      categories: paginatedSlaPerPlant?.map((s: any) => s.CompanyName) || [],
       max: 100,
       axisBorder: { show: false },
       title: { text: "SLA % Compliance", style: { fontWeight: 500 } }
@@ -574,7 +630,7 @@ export default function ViewerDashboard() {
 
   const slaSeries = [{
     name: "SLA Compliance",
-    data: slaPerPlant?.map((s: any) => s.SlaCompliancePercent) || []
+    data: paginatedSlaPerPlant?.map((s: any) => s.SlaCompliancePercent) || []
   }];
 
   // 6. Throughput per Shift (30 Hari) - Stacked Column Chart
@@ -613,6 +669,55 @@ export default function ViewerDashboard() {
     { name: "Shift 3 (Malam)", data: throughputShift?.shift3 || [] }
   ];
 
+  // 6.5. Kuota Utilisasi: Stacked Horizontal Bar (Terpakai vs Sisa)
+  const kuotaCategories = kuotaUtilization?.map((k: any) => k.CompanyCode || k.CompanyName) || [];
+  const kuotaStackedOptions: any = {
+    chart: {
+      type: "bar",
+      stacked: true,
+      fontFamily: "Outfit, sans-serif",
+      toolbar: { show: false },
+      animations: { enabled: true, speed: 500 }
+    },
+    plotOptions: {
+      bar: { horizontal: true, borderRadius: 5, borderRadiusWhenStacked: "last", barHeight: "60%" }
+    },
+    colors: ["#10B981", "#E2E8F0"],
+    xaxis: {
+      categories: kuotaCategories,
+      axisBorder: { show: false },
+      axisTicks: { show: false },
+      labels: {
+        formatter: (val: number) => `${(val / 1000).toFixed(0)}k T`,
+        style: { fontSize: "11px" }
+      }
+    },
+    yaxis: { labels: { style: { fontSize: "11px", fontWeight: 700 } } },
+    dataLabels: {
+      enabled: true,
+      formatter: (val: number, opts: any) => {
+        if (opts.seriesIndex === 0) {
+          const pct = kuotaUtilization?.[opts.dataPointIndex]?.UtilizationPercent ?? 0;
+          return `${pct}%`;
+        }
+        return "";
+      },
+      style: { fontSize: "10px", fontWeight: "bold", colors: ["#fff", "transparent"] }
+    },
+    tooltip: {
+      shared: true,
+      intersect: false,
+      y: { formatter: (val: number) => `${fmt(val)} Ton` }
+    },
+    legend: { show: false },
+    grid: { borderColor: "rgba(226,232,240,0.4)", strokeDashArray: 4, xaxis: { lines: { show: true } }, yaxis: { lines: { show: false } } },
+    fill: { opacity: [1, 0.35] }
+  };
+  const kuotaStackedSeries = [
+    { name: "Terpakai", data: kuotaUtilization?.map((k: any) => k.TotalRealisasi) || [] },
+    { name: "Sisa Kuota", data: kuotaUtilization?.map((k: any) => Math.max(0, (k.TotalKuota || 0) - (k.TotalRealisasi || 0))) || [] }
+  ];
+
   // 7. Cancel Rate Trend per Plant - Line Chart
   const cancelTrendOptions: any = {
     chart: {
@@ -646,6 +751,126 @@ export default function ViewerDashboard() {
 
   const globalSla = getGlobalSlaValue();
 
+  // 5.5. Paginated Leaderboard Dataset (Top 10 vs Bottom 10)
+  const rankingList = plantRanking ? (rankingTab === "top" ? plantRanking.slice(0, 10) : plantRanking.slice(-10).reverse()) : [];
+  const rankingItemsPerPage = 5;
+  const totalRankingPages = rankingList ? Math.ceil(rankingList.length / rankingItemsPerPage) : 0;
+  const paginatedRanking = rankingList ? rankingList.slice(rankingPage * rankingItemsPerPage, (rankingPage + 1) * rankingItemsPerPage) : [];
+
+  if (!streamData) {
+    return (
+      <div className="space-y-6 max-w-[1600px] mx-auto p-4 md:p-6 animate-pulse">
+        {/* 1. Header Skeleton */}
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b border-gray-150 pb-5 dark:border-gray-800">
+          <div className="space-y-2.5">
+            <div className="h-8 w-64 bg-slate-200 dark:bg-slate-800 rounded-lg" />
+            <div className="h-4 w-96 bg-slate-150 dark:bg-slate-800/60 rounded-md" />
+          </div>
+          <div className="flex gap-3">
+            <div className="h-10 w-28 bg-slate-200 dark:bg-slate-800 rounded-xl" />
+            <div className="h-10 w-32 bg-slate-200 dark:bg-slate-800 rounded-xl" />
+          </div>
+        </div>
+
+        {/* 2. Map Skeleton (MASSIVE & FULL WIDTH) */}
+        <div className="w-full h-[540px] bg-slate-200 dark:bg-slate-850 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 flex flex-col justify-between">
+          <div className="flex justify-between items-center">
+            <div className="space-y-2">
+              <div className="h-5 w-80 bg-slate-300 dark:bg-slate-700 rounded-md" />
+              <div className="h-3 w-96 bg-slate-150 dark:bg-slate-800/40 rounded-md" />
+            </div>
+            <div className="h-6 w-32 bg-slate-300 dark:bg-slate-700 rounded-full" />
+          </div>
+          <div className="flex-1 flex items-center justify-center my-6">
+            {/* Glowing Map grid shape simulator */}
+            <div className="w-2/3 h-1/2 border-2 border-dashed border-slate-300/40 dark:border-slate-700/40 rounded-3xl flex items-center justify-center">
+              <div className="h-8 w-8 rounded-full bg-slate-300 dark:bg-slate-700 animate-ping" />
+            </div>
+          </div>
+          <div className="flex gap-4">
+            <div className="h-12 w-1/4 bg-slate-300 dark:bg-slate-700 rounded-xl" />
+            <div className="h-12 w-1/4 bg-slate-300 dark:bg-slate-700 rounded-xl" />
+            <div className="h-12 w-1/4 bg-slate-300 dark:bg-slate-700 rounded-xl" />
+            <div className="h-12 w-1/4 bg-slate-300 dark:bg-slate-700 rounded-xl" />
+          </div>
+        </div>
+
+        {/* 3. 4 KPI Cards Grid Skeletons */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="bg-slate-200 dark:bg-slate-800 border border-gray-100 dark:border-gray-800 rounded-2xl p-5 h-32 flex flex-col justify-between">
+              <div className="flex justify-between">
+                <div className="h-4 w-28 bg-slate-300 dark:bg-slate-700 rounded" />
+                <div className="h-8 w-8 rounded-lg bg-slate-300 dark:bg-slate-700" />
+              </div>
+              <div className="space-y-2">
+                <div className="h-7 w-20 bg-slate-300 dark:bg-slate-700 rounded" />
+                <div className="h-3.5 w-32 bg-slate-150 dark:bg-slate-800/40 rounded" />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* 4. Charts Grid Skeletons */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+          {/* Main Chart Card */}
+          <div className="lg:col-span-8 bg-slate-200 dark:bg-slate-800 border border-gray-100 dark:border-gray-800 rounded-2xl p-6 h-[400px] flex flex-col justify-between">
+            <div className="flex justify-between items-center">
+              <div className="h-5 w-48 bg-slate-300 dark:bg-slate-700 rounded" />
+              <div className="h-8 w-32 bg-slate-300 dark:bg-slate-700 rounded-lg" />
+            </div>
+            <div className="flex-1 flex items-end gap-3 mt-6">
+              {[35, 45, 60, 25, 70, 40, 85, 50, 65, 30, 55, 90].map((h, idx) => (
+                <div
+                  key={idx}
+                  className="bg-slate-300 dark:bg-slate-700 rounded-t-md flex-1"
+                  style={{ height: `${h}%` }}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Secondary Chart Card */}
+          <div className="lg:col-span-4 bg-slate-200 dark:bg-slate-800 border border-gray-100 dark:border-gray-800 rounded-2xl p-6 h-[400px] flex flex-col justify-between">
+            <div className="h-5 w-40 bg-slate-300 dark:bg-slate-700 rounded" />
+            <div className="flex-1 flex items-center justify-center my-6">
+              {/* Circular donut simulator */}
+              <div className="h-40 w-40 rounded-full border-[16px] border-slate-300 dark:border-slate-700 flex items-center justify-center">
+                <div className="h-10 w-16 bg-slate-300 dark:bg-slate-700 rounded" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="h-4 w-full bg-slate-300 dark:bg-slate-700 rounded" />
+              <div className="h-4 w-2/3 bg-slate-300 dark:bg-slate-700 rounded" />
+            </div>
+          </div>
+        </div>
+
+        {/* 5. Table List Skeleton */}
+        <div className="bg-slate-200 dark:bg-slate-800 border border-gray-150 dark:border-gray-800 rounded-2xl p-6 space-y-6">
+          <div className="flex justify-between items-center">
+            <div className="space-y-2">
+              <div className="h-5 w-56 bg-slate-300 dark:bg-slate-700 rounded" />
+              <div className="h-3 w-80 bg-slate-150 dark:bg-slate-800/40 rounded" />
+            </div>
+            <div className="h-8 w-24 bg-slate-300 dark:bg-slate-700 rounded-lg" />
+          </div>
+          <div className="space-y-4">
+            <div className="h-10 bg-slate-300 dark:bg-slate-700 rounded-lg w-full" />
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="flex items-center gap-4 justify-between">
+                <div className="h-6 w-1/4 bg-slate-300 dark:bg-slate-700 rounded" />
+                <div className="h-6 w-1/6 bg-slate-300 dark:bg-slate-700 rounded" />
+                <div className="h-6 w-1/5 bg-slate-300 dark:bg-slate-700 rounded" />
+                <div className="h-6 w-12 bg-slate-300 dark:bg-slate-700 rounded" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 max-w-[1600px] mx-auto p-4 md:p-6">
 
@@ -657,7 +882,7 @@ export default function ViewerDashboard() {
               <Globe className="h-5 w-5" />
             </span> */}
             <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
-              SISTRO Command Center
+              Dashboard SISTRO
             </h1>
           </div>
           <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
@@ -666,18 +891,18 @@ export default function ViewerDashboard() {
           <div className="flex items-center gap-2 mt-2">
             <span
               className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${streamStatus === "live"
-                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400"
-                  : streamStatus === "error"
-                    ? "bg-red-100 text-red-600 dark:bg-red-500/10 dark:text-red-400"
-                    : "bg-gray-100 text-gray-500 dark:bg-white/5 dark:text-gray-400"
+                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400"
+                : streamStatus === "error"
+                  ? "bg-red-100 text-red-600 dark:bg-red-500/10 dark:text-red-400"
+                  : "bg-gray-100 text-gray-500 dark:bg-white/5 dark:text-gray-400"
                 }`}
             >
               <span
                 className={`h-1.5 w-1.5 rounded-full ${streamStatus === "live"
-                    ? "bg-emerald-500 animate-pulse"
-                    : streamStatus === "error"
-                      ? "bg-red-500"
-                      : "bg-gray-400 animate-pulse"
+                  ? "bg-emerald-500 animate-pulse"
+                  : streamStatus === "error"
+                    ? "bg-red-500"
+                    : "bg-gray-400 animate-pulse"
                   }`}
               />
               {streamStatus === "live" ? "Live" : streamStatus === "error" ? "Offline" : "Connecting..."}
@@ -941,7 +1166,7 @@ export default function ViewerDashboard() {
               <h4 className="text-2xl font-extrabold text-gray-800 dark:text-white leading-tight mt-0.5">
                 {fmt(stats.total_selesai)}
               </h4>
-              <span className="text-[11px] text-gray-400 font-medium">Bongkar muat selesai</span>
+              <span className="text-[11px] text-gray-400 font-medium">Proses muat selesai</span>
             </div>
           </div>
 
@@ -1036,24 +1261,46 @@ export default function ViewerDashboard() {
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
 
-          {/* Trend Tiket per Plant Line Chart */}
+          {/* 🔥 Heatmap Aktivitas Muat per Plant × Hari */}
           {trendPerPlant && (activeTab === "traffic" || activeTab === "all") && (
             <Card className="shadow-theme-xs dashboard-card-hover border border-gray-100 dark:border-gray-800 animate-slide-up-fade">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-bold flex items-center gap-2 text-gray-800 dark:text-white">
-                  <TrendingUp className="h-4.5 w-4.5 text-brand-500 animate-pulse" />
-                  Trend Tiket per Plant (7 Hari Terakhir)
+                  <Sparkles className="h-4.5 w-4.5 text-brand-500" />
+                  Heatmap Aktivitas Muat per Plant (7 Hari)
                 </CardTitle>
+                <CardDescription className="text-xs mt-0.5">
+                  Setiap sel menampilkan jumlah tiket muat — warna lebih gelap berarti aktivitas lebih tinggi pada hari tersebut.
+                </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="h-[290px]">
+              <CardContent className="space-y-3">
+                <div style={{ height: `${Math.max(220, trendPerPlant.series.length * 36)}px` }}>
                   <Chart
-                    options={trendPlantOptions}
-                    series={trendPerPlant.series}
-                    type="line"
+                    options={heatmapOptions}
+                    series={heatmapSeries}
+                    type="heatmap"
                     height="100%"
                     width="100%"
                   />
+                </div>
+
+                {/* Color Intensity Legend */}
+                <div className="flex items-center justify-between gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider shrink-0">Intensitas:</span>
+                  <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                    {[
+                      { label: "Tidak Ada", color: "#F1F5F9", text: "text-gray-400" },
+                      { label: "Rendah",    color: "#A7F3D0", text: "text-emerald-600" },
+                      { label: "Sedang",    color: "#34D399", text: "text-emerald-600" },
+                      { label: "Tinggi",    color: "#059669", text: "text-emerald-700" },
+                      { label: "Sangat Tinggi", color: "#065F46", text: "text-emerald-900" },
+                    ].map(({ label, color, text }) => (
+                      <div key={label} className="flex items-center gap-1">
+                        <span className="w-3 h-3 rounded-sm border border-gray-200 dark:border-gray-700" style={{ backgroundColor: color }} />
+                        <span className={`text-[10px] font-semibold ${text} dark:text-gray-300`}>{label}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -1107,15 +1354,38 @@ export default function ViewerDashboard() {
 
           {/* Avg Durasi Muat Horizontal Bar Chart */}
           {durasiMuat && (activeTab === "performance" || activeTab === "all") && (
-            <Card className="shadow-theme-xs dashboard-card-hover border border-gray-100 dark:border-gray-800 animate-slide-up-fade">
-              <CardHeader className="pb-2">
+            <Card className="shadow-theme-xs dashboard-card-hover border border-gray-100 dark:border-gray-800 animate-slide-up-fade flex flex-col">
+              <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
                 <CardTitle className="text-sm font-bold flex items-center gap-2 text-gray-800 dark:text-white">
                   <Clock className="h-4.5 w-4.5 text-rose-500 animate-pulse" />
-                  Avg Durasi Bongkar Muat per Plant
+                  Avg Durasi Muat per Plant
                 </CardTitle>
+
+                {/* Sleek Pagination Controls */}
+                {totalDurasiPages > 1 && (
+                  <div className="flex items-center gap-1 bg-gray-50 dark:bg-white/5 border border-gray-150 dark:border-gray-800 rounded-lg p-0.5">
+                    <button
+                      disabled={durasiPage === 0}
+                      onClick={() => setDurasiPage(p => p - 1)}
+                      className="p-1 hover:bg-white dark:hover:bg-gray-850 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white rounded-md disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
+                    >
+                      <ChevronLeft className="h-3.5 w-3.5" />
+                    </button>
+                    <span className="text-[10px] font-extrabold text-gray-500 dark:text-gray-400 px-1.5 select-none">
+                      {durasiPage + 1} / {totalDurasiPages}
+                    </span>
+                    <button
+                      disabled={durasiPage >= totalDurasiPages - 1}
+                      onClick={() => setDurasiPage(p => p + 1)}
+                      className="p-1 hover:bg-white dark:hover:bg-gray-850 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white rounded-md disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
+                    >
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                )}
               </CardHeader>
-              <CardContent>
-                <div style={{ height: `${Math.max(280, durasiMuat.length * 44)}px` }}>
+              <CardContent className="flex-1 flex flex-col justify-center">
+                <div style={{ height: "240px" }}>
                   <Chart
                     options={durasiMuatOptions}
                     series={durasiMuatSeries}
@@ -1129,39 +1399,107 @@ export default function ViewerDashboard() {
           )}
 
           {/* Top 5 Products Doughnut Chart */}
-          {topProduk && (activeTab === "performance" || activeTab === "all") && (
-            <Card className="shadow-theme-xs dashboard-card-hover border border-gray-100 dark:border-gray-800 animate-slide-up-fade">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-bold flex items-center gap-2 text-gray-800 dark:text-white">
-                  <Warehouse className="h-4.5 w-4.5 text-emerald-500" />
-                  Top 5 Produk Teratas by Volume (30 Hari)
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[280px] flex items-center justify-center">
-                  <Chart
-                    options={topProdukOptions}
-                    series={topProdukSeries}
-                    type="donut"
-                    height="100%"
-                    width="100%"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          {topProduk && (activeTab === "performance" || activeTab === "all") && (() => {
+            const chartHeight = 240;
+            const totalVolume = topProduk.reduce((sum: number, p: any) => sum + (p.TotalTonase || p.value || 0), 0) || 1;
+
+            return (
+              <Card className="shadow-theme-xs dashboard-card-hover border border-gray-100 dark:border-gray-800 animate-slide-up-fade flex flex-col">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-bold flex items-center gap-2 text-gray-800 dark:text-white">
+                    <Warehouse className="h-4.5 w-4.5 text-emerald-500" />
+                    Top 5 Produk Teratas by Volume (30 Hari)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="flex-1 flex flex-col justify-center">
+                  <div style={{ minHeight: `${chartHeight}px` }} className="flex flex-col xl:flex-row items-center justify-between gap-6 py-2">
+                    {/* Left Column: Doughnut Chart */}
+                    <div className="w-full xl:w-[45%] flex items-center justify-center">
+                      <div className="w-full max-w-[260px]">
+                        <Chart
+                          options={topProdukOptions}
+                          series={topProdukSeries}
+                          type="donut"
+                          height={200}
+                          width="100%"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Right Column: Custom Progress Breakdown */}
+                    <div className="w-full xl:w-[55%] flex flex-col justify-center space-y-3.5">
+                      {topProduk.map((p: any, idx: number) => {
+                        const name = p.NamaProduk || p.name || "Produk Lainnya";
+                        const vol = p.TotalTonase || p.value || 0;
+                        const pct = Math.min(100, Math.round((vol / totalVolume) * 100));
+                        const color = COLORS[idx % COLORS.length];
+
+                        return (
+                          <div key={idx} className="space-y-1">
+                            <div className="flex justify-between items-center text-xs font-semibold">
+                              <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+                                <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                                <span className="truncate max-w-[130px] xl:max-w-[150px]" title={name}>{name}</span>
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0">
+                                <span className="text-gray-900 dark:text-white font-extrabold">{fmt(vol)} T</span>
+                                <span className="text-gray-400 font-bold text-[10px] bg-gray-50 dark:bg-white/5 px-1.5 py-0.5 rounded">{pct}%</span>
+                              </div>
+                            </div>
+                            {/* Custom progress bar */}
+                            <div className="w-full bg-slate-100 dark:bg-slate-800/60 h-1.5 rounded-full overflow-hidden">
+                              <div
+                                className="h-full rounded-full transition-all duration-700"
+                                style={{
+                                  width: `${pct}%`,
+                                  backgroundColor: color
+                                }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })()}
 
           {/* SLA Compliance Horizontal Bar Chart */}
           {slaPerPlant && (activeTab === "performance" || activeTab === "all") && (
-            <Card className="shadow-theme-xs dashboard-card-hover border border-gray-100 dark:border-gray-800 animate-slide-up-fade xl:col-span-2">
-              <CardHeader className="pb-2">
+            <Card className="shadow-theme-xs dashboard-card-hover border border-gray-100 dark:border-gray-800 animate-slide-up-fade xl:col-span-2 flex flex-col">
+              <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
                 <CardTitle className="text-sm font-bold flex items-center gap-2 text-gray-800 dark:text-white">
                   <Percent className="h-4.5 w-4.5 text-amber-500" />
                   SLA Compliance per Plant (30 Hari)
                 </CardTitle>
+
+                {/* Sleek Pagination Controls */}
+                {totalSlaPages > 1 && (
+                  <div className="flex items-center gap-1 bg-gray-50 dark:bg-white/5 border border-gray-150 dark:border-gray-800 rounded-lg p-0.5">
+                    <button
+                      disabled={slaPage === 0}
+                      onClick={() => setSlaPage(p => p - 1)}
+                      className="p-1 hover:bg-white dark:hover:bg-gray-850 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white rounded-md disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
+                    >
+                      <ChevronLeft className="h-3.5 w-3.5" />
+                    </button>
+                    <span className="text-[10px] font-extrabold text-gray-500 dark:text-gray-400 px-1.5 select-none">
+                      {slaPage + 1} / {totalSlaPages}
+                    </span>
+                    <button
+                      disabled={slaPage >= totalSlaPages - 1}
+                      onClick={() => setSlaPage(p => p + 1)}
+                      className="p-1 hover:bg-white dark:hover:bg-gray-850 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white rounded-md disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
+                    >
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                )}
               </CardHeader>
-              <CardContent>
-                <div style={{ height: `${Math.max(290, slaPerPlant.length * 44)}px` }}>
+              <CardContent className="flex-1 flex flex-col justify-center">
+                <div style={{ height: "240px" }}>
                   <Chart
                     options={slaOptions}
                     series={slaSeries}
@@ -1180,42 +1518,62 @@ export default function ViewerDashboard() {
       {/* 7. Quota Utilization Progress UI & Cancel Rate Trend */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-        {/* Quota Utilization Bars */}
-        <Card className="lg:col-span-5 shadow-theme-xs hover:shadow-md transition-all duration-300">
-          <CardHeader>
+        {/* Kuota Utilization: Stacked Horiz Bar */}
+        <Card className="lg:col-span-5 shadow-theme-xs hover:shadow-md transition-all duration-300 flex flex-col">
+          <CardHeader className="pb-3">
             <CardTitle className="text-base font-bold flex items-center gap-2">
               <Warehouse className="h-4.5 w-4.5 text-brand-500" />
-              Kuota Utilization per Plant (30 Hari)
+              Penyerapan Kuota Pengiriman (30 Hari)
             </CardTitle>
-            <CardDescription className="text-xs">Realisasi penyaluran tonnage vs batasan kuota terdaftar</CardDescription>
+            <CardDescription className="text-xs">Perbandingan tonnase yang sudah dikirim vs sisa kuota yang tersedia per plant</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4 max-h-[310px] overflow-y-auto pr-1">
-              {kuotaUtilization?.map((item: any) => {
-                const percentage = item.UtilizationPercent;
-                // Green for healthy utilization, amber for high, red for overload
-                const color = percentage >= 85 ? "bg-rose-500 text-rose-600" :
-                  percentage >= 60 ? "bg-amber-500 text-amber-600" :
-                    "bg-emerald-500 text-emerald-600";
 
-                return (
-                  <div key={item.CompanyCode} className="space-y-1.5 p-2 rounded-lg border border-gray-50 hover:bg-gray-50/55 dark:border-gray-800/40 transition-all">
-                    <div className="flex justify-between items-center text-xs font-bold">
-                      <span className="text-gray-800 dark:text-gray-200">{item.CompanyCode}</span>
-                      <span className={percentage >= 85 ? "text-rose-500" : percentage >= 60 ? "text-amber-500" : "text-emerald-500"}>
-                        {percentage}%
-                      </span>
-                    </div>
-                    <div className="w-full h-3 bg-gray-150 dark:bg-gray-800 rounded-full overflow-hidden shadow-inner">
-                      <div className={`h-full rounded-full ${color.split(" ")[0]} transition-all duration-500`} style={{ width: `${percentage}%` }}></div>
-                    </div>
-                    <div className="flex justify-between text-[10px] text-gray-400 font-semibold">
-                      <span>Realisasi: {fmt(item.TotalRealisasi)} Ton</span>
-                      <span>Kuota: {fmt(item.TotalKuota)} Ton</span>
-                    </div>
-                  </div>
-                );
-              })}
+          {/* Global Summary KPIs */}
+          {kuotaUtilization && (() => {
+            const totalReal = kuotaUtilization.reduce((s: number, k: any) => s + (k.TotalRealisasi || 0), 0);
+            const totalKuota = kuotaUtilization.reduce((s: number, k: any) => s + (k.TotalKuota || 0), 0);
+            const totalSisa = totalKuota - totalReal;
+            const globalPct = totalKuota > 0 ? Math.round((totalReal / totalKuota) * 100) : 0;
+            return (
+              <div className="flex items-center gap-3 px-5 pb-3 border-b border-gray-100 dark:border-gray-800">
+                <div className="flex-1 text-center">
+                  <p className="text-[10px] font-bold uppercase text-gray-400 tracking-wider">Total Terkirim</p>
+                  <p className="text-base font-black text-emerald-600 dark:text-emerald-400">{fmt(totalReal)} T</p>
+                </div>
+                <div className="w-px h-8 bg-gray-200 dark:bg-gray-700" />
+                <div className="flex-1 text-center">
+                  <p className="text-[10px] font-bold uppercase text-gray-400 tracking-wider">Sisa Kuota</p>
+                  <p className="text-base font-black text-gray-500 dark:text-gray-300">{fmt(totalSisa)} T</p>
+                </div>
+                <div className="w-px h-8 bg-gray-200 dark:bg-gray-700" />
+                <div className="flex-1 text-center">
+                  <p className="text-[10px] font-bold uppercase text-gray-400 tracking-wider">Utilisasi</p>
+                  <p className={`text-base font-black ${globalPct >= 85 ? "text-rose-500" : globalPct >= 60 ? "text-amber-500" : "text-emerald-500"}`}>{globalPct}%</p>
+                </div>
+              </div>
+            );
+          })()}
+
+          <CardContent className="pt-3 flex-1">
+            {/* Legend */}
+            <div className="flex items-center gap-4 mb-3">
+              <div className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded-sm bg-emerald-500" />
+                <span className="text-[11px] font-semibold text-gray-600 dark:text-gray-300">Terpakai</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded-sm bg-slate-200 dark:bg-slate-600" />
+                <span className="text-[11px] font-semibold text-gray-600 dark:text-gray-300">Sisa Kuota</span>
+              </div>
+            </div>
+            <div style={{ height: `${Math.max(180, (kuotaUtilization?.length || 5) * 46)}px` }}>
+              <Chart
+                options={kuotaStackedOptions}
+                series={kuotaStackedSeries}
+                type="bar"
+                height="100%"
+                width="100%"
+              />
             </div>
           </CardContent>
         </Card>
@@ -1249,16 +1607,116 @@ export default function ViewerDashboard() {
       {/* 8. Plant Performance Ranking Table (High design,WOW factor!) */}
       {plantRanking && (
         <Card className="shadow-theme-xs hover:shadow-md transition-all duration-300">
-          <CardHeader>
-            <CardTitle className="text-base font-bold flex items-center gap-2">
-              <Building2 className="h-4.5 w-4.5 text-brand-500" />
-              Plant Performance Leaderboard Ranking (30 Hari Terakhir)
-            </CardTitle>
-            <CardDescription className="text-xs">
-              Skor Performa dihitung berdasarkan formula bobot terstandar: SLA Compliance 40% + Throughput Volume 30% + Efisiensi Durasi 20% + Low Cancel Rate 10%
-            </CardDescription>
+          <CardHeader className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+            <div>
+              <CardTitle className="text-base font-bold flex items-center gap-2">
+                <Building2 className="h-4.5 w-4.5 text-brand-500" />
+                Plant Performance Leaderboard Ranking (30 Hari Terakhir)
+              </CardTitle>
+              <CardDescription className="text-xs mt-1.5">
+                Skor Performa dihitung berdasarkan formula bobot terstandar: SLA Compliance 40% + Throughput Volume 30% + Efisiensi Durasi 20% + Low Cancel Rate 10%
+              </CardDescription>
+            </div>
+
+            {/* Custom Tab Switcher */}
+            <div className="flex bg-gray-100/80 dark:bg-gray-800/60 p-1 rounded-xl shadow-inner w-full sm:w-auto shrink-0">
+              <button
+                onClick={() => { setRankingTab("top"); setRankingPage(0); }}
+                className={`flex-1 sm:flex-none px-4 py-2 text-xs font-bold rounded-lg transition-all duration-300 ${rankingTab === "top"
+                    ? "bg-white dark:bg-gray-900 text-emerald-600 dark:text-emerald-400 shadow-sm"
+                    : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                  }`}
+              >
+                Top 10 (Tertib)
+              </button>
+              <button
+                onClick={() => { setRankingTab("bottom"); setRankingPage(0); }}
+                className={`flex-1 sm:flex-none px-4 py-2 text-xs font-bold rounded-lg transition-all duration-300 ${rankingTab === "bottom"
+                    ? "bg-white dark:bg-gray-900 text-rose-600 dark:text-rose-400 shadow-sm"
+                    : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                  }`}
+              >
+                Bottom 10 (Kurang Tertib)
+              </button>
+            </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-6">
+            {/* Highlight: Plant Paling Tertib & Paling Kurang Tertib */}
+            {plantRanking.length > 1 && (() => {
+              const bestPlant = plantRanking[0];
+              const worstPlant = plantRanking[plantRanking.length - 1];
+
+              return (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border border-emerald-200/50 dark:border-emerald-900/30 rounded-2xl p-4 flex items-center justify-between gap-4 relative overflow-hidden group">
+                    <div className="absolute -right-4 -top-4 bg-emerald-500/10 w-24 h-24 rounded-full blur-2xl group-hover:bg-emerald-500/20 transition-all duration-500" />
+                    <div>
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <span className="text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/40 p-1 rounded-md">
+                          <Trophy className="h-4 w-4" />
+                        </span>
+                        <span className="text-xs font-black uppercase text-emerald-600 dark:text-emerald-400 tracking-wider">
+                          Plant Paling Tertib
+                        </span>
+                      </div>
+                      <h4 className="text-xl font-black text-gray-900 dark:text-white truncate max-w-[200px]" title={bestPlant.CompanyName}>
+                        {bestPlant.CompanyName}
+                      </h4>
+                      <div className="flex gap-3 mt-2 text-[11px] font-bold text-gray-500 dark:text-gray-400">
+                        <span className="flex items-center gap-1">
+                          <CheckCircle className="h-3 w-3 text-emerald-500" /> SLA {bestPlant.SlaPercent}%
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3 text-emerald-500" /> {bestPlant.AvgDurasi}m
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Activity className="h-3 w-3 text-emerald-500" /> Skor: {bestPlant.Score}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="shrink-0 relative">
+                      <div className="h-16 w-16 bg-white dark:bg-gray-900 rounded-full flex items-center justify-center border-[3px] border-emerald-500 shadow-sm relative z-10">
+                        <span className="text-xl font-black text-emerald-600 dark:text-emerald-400">#1</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-rose-500/10 to-rose-500/5 border border-rose-200/50 dark:border-rose-900/30 rounded-2xl p-4 flex items-center justify-between gap-4 relative overflow-hidden group">
+                    <div className="absolute -right-4 -top-4 bg-rose-500/10 w-24 h-24 rounded-full blur-2xl group-hover:bg-rose-500/20 transition-all duration-500" />
+                    <div>
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <span className="text-rose-600 dark:text-rose-400 bg-rose-100 dark:bg-rose-900/40 p-1 rounded-md">
+                          <AlertTriangle className="h-4 w-4" />
+                        </span>
+                        <span className="text-xs font-black uppercase text-rose-600 dark:text-rose-400 tracking-wider">
+                          Perlu Perhatian (Kurang Tertib)
+                        </span>
+                      </div>
+                      <h4 className="text-xl font-black text-gray-900 dark:text-white truncate max-w-[200px]" title={worstPlant.CompanyName}>
+                        {worstPlant.CompanyName}
+                      </h4>
+                      <div className="flex gap-3 mt-2 text-[11px] font-bold text-gray-500 dark:text-gray-400">
+                        <span className="flex items-center gap-1">
+                          <Ban className="h-3 w-3 text-rose-500" /> Cancel {worstPlant.CancelRate}%
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3 text-rose-500" /> {worstPlant.AvgDurasi}m
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Activity className="h-3 w-3 text-rose-500" /> Skor: {worstPlant.Score}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="shrink-0 relative">
+                      <div className="h-16 w-16 bg-white dark:bg-gray-900 rounded-full flex items-center justify-center border-[3px] border-rose-500 shadow-sm relative z-10">
+                        <span className="text-lg font-black text-rose-600 dark:text-rose-400">#{plantRanking.length}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
             <div className="overflow-x-auto border border-gray-100 dark:border-gray-800 rounded-xl">
               <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
                 <thead className="text-[10px] font-bold text-gray-400 uppercase bg-gray-50 dark:bg-white/[0.02] border-b border-gray-100 dark:border-gray-800">
@@ -1267,79 +1725,111 @@ export default function ViewerDashboard() {
                     <th scope="col" className="px-6 py-4">Nama Plant</th>
                     <th scope="col" className="px-6 py-4 text-right">Total Tiket</th>
                     <th scope="col" className="px-6 py-4 text-right">Total Tonase (Ton)</th>
-                    <th scope="col" className="px-6 py-4 text-right">Avg Durasi Bongkar</th>
+                    <th scope="col" className="px-6 py-4 text-right">Avg Durasi Muat</th>
                     <th scope="col" className="px-6 py-4 text-right">SLA Compliance</th>
                     <th scope="col" className="px-6 py-4 text-right">Cancel Rate</th>
                     <th scope="col" className="px-6 py-4 text-right pr-8">Skor Performa</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800 font-medium">
-                  {(showAllRankings ? plantRanking : plantRanking.slice(0, 10)).map((plant: any, index: number) => {
-                      const isTopThree = index < 3;
-                      const rankMedals = [
-                        "🏅🥇 Gold Medal",
-                        "🥈 Silver Medal",
-                        "🥉 Bronze Medal"
-                      ];
-                      const bgColors = [
-                        "bg-yellow-500/10 text-yellow-600 hover:bg-yellow-500/15",
-                        "bg-slate-300/20 text-slate-500 hover:bg-slate-300/30",
-                        "bg-amber-600/10 text-amber-700 hover:bg-amber-600/15"
-                      ];
+                  {paginatedRanking.map((plant: any, index: number) => {
+                    const rankNumber = plant.Rank || (rankingTab === "top" ? rankingPage * rankingItemsPerPage + index + 1 : plantRanking.length - 10 + rankingPage * rankingItemsPerPage + index + 1);
+                    const isTopThree = rankNumber <= 3;
+                    const rankMedals = [
+                      "🏅🥇 Gold Medal",
+                      "🥈 Silver Medal",
+                      "🥉 Bronze Medal"
+                    ];
+                    const bgColors = [
+                      "bg-yellow-500/10 text-yellow-600 hover:bg-yellow-500/15",
+                      "bg-slate-300/20 text-slate-500 hover:bg-slate-300/30",
+                      "bg-amber-600/10 text-amber-700 hover:bg-amber-600/15"
+                    ];
 
-                      const rankStyle = isTopThree ? bgColors[index] : "bg-gray-100 text-gray-500 hover:bg-gray-200";
+                    const rankStyle = isTopThree ? bgColors[rankNumber - 1] : "bg-gray-100 text-gray-500 hover:bg-gray-200";
 
-                      return (
-                        <tr key={plant.CompanyName} className="bg-white dark:bg-transparent hover:bg-gray-50/50 dark:hover:bg-white/[0.01] transition-all">
-                          <td className="px-6 py-4 text-center">
-                            <span className={`inline-block px-3 py-1.5 rounded-full text-xs font-extrabold ${rankStyle}`}>
-                              {isTopThree ? rankMedals[index].split(" ")[0] : plant.Rank}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 font-bold text-gray-900 dark:text-white">
-                            {plant.CompanyName}
-                          </td>
-                          <td className="px-6 py-4 text-right font-semibold text-gray-700 dark:text-gray-300">
-                            {fmt(plant.TotalTiket)}
-                          </td>
-                          <td className="px-6 py-4 text-right font-semibold text-gray-700 dark:text-gray-300">
-                            {fmt(plant.TotalTonase)} T
-                          </td>
-                          <td className="px-6 py-4 text-right">
-                            <span className={`inline-block px-2.5 py-1 rounded-lg text-xs font-bold ${plant.AvgDurasi <= 35 ? "bg-emerald-50 text-emerald-600" :
-                              plant.AvgDurasi <= 45 ? "bg-amber-50 text-amber-600" : "bg-rose-50 text-rose-600"
-                              }`}>
-                              {plant.AvgDurasi} Menit
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 text-right">
-                            <span className={`inline-block px-2.5 py-1 rounded-lg text-xs font-bold ${plant.SlaPercent >= 85 ? "bg-emerald-50 text-emerald-600" :
-                              plant.SlaPercent >= 70 ? "bg-amber-50 text-amber-600" : "bg-rose-50 text-rose-600"
-                              }`}>
-                              {plant.SlaPercent}%
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 text-right font-semibold text-rose-500">
-                            {plant.CancelRate}%
-                          </td>
-                          <td className="px-6 py-4 text-right pr-8">
-                            <span className="text-sm font-black text-brand-500">{plant.Score}</span>
-                          </td>
-                        </tr>
-                      );
-                    })}
+                    return (
+                      <tr key={plant.CompanyName} className="bg-white dark:bg-transparent hover:bg-gray-50/50 dark:hover:bg-white/[0.01] transition-all">
+                        <td className="px-6 py-4 text-center">
+                          <span className={`inline-block px-3 py-1.5 rounded-full text-xs font-extrabold ${rankStyle}`}>
+                            {isTopThree ? rankMedals[rankNumber - 1].split(" ")[0] : rankNumber}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 font-bold text-gray-900 dark:text-white">
+                          {plant.CompanyName}
+                        </td>
+                        <td className="px-6 py-4 text-right font-semibold text-gray-700 dark:text-gray-300">
+                          {fmt(plant.TotalTiket)}
+                        </td>
+                        <td className="px-6 py-4 text-right font-semibold text-gray-700 dark:text-gray-300">
+                          {fmt(plant.TotalTonase)} T
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <span className={`inline-block px-2.5 py-1 rounded-lg text-xs font-bold ${plant.AvgDurasi <= 35 ? "bg-emerald-50 text-emerald-600" :
+                            plant.AvgDurasi <= 45 ? "bg-amber-50 text-amber-600" : "bg-rose-50 text-rose-600"
+                            }`}>
+                            {plant.AvgDurasi} Menit
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <span className={`inline-block px-2.5 py-1 rounded-lg text-xs font-bold ${plant.SlaPercent >= 85 ? "bg-emerald-50 text-emerald-600" :
+                            plant.SlaPercent >= 70 ? "bg-amber-50 text-amber-600" : "bg-rose-50 text-rose-600"
+                            }`}>
+                            {plant.SlaPercent}%
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right font-semibold text-rose-500">
+                          {plant.CancelRate}%
+                        </td>
+                        <td className="px-6 py-4 text-right pr-8">
+                          <span className="text-sm font-black text-brand-500">{plant.Score}</span>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
-            {plantRanking.length > 10 && (
-              <div className="flex justify-center pt-4 pb-1">
-                <button
-                  onClick={() => setShowAllRankings(prev => !prev)}
-                  className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-brand-500 border border-brand-200 dark:border-brand-900/50 hover:bg-brand-50 dark:hover:bg-brand-950/20 rounded-xl transition-all"
-                >
-                  <ChevronRight className={`h-3.5 w-3.5 transition-transform duration-200 ${showAllRankings ? "rotate-90" : ""}`} />
-                  {showAllRankings ? "Sembunyikan" : `Tampilkan Semua (${plantRanking.length} Plant)`}
-                </button>
+
+            {totalRankingPages > 1 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-gray-100 dark:border-gray-800 mt-4">
+                <span className="text-xs font-semibold text-gray-400">
+                  Menampilkan {rankingPage * rankingItemsPerPage + 1} - {Math.min(rankingList.length, (rankingPage + 1) * rankingItemsPerPage)} dari {rankingList.length} Plant
+                </span>
+
+                <div className="flex items-center gap-1 bg-gray-50 dark:bg-white/5 border border-gray-150 dark:border-gray-800 rounded-xl p-0.5">
+                  <button
+                    disabled={rankingPage === 0}
+                    onClick={() => setRankingPage(0)}
+                    className="px-2 py-1 text-[10px] font-bold text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer bg-white dark:bg-gray-800 border border-gray-150 dark:border-gray-700/50 shadow-sm"
+                  >
+                    First
+                  </button>
+                  <button
+                    disabled={rankingPage === 0}
+                    onClick={() => setRankingPage(p => p - 1)}
+                    className="p-1 hover:bg-white dark:hover:bg-gray-850 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white rounded-md disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
+                  >
+                    <ChevronLeft className="h-3.5 w-3.5" />
+                  </button>
+                  <span className="text-[10px] font-extrabold text-gray-500 dark:text-gray-400 px-2 select-none">
+                    Halaman {rankingPage + 1} dari {totalRankingPages}
+                  </span>
+                  <button
+                    disabled={rankingPage >= totalRankingPages - 1}
+                    onClick={() => setRankingPage(p => p + 1)}
+                    className="p-1 hover:bg-white dark:hover:bg-gray-850 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white rounded-md disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
+                  >
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    disabled={rankingPage >= totalRankingPages - 1}
+                    onClick={() => setRankingPage(totalRankingPages - 1)}
+                    className="px-2 py-1 text-[10px] font-bold text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer bg-white dark:bg-gray-800 border border-gray-150 dark:border-gray-700/50 shadow-sm"
+                  >
+                    Last
+                  </button>
+                </div>
               </div>
             )}
 

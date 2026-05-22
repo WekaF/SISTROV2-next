@@ -15,6 +15,8 @@ import { cn } from "@/lib/utils";
 
 interface GudangQueueItem {
   id: string;
+  idgudang: string;
+  idproduk: string;
   namagudang: string;
   namaproduk: string;
   antrianproduk: number;
@@ -368,7 +370,7 @@ export default function UnitQueuePage() {
                 recordsTotal: items.length,
                 recordsFiltered: items.length
               })}
-              rowKey={(r) => r.id}
+              rowKey={(r) => `${r.idgudang}-${r.idproduk}`}
               striped
               compact
               searchPlaceholder="Cari gudang / produk..."

@@ -89,6 +89,7 @@ export default function ScanTiketPage() {
   
   const inputRef = useRef<HTMLInputElement>(null);
   const scannerRef = useRef<Html5Qrcode | null>(null);
+  const scannerPromiseRef = useRef<Promise<any> | null>(null);
   const { apiFetch } = useApi();
   const { addToast } = useToast();
   const { data: session } = useSession();
@@ -102,9 +103,7 @@ export default function ScanTiketPage() {
     }
 
     return () => {
-      if (scannerRef.current) {
-        stopScanner();
-      }
+      stopScanner();
     };
   }, [scanMode]);
 
@@ -114,7 +113,7 @@ export default function ScanTiketPage() {
       scannerRef.current = scanner;
       setIsCameraActive(true);
       
-      await scanner.start(
+      const promise = scanner.start(
         { facingMode: "environment" },
         {
           fps: 10,
@@ -130,6 +129,8 @@ export default function ScanTiketPage() {
           // Failure callback, usually ignored to keep scanning
         }
       );
+      scannerPromiseRef.current = promise;
+      await promise;
     } catch (err) {
       console.error("Camera error:", err);
       addToast({
@@ -138,17 +139,26 @@ export default function ScanTiketPage() {
         variant: "destructive"
       });
       setScanMode("manual");
+      setIsCameraActive(false);
     }
   };
 
   const stopScanner = async () => {
+    if (scannerPromiseRef.current) {
+      try {
+        await scannerPromiseRef.current;
+      } catch (e) {
+        // ignore start error during stop
+      }
+    }
     if (scannerRef.current) {
       try {
         await scannerRef.current.stop();
+      } catch (err) {
+        console.warn("Stop error ignored:", err);
+      } finally {
         scannerRef.current = null;
         setIsCameraActive(false);
-      } catch (err) {
-        console.error("Stop error:", err);
       }
     }
   };
@@ -325,47 +335,45 @@ export default function ScanTiketPage() {
             </div>
           </CardHeader>
           <CardContent className="p-6">
-            {scanMode === "camera" ? (
-              <div className="space-y-4">
-                <div id="reader" className="overflow-hidden rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 min-h-[300px]"></div>
-                <div className="flex items-center justify-center gap-3 p-4 bg-blue-50 text-blue-700 rounded-xl border border-blue-100 shadow-sm animate-pulse">
-                  <Camera className="h-5 w-5" />
-                  <span className="text-sm font-black uppercase tracking-widest">Kamera Aktif - Dekatkan Kode QR</span>
-                </div>
+            <div className={scanMode === "camera" ? "space-y-4 block" : "hidden"}>
+              <div id="reader" className="overflow-hidden rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 min-h-[300px]"></div>
+              <div className="flex items-center justify-center gap-3 p-4 bg-blue-50 text-blue-700 rounded-xl border border-blue-100 shadow-sm animate-pulse">
+                <Camera className="h-5 w-5" />
+                <span className="text-sm font-black uppercase tracking-widest">Kamera Aktif - Dekatkan Kode QR</span>
               </div>
-            ) : (
-              <div className="space-y-4">
-                <form onSubmit={handleSearch} className="flex gap-2">
-                  <div className="relative flex-1">
-                    <input
-                      ref={inputRef}
-                      type="text"
-                      placeholder="BOOKINGNO / SCAN QR..."
-                      className="w-full h-14 pl-4 pr-12 text-xl font-mono font-bold tracking-wider uppercase bg-slate-100 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all"
-                      value={bookingNo}
-                      onChange={(e) => setBookingNo(e.target.value)}
-                      disabled={isLoading}
-                    />
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
-                      <Bluetooth className="h-6 w-6 opacity-30" />
-                    </div>
+            </div>
+
+            <div className={scanMode === "manual" ? "space-y-4 block" : "hidden"}>
+              <form onSubmit={handleSearch} className="flex gap-2">
+                <div className="relative flex-1">
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    placeholder="BOOKINGNO / SCAN QR..."
+                    className="w-full h-14 pl-4 pr-12 text-xl font-mono font-bold tracking-wider uppercase bg-slate-100 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all"
+                    value={bookingNo}
+                    onChange={(e) => setBookingNo(e.target.value)}
+                    disabled={isLoading}
+                  />
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
+                    <Bluetooth className="h-6 w-6 opacity-30" />
                   </div>
-                  <Button 
-                    type="submit" 
-                    size="lg" 
-                    className="h-14 px-8 rounded-xl font-bold gap-2"
-                    disabled={isLoading || !bookingNo.trim()}
-                  >
-                    {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Search className="h-5 w-5" />}
-                    CARI
-                  </Button>
-                </form>
-                <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-2 rounded-lg border border-slate-100">
-                  <Info className="h-3 w-3" />
-                  Bluetooth scanner akan otomatis mengisi input di atas saat aktif
                 </div>
+                <Button 
+                  type="submit" 
+                  size="lg" 
+                  className="h-14 px-8 rounded-xl font-bold gap-2"
+                  disabled={isLoading || !bookingNo.trim()}
+                >
+                  {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Search className="h-5 w-5" />}
+                  CARI
+                </Button>
+              </form>
+              <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-2 rounded-lg border border-slate-100">
+                <Info className="h-3 w-3" />
+                Bluetooth scanner akan otomatis mengisi input di atas saat aktif
               </div>
-            )}
+            </div>
 
             {searchError && (
               <div className="mt-4 p-3 bg-red-50 border border-red-100 rounded-lg flex items-center gap-3 text-red-600 text-sm font-medium animate-in fade-in slide-in-from-top-1">

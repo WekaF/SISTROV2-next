@@ -184,7 +184,7 @@ export function TicketEditModal({
   // Fetch Ticket Details to get posto GUID and percepatan
   const { data: ticketDetailRaw } = useQuery({
     queryKey: ["ticket-detail-edit", bookingNo],
-    queryFn: () => apiJson(`/api/Tiket/DetailData`, {
+    queryFn: () => apiJson(`/api/tiket/detail-data`, {
       method: "POST",
       body: JSON.stringify({ bookingno: bookingNo })
     }),

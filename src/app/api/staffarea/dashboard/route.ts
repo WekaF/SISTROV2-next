@@ -1,12 +1,13 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { aspnetFetchServer } from "@/lib/api-client";
 import { normalizeRole } from "@/lib/role-utils";
+import { cookies } from "next/headers";
 
 const ALLOWED = new Set(["staffarea", "gudang", "pod"]);
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -15,7 +16,16 @@ export async function GET() {
   if (!allowed) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
     const token = (session?.user as any)?.aspnetToken as string;
-    const companyCode = (session?.user as any)?.companyCode as string | undefined;
+    
+    // Get companyCode from query params, falling back to cookie then session
+    const { searchParams } = new URL(request.url);
+    let companyCode = searchParams.get("companyCode");
+    
+    if (!companyCode) {
+      const cookieStore = await cookies();
+      companyCode = cookieStore.get("sistro_active_company")?.value || (session?.user as any)?.companyCode || null;
+    }
+
     const url = companyCode
       ? `/api/CompanyDashboard/GetStats?companyCode=${encodeURIComponent(companyCode)}`
       : "/api/CompanyDashboard/GetStats";

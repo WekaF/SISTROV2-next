@@ -10,39 +10,43 @@ export const metadata: Metadata = {
 
 export default function LoginPage() {
   return (
-    <div className="relative flex min-h-screen w-full bg-white dark:bg-gray-900">
-      {/* Sign In Form */}
-      <div className="flex flex-col justify-center w-full p-6 lg:w-1/2 sm:p-10">
-        <Suspense>
-          <SignInForm />
-        </Suspense>
+    <div className="relative flex min-h-screen w-full overflow-hidden bg-white dark:bg-[#151f32]">
+      {/* Left Column: Visual Area with the Image */}
+      <div className="relative hidden w-full lg:flex lg:w-[55%] flex-col justify-between p-12 text-white">
+        <div 
+          className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat" 
+          style={{ backgroundImage: "url('https://storage.googleapis.com/pkg-portal-bucket/images/slideshow-home/pg_kantorpusat_kawasanhijau.jpg')" }}
+        />
+        {/* Overlays to make text readable while keeping image bright */}
+        <div className="absolute inset-0 z-10 bg-blue-900/40 mix-blend-multiply" />
+        <div className="absolute inset-0 z-10 bg-gradient-to-t from-gray-900/80 via-transparent to-transparent" />
+        
+        {/* Content over image */}
+        <div className="relative z-20 flex items-center gap-4"></div>
+        <div className="relative z-20 max-w-2xl mt-auto pb-8">
+          <h1 className="mb-4 text-4xl font-extrabold tracking-tight text-white drop-shadow-md leading-tight">
+            Sistem Scheduling Truck Online
+          </h1>
+          <p className="text-lg text-blue-50 font-medium max-w-lg leading-relaxed drop-shadow-sm">
+            Pupuk Indonesia Group. Seamlessly manage your fleet, streamline ticketing, and optimize warehouse operations.
+          </p>
+        </div>
       </div>
 
-      {/* Side Image / Illustration Area */}
-      <div className="relative hidden w-1/2 lg:block bg-gray-50 dark:bg-dark-900 overflow-hidden">
-        <div className="absolute inset-0 bg-brand-600/5 dark:bg-brand-600/10 z-10"></div>
-        <div className="absolute inset-0 flex flex-col items-center justify-center p-12 text-center z-20">
-          <div className="max-w-md">
-            <h2 className="mb-4 text-3xl font-bold text-gray-900 dark:text-white">
-              Logistics Reimagined
-            </h2>
-            <p className="mb-10 text-gray-500 dark:text-gray-400">
-              Manage your fleet, tickets, and stock with the most advanced logistics platform. Built for efficiency, scale, and performance.
-            </p>
-            <div className="relative w-full aspect-square max-w-sm mx-auto">
-               <Image 
-                src="/images/logo/logo-icon.svg" 
-                alt="Illustration" 
-                fill 
-                className="object-contain opacity-20 grayscale"
-              />
-            </div>
-          </div>
+      {/* Right Column: Auth Form Area (Light/Dark Theme) */}
+      <div className="flex flex-col justify-center w-full lg:w-[45%] p-6 sm:p-12 relative z-20 bg-white dark:bg-[#151f32] shadow-2xl">
+        <div className="w-full max-w-[420px] mx-auto relative z-30">
+          <Suspense>
+            <SignInForm />
+          </Suspense>
         </div>
         
-        {/* Decorative elements */}
-        <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-96 h-96 bg-brand-500/10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/2 w-96 h-96 bg-brand-500/10 rounded-full blur-3xl"></div>
+        {/* Version Tag */}
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 lg:left-auto lg:right-6 lg:translate-x-0 z-20">
+          <div className="px-3 py-1 text-[11px] text-gray-400 dark:text-gray-500 font-mono">
+            Versi 1.49.2
+          </div>
+        </div>
       </div>
     </div>
   );

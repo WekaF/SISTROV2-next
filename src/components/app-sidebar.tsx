@@ -194,7 +194,6 @@ const MENU_REPORTS = {
   icon: BarChart3,
   items: [
     { title: "Summary Laporan", url: "/reports", icon: BarChart3 },
-    { title: "Antrian Per Gudang", url: "/reports/antrian", icon: History },
     { title: "Laporan Booking", url: "/reports/booking", icon: ClipboardList },
     { title: "Laporan Loading", url: "/reports/loading", icon: Truck },
     { title: "Laporan Pembatalan", url: "/reports/cancelation", icon: XCircle },
@@ -210,6 +209,7 @@ const MENU_PENGATURAN_SUPERADMIN = {
   items: [
     { title: "Semua Pengguna", url: "/admin/users", icon: Users },
     { title: "Management User", url: "/superadmin/settings/users", icon: UserCog },
+    { title: "Area Scope User", url: "/superadmin/settings/area-scope", icon: MapPin },
     { title: "User Transport", url: "/admin/pengaturan/rekanan", icon: Users },
     { title: "Company / Plant", url: "/admin/pengaturan/plant", icon: Factory },
     { title: "Produk", url: "/admin/pengaturan/produk", icon: Package },
@@ -244,7 +244,6 @@ const roleMenus: Record<Role, any[]> = {
     { title: "Stock", url: "/stock", icon: Box },
     MENU_REPORTS,
     MENU_ARMADA_ADMIN,
-    MENU_PENGATURAN_SUPERADMIN,
   ],
 
   // ── Admin — sama dengan superadmin ────────────────────────────────────────
@@ -468,6 +467,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             ))}
           </SidebarMenu>
         </SidebarGroup>
+
+        {(activeRole === "superadmin") && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Administration</SidebarGroupLabel>
+            <SidebarMenu>
+              {MENU_PENGATURAN_SUPERADMIN.items.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton render={<a href={item.url} />} tooltip={item.title}>
+                    {item.icon && <item.icon />}
+                    <span>{item.title}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroup>
+        )}
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>

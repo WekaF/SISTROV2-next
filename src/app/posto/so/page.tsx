@@ -23,9 +23,20 @@ export default function SOPage() {
   const queryClient = useQueryClient();
 
   const role = (session?.user as any)?.role;
+  const roles: string[] = (session?.user as any)?.roles ?? [];
   const { activeCompanyCode } = useCompany();
   const companyCode = activeCompanyCode ?? undefined;
   const isRekanan = role === "rekanan" || role === "transport";
+
+  // Hanya StaffArea (semua varian) dan SuperAdmin/TI yang boleh menghapus POSTO
+  const POSTO_DELETE_ROLES = [
+    "staffarea", "staffarewilayah1", "staffarewilayah2",
+    "staffarealayah1", "staffarealayah2", "staffareajatim",
+    "superadmin", "ti",
+  ];
+  const canDeletePosto = roles.some((r) =>
+    POSTO_DELETE_ROLES.includes(r.toLowerCase())
+  );
 
   const [dateFilter, setDateFilter] = useState("");
   const [selectedSO, setSelectedSO] = useState<any>(null);
@@ -288,7 +299,7 @@ export default function SOPage() {
             >
               <Eye className="h-4 w-4 mr-1" /> Detail
             </Button>
-            {!isRekanan && (
+            {!isRekanan && canDeletePosto && (
               <Button
                 variant="outline"
                 size="sm"

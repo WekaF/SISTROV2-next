@@ -21,6 +21,22 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       {
+        source: "/aspnet-proxy/api/Tiket/DetailData",
+        destination: "/api/tiket/detail-data",
+      },
+      {
+        source: "/aspnet-proxy/api/tiket/detail-data",
+        destination: "/api/tiket/detail-data",
+      },
+      {
+        source: "/aspnet-proxy/api/Tiket/TrackData",
+        destination: "/api/tiket/track-data",
+      },
+      {
+        source: "/aspnet-proxy/api/tiket/track-data",
+        destination: "/api/tiket/track-data",
+      },
+      {
         source: "/aspnet-proxy/:path*",
         destination: `${ASPNET_URL}/:path*`,
       },

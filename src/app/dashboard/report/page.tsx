@@ -1,8 +1,10 @@
 "use client";
-import React, { useState, useEffect, useCallback, Suspense } from "react";
+import React, { useState, useEffect, useCallback, Suspense, useRef } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useApi } from "@/hooks/use-api";
+import { ChevronDown, Search, X } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
@@ -65,6 +67,29 @@ function ReportContent() {
   const [report, setReport] = useState<ReportDataResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Searchable Dropdown state
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [dropdownSearch, setDropdownSearch] = useState("");
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filteredCompanies = companies.filter(c =>
+    (c.company || "").toLowerCase().includes(dropdownSearch.toLowerCase()) ||
+    (c.company_code || "").toLowerCase().includes(dropdownSearch.toLowerCase())
+  );
+
+  const selectedCompanyName = companies.find(c => c.company_code === selectedCompany)?.company || "Pilih Perusahaan";
 
   useEffect(() => {
     apiJson<Company[]>("/api/Company/getCompanyListFitur").then(data => {
@@ -132,19 +157,83 @@ function ReportContent() {
         </p>
       </div>
 
-      <div className="flex items-center gap-3 bg-white dark:bg-gray-800 p-4 rounded-lg border">
-        <label className="text-sm font-medium whitespace-nowrap">Pilih Plant:</label>
-        <select
-          className="flex-1 max-w-xs border rounded-md px-3 py-2 text-sm bg-white dark:bg-gray-700 dark:border-gray-600"
-          value={selectedCompany}
-          onChange={e => handleCompanyChange(e.target.value)}
-        >
-          <option value="">-- Pilih Perusahaan --</option>
-          {companies.map(c => (
-            <option key={c.company_code} value={c.company_code}>{c.company}</option>
-          ))}
-        </select>
-        {report && <span className="text-sm font-medium text-gray-600 dark:text-gray-300">{report.company}</span>}
+      <div className="flex items-center gap-4 bg-white dark:bg-gray-800 p-4 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm">
+        <label className="text-sm font-black whitespace-nowrap text-slate-600 dark:text-slate-400">PILIH PLANT:</label>
+        
+        <div ref={dropdownRef} className="relative w-full max-w-xs z-30">
+          {/* Dropdown Trigger Button */}
+          <button
+            type="button"
+            onClick={() => {
+              setIsDropdownOpen(!isDropdownOpen);
+              setDropdownSearch(""); // Reset search query on open
+            }}
+            className="flex items-center justify-between w-full border border-slate-200 dark:border-slate-700/80 rounded-xl px-4 py-2 text-sm bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-primary font-bold text-slate-800 dark:text-slate-200 shadow-sm transition-all"
+          >
+            <span className="truncate">{selectedCompanyName}</span>
+            <ChevronDown className={cn("h-4 w-4 text-slate-400 transition-transform duration-200", isDropdownOpen && "transform rotate-180")} />
+          </button>
+
+          {/* Search Dropdown Panel overlay */}
+          {isDropdownOpen && (
+            <div className="absolute z-50 w-full mt-2 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-xl overflow-hidden animate-in fade-in duration-100">
+              {/* Search Box */}
+              <div className="p-3 border-b border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-950/20">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                  <input
+                    type="text"
+                    value={dropdownSearch}
+                    onChange={(e) => setDropdownSearch(e.target.value)}
+                    placeholder="Cari plant/perusahaan..."
+                    className="w-full pl-9 pr-8 py-1.5 text-xs font-semibold bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg outline-none focus:ring-2 focus:ring-primary text-slate-800 dark:text-slate-100 placeholder-slate-400"
+                    autoFocus
+                  />
+                  {dropdownSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setDropdownSearch("")}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Items List */}
+              <div className="max-h-60 overflow-y-auto divide-y divide-slate-100/50 dark:divide-slate-800/20">
+                {filteredCompanies.length === 0 ? (
+                  <div className="px-4 py-3 text-xs font-semibold text-slate-400 italic text-center">
+                    Tidak ada hasil ditemukan
+                  </div>
+                ) : (
+                  filteredCompanies.map((c) => (
+                    <button
+                      key={c.company_code}
+                      type="button"
+                      onClick={() => {
+                        handleCompanyChange(c.company_code);
+                        setIsDropdownOpen(false);
+                      }}
+                      className={cn(
+                        "w-full text-left px-4 py-2.5 text-xs font-bold transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/30 flex items-center justify-between",
+                        selectedCompany === c.company_code 
+                          ? "text-primary bg-primary/5 dark:bg-primary/10" 
+                          : "text-slate-700 dark:text-slate-300"
+                      )}
+                    >
+                      <span className="truncate">{c.company}</span>
+                      <span className="text-[9px] font-mono bg-slate-100 dark:bg-slate-800 text-slate-500 px-1.5 py-0.5 rounded ml-2">
+                        {c.company_code}
+                      </span>
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {loading && (

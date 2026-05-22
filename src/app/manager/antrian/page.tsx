@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { BarChart3, Loader2, RefreshCw } from "lucide-react";
 import { useSession } from "next-auth/react";
+import { useTheme } from "@/context/ThemeContext";
 
 interface Truck {
   nopol: string;
@@ -34,7 +35,7 @@ function TruckCard({ truck }: { truck: Truck }) {
   const color = truck.color || "gray";
   return (
     <div
-      className="flex-shrink-0 rounded-lg overflow-hidden shadow-sm border"
+      className="flex-shrink-0 rounded-lg overflow-hidden shadow-sm border bg-white dark:bg-gray-800"
       style={{ width: 160, height: 290, borderColor: color, borderWidth: 1 }}
     >
       <div
@@ -46,8 +47,8 @@ function TruckCard({ truck }: { truck: Truck }) {
         </svg>
       </div>
       <div className="px-2 mt-2">
-        <p className="font-bold text-sm leading-tight">{truck.nopol}</p>
-        <p className="text-xs text-gray-500 leading-tight">{truck.driver}</p>
+        <p className="font-bold text-sm leading-tight text-gray-900 dark:text-white">{truck.nopol}</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight">{truck.driver}</p>
       </div>
       <div className="mx-1 mt-1 rounded px-1 py-1" style={{ backgroundColor: color, minHeight: 170 }}>
         <table className="w-full text-white" style={{ fontSize: 9, tableLayout: "fixed" }}>
@@ -73,27 +74,27 @@ function SectionAccordion({ section, defaultOpen }: { section: Section; defaultO
   }, {});
 
   return (
-    <div className="border rounded-lg overflow-hidden mb-3">
+    <div className="border border-gray-250 dark:border-gray-700 rounded-lg overflow-hidden mb-3 shadow-sm">
       <button
-        className="w-full flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-left"
+        className="w-full flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750 text-left cursor-pointer transition-colors"
         onClick={() => setOpen((o) => !o)}
       >
         <div className="flex items-center gap-3">
-          <span className="font-semibold text-sm">{section.name}</span>
-          <span className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">
+          <span className="font-semibold text-sm text-gray-900 dark:text-white">{section.name}</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full font-medium">
             {section.trucks.length} truk
           </span>
         </div>
         <div className="flex items-center gap-1">
           {(["royalblue", "darkcyan", "gold", "crimson"] as const).map((c) =>
             colorCounts[c] ? (
-              <span key={c} className="text-xs text-white px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: c }}>
+              <span key={c} className="text-xs text-white px-2 py-0.5 rounded-full font-medium shadow-sm" style={{ backgroundColor: c }}>
                 {colorCounts[c]}
               </span>
             ) : null
           )}
           <svg
-            className={`h-4 w-4 ml-2 transition-transform ${open ? "rotate-180" : ""}`}
+            className={`h-4 w-4 ml-2 text-gray-500 dark:text-gray-400 transition-transform ${open ? "rotate-180" : ""}`}
             viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
           >
             <polyline points="6 9 12 15 18 9" />
@@ -101,11 +102,11 @@ function SectionAccordion({ section, defaultOpen }: { section: Section; defaultO
         </div>
       </button>
       {open && (
-        <div className="bg-gray-50 dark:bg-gray-900 px-4 py-3 overflow-x-auto">
+        <div className="bg-gray-50 dark:bg-gray-900/60 px-4 py-3 overflow-x-auto border-t border-gray-200 dark:border-gray-700">
           {section.trucks.length === 0 ? (
-            <div className="text-sm text-gray-500 italic py-2">Tidak ada antrian</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400 italic py-2">Tidak ada antrian</div>
           ) : (
-            <div className="flex gap-3 flex-nowrap">
+            <div className="flex gap-3 flex-nowrap py-1">
               {section.trucks.map((t, i) => <TruckCard key={i} truck={t} />)}
             </div>
           )}
@@ -119,6 +120,7 @@ export default function ManagerAntrianPage() {
   const { data: session } = useSession();
   const token = (session?.user as any)?.aspnetToken as string;
   const companyCode = (session?.user as any)?.companyCode as string;
+  const { theme } = useTheme();
 
   const [report, setReport] = useState<ReportQ2Response | null>(null);
   const [loading, setLoading] = useState(false);
@@ -162,22 +164,22 @@ export default function ManagerAntrianPage() {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <BarChart3 className="w-6 h-6 text-primary" />
+          <BarChart3 className="w-6 h-6 text-primary dark:text-indigo-400" />
           <div>
-            <h1 className="text-xl font-bold">Monitor Antrian</h1>
-            <p className="text-sm text-muted-foreground">
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">Monitor Antrian</h1>
+            <p className="text-sm text-muted-foreground dark:text-gray-400">
               {report?.company ?? companyCode ?? "—"} — update tiap 30 detik
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground dark:text-gray-400">
           {loading && <Loader2 className="w-3 h-3 animate-spin" />}
           {lastUpdate && <span>Update: {lastUpdate}</span>}
-          {report && <span className="text-muted-foreground/60">{report.date}</span>}
+          {report && <span className="text-muted-foreground/60 dark:text-gray-500">{report.date}</span>}
           <button
             onClick={fetchReport}
             disabled={loading}
-            className="p-1.5 rounded hover:bg-muted transition-colors disabled:opacity-50"
+            className="p-1.5 rounded hover:bg-muted dark:hover:bg-gray-800 transition-colors disabled:opacity-50 text-gray-700 dark:text-gray-250 cursor-pointer"
             title="Refresh manual"
           >
             <RefreshCw className="w-3.5 h-3.5" />
@@ -188,7 +190,7 @@ export default function ManagerAntrianPage() {
       {/* Loading initial */}
       {loading && !report && (
         <div className="flex justify-center py-16">
-          <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" />
+          <div className="animate-spin h-8 w-8 border-2 border-primary dark:border-indigo-400 border-t-transparent rounded-full" />
         </div>
       )}
 
@@ -206,7 +208,7 @@ export default function ManagerAntrianPage() {
             <SectionAccordion key={sec.id} section={sec} defaultOpen={i < 3} />
           ))}
           {report.sections.length === 0 && (
-            <div className="text-center py-12 text-muted-foreground">Tidak ada data antrian</div>
+            <div className="text-center py-12 text-muted-foreground dark:text-gray-450">Tidak ada data antrian</div>
           )}
         </div>
       )}

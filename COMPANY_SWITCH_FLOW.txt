@@ -1,0 +1,115 @@
+=== COMPANY SWITCHER DATA FLOW ANALYSIS ===
+
+STACK:
+1. CompanySwitcher.tsx — UI component
+2. CompanyContext.tsx — state management 
+3. switch-company/route.ts — API handler (sets cookie, re-auths ASP.NET)
+4. active-company/route.ts — API handler (reads cookie, calls MyCompanies)
+5. use-api.ts hook — injects token into requests
+6. posto/page.tsx & tiket/page.tsx — pages using activeCompanyCode
+
+FLOW WHEN USER CLICKS "SWITCH PLANT":
+1. CompanySwitcher.tsx:24-45 — handleSwitch() called
+   → calls switchCompany(code) from context
+   
+2. CompanyContext.tsx:80-112 — switchCompany() async function
+   → POST to /api/user/switch-company with { companyCode: code }
+   → Waits for response (sets cookie server-side)
+   → If aspnetToken in response, calls updateSession()
+   → setActiveCompanyCode(code) — updates LOCAL state
+   → queryClient.invalidateQueries({ queryKey: [] }) — busts all query caches
+
+3. /api/user/switch-company route.ts:11-90 — POST handler
+   → Gets session
+   → Sets "sistro_active_company" cookie
+   → Re-authenticates to ASP.NET /Token with new companyCode
+   → Returns { success, aspnetToken, companyCode }
+
+4. Back in CompanyContext.tsx after switch:
+   → activeCompanyCode context value now = code
+   → Pages using useCompany() get new activeCompanyCode value
+   → DataTable queryKey includes companyCode, so it re-fetches
+   
+=== POTENTIAL ISSUES ===
+
+ISSUE #1: updateSession() timing
+- CompanyContext.tsx:97-100 awaits updateSession()
+- updateSession() from NextAuth is async but may not be synchronous
+- The actual session.user?.aspnetToken may lag behind
+- If pages read aspnetToken immediately, they might get OLD token
+
+ISSUE #2: Session vs Context state mismatch
+- activeCompanyCode updated in context (line 104)
+- But session.user?.companyCode might not update immediately
+- useApi() hook depends on session?.user?.aspnetToken
+- If session update is async/delayed, old token continues being used
+
+ISSUE #3: queryKey invalidation strategy
+- Line 105: queryClient.invalidateQueries({ queryKey: [] })
+- This is a BROAD invalidation of ALL keys
+- BUT pages have queryKey like ["posto", companyCode, dateFilter]
+- If companyCode in queryKey didn't change YET when invalidation happens, it might not refetch
+
+ISSUE #4: Cookie vs JWT mismatch
+- switch-company/route.ts sets HTTP cookie "sistro_active_company"
+- But active-company/route.ts reads from:
+  1. activeCompanyCookie (line 16)
+  2. sessionCompanyCode (JWT, line 18)
+  3. Falls back to first in list
+- If cookie and JWT don't sync, pages could read stale data
+
+ISSUE #5: ASP.NET re-auth failure handling
+- switch-company/route.ts:64-76 — if ASP.NET re-auth fails, still returns success=true
+- "needsRelogin" hint is sent but might be ignored by frontend
+- Context still sets activeCompanyCode(code) even if token failed
+- Pages then fetch with NEW companyCode but OLD token!
+
+=== HOW POSTO/TIKET PAGES FETCH DATA ===
+
+posto/page.tsx:23-24
+  const { activeCompanyCode } = useCompany();
+  const companyCode = activeCompanyCode ?? undefined;
+
+posto/page.tsx:284
+  queryKey={["posto", companyCode, dateFilter]}
+  
+posto/page.tsx:36-61 — fetcher() function
+  - If companyCode, adds it to payload
+  - Calls apiTable("/api/POSTO/DataTableFilter", payload)
+  
+tiket/page.tsx:45
+  const companyCode = useCompany().activeCompanyCode;
+  
+tiket/page.tsx:232
+  queryKey={["rekanan-tickets", companyCode, postoFilter ?? ""]}
+
+=== REAL ISSUE: SESSION UPDATE DOESN'T TRIGGER RE-RENDER ===
+
+Key insight:
+- updateSession() at CompanyContext.tsx:97 is called
+- But this updates NextAuth's session
+- The useSession() hook in CompanyContext might NOT re-render immediately
+- session?.user?.aspnetToken might still be OLD value
+- useApi() hook re-renders when token changes, but token comes from useSession()
+- If useSession() doesn't trigger re-render, pages keep using OLD token
+
+The fix is unclear: does NextAuth's updateSession() trigger useSession() re-render?
+- NextAuth docs: update() updates the session in client memory
+- But does it re-render all consumers?
+- There might be a race: queryClient.invalidateQueries runs, pages re-fetch
+  BEFORE session.aspnetToken actually updates
+
+=== CRITICAL GAP: Token vs CompanyCode async updates ===
+
+Scenario:
+1. User switches company A → company B
+2. switchCompany() called, awaits /api/user/switch-company
+3. setActiveCompanyCode("B") — context updates, pages see new companyCode
+4. updateSession({ aspnetToken: new_token, companyCode: "B" })
+5. queryClient.invalidateQueries fires
+6. DataTable re-fetches with companyCode="B"
+7. BUT — if updateSession() is NOT synchronous, or useSession() doesn't trigger
+   re-render immediately, useApi() still has OLD token
+8. Request goes out with: companyCode="B" BUT Authorization header has OLD token
+9. ASP.NET sees: token from company A, requesting data for company B → DENIED or MIXED DATA
+

@@ -1,6 +1,7 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useCompany } from "@/context/CompanyContext";
+import { useStaffAreaStream } from "@/hooks/use-staffarea-stream";
 import {
   AlertTriangle, CheckCircle2, ClipboardList, RefreshCw,
   Timer, TrendingDown, Weight, Zap, TicketCheck, Truck,
@@ -30,12 +31,14 @@ const fmt = (n: number | null | undefined) => (n ?? 0).toLocaleString("id-ID");
 
 export default function StaffAreaDashboard() {
   const { activeCompanyCode } = useCompany();
+  const [mounted, setMounted] = useState(false);
 
-  const [stats, setStats] = useState<CompanyStats | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
+  const { data: streamData, status: streamStatus, lastUpdated: streamLastUpdated } = useStaffAreaStream(activeCompanyCode);
+
+  const stats = streamData as CompanyStats | null;
+  const loading = !stats && streamStatus === "connecting";
+  const error = streamStatus === "error" && !stats ? "Gagal menghubungkan ke server stream." : null;
+
   const [overdueModalOpen, setOverdueModalOpen] = useState(false);
 
   // 30-day realisasi chart
@@ -47,35 +50,18 @@ export default function StaffAreaDashboard() {
   } | null>(null);
   const [chartLoading, setChartLoading] = useState(false);
 
-  const load = useCallback(async (showSpinner = false) => {
-    if (showSpinner) setRefreshing(true);
-    try {
-      const url = activeCompanyCode
-        ? `/api/staffarea/dashboard?companyCode=${encodeURIComponent(activeCompanyCode)}`
-        : "/api/staffarea/dashboard";
-      const res = await fetch(url);
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(`${body?.error ?? `HTTP ${res.status}`}${body?.detail ? ` — ${body.detail}` : ""}`);
-      }
-      const data = await res.json();
-      setStats(data);
-      setError(null);
-      setLastUpdated(new Date());
-    } catch (e: any) {
-      console.error("[StaffAreaDashboard]", e.message);
-      setError(e.message ?? "Unknown error");
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [activeCompanyCode]);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Load product filter list once per company
   useEffect(() => {
     const qs = activeCompanyCode ? `?companyCode=${encodeURIComponent(activeCompanyCode)}` : "";
     fetch(`/api/staffarea/produk-filter${qs}`)
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) throw new Error("Failed to fetch product filter");
+        return r.json();
+      })
       .then(d => setProdukList(d?.products ?? []))
       .catch(() => setProdukList([]));
   }, [activeCompanyCode]);
@@ -86,17 +72,20 @@ export default function StaffAreaDashboard() {
     const params = new URLSearchParams({ idproduk: selectedProduk });
     if (activeCompanyCode) params.set("companyCode", activeCompanyCode);
     fetch(`/api/staffarea/realisasi-chart?${params.toString()}`)
-      .then(r => r.json())
-      .then(d => setChartData(d))
+      .then(r => {
+        if (!r.ok) throw new Error("Failed to fetch realisasi chart");
+        return r.json();
+      })
+      .then(d => {
+        if (d && Array.isArray(d.json) && Array.isArray(d.date)) {
+          setChartData(d);
+        } else {
+          setChartData(null);
+        }
+      })
       .catch(() => setChartData(null))
       .finally(() => setChartLoading(false));
   }, [activeCompanyCode, selectedProduk]);
-
-  useEffect(() => {
-    load();
-    const interval = setInterval(() => load(), 60_000);
-    return () => clearInterval(interval);
-  }, [load]);
 
   const totalToday = (stats?.antriAktif ?? 0) + (stats?.selesai ?? 0) + (stats?.proses ?? 0) + (stats?.cancel ?? 0);
   const completionRate = totalToday > 0 ? Math.round(((stats?.selesai ?? 0) / totalToday) * 100) : 0;
@@ -140,7 +129,7 @@ export default function StaffAreaDashboard() {
     plotOptions: { bar: { columnWidth: "60%", borderRadius: 2 } },
     colors: ["#3C50E0", "#1cc88a", "#f6c23e", "#ef4444"],
     xaxis: {
-      categories: chartData?.date ?? [],
+      categories: Array.isArray(chartData?.date) ? chartData.date : [],
       labels: { style: { fontSize: "10px" }, rotate: -30 },
       tickAmount: 10,
     },
@@ -155,12 +144,12 @@ export default function StaffAreaDashboard() {
     },
     grid: { borderColor: "#f1f5f9" },
   };
-  const realisasiSeries = chartData
+  const realisasiSeries = chartData && Array.isArray(chartData.json)
     ? [
-        { name: "Kuota",   type: "area", data: chartData.json.map(d => d.kuota)  },
-        { name: "Shift 1", type: "bar",  data: chartData.json.map(d => d.shift1) },
-        { name: "Shift 2", type: "bar",  data: chartData.json.map(d => d.shift2) },
-        { name: "Shift 3", type: "bar",  data: chartData.json.map(d => d.shift3) },
+        { name: "Kuota",   type: "area", data: chartData.json.map(d => d?.kuota ?? 0)  },
+        { name: "Shift 1", type: "bar",  data: chartData.json.map(d => d?.shift1 ?? 0) },
+        { name: "Shift 2", type: "bar",  data: chartData.json.map(d => d?.shift2 ?? 0) },
+        { name: "Shift 3", type: "bar",  data: chartData.json.map(d => d?.shift3 ?? 0) },
       ]
     : [];
 
@@ -191,7 +180,7 @@ export default function StaffAreaDashboard() {
           <p className="text-sm text-red-500 mt-1 font-mono">{error}</p>
         </div>
         <button
-          onClick={() => load(true)}
+          onClick={() => window.location.reload()}
           className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-brand-500 hover:bg-brand-600 rounded-xl transition-colors"
         >
           <RefreshCw className="h-4 w-4" /> Coba Lagi
@@ -204,24 +193,28 @@ export default function StaffAreaDashboard() {
     <div className="space-y-5">
 
       {/* ── Header bar ─────────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-gray-150 pb-4 dark:border-gray-800">
         <div>
-          <h2 className="text-lg font-extrabold text-gray-900 dark:text-white tracking-tight">
+          <h2 className="text-xl md:text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight">
             Operasional{stats?.companyCode ? ` — ${stats.companyCode}` : ""}
           </h2>
-          <p className="text-xs text-gray-400 mt-0.5">
-            {lastUpdated ? `Update: ${lastUpdated.toLocaleTimeString("id-ID")}` : "Memuat..."}
-            {" · "}Auto-refresh 60 detik
-          </p>
+          <div className="flex items-center gap-2 mt-1.5">
+            <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${
+              streamStatus === "live" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400"
+              : streamStatus === "error" ? "bg-red-100 text-red-600 dark:bg-red-500/10 dark:text-red-400"
+              : "bg-gray-100 text-gray-500 dark:bg-white/5 dark:text-gray-400"
+            }`}>
+              <span className={`h-1.5 w-1.5 rounded-full ${
+                streamStatus === "live" ? "bg-emerald-500 animate-pulse"
+                : streamStatus === "error" ? "bg-red-500" : "bg-gray-400 animate-pulse"
+              }`} />
+              {streamStatus === "live" ? "Live" : streamStatus === "error" ? "Offline" : "Connecting..."}
+            </span>
+            {mounted && streamLastUpdated && (
+              <span className="text-xs text-gray-400">Update: {streamLastUpdated.toLocaleTimeString("id-ID")}</span>
+            )}
+          </div>
         </div>
-        <button
-          onClick={() => load(true)}
-          disabled={refreshing}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors"
-        >
-          <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin text-brand-500" : ""}`} />
-          Refresh
-        </button>
       </div>
 
       {/* ── Overdue alert ──────────────────────────────────────────────────── */}

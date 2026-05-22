@@ -1,14 +1,13 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import { useState } from "react";
 import { useApi } from "@/hooks/use-api";
 import { useCompany } from "@/context/CompanyContext";
 import { useToast } from "@/components/ui/toast";
-import { DataTable, type DataTableColumn } from "@/components/ui/DataTable";
+import { DataTable, type DataTableColumn, type DataTableParams } from "@/components/ui/DataTable";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Database, Search } from "lucide-react";
 
 interface KuotaLogRow {
@@ -40,47 +39,113 @@ export default function LogKuotaPage() {
 
   const [draft, setDraft] = useState<Filters>({ SD: today, ED: today, ASD: "", AED: "" });
   const [filters, setFilters] = useState<Filters>(draft);
+  const [exporting, setExporting] = useState(false);
 
   const handleTampilkan = () => setFilters({ ...draft });
 
-  const fetcher = useCallback(
-    async (params: any) => {
-      try {
-        const result = await apiTable("/api/KuotaLevel1/LogDataReport", {
-          draw: params.draw,
-          start: params.start,
-          length: params.length,
-          search: params.search || "",
-          SD: filters.SD,
-          ED: filters.ED,
-          ASD: filters.ASD,
-          AED: filters.AED,
-          company: activeCompanyCode || "",
-          columns: [
-            { data: "number", name: "tanggalupdate", searchable: false, orderable: false },
-            { data: "tanggal", name: "tanggal", searchable: false, orderable: true },
-            { data: "tipe", name: "action", searchable: true, orderable: false },
-            { data: "scope", name: "scope", searchable: true, orderable: false },
-            { data: "produk", name: "produk", searchable: true, orderable: false },
-            { data: "before", name: "before", searchable: false, orderable: false },
-            { data: "after", name: "after", searchable: false, orderable: false },
-            { data: "aktivitas", name: "detail", searchable: true, orderable: false },
-            { data: "oleh", name: "updatedby", searchable: true, orderable: false },
-            { data: "tanggalupdate", name: "updatedon", searchable: false, orderable: true },
-          ],
-        });
-        return {
-          data: result.data ?? [],
-          recordsTotal: result.recordsTotal ?? 0,
-          recordsFiltered: result.recordsFiltered ?? result.recordsTotal ?? 0,
-        };
-      } catch (err: any) {
-        addToast({ title: "Gagal memuat data", description: err.message, variant: "destructive" });
-        throw err;
-      }
-    },
-    [apiTable, addToast, activeCompanyCode, filters]
-  );
+  const fetchFullData = async (): Promise<KuotaLogRow[]> => {
+    try {
+      const result = await apiTable("/api/KuotaLevel1/LogDataReport", {
+        draw: 1,
+        start: 0,
+        length: 10000,
+        search: "",
+        SD: filters.SD,
+        ED: filters.ED,
+        ASD: filters.ASD,
+        AED: filters.AED,
+        company: activeCompanyCode || "",
+        columns: [
+          { data: "number", name: "tanggalupdate", searchable: false, orderable: false },
+          { data: "tanggal", name: "tanggal", searchable: false, orderable: true },
+          { data: "tipe", name: "action", searchable: true, orderable: false },
+          { data: "scope", name: "scope", searchable: true, orderable: true },
+          { data: "produk", name: "produk", searchable: true, orderable: false },
+          { data: "before", name: "before", searchable: false, orderable: false },
+          { data: "after", name: "after", searchable: false, orderable: false },
+          { data: "aktivitas", name: "activity", searchable: true, orderable: false },
+          { data: "oleh", name: "updatedby", searchable: true, orderable: false },
+          { data: "tanggalupdate", name: "tanggalupdate", searchable: false, orderable: true },
+        ],
+      });
+      return result.data ?? [];
+    } catch (err: any) {
+      addToast({ title: "Gagal memuat data export", description: err.message, variant: "destructive" });
+      return [];
+    }
+  };
+
+  const handleExportExcel = async () => {
+    setExporting(true);
+    const data = await fetchFullData();
+    if (data.length > 0) {
+      const headers = [
+        "Tanggal Kuota", "Aksi", "Scope", "Produk", "Before", "After", "Aktivitas", "Updated By", "Waktu Aktivitas"
+      ];
+      const keys = [
+        "tanggal", "tipe", "scope", "produk", "before", "after", "aktivitas", "oleh", "tanggalupdate"
+      ];
+      const { exportToExcel } = await import("@/lib/export-helper");
+      exportToExcel(data, headers, keys, `Log_Kuota_${filters.SD}_${filters.ED}`);
+    } else {
+      addToast({ title: "Tidak ada data", description: "Tidak ada data untuk diexport", variant: "destructive" });
+    }
+    setExporting(false);
+  };
+
+  const handleExportPdf = async () => {
+    setExporting(true);
+    const data = await fetchFullData();
+    if (data.length > 0) {
+      const headers = [
+        "Tanggal Kuota", "Aksi", "Scope", "Produk", "Before", "After", "Aktivitas", "Updated By", "Waktu Aktivitas"
+      ];
+      const keys = [
+        "tanggal", "tipe", "scope", "produk", "before", "after", "aktivitas", "oleh", "tanggalupdate"
+      ];
+      const { exportToPdf } = await import("@/lib/export-helper");
+      exportToPdf(data, headers, keys, `Log Pembuatan Kuota (${filters.SD} s.d ${filters.ED})`);
+    } else {
+      addToast({ title: "Tidak ada data", description: "Tidak ada data untuk diexport", variant: "destructive" });
+    }
+    setExporting(false);
+  };
+
+  const fetcher = async (params: DataTableParams) => {
+    try {
+      const result = await apiTable("/api/KuotaLevel1/LogDataReport", {
+        draw: params.draw,
+        start: params.start,
+        length: params.length,
+        search: params.search || "",
+        SD: filters.SD,
+        ED: filters.ED,
+        ASD: filters.ASD,
+        AED: filters.AED,
+        company: activeCompanyCode || "",
+        columns: [
+          { data: "number", name: "tanggalupdate", searchable: false, orderable: false },
+          { data: "tanggal", name: "tanggal", searchable: false, orderable: true },
+          { data: "tipe", name: "action", searchable: true, orderable: false },
+          { data: "scope", name: "scope", searchable: true, orderable: false },
+          { data: "produk", name: "produk", searchable: true, orderable: false },
+          { data: "before", name: "before", searchable: false, orderable: false },
+          { data: "after", name: "after", searchable: false, orderable: false },
+          { data: "aktivitas", name: "detail", searchable: true, orderable: false },
+          { data: "oleh", name: "updatedby", searchable: true, orderable: false },
+          { data: "tanggalupdate", name: "updatedon", searchable: false, orderable: true },
+        ],
+      });
+      return {
+        data: result.data ?? [],
+        recordsTotal: result.recordsTotal ?? 0,
+        recordsFiltered: result.recordsFiltered ?? result.recordsTotal ?? 0,
+      };
+    } catch (err: any) {
+      addToast({ title: "Gagal memuat data", description: err.message, variant: "destructive" });
+      throw err;
+    }
+  };
 
   const columns: DataTableColumn<KuotaLogRow>[] = [
     { key: "number", header: "No", render: (r) => <span>{r.number}</span> },
@@ -109,7 +174,7 @@ export default function LogKuotaPage() {
         <CardContent>
           <div className="flex flex-wrap gap-4 items-end">
             <div className="space-y-1">
-              <Label className="text-xs">Tgl Posting Mulai</Label>
+              <label className="text-xs text-muted-foreground">Tgl Posting Mulai</label>
               <Input
                 type="date"
                 className="w-36"
@@ -118,7 +183,7 @@ export default function LogKuotaPage() {
               />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">Tgl Posting Akhir</Label>
+              <label className="text-xs text-muted-foreground">Tgl Posting Akhir</label>
               <Input
                 type="date"
                 className="w-36"
@@ -127,7 +192,7 @@ export default function LogKuotaPage() {
               />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">Tgl Aktivitas Mulai</Label>
+              <label className="text-xs text-muted-foreground">Tgl Aktivitas Mulai</label>
               <Input
                 type="date"
                 className="w-36"
@@ -136,7 +201,7 @@ export default function LogKuotaPage() {
               />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">Tgl Aktivitas Akhir</Label>
+              <label className="text-xs text-muted-foreground">Tgl Aktivitas Akhir</label>
               <Input
                 type="date"
                 className="w-36"
@@ -148,6 +213,22 @@ export default function LogKuotaPage() {
               <Search className="h-4 w-4" />
               Tampilkan
             </Button>
+            <Button
+              variant="outline"
+              onClick={handleExportExcel}
+              disabled={exporting}
+              className="gap-2 text-emerald-600 border-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:border-emerald-400 dark:hover:bg-emerald-950"
+            >
+              {exporting ? "Memproses..." : "Export Excel"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleExportPdf}
+              disabled={exporting}
+              className="gap-2 text-rose-600 border-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:border-rose-400 dark:hover:bg-rose-950"
+            >
+              {exporting ? "Memproses..." : "Export PDF"}
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -156,7 +237,7 @@ export default function LogKuotaPage() {
         <CardContent className="p-4">
           <DataTable
             columns={columns}
-            queryKey={["report-log-kuota", filters, activeCompanyCode]}
+            queryKey={["report-log-kuota", filters.SD, filters.ED, filters.ASD, filters.AED, activeCompanyCode ?? ""]}
             fetcher={fetcher}
             rowKey={(r) => `${r.tanggal}-${r.number}`}
             searchPlaceholder="Cari scope, produk, aktivitas..."

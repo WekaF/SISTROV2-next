@@ -1,14 +1,13 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import { useState } from "react";
 import { useApi } from "@/hooks/use-api";
 import { useCompany } from "@/context/CompanyContext";
 import { useToast } from "@/components/ui/toast";
-import { DataTable, type DataTableColumn } from "@/components/ui/DataTable";
+import { DataTable, type DataTableColumn, type DataTableParams } from "@/components/ui/DataTable";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { XCircle, Search } from "lucide-react";
 
 interface CancelRow {
@@ -42,49 +41,121 @@ export default function LaporanPembatalanPage() {
 
   const [draft, setDraft] = useState<Filters>({ SD: today, ED: today });
   const [filters, setFilters] = useState<Filters>(draft);
+  const [exporting, setExporting] = useState(false);
 
   const handleTampilkan = () => setFilters({ ...draft });
 
-  const fetcher = useCallback(
-    async (params: any) => {
-      try {
-        const result = await apiTable("/api/Tiket/TiketCancelDataReport", {
-          draw: params.draw,
-          start: params.start,
-          length: params.length,
-          search: params.search || "",
-          SD: filters.SD,
-          ED: filters.ED,
-          company: activeCompanyCode || "",
-          columns: [
-            { data: "number", name: "bookingno", searchable: false, orderable: false },
-            { data: "posto", name: "posto", searchable: true, orderable: true },
-            { data: "tanggalPOSTO", name: "bookingno", searchable: false, orderable: false },
-            { data: "bookingno", name: "bookingno", searchable: true, orderable: true },
-            { data: "qty", name: "bookingno", searchable: false, orderable: false },
-            { data: "tanggalString", name: "bookingno", searchable: false, orderable: false },
-            { data: "shift", name: "bookingno", searchable: false, orderable: false },
-            { data: "produkString", name: "bookingno", searchable: false, orderable: false },
-            { data: "transportString", name: "bookingno", searchable: false, orderable: false },
-            { data: "tujuan", name: "bookingno", searchable: false, orderable: false },
-            { data: "nopol", name: "bookingno", searchable: true, orderable: false },
-            { data: "driver", name: "bookingno", searchable: true, orderable: false },
-            { data: "alasan", name: "bookingno", searchable: false, orderable: false },
-            { data: "denda", name: "bookingno", searchable: false, orderable: false },
-          ],
-        });
-        return {
-          data: result.data ?? [],
-          recordsTotal: result.recordsTotal ?? 0,
-          recordsFiltered: result.recordsFiltered ?? result.recordsTotal ?? 0,
-        };
-      } catch (err: any) {
-        addToast({ title: "Gagal memuat data", description: err.message, variant: "destructive" });
-        throw err;
-      }
-    },
-    [apiTable, addToast, activeCompanyCode, filters]
-  );
+  const fetchFullData = async (): Promise<CancelRow[]> => {
+    try {
+      const result = await apiTable("/api/Tiket/TiketCancelDataReport", {
+        draw: 1,
+        start: 0,
+        length: 10000,
+        search: "",
+        SD: filters.SD,
+        ED: filters.ED,
+        company: activeCompanyCode || "",
+        columns: [
+          { data: "number", name: "bookingno", searchable: false, orderable: false },
+          { data: "posto", name: "posto", searchable: true, orderable: true },
+          { data: "tanggalPOSTO", name: "bookingno", searchable: false, orderable: false },
+          { data: "bookingno", name: "bookingno", searchable: true, orderable: true },
+          { data: "qty", name: "qty", searchable: false, orderable: true },
+          { data: "tanggalString", name: "bookingno", searchable: false, orderable: false },
+          { data: "shift", name: "bookingno", searchable: false, orderable: false },
+          { data: "produkString", name: "bookingno", searchable: false, orderable: false },
+          { data: "transportString", name: "bookingno", searchable: false, orderable: false },
+          { data: "tujuan", name: "bookingno", searchable: false, orderable: false },
+          { data: "nopol", name: "nopol", searchable: true, orderable: true },
+          { data: "driver", name: "driver", searchable: true, orderable: true },
+          { data: "alasan", name: "bookingno", searchable: false, orderable: false },
+          { data: "denda", name: "denda", searchable: false, orderable: true },
+        ],
+      });
+      return result.data ?? [];
+    } catch (err: any) {
+      addToast({ title: "Gagal memuat data export", description: err.message, variant: "destructive" });
+      return [];
+    }
+  };
+
+  const handleExportExcel = async () => {
+    setExporting(true);
+    const data = await fetchFullData();
+    if (data.length > 0) {
+      const headers = [
+        "POSTO", "Tgl POSTO", "Booking No", "Qty (ton)", "Tgl Booking",
+        "Shift", "Produk", "Transportir", "Tujuan", "Nopol", "Driver", "Alasan", "Denda (Rp)"
+      ];
+      const keys = [
+        "posto", "tanggalPOSTO", "bookingno", "qty", "tanggalString",
+        "shift", "produkString", "transportString", "tujuan", "nopol", "driver", "alasan", "denda"
+      ];
+      const { exportToExcel } = await import("@/lib/export-helper");
+      exportToExcel(data, headers, keys, `Laporan_Pembatalan_${filters.SD}_${filters.ED}`);
+    } else {
+      addToast({ title: "Tidak ada data", description: "Tidak ada data untuk diexport", variant: "destructive" });
+    }
+    setExporting(false);
+  };
+
+  const handleExportPdf = async () => {
+    setExporting(true);
+    const data = await fetchFullData();
+    if (data.length > 0) {
+      const headers = [
+        "POSTO", "Tgl POSTO", "Booking No", "Qty (ton)", "Tgl Booking",
+        "Shift", "Produk", "Transportir", "Tujuan", "Nopol", "Driver", "Alasan", "Denda (Rp)"
+      ];
+      const keys = [
+        "posto", "tanggalPOSTO", "bookingno", "qty", "tanggalString",
+        "shift", "produkString", "transportString", "tujuan", "nopol", "driver", "alasan", "denda"
+      ];
+      const { exportToPdf } = await import("@/lib/export-helper");
+      exportToPdf(data, headers, keys, `Laporan Pembatalan Tiket (${filters.SD} s.d ${filters.ED})`);
+    } else {
+      addToast({ title: "Tidak ada data", description: "Tidak ada data untuk diexport", variant: "destructive" });
+    }
+    setExporting(false);
+  };
+
+  const fetcher = async (params: DataTableParams) => {
+    try {
+      const result = await apiTable("/api/Tiket/TiketCancelDataReport", {
+        draw: params.draw,
+        start: params.start,
+        length: params.length,
+        search: params.search || "",
+        SD: filters.SD,
+        ED: filters.ED,
+        company: activeCompanyCode || "",
+        columns: [
+          { data: "number", name: "bookingno", searchable: false, orderable: false },
+          { data: "posto", name: "posto", searchable: true, orderable: true },
+          { data: "tanggalPOSTO", name: "bookingno", searchable: false, orderable: false },
+          { data: "bookingno", name: "bookingno", searchable: true, orderable: true },
+          { data: "qty", name: "bookingno", searchable: false, orderable: false },
+          { data: "tanggalString", name: "bookingno", searchable: false, orderable: false },
+          { data: "shift", name: "bookingno", searchable: false, orderable: false },
+          { data: "produkString", name: "bookingno", searchable: false, orderable: false },
+          { data: "transportString", name: "bookingno", searchable: false, orderable: false },
+          { data: "tujuan", name: "bookingno", searchable: false, orderable: false },
+          { data: "nopol", name: "bookingno", searchable: true, orderable: false },
+          { data: "driver", name: "bookingno", searchable: true, orderable: false },
+          { data: "alasan", name: "bookingno", searchable: false, orderable: false },
+          { data: "denda", name: "bookingno", searchable: false, orderable: false },
+        ],
+      });
+      return {
+        data: result.data ?? [],
+        recordsTotal: result.recordsTotal ?? 0,
+        recordsFiltered: result.recordsFiltered ?? result.recordsTotal ?? 0,
+      };
+    } catch (err: any) {
+      addToast({ title: "Gagal memuat data", description: err.message, variant: "destructive" });
+      throw err;
+    }
+  };
 
   const columns: DataTableColumn<CancelRow>[] = [
     { key: "number", header: "No", render: (r) => <span>{r.number}</span> },
@@ -117,7 +188,7 @@ export default function LaporanPembatalanPage() {
         <CardContent>
           <div className="flex flex-wrap gap-4 items-end">
             <div className="space-y-1">
-              <Label className="text-xs">Tanggal Mulai</Label>
+              <label className="text-xs text-muted-foreground">Tanggal Mulai</label>
               <Input
                 type="date"
                 className="w-36"
@@ -126,7 +197,7 @@ export default function LaporanPembatalanPage() {
               />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">Tanggal Akhir</Label>
+              <label className="text-xs text-muted-foreground">Tanggal Akhir</label>
               <Input
                 type="date"
                 className="w-36"
@@ -138,6 +209,22 @@ export default function LaporanPembatalanPage() {
               <Search className="h-4 w-4" />
               Tampilkan
             </Button>
+            <Button
+              variant="outline"
+              onClick={handleExportExcel}
+              disabled={exporting}
+              className="gap-2 text-emerald-600 border-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:border-emerald-400 dark:hover:bg-emerald-950"
+            >
+              {exporting ? "Memproses..." : "Export Excel"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleExportPdf}
+              disabled={exporting}
+              className="gap-2 text-rose-600 border-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:border-rose-400 dark:hover:bg-rose-950"
+            >
+              {exporting ? "Memproses..." : "Export PDF"}
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -146,7 +233,7 @@ export default function LaporanPembatalanPage() {
         <CardContent className="p-4">
           <DataTable
             columns={columns}
-            queryKey={["report-cancelation", filters, activeCompanyCode]}
+            queryKey={["report-cancelation", filters.SD, filters.ED, activeCompanyCode ?? ""]}
             fetcher={fetcher}
             rowKey={(r) => r.bookingno ?? String(r.number)}
             searchPlaceholder="Cari booking no, nopol, driver..."

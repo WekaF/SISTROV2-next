@@ -20,9 +20,34 @@ export default function PostoPage() {
   const queryClient = useQueryClient();
 
   const role = (session?.user as any)?.role;
+  const roles: string[] = (session?.user as any)?.roles ?? [];
   const { activeCompanyCode } = useCompany();
   const companyCode = activeCompanyCode ?? undefined;
   const isRekanan = role === "rekanan" || role === "transport";
+
+  // Hanya StaffArea (semua varian) dan SuperAdmin/TI yang boleh menghapus POSTO
+  const POSTO_DELETE_ROLES = [
+    "staffarea", "staffarewilayah1", "staffarewilayah2",
+    "staffarealayah1", "staffarealayah2", "staffareajatim",
+    "superadmin", "ti",
+  ];
+  const canDeletePosto = roles.some((r) =>
+    POSTO_DELETE_ROLES.includes(r.toLowerCase())
+  );
+
+  // Edit POSTO: SuperAdmin/TI, Admin, Candal, dan StaffArea
+  // Gudang, Security, Timbangan TIDAK boleh edit
+  const POSTO_EDIT_ROLES = [
+    "superadmin", "ti",
+    "admin", "adminsumbu",
+    "candalkuota", "candaltruk", "candaltruck", "candalcontainer",
+    "candalgudangposto", "candalgudang", "candaldept", "candalkapal",
+    "staffarea", "staffarewilayah1", "staffarewilayah2",
+    "staffarealayah1", "staffarealayah2", "staffareajatim",
+  ];
+  const canEditPosto = roles.some((r) =>
+    POSTO_EDIT_ROLES.includes(r.toLowerCase())
+  );
 
   const [dateFilter, setDateFilter] = useState("");
 
@@ -254,20 +279,20 @@ export default function PostoPage() {
               variant="outline"
               size="sm"
               className="text-slate-600 border-slate-200 hover:bg-slate-50 rounded-none h-8 text-[10px] uppercase tracking-wider"
-              onClick={() => window.open(`/posto/print?noposto=${encodeURIComponent(noposto)}`, "_blank")}
+              onClick={() => window.open(`/posto/print/${id || noposto}`, "_blank")}
             >
               <Printer className="h-4 w-4 mr-1" /> Print
             </Button>
 
-            {!isRekanan && (
-              <>
-                <Button variant="outline" size="sm" className="text-amber-500 border-amber-200 hover:bg-amber-50 rounded-none h-8" onClick={() => handleEditInit(id, noposto)}>
-                  <FileEdit className="h-4 w-4 mr-1" /> Edit
-                </Button>
-                <Button variant="outline" size="sm" className="text-red-500 border-red-200 hover:bg-red-50 rounded-none h-8" onClick={() => handleDelete(id, noposto)}>
-                  <Trash2 className="h-4 w-4 mr-1" /> Hapus
-                </Button>
-              </>
+            {canEditPosto && (
+              <Button variant="outline" size="sm" className="text-amber-500 border-amber-200 hover:bg-amber-50 rounded-none h-8" onClick={() => handleEditInit(id, noposto)}>
+                <FileEdit className="h-4 w-4 mr-1" /> Edit
+              </Button>
+            )}
+            {canDeletePosto && (
+              <Button variant="outline" size="sm" className="text-red-500 border-red-200 hover:bg-red-50 rounded-none h-8" onClick={() => handleDelete(id, noposto)}>
+                <Trash2 className="h-4 w-4 mr-1" /> Hapus
+              </Button>
             )}
           </div>
         );

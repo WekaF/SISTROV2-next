@@ -131,10 +131,10 @@ export default function OverdueTicketsModal({ open, onClose, companyCode }: Over
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
-                {data.tickets.map((t) => (
-                  <tr key={t.tiketno} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                {data.tickets.map((t, idx) => (
+                  <tr key={t.tiketno || `overdue-ticket-${t.nopol || ""}-${idx}`} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                     <td className="px-5 py-3 font-mono text-xs font-semibold text-gray-800 dark:text-gray-200">
-                      {t.tiketno}
+                      {t.tiketno || "—"}
                     </td>
                     <td className="px-4 py-3">
                       <span className="flex items-center gap-1.5 font-semibold text-gray-700 dark:text-gray-300">

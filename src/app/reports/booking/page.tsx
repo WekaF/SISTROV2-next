@@ -1,21 +1,13 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import { useState } from "react";
 import { useApi } from "@/hooks/use-api";
 import { useCompany } from "@/context/CompanyContext";
 import { useToast } from "@/components/ui/toast";
-import { DataTable, type DataTableColumn } from "@/components/ui/DataTable";
+import { DataTable, type DataTableColumn, type DataTableParams } from "@/components/ui/DataTable";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { ClipboardList, Search } from "lucide-react";
 
 interface BookingRow {
@@ -49,57 +41,127 @@ export default function LaporanBookingPage() {
   const { addToast } = useToast();
   const { activeCompanyCode } = useCompany();
 
-  const [draft, setDraft] = useState<Filters>({
-    SD: today,
-    ED: today,
-    tiketstatus: "",
-  });
+  const [draft, setDraft] = useState<Filters>({ SD: today, ED: today, tiketstatus: "" });
   const [filters, setFilters] = useState<Filters>(draft);
+  const [exporting, setExporting] = useState(false);
 
   const handleTampilkan = () => setFilters({ ...draft });
 
-  const fetcher = useCallback(
-    async (params: any) => {
-      try {
-        const result = await apiTable("/api/Tiket/DataReport", {
-          draw: params.draw,
-          start: params.start,
-          length: params.length,
-          search: params.search || "",
-          SD: filters.SD,
-          ED: filters.ED,
-          tiketstatus: filters.tiketstatus,
-          company: activeCompanyCode || "",
-          columns: [
-            { data: "number", name: "bookingno", searchable: false, orderable: false },
-            { data: "posto", name: "posto", searchable: true, orderable: true },
-            { data: "tanggalPOSTO", name: "tanggal", searchable: false, orderable: true },
-            { data: "bookingno", name: "bookingno", searchable: true, orderable: true },
-            { data: "qty", name: "qty", searchable: false, orderable: true },
-            { data: "tanggalString", name: "tanggal", searchable: false, orderable: true },
-            { data: "shift", name: "bookingno", searchable: false, orderable: false },
-            { data: "produkString", name: "idproduk", searchable: false, orderable: true },
-            { data: "transportString", name: "idtransport", searchable: false, orderable: false },
-            { data: "nopol", name: "nopol", searchable: true, orderable: true },
-            { data: "driver", name: "driver", searchable: true, orderable: true },
-            { data: "asal", name: "bookingno", searchable: false, orderable: false },
-            { data: "tujuan", name: "bookingno", searchable: false, orderable: false },
-            { data: "statuspemuatan", name: "statuspemuatan", searchable: false, orderable: false },
-            { data: "positionString", name: "position", searchable: false, orderable: true },
-          ],
-        });
-        return {
-          data: result.data ?? [],
-          recordsTotal: result.recordsTotal ?? 0,
-          recordsFiltered: result.recordsFiltered ?? result.recordsTotal ?? 0,
-        };
-      } catch (err: any) {
-        addToast({ title: "Gagal memuat data", description: err.message, variant: "destructive" });
-        throw err;
-      }
-    },
-    [apiTable, addToast, activeCompanyCode, filters]
-  );
+  const fetchFullData = async (): Promise<BookingRow[]> => {
+    try {
+      const result = await apiTable("/api/Tiket/DataReport", {
+        draw: 1,
+        start: 0,
+        length: 10000,
+        search: "",
+        SD: filters.SD,
+        ED: filters.ED,
+        tiketstatus: filters.tiketstatus,
+        company: activeCompanyCode || "",
+        columns: [
+          { data: "number", name: "bookingno", searchable: false, orderable: false },
+          { data: "posto", name: "posto", searchable: true, orderable: true },
+          { data: "tanggalPOSTO", name: "tanggal", searchable: false, orderable: true },
+          { data: "bookingno", name: "bookingno", searchable: true, orderable: true },
+          { data: "qty", name: "qty", searchable: false, orderable: true },
+          { data: "tanggalString", name: "tanggal", searchable: false, orderable: true },
+          { data: "shift", name: "bookingno", searchable: false, orderable: false },
+          { data: "produkString", name: "idproduk", searchable: false, orderable: true },
+          { data: "transportString", name: "idtransport", searchable: false, orderable: false },
+          { data: "nopol", name: "nopol", searchable: true, orderable: true },
+          { data: "driver", name: "driver", searchable: true, orderable: true },
+          { data: "asal", name: "bookingno", searchable: false, orderable: false },
+          { data: "tujuan", name: "bookingno", searchable: false, orderable: false },
+          { data: "statuspemuatan", name: "statuspemuatan", searchable: false, orderable: false },
+          { data: "positionString", name: "position", searchable: false, orderable: true },
+        ],
+      });
+      return result.data ?? [];
+    } catch (err: any) {
+      addToast({ title: "Gagal memuat data export", description: err.message, variant: "destructive" });
+      return [];
+    }
+  };
+
+  const handleExportExcel = async () => {
+    setExporting(true);
+    const data = await fetchFullData();
+    if (data.length > 0) {
+      const headers = [
+        "POSTO", "Tgl POSTO", "Booking No", "Qty (ton)", "Tgl Booking",
+        "Shift", "Produk", "Transportir", "Nopol", "Driver", "Asal", "Tujuan", "Status Muat", "Posisi"
+      ];
+      const keys = [
+        "posto", "tanggalPOSTO", "bookingno", "qty", "tanggalString",
+        "shift", "produkString", "transportString", "nopol", "driver", "asal", "tujuan", "statuspemuatan", "positionString"
+      ];
+      const { exportToExcel } = await import("@/lib/export-helper");
+      exportToExcel(data, headers, keys, `Laporan_Booking_${filters.SD}_${filters.ED}`);
+    } else {
+      addToast({ title: "Tidak ada data", description: "Tidak ada data untuk diexport", variant: "destructive" });
+    }
+    setExporting(false);
+  };
+
+  const handleExportPdf = async () => {
+    setExporting(true);
+    const data = await fetchFullData();
+    if (data.length > 0) {
+      const headers = [
+        "POSTO", "Tgl POSTO", "Booking No", "Qty (ton)", "Tgl Booking",
+        "Shift", "Produk", "Transportir", "Nopol", "Driver", "Asal", "Tujuan", "Status Muat", "Posisi"
+      ];
+      const keys = [
+        "posto", "tanggalPOSTO", "bookingno", "qty", "tanggalString",
+        "shift", "produkString", "transportString", "nopol", "driver", "asal", "tujuan", "statuspemuatan", "positionString"
+      ];
+      const { exportToPdf } = await import("@/lib/export-helper");
+      exportToPdf(data, headers, keys, `Laporan Booking (${filters.SD} s.d ${filters.ED})`);
+    } else {
+      addToast({ title: "Tidak ada data", description: "Tidak ada data untuk diexport", variant: "destructive" });
+    }
+    setExporting(false);
+  };
+
+  const fetcher = async (params: DataTableParams) => {
+    try {
+      const result = await apiTable("/api/Tiket/DataReport", {
+        draw: params.draw,
+        start: params.start,
+        length: params.length,
+        search: params.search || "",
+        SD: filters.SD,
+        ED: filters.ED,
+        tiketstatus: filters.tiketstatus,
+        company: activeCompanyCode || "",
+        columns: [
+          { data: "number", name: "bookingno", searchable: false, orderable: false },
+          { data: "posto", name: "posto", searchable: true, orderable: true },
+          { data: "tanggalPOSTO", name: "tanggal", searchable: false, orderable: true },
+          { data: "bookingno", name: "bookingno", searchable: true, orderable: true },
+          { data: "qty", name: "qty", searchable: false, orderable: true },
+          { data: "tanggalString", name: "tanggal", searchable: false, orderable: true },
+          { data: "shift", name: "bookingno", searchable: false, orderable: false },
+          { data: "produkString", name: "idproduk", searchable: false, orderable: true },
+          { data: "transportString", name: "idtransport", searchable: false, orderable: false },
+          { data: "nopol", name: "nopol", searchable: true, orderable: true },
+          { data: "driver", name: "driver", searchable: true, orderable: true },
+          { data: "asal", name: "bookingno", searchable: false, orderable: false },
+          { data: "tujuan", name: "bookingno", searchable: false, orderable: false },
+          { data: "statuspemuatan", name: "statuspemuatan", searchable: false, orderable: false },
+          { data: "positionString", name: "position", searchable: false, orderable: true },
+        ],
+      });
+      return {
+        data: result.data ?? [],
+        recordsTotal: result.recordsTotal ?? 0,
+        recordsFiltered: result.recordsFiltered ?? result.recordsTotal ?? 0,
+      };
+    } catch (err: any) {
+      addToast({ title: "Gagal memuat data", description: err.message, variant: "destructive" });
+      throw err;
+    }
+  };
 
   const columns: DataTableColumn<BookingRow>[] = [
     { key: "number", header: "No", render: (r) => <span>{r.number}</span> },
@@ -133,7 +195,7 @@ export default function LaporanBookingPage() {
         <CardContent>
           <div className="flex flex-wrap gap-4 items-end">
             <div className="space-y-1">
-              <Label className="text-xs">Tanggal Mulai</Label>
+              <label className="text-xs text-muted-foreground">Tanggal Mulai</label>
               <Input
                 type="date"
                 className="w-36"
@@ -142,7 +204,7 @@ export default function LaporanBookingPage() {
               />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">Tanggal Akhir</Label>
+              <label className="text-xs text-muted-foreground">Tanggal Akhir</label>
               <Input
                 type="date"
                 className="w-36"
@@ -151,24 +213,36 @@ export default function LaporanBookingPage() {
               />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">Status Tiket</Label>
-              <Select
+              <label className="text-xs text-muted-foreground">Status Tiket</label>
+              <select
+                className="flex h-9 w-40 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
                 value={draft.tiketstatus}
-                onValueChange={(v) => setDraft((p) => ({ ...p, tiketstatus: v }))}
+                onChange={(e) => setDraft((p) => ({ ...p, tiketstatus: e.target.value }))}
               >
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Semua" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">Semua</SelectItem>
-                  <SelectItem value="00">Belum Selesai</SelectItem>
-                  <SelectItem value="01">Selesai</SelectItem>
-                </SelectContent>
-              </Select>
+                <option value="">Semua</option>
+                <option value="00">Belum Selesai</option>
+                <option value="01">Selesai</option>
+              </select>
             </div>
             <Button onClick={handleTampilkan} className="gap-2">
               <Search className="h-4 w-4" />
               Tampilkan
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleExportExcel}
+              disabled={exporting}
+              className="gap-2 text-emerald-600 border-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:border-emerald-400 dark:hover:bg-emerald-950"
+            >
+              {exporting ? "Memproses..." : "Export Excel"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleExportPdf}
+              disabled={exporting}
+              className="gap-2 text-rose-600 border-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:border-rose-400 dark:hover:bg-rose-950"
+            >
+              {exporting ? "Memproses..." : "Export PDF"}
             </Button>
           </div>
         </CardContent>
@@ -178,7 +252,7 @@ export default function LaporanBookingPage() {
         <CardContent className="p-4">
           <DataTable
             columns={columns}
-            queryKey={["report-booking", filters, activeCompanyCode]}
+            queryKey={["report-booking", filters.SD, filters.ED, filters.tiketstatus, activeCompanyCode ?? ""]}
             fetcher={fetcher}
             rowKey={(r) => r.bookingno ?? String(r.number)}
             searchPlaceholder="Cari booking no, nopol, driver..."

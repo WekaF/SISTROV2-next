@@ -34,7 +34,7 @@ interface Stats {
 export default function DashboardViewerClient() {
   const searchParams = useSearchParams();
   const company = searchParams.get("company") ?? "";
-  const { data: session } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
   const { apiTable } = useApi();
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(false);
@@ -42,7 +42,8 @@ export default function DashboardViewerClient() {
   const allRoles: string[] = ((session?.user as any)?.roles as string[] | undefined) ?? [(session?.user as any)?.role ?? ""];
   const normalizedRoles = allRoles.map(r => normalizeRole(r));
   const isStaffArea = normalizedRoles.includes("staffarea");
-  const isViewer = normalizedRoles.includes("viewer") || normalizedRoles.includes("superadmin");
+
+  const isAuthorizedForTransit = normalizedRoles.includes("superadmin") || normalizedRoles.includes("viewer");
 
   useEffect(() => {
     if (!company) return;
@@ -67,6 +68,17 @@ export default function DashboardViewerClient() {
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [company, apiTable]);
+
+  if (sessionStatus === "loading") {
+    return (
+      <div className="space-y-6 p-6 animate-pulse">
+        <div className="h-8 w-48 bg-slate-200 dark:bg-slate-800 rounded-lg" />
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+          {[1,2,3,4,5,6].map(i => <div key={i} className="h-28 bg-slate-200 dark:bg-slate-800 rounded-2xl" />)}
+        </div>
+      </div>
+    );
+  }
 
   if (isStaffArea) {
     return <StaffAreaDashboard />;
@@ -122,7 +134,11 @@ export default function DashboardViewerClient() {
             <CardContent>
               <div className="text-3xl font-bold text-muted-foreground">—</div>
               <p className="text-xs text-muted-foreground mt-1">
-                <a href="/resume-transit" className="underline">Lihat Resume Transit</a>
+                {isAuthorizedForTransit ? (
+                  <a href="/resume-transit" className="underline">Lihat Resume Transit</a>
+                ) : (
+                  <span>—</span>
+                )}
               </p>
             </CardContent>
           </Card>
@@ -135,7 +151,11 @@ export default function DashboardViewerClient() {
             <CardContent>
               <div className="text-3xl font-bold text-muted-foreground">—</div>
               <p className="text-xs text-muted-foreground mt-1">
-                <a href="/resume-transit" className="underline">Lihat Resume Transit</a>
+                {isAuthorizedForTransit ? (
+                  <a href="/resume-transit" className="underline">Lihat Resume Transit</a>
+                ) : (
+                  <span>—</span>
+                )}
               </p>
             </CardContent>
           </Card>

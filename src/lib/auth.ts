@@ -218,10 +218,16 @@ export const authOptions: NextAuthOptions = {
         token.transportCode = (user as any).transportCode;
         token._pw           = (user as any)._pw; // encoded password for switch
       }
-      // Called from useSession().update() after company switch
+      // Called from useSession().update()
       if (trigger === "update" && updateData) {
         if (updateData.aspnetToken) token.aspnetToken = updateData.aspnetToken;
         if (updateData.companyCode) token.companyCode = updateData.companyCode;
+        if (updateData.menuGroup !== undefined) token.menuGroup = updateData.menuGroup;
+        if (updateData.menuGroups !== undefined) token.menuGroups = updateData.menuGroups;
+        if (updateData.menuItems !== undefined) token.menuItems = updateData.menuItems;
+        if (updateData.role !== undefined) token.role = updateData.role;
+        if (updateData.roles !== undefined) token.roles = updateData.roles;
+
         if (updateData.aspnetToken || updateData.companyCode) {
           await logEvent({
             eventType:   "COMPANY_SWITCH",

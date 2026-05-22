@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useApi } from "@/hooks/use-api";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, AlertCircle, AlertTriangle, CheckCircle, Heart, Truck, MapPin, Warehouse, FileText, ChevronRight, BarChart3, Ticket } from "lucide-react";
+import { Loader2, AlertCircle, AlertTriangle, CheckCircle, Heart, Truck, MapPin, Warehouse, FileText, ChevronRight, BarChart3, Ticket, ArrowRight } from "lucide-react";
 import { id } from "date-fns/locale";
 import { format } from "date-fns";
 
@@ -53,6 +53,7 @@ interface DetailData {
   tonase_total: number;
   kabupaten: KabupatenDetail[];
   grup_tujuan: GudangDetail[];
+  tikets?: GudangDetail[]; // fallback
 }
 
 const STATUS_CONFIG = {
@@ -65,6 +66,7 @@ const STATUS_CONFIG = {
     borderClass: "border-rose-200 dark:border-rose-800",
     icon: AlertCircle,
     colorCode: "#C80036",
+    badge: "destructive" as const,
   },
   kuning: {
     label: "Warning",
@@ -75,6 +77,7 @@ const STATUS_CONFIG = {
     borderClass: "border-amber-200 dark:border-amber-800",
     icon: AlertTriangle,
     colorCode: "#F3CA52",
+    badge: "outline" as const,
   },
   hijau: {
     label: "Stable",
@@ -85,6 +88,7 @@ const STATUS_CONFIG = {
     borderClass: "border-emerald-200 dark:border-emerald-800",
     icon: CheckCircle,
     colorCode: "#41B06E",
+    badge: "outline" as const,
   },
   biru: {
     label: "Idle",
@@ -95,6 +99,7 @@ const STATUS_CONFIG = {
     borderClass: "border-sky-200 dark:border-sky-800",
     icon: Heart,
     colorCode: "#5BBCFF",
+    badge: "outline" as const,
   },
 } as const;
 
@@ -140,7 +145,13 @@ export default function ResumeClient() {
   }
 
   async function handleStatusClick(status: string) {
-    if (selectedStatus === status) return; // do nothing if already selected
+    if (selectedStatus === status) {
+      setSelectedStatus(null);
+      setDetail(null);
+      setSelectedKab(null);
+      setSelectedGudang(null);
+      return;
+    }
     
     setSelectedStatus(status);
     setDetailLoading(true);
@@ -188,23 +199,26 @@ export default function ResumeClient() {
   // Filtering Logic
   const activeGudangs = useMemo(() => {
     if (!detail || !selectedKab) return [];
-    return detail.grup_tujuan.filter(g => g.kode_kabupaten === selectedKab || g.kabupaten_nama === selectedKab);
+    const groups = detail.grup_tujuan || detail.tikets || [];
+    return groups.filter(g => g.kode_kabupaten === selectedKab || g.kabupaten_nama === selectedKab || g.kabupaten_nama?.toLowerCase() === selectedKab?.toLowerCase());
   }, [detail, selectedKab]);
 
   const activeTiketsUrea = useMemo(() => {
     if (!detail || !selectedGudang) return [];
-    const gdg = detail.grup_tujuan.find(g => g.tujuan === selectedGudang);
+    const groups = detail.grup_tujuan || detail.tikets || [];
+    const gdg = groups.find(g => g.tujuan === selectedGudang);
     if (!gdg) return [];
-    let t = gdg.tikets.filter(x => x.produk === "P01" || x.produk?.toLowerCase()?.includes("urea"));
+    let t = (gdg.tikets || []).filter(x => x.produk === "P01" || x.produk?.toLowerCase()?.includes("urea"));
     if (filterUrea !== "all") t = t.filter(x => x.position === filterUrea);
     return t;
   }, [detail, selectedGudang, filterUrea]);
 
   const activeTiketsNpk = useMemo(() => {
     if (!detail || !selectedGudang) return [];
-    const gdg = detail.grup_tujuan.find(g => g.tujuan === selectedGudang);
+    const groups = detail.grup_tujuan || detail.tikets || [];
+    const gdg = groups.find(g => g.tujuan === selectedGudang);
     if (!gdg) return [];
-    let t = gdg.tikets.filter(x => x.produk === "P02" || x.produk?.toLowerCase()?.includes("npk"));
+    let t = (gdg.tikets || []).filter(x => x.produk === "P02" || x.produk?.toLowerCase()?.includes("npk"));
     if (filterNpk !== "all") t = t.filter(x => x.position === filterNpk);
     return t;
   }, [detail, selectedGudang, filterNpk]);
@@ -212,8 +226,8 @@ export default function ResumeClient() {
   if (loading) {
     return (
       <div className="flex h-[80vh] items-center justify-center flex-col gap-4">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
-        <p className="text-muted-foreground animate-pulse">Memuat Data Resume Transit...</p>
+        <Loader2 className="h-10 w-10 animate-spin text-brand-500" />
+        <p className="text-muted-foreground animate-pulse font-medium">Memuat Data Resume Transit...</p>
       </div>
     );
   }
@@ -228,7 +242,7 @@ export default function ResumeClient() {
             Resume Transit
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-2">
-            <BarChart3 className="h-4 w-4" />
+            <BarChart3 className="h-4 w-4 text-brand-500" />
             Transaksi Tiket Hari ini: <span className="font-semibold text-slate-700 dark:text-slate-200">{dateNowStr}</span>
           </p>
           <div className="mt-3 inline-flex">
@@ -264,7 +278,7 @@ export default function ResumeClient() {
               key={status}
               onClick={() => handleStatusClick(status)}
               className={`relative overflow-hidden cursor-pointer transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg border-2 ${
-                isSelected ? `ring-2 ring-offset-2 ring-slate-400 border-transparent shadow-md` : `border-transparent hover:border-slate-200 dark:hover:border-slate-700 shadow-sm`
+                isSelected ? `ring-2 ring-offset-2 ring-brand-500 border-transparent shadow-md` : `border-transparent hover:border-slate-200 dark:hover:border-slate-700 shadow-sm`
               }`}
             >
               <div className={`absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r ${cfg.gradient}`}></div>
@@ -284,7 +298,7 @@ export default function ResumeClient() {
                   <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-1">{tonase.toLocaleString("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-sm font-medium text-slate-500">Ton</span></h3>
                   <p className="text-sm font-medium text-slate-600 dark:text-slate-400">{cfg.label}</p>
                   <div className="mt-3 flex items-center justify-between text-xs font-semibold text-slate-500 bg-slate-100 dark:bg-slate-800 px-2.5 py-1.5 rounded-md">
-                    <span>{count} Pengiriman</span>
+                    <span>{count} Kabupaten</span>
                     <ChevronRight className="h-3 w-3" />
                   </div>
                 </div>
@@ -307,7 +321,7 @@ export default function ResumeClient() {
             <h2 className="text-lg font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-200">
               Detail Status <span className={STATUS_CONFIG[selectedStatus as keyof typeof STATUS_CONFIG].textClass}>{STATUS_CONFIG[selectedStatus as keyof typeof STATUS_CONFIG].desc}</span>
             </h2>
-            {detailLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground ml-2" />}
+            {detailLoading && <Loader2 className="h-4 w-4 animate-spin text-brand-500 ml-2" />}
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
@@ -318,9 +332,9 @@ export default function ResumeClient() {
               {!detailLoading && detail?.kabupaten?.length === 0 && (
                 <div className="text-center p-4 border border-dashed rounded-lg text-muted-foreground text-sm">Tidak ada data</div>
               )}
-              {detail?.kabupaten?.map((kab) => (
+              {detail?.kabupaten?.map((kab, idx) => (
                 <div 
-                  key={kab.kab_kode}
+                  key={`${kab.kab_kode}-${selectedStatus}-${idx}`}
                   onClick={() => { setSelectedKab(kab.kab_kode); setSelectedGudang(null); }}
                   className={`p-3 rounded-lg border cursor-pointer transition-all ${
                     selectedKab === kab.kab_kode 
@@ -345,9 +359,9 @@ export default function ResumeClient() {
                 </div>
               )}
 
-              {activeGudangs.map((gdg) => (
+              {activeGudangs.map((gdg, idx) => (
                 <div 
-                  key={gdg.tujuan}
+                  key={`${gdg.tujuan}-${idx}`}
                   onClick={() => setSelectedGudang(gdg.tujuan)}
                   className={`p-4 rounded-lg border cursor-pointer transition-all group ${
                     selectedGudang === gdg.tujuan 
@@ -359,7 +373,7 @@ export default function ResumeClient() {
                     <div>
                       <p className="text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">{gdg.tujuan} - {gdg.deskripsi}</p>
                       <p className="text-[10px] text-slate-500 flex items-center gap-1 mt-2">
-                        <Ticket className="h-3 w-3" /> {gdg.count} Tiket &bull; {gdg.tonase} Ton
+                        <Ticket className="h-3 w-3 text-brand-500" /> {gdg.count} Tiket &bull; {gdg.tonase} Ton
                       </p>
                     </div>
                     <ChevronRight className={`h-4 w-4 ${selectedGudang === gdg.tujuan ? STATUS_CONFIG[selectedStatus as keyof typeof STATUS_CONFIG].textClass : 'text-slate-300 group-hover:text-slate-500'}`} />
@@ -385,7 +399,7 @@ export default function ResumeClient() {
                       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                         <div>
                           <CardTitle className="text-sm font-bold flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-sky-500"></span>
+                            <span className="w-2 h-2 rounded-full bg-sky-500 animate-pulse"></span>
                             UREA
                           </CardTitle>
                           <div className="flex gap-4 mt-2 text-xs text-slate-600 dark:text-slate-400 font-medium">
@@ -418,7 +432,7 @@ export default function ResumeClient() {
                       ) : (
                         <div className="flex flex-nowrap overflow-x-auto gap-3 p-4 custom-scrollbar">
                           {activeTiketsUrea.map((t, idx) => (
-                            <div key={idx} className={`flex-none w-[220px] rounded-lg border bg-gradient-to-br ${STATUS_CONFIG[selectedStatus as keyof typeof STATUS_CONFIG].gradient} p-3 text-white shadow-sm`}>
+                            <div key={`${t.bookingno}-${idx}`} className={`flex-none w-[220px] rounded-lg border bg-gradient-to-br ${STATUS_CONFIG[selectedStatus as keyof typeof STATUS_CONFIG].gradient} p-3 text-white shadow-sm`}>
                               <div className="font-mono text-xs font-bold mb-1 opacity-90">{t.bookingno}</div>
                               <div className="flex items-center gap-2 text-[10px] mb-2 font-medium bg-white/10 w-fit px-1.5 py-0.5 rounded">
                                 <Truck className="h-3 w-3" /> {t.nopol}
@@ -439,7 +453,7 @@ export default function ResumeClient() {
                       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                         <div>
                           <CardTitle className="text-sm font-bold flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-rose-500"></span>
+                            <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
                             NPK
                           </CardTitle>
                           <div className="flex gap-4 mt-2 text-xs text-slate-600 dark:text-slate-400 font-medium">
@@ -472,7 +486,7 @@ export default function ResumeClient() {
                       ) : (
                         <div className="flex flex-nowrap overflow-x-auto gap-3 p-4 custom-scrollbar">
                           {activeTiketsNpk.map((t, idx) => (
-                            <div key={idx} className={`flex-none w-[220px] rounded-lg border bg-gradient-to-br ${STATUS_CONFIG[selectedStatus as keyof typeof STATUS_CONFIG].gradient} p-3 text-white shadow-sm`}>
+                            <div key={`${t.bookingno}-${idx}`} className={`flex-none w-[220px] rounded-lg border bg-gradient-to-br ${STATUS_CONFIG[selectedStatus as keyof typeof STATUS_CONFIG].gradient} p-3 text-white shadow-sm`}>
                               <div className="font-mono text-xs font-bold mb-1 opacity-90">{t.bookingno}</div>
                               <div className="flex items-center gap-2 text-[10px] mb-2 font-medium bg-white/10 w-fit px-1.5 py-0.5 rounded">
                                 <Truck className="h-3 w-3" /> {t.nopol}

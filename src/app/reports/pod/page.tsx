@@ -22,7 +22,6 @@ export default function PodReportsPage() {
     { title: "Laporan Armada", desc: "Data ketersediaan dan utilisasi armada rekanan.", icon: Truck, color: "text-purple-500", bg: "bg-purple-50" },
     { title: "Laporan Gudang", desc: "Monitoring stok dan produktivitas setiap unit gudang.", icon: Warehouse, color: "text-emerald-500", bg: "bg-emerald-50" },
     { title: "Laporan POSTO", desc: "Status realisasi pemuatan berdasarkan dokumen POSTO.", icon: Package, color: "text-amber-500", bg: "bg-amber-50" },
-    { title: "Laporan Statistik", desc: "Kumpulan metrik KPI dan performa operasional plant.", icon: Layers, color: "text-indigo-500", bg: "bg-indigo-50" },
   ];
 
   return (

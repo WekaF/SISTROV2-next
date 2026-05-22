@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
+import { useCompany } from "@/context/CompanyContext";
 import {
   BarChart3,
   Timer,
@@ -30,8 +30,7 @@ interface CompanyStats {
 }
 
 export const PodDashboard = () => {
-  const { data: session } = useSession();
-  const companyCode = (session?.user as any)?.companyCode as string | undefined;
+  const { activeCompanyCode } = useCompany();
 
   const [stats, setStats] = useState<CompanyStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -39,7 +38,10 @@ export const PodDashboard = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetch("/api/pod/dashboard/company-stats");
+        const url = activeCompanyCode
+          ? `/api/pod/dashboard/company-stats?companyCode=${encodeURIComponent(activeCompanyCode)}`
+          : "/api/pod/dashboard/company-stats";
+        const res = await fetch(url);
         if (!res.ok) throw new Error("fetch failed");
         const data = await res.json();
         setStats(data);
@@ -52,7 +54,7 @@ export const PodDashboard = () => {
     load();
     const interval = setInterval(load, 60_000);
     return () => clearInterval(interval);
-  }, [companyCode]); // re-fetch immediately when company switches
+  }, [activeCompanyCode]); // re-fetch immediately when company switches
 
   const kpis = [
     {

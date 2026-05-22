@@ -14,6 +14,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
+import { useSession } from "next-auth/react";
 import { MENU_CATALOG } from "@/lib/menu-catalog";
 
 const MENU_GROUP_OPTIONS = [
@@ -51,10 +52,13 @@ interface MenuItemDialogState {
 export default function UserMenuGroupPage() {
   const { addToast } = useToast();
   const queryClient = useQueryClient();
+  const { data: session, update: updateSession } = useSession();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [pendingChanges, setPendingChanges] = useState<Record<string, string>>({});
   const [dialog, setDialog] = useState<MenuItemDialogState | null>(null);
+
+  const currentUserId = (session?.user as any)?.id;
 
   const handleSearchChange = (val: string) => {
     setSearch(val);
@@ -87,7 +91,7 @@ export default function UserMenuGroupPage() {
         throw new Error(data.error || "Gagal menyimpan");
       }
     },
-    onSuccess: (_, { userId }) => {
+    onSuccess: (_, { userId, menuGroup }) => {
       setPendingChanges((prev) => {
         const next = { ...prev };
         delete next[userId];
@@ -95,6 +99,13 @@ export default function UserMenuGroupPage() {
       });
       queryClient.invalidateQueries({ queryKey: ["user-menu-group"] });
       addToast({ title: "Menu group disimpan", variant: "success" });
+
+      if (userId === currentUserId) {
+        updateSession({
+          menuGroup: menuGroup || null,
+          menuGroups: menuGroup ? [menuGroup] : null,
+        }).catch((err) => console.warn("Failed to update session:", err));
+      }
     },
     onError: (err: any) => addToast({ title: err.message, variant: "destructive" }),
   });
@@ -121,10 +132,16 @@ export default function UserMenuGroupPage() {
         throw new Error(data.error || "Gagal menyimpan");
       }
     },
-    onSuccess: () => {
+    onSuccess: (_, { userId, menuItems }) => {
       setDialog(null);
       queryClient.invalidateQueries({ queryKey: ["user-menu-group"] });
       addToast({ title: "Menu items disimpan", variant: "success" });
+
+      if (userId === currentUserId) {
+        updateSession({
+          menuItems: menuItems || null,
+        }).catch((err) => console.warn("Failed to update session:", err));
+      }
     },
     onError: (err: any) => addToast({ title: err.message, variant: "destructive" }),
   });
