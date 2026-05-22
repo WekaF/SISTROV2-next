@@ -149,6 +149,12 @@ export const authOptions: NextAuthOptions = {
         // Per-user explicit override takes priority
         const userMenuGroup = (data.user_menu_group || "").trim();
 
+        const userMenuItemsRaw = (data.user_menu_items || "").trim();
+        let menuItems: string[] | null = null;
+        if (userMenuItemsRaw) {
+          try { menuItems = JSON.parse(userMenuItemsRaw); } catch {}
+        }
+
         let menuGroups: string[];
         if (userMenuGroup) {
           // Admin assigned a specific menu to this user — use it exclusively
@@ -180,6 +186,7 @@ export const authOptions: NextAuthOptions = {
           roles,
           menuGroup,
           menuGroups,
+          menuItems,
           companyCode:   data.companycode ?? null,
           aspnetToken:   data.access_token,
           username:      data.username,
@@ -202,6 +209,7 @@ export const authOptions: NextAuthOptions = {
         token.roles         = (user as any).roles;
         token.menuGroup     = (user as any).menuGroup;
         token.menuGroups    = (user as any).menuGroups;
+        token.menuItems     = (user as any).menuItems;
         token.id            = (user as any).id;
         token.companyCode   = (user as any).companyCode;
         token.aspnetToken   = (user as any).aspnetToken;
@@ -232,6 +240,7 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).roles         = token.roles;
         (session.user as any).menuGroup     = token.menuGroup;
         (session.user as any).menuGroups    = token.menuGroups;
+        (session.user as any).menuItems     = token.menuItems;
         (session.user as any).id            = token.id;
         (session.user as any).companyCode   = token.companyCode;
         (session.user as any).aspnetToken   = token.aspnetToken;

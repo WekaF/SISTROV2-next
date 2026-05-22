@@ -10,6 +10,7 @@ declare module "next-auth" {
       aspnetToken?:   string | null;
       username?:      string | null;
       transportCode?: string | null;
+      menuItems?:     string[] | null;
     } & DefaultSession["user"]
   }
 
@@ -21,6 +22,7 @@ declare module "next-auth" {
     aspnetToken?:   string | null;
     username?:      string | null;
     transportCode?: string | null;
+    menuItems?:     string[] | null;
   }
 }
 
@@ -34,5 +36,6 @@ declare module "next-auth/jwt" {
     username?:      string | null;
     transportCode?: string | null;
     _pw?:           string | null; // base64-encoded password for company switch (server-only)
+    menuItems?:     string[] | null;
   }
 }
