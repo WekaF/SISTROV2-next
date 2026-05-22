@@ -21,6 +21,7 @@ import {
   Activity
 } from "lucide-react";
 import { useApi } from "@/hooks/use-api";
+import { useAntrianStream } from "@/hooks/use-antrian-stream";
 import { useCompany } from "@/context/CompanyContext";
 import { useToast } from "@/components/ui/toast";
 import { normalizeRole, hasGudangAccess, isReadOnlyRole } from "@/lib/role-utils";
@@ -76,6 +77,18 @@ function AntrianContent() {
   const companyFromUrl = searchParams.get("company") ?? "";
   const { addToast } = useToast();
   const queryClient = useQueryClient();
+
+  // SSE: auto-refresh antrian data every 30s
+  const companyCodeForStream = (companyFromUrl || activeCompanyCode) ?? undefined;
+  const { status: streamStatus, lastUpdated: streamUpdated, data: streamData } =
+    useAntrianStream(companyCodeForStream);
+
+  useEffect(() => {
+    if (!streamData) return;
+    queryClient.invalidateQueries({ queryKey: ["antrian"] });
+    queryClient.invalidateQueries({ queryKey: ["antrian-data"] });
+    queryClient.invalidateQueries({ queryKey: ["gudang-summary"] });
+  }, [streamData, queryClient]);
 
   // Role detection
   const userRole = normalizeRole((session?.user as any)?.roleName || (session?.user as any)?.role);
@@ -331,6 +344,15 @@ function AntrianContent() {
             </Badge>
           </div>
           <p className="text-sm text-slate-500 font-medium tracking-tight">Monitoring pergerakan armada dan pengelolaan antrian gudang muat secara real-time.</p>
+          {streamStatus === "live" && (
+            <span className="inline-flex items-center gap-1 text-xs text-green-600 font-medium">
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+              Live · {streamUpdated ? `Update ${streamUpdated.toLocaleTimeString("id-ID")}` : ""}
+            </span>
+          )}
+          {streamStatus === "error" && (
+            <span className="text-xs text-amber-500 font-medium">&#9888; Reconnecting...</span>
+          )}
         </div>
         <div className="flex items-center gap-2">
            <Button 
