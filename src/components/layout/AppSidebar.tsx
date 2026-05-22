@@ -816,10 +816,9 @@ const AppSidebar: React.FC = () => {
   let adminItems: NavItem[];
 
   if (rawMenuItems && rawMenuItems.length > 0) {
-    const allNav = mergeNavItems(Object.values(MENU_CONFIGS).map((c) => c.nav));
-    const allAdmin = mergeNavItems(Object.values(MENU_CONFIGS).map((c) => c.admin));
-    navItems = filterNavByPaths(allNav, rawMenuItems);
-    adminItems = filterNavByPaths(allAdmin, rawMenuItems);
+    const allGroups = Object.values(MENU_CONFIGS);
+    navItems = mergeNavItems(allGroups.map((c) => filterNavByPaths(c.nav, rawMenuItems)));
+    adminItems = mergeNavItems(allGroups.map((c) => filterNavByPaths(c.admin, rawMenuItems)));
   } else {
     navItems = mergeNavItems(activeGroups.map((g) => MENU_CONFIGS[g]?.nav ?? []));
     adminItems = mergeNavItems(activeGroups.map((g) => MENU_CONFIGS[g]?.admin ?? []));
