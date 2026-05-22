@@ -121,6 +121,22 @@ function mergeNavItems(itemsList: NavItem[][]): NavItem[] {
   return Array.from(resultMap.values());
 }
 
+function filterNavByPaths(items: NavItem[], allowedPaths: string[]): NavItem[] {
+  const pathSet = new Set(allowedPaths);
+  const result: NavItem[] = [];
+  for (const item of items) {
+    if (item.subItems) {
+      const filteredSubs = item.subItems.filter((s) => s.path && pathSet.has(s.path));
+      if (filteredSubs.length > 0) {
+        result.push({ ...item, subItems: filteredSubs });
+      }
+    } else if (item.path && pathSet.has(item.path)) {
+      result.push(item);
+    }
+  }
+  return result;
+}
+
 const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> = {
   superadmin: {
     nav: [
@@ -794,8 +810,20 @@ const AppSidebar: React.FC = () => {
     activeGroups = [normalizeRole((session?.user as any)?.role)];
   }
 
-  const navItems = mergeNavItems(activeGroups.map((g) => MENU_CONFIGS[g]?.nav ?? []));
-  const adminItems = mergeNavItems(activeGroups.map((g) => MENU_CONFIGS[g]?.admin ?? []));
+  const rawMenuItems = (session?.user as any)?.menuItems as string[] | null | undefined;
+
+  let navItems: NavItem[];
+  let adminItems: NavItem[];
+
+  if (rawMenuItems && rawMenuItems.length > 0) {
+    const allNav = mergeNavItems(Object.values(MENU_CONFIGS).map((c) => c.nav));
+    const allAdmin = mergeNavItems(Object.values(MENU_CONFIGS).map((c) => c.admin));
+    navItems = filterNavByPaths(allNav, rawMenuItems);
+    adminItems = filterNavByPaths(allAdmin, rawMenuItems);
+  } else {
+    navItems = mergeNavItems(activeGroups.map((g) => MENU_CONFIGS[g]?.nav ?? []));
+    adminItems = mergeNavItems(activeGroups.map((g) => MENU_CONFIGS[g]?.admin ?? []));
+  }
 
   const isActive = useCallback((path: string) => path === pathname, [pathname]);
 
