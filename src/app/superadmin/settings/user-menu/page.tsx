@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { useSession } from "next-auth/react";
 import { MENU_CATALOG } from "@/lib/menu-catalog";
+import { getPathsForGroup, normalizeRole } from "@/lib/menu-configs";
 
 const MENU_GROUP_OPTIONS = [
   { value: "", label: "— Role default (otomatis) —" },
@@ -165,11 +166,17 @@ export default function UserMenuGroupPage() {
   };
 
   const openItemDialog = (user: UserMenuGroupRow) => {
-    let selected = new Set<string>();
+    let selected: Set<string>;
     if (user.MenuItems) {
       try {
         selected = new Set(JSON.parse(user.MenuItems) as string[]);
-      } catch {}
+      } catch {
+        selected = new Set();
+      }
+    } else {
+      // No per-item override yet → seed from effective menu group
+      const effectiveGroup = user.MenuGroup || normalizeRole(user.Roles?.[0]);
+      selected = new Set(getPathsForGroup(effectiveGroup));
     }
     setDialog({ user, selected });
   };
