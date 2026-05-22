@@ -1,9 +1,14 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, ChevronDown, Search, X } from "lucide-react";
+
+interface CompanyOption {
+  company: string;
+  company_code: string;
+}
 
 export default function SignInForm() {
   const [showPassword, setShowPassword] = useState(false);
@@ -16,6 +21,51 @@ export default function SignInForm() {
   const router       = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl  = searchParams?.get("callbackUrl") || "/";
+
+  // Searchable Company Dropdown States
+  const [companies, setCompanies] = useState<CompanyOption[]>([]);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isLoadingCompanies, setIsLoadingCompanies] = useState(true);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      try {
+        const res = await fetch("/aspnet-proxy/api/Company/getCompanyListFitur");
+        if (!res.ok) throw new Error("Gagal mengambil data perusahaan");
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setCompanies(data);
+        }
+      } catch (err) {
+        console.error("Error fetching companies:", err);
+      } finally {
+        setIsLoadingCompanies(false);
+      }
+    };
+    fetchCompanies();
+  }, []);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filteredCompanies = companies.filter(c =>
+    (c.company || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (c.company_code || "").toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const selectedCompanyObj = companies.find(c => c.company_code === companycode);
+  const dropdownLabel = selectedCompanyObj
+    ? `${selectedCompanyObj.company} (${selectedCompanyObj.company_code})`
+    : "Pilih Perusahaan...";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,14 +147,109 @@ export default function SignInForm() {
             />
           </div>
 
-          <div className="space-y-1.5">
+          <div className="space-y-1.5" ref={dropdownRef}>
             <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">Company Code <span className="font-normal text-gray-400 dark:text-gray-500">(opsional)</span></label>
-            <input
-              type="text"
-              value={companycode}
-              onChange={(e) => setCompanycode(e.target.value.toUpperCase())}
-              className="w-full px-4 py-2.5 bg-white dark:bg-[#1e2a44] border border-gray-300 dark:border-transparent rounded-md text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm"
-            />
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsDropdownOpen(!isDropdownOpen);
+                  setSearchTerm("");
+                }}
+                className="w-full flex items-center justify-between px-4 py-2.5 bg-white dark:bg-[#1e2a44] border border-gray-300 dark:border-transparent rounded-md text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm text-left"
+              >
+                <span className="truncate">{dropdownLabel}</span>
+                <div className="flex items-center gap-1.5">
+                  {companycode && (
+                    <span
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCompanycode("");
+                      }}
+                      className="p-0.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors cursor-pointer"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </span>
+                  )}
+                  <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${isDropdownOpen ? "transform rotate-180" : ""}`} />
+                </div>
+              </button>
+
+              {isDropdownOpen && (
+                <div className="absolute z-50 w-full mt-1 bg-white dark:bg-[#1e2a44] border border-gray-300 dark:border-gray-700 rounded-md shadow-lg overflow-hidden">
+                  <div className="p-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-[#152033]/50">
+                    <div className="relative">
+                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+                      <input
+                        type="text"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        placeholder="Cari perusahaan..."
+                        className="w-full pl-8 pr-7 py-1.5 text-xs bg-white dark:bg-[#152033] border border-gray-300 dark:border-gray-700 rounded outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white placeholder-gray-400"
+                        autoFocus
+                      />
+                      {searchTerm && (
+                        <button
+                          type="button"
+                          onClick={() => setSearchTerm("")}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="max-h-60 overflow-y-auto divide-y divide-gray-150 dark:divide-gray-800/20">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCompanycode("");
+                        setIsDropdownOpen(false);
+                      }}
+                      className={`w-full text-left px-4 py-2 text-xs font-semibold transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/30 flex items-center justify-between ${
+                        companycode === "" 
+                          ? "text-blue-600 dark:text-blue-400 bg-blue-50/20 dark:bg-blue-900/10 font-bold" 
+                          : "text-gray-700 dark:text-gray-300"
+                      }`}
+                    >
+                      <span>-- Tanpa Perusahaan --</span>
+                    </button>
+
+                    {isLoadingCompanies ? (
+                      <div className="px-4 py-3 text-xs text-gray-400 text-center">
+                        Memuat data...
+                      </div>
+                    ) : filteredCompanies.length === 0 ? (
+                      <div className="px-4 py-3 text-xs text-gray-400 italic text-center">
+                        Tidak ada hasil ditemukan
+                      </div>
+                    ) : (
+                      filteredCompanies.map((c) => (
+                        <button
+                          key={c.company_code}
+                          type="button"
+                          onClick={() => {
+                            setCompanycode(c.company_code);
+                            setIsDropdownOpen(false);
+                          }}
+                          className={`w-full text-left px-4 py-2 text-xs transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/30 flex items-center justify-between ${
+                            companycode === c.company_code 
+                              ? "text-blue-600 dark:text-blue-400 font-bold bg-blue-50/20 dark:bg-blue-900/10" 
+                              : "text-gray-700 dark:text-gray-300 font-medium"
+                          }`}
+                        >
+                          <span className="truncate">{c.company}</span>
+                          <span className="text-[10px] font-mono bg-gray-100 dark:bg-gray-800 text-gray-500 px-1.5 py-0.5 rounded ml-2">
+                            {c.company_code}
+                          </span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="space-y-1.5">
