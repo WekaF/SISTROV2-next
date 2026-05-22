@@ -346,7 +346,7 @@ const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> = {
       { icon: <ClipboardList className="h-5 w-5" />, name: "Tiket", path: "/tiket" },
       {
         icon: <BarChart3 className="h-5 w-5" />,
-        name: "Gudang & Antrian",
+        name: "Gudang",
         subItems: [
           { name: "Antrian", path: "/antrian" },
           { name: "Bypass Antrian", path: "/antrian/bypass" },
@@ -734,7 +734,7 @@ const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> = {
       },
       {
         icon: <BarChart3 className="h-5 w-5" />,
-        name: "Gudang & Antrian",
+        name: "Gudang",
         subItems: [
           { name: "Antrian", path: "/antrian" },
           { name: "Bypass Antrian", path: "/antrian/bypass" },

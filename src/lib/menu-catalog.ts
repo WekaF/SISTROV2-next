@@ -36,7 +36,7 @@ export const MENU_CATALOG: CatalogGroup[] = [
     ],
   },
   {
-    category: "Gudang & Antrian",
+    category: "Gudang",
     items: [
       { path: "/antrian", label: "Antrian" },
       { path: "/antrian/bypass", label: "Bypass Antrian" },
