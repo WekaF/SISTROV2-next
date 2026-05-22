@@ -166,7 +166,47 @@ export default function ManagerAntrianPage() {
             </div>
           )}
 
-          {/* Gudang Breakdown + Shift + Tonase */}
+          {/* Horizontal gudang lanes */}
+          {stats.gudangBreakdown.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                Antrian per Gudang — Live
+              </p>
+              <div className="flex gap-3 overflow-x-auto pb-1">
+                {stats.gudangBreakdown
+                  .slice()
+                  .sort((a, b) => b.count - a.count)
+                  .map((g) => {
+                    const max = Math.max(...stats.gudangBreakdown.map((x) => x.count), 1);
+                    const pct = Math.round((g.count / max) * 100);
+                    const intensity =
+                      g.count === 0 ? "border-border bg-muted/40 text-muted-foreground"
+                      : pct >= 75 ? "border-red-300 bg-red-50 text-red-700"
+                      : pct >= 40 ? "border-yellow-300 bg-yellow-50 text-yellow-700"
+                      : "border-indigo-300 bg-indigo-50 text-indigo-700";
+                    return (
+                      <div
+                        key={g.gudang}
+                        className={`shrink-0 flex flex-col items-center rounded-xl border-2 px-5 py-4 min-w-[110px] ${intensity}`}
+                      >
+                        <span className="text-3xl font-bold">{g.count}</span>
+                        <span className="text-xs font-medium mt-1 text-center leading-tight">{g.gudang}</span>
+                        <span className="text-[10px] mt-1.5 opacity-60">truk</span>
+                      </div>
+                    );
+                  })}
+
+                {/* Total tile */}
+                <div className="shrink-0 flex flex-col items-center rounded-xl border-2 border-dashed border-border bg-background px-5 py-4 min-w-[110px]">
+                  <span className="text-3xl font-bold text-foreground">{totalAntri}</span>
+                  <span className="text-xs font-medium mt-1 text-muted-foreground">Total Aktif</span>
+                  <span className="text-[10px] mt-1.5 opacity-60">truk</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Gudang Breakdown chart + Shift + Tonase */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Gudang chart — takes 2 cols */}
             <Card className="lg:col-span-2">
