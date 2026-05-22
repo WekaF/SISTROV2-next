@@ -42,6 +42,13 @@ const AppSidebar: React.FC = () => {
     adminItems = mergeNavItems(activeGroups.map((g) => MENU_CONFIGS[g]?.admin ?? []));
   }
 
+  const userRole = ((session?.user as any)?.role || "").toLowerCase();
+  const isSuperAdmin = activeGroups.includes("superadmin") || userRole === "superadmin" || userRole === "ti";
+
+  if (!isSuperAdmin) {
+    adminItems = [];
+  }
+
   const isActive = useCallback((path: string) => path === pathname, [pathname]);
 
   const handleSubmenuToggle = (index: number, type: string) => {

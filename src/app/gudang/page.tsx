@@ -379,7 +379,13 @@ export default function GudangListPage() {
             columns={columns}
             queryKey={["gudang-list", activeCompanyCode]}
             fetcher={fetchGudang}
-            rowKey={(r) => r.id}
+            rowKey={(r) => {
+              const realId = getRealId(r);
+              if (realId && realId !== 0 && realId !== "0") return realId;
+              const idGudang = (r as any).idgudang || r.namagudang || "";
+              const idProduk = (r as any).idproduk || r.namaproduk || "";
+              return `${idGudang}-${idProduk}`;
+            }}
             striped
             compact
           />
