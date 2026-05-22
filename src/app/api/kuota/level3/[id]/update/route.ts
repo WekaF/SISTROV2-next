@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
+import { withAudit } from "@/lib/with-audit"
 
 const ASPNET = process.env.ASPNET_API_URL || "http://192.168.188.170:8090"
 
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const PATCH = withAudit(async function(req: NextRequest, context: any) {
+  const { params } = context as { params: Promise<{ id: string }> }
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -38,4 +40,4 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 })
   }
-}
+})

@@ -4,11 +4,12 @@ import { authOptions } from "@/lib/auth";
 import { cookies } from "next/headers";
 import { getToken } from "next-auth/jwt";
 import type { NextRequest } from "next/server";
+import { withAudit } from "@/lib/with-audit";
 
 const ASPNET_API_URL = process.env.ASPNET_API_URL || "http://192.168.188.170:8090";
 const NEXTAUTH_SECRET = process.env.NEXTAUTH_SECRET || "sistro-dev-secret-change-in-production";
 
-export async function POST(request: NextRequest) {
+export const POST = withAudit(async function(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -87,4 +88,4 @@ export async function POST(request: NextRequest) {
     console.error("[switch-company POST]", error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
-}
+})

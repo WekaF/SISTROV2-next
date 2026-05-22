@@ -1,7 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { aspnetFetchServer } from "@/lib/api-client";
+import { withAudit } from "@/lib/with-audit";
 
 const ALLOWED_ROLES = ["superadmin", "ti", "adminsumbu", "adminarmada", "pod", "admin"];
 
@@ -51,7 +52,7 @@ export async function GET() {
   }
 }
 
-export async function POST(req: Request) {
+export const POST = withAudit(async function(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!isAuthorized(session)) {
@@ -83,4 +84,4 @@ export async function POST(req: Request) {
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
-}
+})
