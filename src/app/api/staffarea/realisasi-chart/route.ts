@@ -18,8 +18,8 @@ export async function GET(request: NextRequest) {
   try {
     const token = (session.user as any)?.aspnetToken as string;
     const { searchParams } = new URL(request.url);
+    const idproduk = searchParams.get("idproduk") || "all";
     let companyCode = searchParams.get("companyCode");
-    const idproduk = searchParams.get("idproduk") ?? "all";
 
     if (!companyCode) {
       const cookieStore = await cookies();
@@ -27,7 +27,9 @@ export async function GET(request: NextRequest) {
     }
 
     let url = `/api/CompanyDashboard/GetRealisasiChart?idproduk=${encodeURIComponent(idproduk)}`;
-    if (companyCode) url += `&companyCode=${encodeURIComponent(companyCode)}`;
+    if (companyCode) {
+      url += `&companyCode=${encodeURIComponent(companyCode)}`;
+    }
 
     const res = await aspnetFetchServer(url, token);
     if (!res.ok) {

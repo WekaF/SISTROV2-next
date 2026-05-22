@@ -1,4 +1,0 @@
-Successfully connected to the database.
-Tables found:
- - Produk
-Database error: Invalid column name 'statusPlant'.

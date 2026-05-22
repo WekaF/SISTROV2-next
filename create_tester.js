@@ -1,1 +1,0 @@
-Tester user created successfully
