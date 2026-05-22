@@ -538,7 +538,7 @@ const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> = {
       },
       {
         icon: <Scan className="h-5 w-5" />,
-        name: "Scan",
+        name: "Scan & Track",
         subItems: [
           { name: "Scan Tiket", path: "/scan/tiket" },
           { name: "Track Tiket", path: "/track/tiket" },
@@ -571,7 +571,7 @@ const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> = {
       { icon: <ClipboardList className="h-5 w-5" />, name: "Tiket", path: "/tiket" },
       {
         icon: <Scan className="h-5 w-5" />,
-        name: "Scan",
+        name: "Scan & Track",
         subItems: [
           { name: "Scan Tiket", path: "/scan/tiket" },
           { name: "Integrasi Tiket", path: "/scan/integrasi" },
