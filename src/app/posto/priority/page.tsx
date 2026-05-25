@@ -52,7 +52,7 @@ export default function PostoPriorityPage() {
     async function fetchGudang() {
       setLoadingGudang(true);
       try {
-        const data = await apiJson<Gudang[]>("/api/Gudang/Data");
+        const data = await apiJson<Gudang[]>("/api/Gudang/ByCompany");
         setGudangList(Array.isArray(data) ? data : []);
       } catch {
         addToast({ title: "Error", description: "Gagal memuat daftar gudang", variant: "destructive" });
