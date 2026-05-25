@@ -35,7 +35,8 @@ export const POST = withAudit(async function(request: NextRequest) {
     const rawUsername = rawToken?.username as string | undefined;
     const encodedPw = rawToken?._pw as string | undefined;
 
-    // rawToken.username = full DB username e.g. "wahyu_pkg"
+    // rawToken.username = full DB username as stored by ASP.NET e.g. "wahyu_pkg"
+    // (ASP.NET /Token always stores <bare_login>_<COMPANYCODE> as the DB UserName)
     // Strip last _COMPANY suffix so re-auth sends bare username to /Token
     const lastUnderscore = rawUsername ? rawUsername.lastIndexOf("_") : -1;
     const username = (rawUsername && lastUnderscore > 0 && lastUnderscore < rawUsername.length - 1)
