@@ -48,6 +48,14 @@ const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
 const PLANT_CHART_LIMIT = 8; // max visible plant series in trendPerPlant line chart
 
+const cleanSeriesName = (name: string): string => {
+  if (!name) return "";
+  return name
+    .replace(/[\r\n]+/g, " ")
+    .replace(/['"\\()\[\]{}&/|:;=<>+*?^$!~`]/g, "")
+    .trim();
+};
+
 export default function ViewerDashboard() {
   const { data: streamData, status: streamStatus, lastUpdated: streamLastUpdated } = useDashboardStream();
   const [isSimulated, setIsSimulated] = useState(false);
@@ -306,7 +314,7 @@ export default function ViewerDashboard() {
       );
       const plants = Array.from(new Set<string>(raw.map((item: any) => item.CompanyName || item.CompanyCode)));
       const allSeries = plants.map((plant: string) => ({
-        name: plant,
+        name: cleanSeriesName(plant),
         data: uniqueDates.map((dateStr: string) => {
           const entry = raw.find((item: any) => (item.CompanyName || item.CompanyCode) === plant && item.Tanggal === dateStr);
           return entry ? (entry.TotalTiket || 0) : 0;
@@ -555,7 +563,7 @@ export default function ViewerDashboard() {
       type: "doughnut",
       fontFamily: "Outfit, sans-serif",
     },
-    labels: topProduk?.map((p: any) => p.NamaProduk || p.name) || [],
+    labels: topProduk?.map((p: any) => cleanSeriesName(p.NamaProduk || p.name)) || [],
     colors: COLORS.slice(0, topProduk?.length || 5),
     legend: { show: false },
     stroke: { width: 2 },
@@ -1429,7 +1437,7 @@ export default function ViewerDashboard() {
                     {/* Right Column: Custom Progress Breakdown */}
                     <div className="w-full xl:w-[55%] flex flex-col justify-center space-y-3.5">
                       {topProduk.map((p: any, idx: number) => {
-                        const name = p.NamaProduk || p.name || "Produk Lainnya";
+                        const name = cleanSeriesName(p.NamaProduk || p.name || "Produk Lainnya");
                         const vol = p.TotalTonase || p.value || 0;
                         const pct = Math.min(100, Math.round((vol / totalVolume) * 100));
                         const color = COLORS[idx % COLORS.length];

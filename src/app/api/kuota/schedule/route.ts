@@ -15,9 +15,10 @@ export async function GET(req: NextRequest) {
     const start  = searchParams.get("start")  || "0"
     const length = searchParams.get("length") || "25"
     const search = searchParams.get("search") || ""
-    const tanggalFilter = searchParams.get("tanggal") || ""
-    const produkFilter  = searchParams.get("produk")  || ""
-    const statusFilter  = searchParams.get("status")  || ""
+    const tanggalFilter  = searchParams.get("tanggal")     || ""
+    const produkFilter   = searchParams.get("produk")      || ""
+    const statusFilter   = searchParams.get("status")      || ""
+    const companyCode    = searchParams.get("companyCode") || ""
 
     const body = new URLSearchParams({
       draw, start, length,
@@ -40,6 +41,7 @@ export async function GET(req: NextRequest) {
     if (tanggalFilter) body.append("columns[2][search][value]", tanggalFilter)
     if (produkFilter)  body.append("columns[3][search][value]", produkFilter)
     if (statusFilter)  body.append("columns[8][search][value]", statusFilter)
+    if (companyCode)   body.append("companyCode", companyCode)
 
     const [dataRes, metricsRes] = await Promise.all([
       fetch(`${ASPNET}/api/KuotaLevel1/DataTableFilter`, {
@@ -56,6 +58,7 @@ export async function GET(req: NextRequest) {
               draw: "1", start: "0", length: "10000",
               "columns[2][name]": "tanggal",
               "order[0][column]": "2", "order[0][dir]": "desc",
+              ...(companyCode ? { companyCode } : {}),
             }).toString(),
           })
         : Promise.resolve(null),

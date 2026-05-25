@@ -1,14 +1,14 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { 
-  Upload, 
-  FileText, 
-  CheckCircle2, 
-  AlertCircle, 
-  Loader2, 
-  Download, 
-  Table as TableIcon, 
+import {
+  Upload,
+  FileText,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  Download,
+  Table as TableIcon,
   Save,
   Info,
   XCircle,
@@ -18,13 +18,13 @@ import {
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Breadcrumb, 
-  BreadcrumbItem, 
-  BreadcrumbLink, 
-  BreadcrumbList, 
-  BreadcrumbPage, 
-  BreadcrumbSeparator 
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator
 } from "@/components/ui/breadcrumb";
 import * as XLSX from 'xlsx';
 import { useApi } from "@/hooks/use-api";
@@ -93,12 +93,12 @@ interface PostoImportCheckView {
 function formatTanggal(str: any): string {
   if (!str) return "";
   const s = String(str).trim();
-  
+
   // Pattern 1: dd/MM/yyyy atau dd-MM-yyyy
   const p1 = /^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/;
   // Pattern 2: yyyy/MM/dd atau yyyy-MM-dd
   const p2 = /^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/;
-  
+
   let formatted = s;
   if (p1.test(s)) {
     const match = s.match(p1);
@@ -138,8 +138,8 @@ function parseQty(val: any): string {
 
 export default function PostoUploadPage() {
   const { data: session } = useSession();
-  const { apiJson, apiFetch } = useApi();
-  
+  const { apiJson, apiFetch, token } = useApi();
+
   const [file, setFile] = useState<File | null>(null);
   const [selectedWilayah, setSelectedWilayah] = useState("");
   const [wilayahOptions, setWilayahOptions] = useState<{ abbrev: string; keterangan: string }[]>([]);
@@ -155,16 +155,21 @@ export default function PostoUploadPage() {
 
   // Load Wilayah Options
   useEffect(() => {
+    if (!token) return;
     const fetchWilayah = async () => {
       try {
-        const data = await apiJson('/api/Wilayah/DataMappingPOSTO');
+        let data = await apiJson('/api/Wilayah/DataMappingPOSTO');
+        // Fallback to all regions if DataMappingPOSTO returns empty list (e.g. for SuperAdmin/TI or unmapped scopes)
+        if (Array.isArray(data) && data.length === 0) {
+          data = await apiJson('/api/Wilayah/DataForMapping');
+        }
         if (Array.isArray(data)) setWilayahOptions(data);
       } catch (err) {
         console.error("Failed to load wilayah options", err);
       }
     };
     fetchWilayah();
-  }, [apiJson]);
+  }, [apiJson, token]);
 
   // Step 1: Parse Excel
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -185,7 +190,7 @@ export default function PostoUploadPage() {
       const rows = data.map((row: any) => {
         const isSO = !!(row.NoSO || row.TglSO);
         const mapped: any = { ...row };
-        
+
         if (isSO) {
           if (!mapped.NoPOSTO) mapped.NoPOSTO = row.NoSO;
           if (!mapped.TglPOSTO) mapped.TglPOSTO = row.TglSO;
@@ -215,7 +220,7 @@ export default function PostoUploadPage() {
       // Simple client-side check
       const validInitialRows = rows.filter(r => r.noPOSTO && r.tglPOSTO && r.Trans && r.Produk);
       setParsedRows(validInitialRows);
-      
+
       if (validInitialRows.length > 0 && selectedWilayah) {
         triggerValidation(validInitialRows, selectedWilayah);
       } else if (!selectedWilayah) {
@@ -246,7 +251,7 @@ export default function PostoUploadPage() {
       });
 
       if (!res.ok) throw new Error("Gagal validasi server");
-      
+
       const result = await res.json();
       setValidationResult(result);
       setUploadcode(result.uploadcode);
@@ -272,20 +277,20 @@ export default function PostoUploadPage() {
     const isSO = item.tipe === "SOALL" || item.tipe === "SOCLUSTER";
     const now = new Date();
     const jatuhTempo = new Date(item.tgljatuhtempo);
-    
-    const hasFatalError = 
-      item.cekTransportir <= 0 || 
-      item.cekAsal <= 0 || 
-      item.cekTujuan <= 0 || 
-      item.qty <= 0 || 
-      item.produkString === "" || 
-      item.duplicate > 0 || 
+
+    const hasFatalError =
+      item.cekTransportir <= 0 ||
+      item.cekAsal <= 0 ||
+      item.cekTujuan <= 0 ||
+      item.qty <= 0 ||
+      item.produkString === "" ||
+      item.duplicate > 0 ||
       jatuhTempo < now;
 
     if (isSO) {
       return hasFatalError || item.cekDistributor <= 0 || item.cekSO <= 0;
     }
-    
+
     // Percepatan check
     if (item.percepatan === 1 && item.validfrom && item.validto) {
       const tgl = new Date(item.tglposto);
@@ -300,7 +305,7 @@ export default function PostoUploadPage() {
   // Step 4: Submit
   const handleSubmit = async () => {
     if (!validationResult) return;
-    
+
     const validRows = validationResult.listposto.filter(item => !isRowError(item));
     if (validRows.length === 0) {
       alert("Tidak ada data valid untuk disimpan");
@@ -430,12 +435,22 @@ export default function PostoUploadPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => handleDownloadTemplate('POSTO')} className="h-10 bg-white dark:bg-gray-950 border-gray-200 dark:border-gray-800 hover:bg-gray-50 shadow-sm font-bold uppercase tracking-wider text-[10px]">
-            <Download className="h-4 w-4 mr-2 text-brand-500" />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleDownloadTemplate('POSTO')}
+            className="h-10 bg-white dark:bg-gray-950 border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900/50 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white shadow-sm font-bold uppercase tracking-wider text-[10px] transition-all"
+          >
+            <Download className="h-4 w-4 mr-2 text-brand-500 shrink-0" />
             Template POSTO
           </Button>
-          <Button variant="outline" size="sm" onClick={() => handleDownloadTemplate('SO')} className="h-10 bg-white dark:bg-gray-950 border-gray-200 dark:border-gray-800 hover:bg-gray-50 shadow-sm font-bold uppercase tracking-wider text-[10px]">
-            <Download className="h-4 w-4 mr-2 text-blue-500" />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleDownloadTemplate('SO')}
+            className="h-10 bg-white dark:bg-gray-950 border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900/50 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white shadow-sm font-bold uppercase tracking-wider text-[10px] transition-all"
+          >
+            <Download className="h-4 w-4 mr-2 text-blue-500 shrink-0" />
             Template SO
           </Button>
         </div>
@@ -453,47 +468,49 @@ export default function PostoUploadPage() {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Wilayah / Pabrik</label>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Wilayah</label>
               <select
-                className="w-full h-11 px-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all outline-none"
+                className="w-full h-11 px-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all outline-none"
                 value={selectedWilayah}
                 onChange={(e) => {
                   setSelectedWilayah(e.target.value);
                   if (parsedRows.length > 0) triggerValidation(parsedRows, e.target.value);
                 }}
               >
-                <option value="">-- Pilih Wilayah --</option>
+                <option value="" className="bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100">-- Pilih Wilayah --</option>
                 {wilayahOptions.map(opt => (
-                  <option key={opt.abbrev} value={opt.abbrev}>{opt.keterangan}</option>
+                  <option key={opt.abbrev} value={opt.abbrev} className="bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100">{opt.keterangan}</option>
                 ))}
               </select>
             </div>
 
-            <div 
+            <div
               className={cn(
                 "relative group flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-2xl transition-all duration-300",
-                !selectedWilayah ? "opacity-40 cursor-not-allowed bg-gray-50 border-gray-200" : "cursor-pointer hover:border-brand-500 hover:bg-brand-50/30 border-gray-300 dark:border-gray-800",
-                file ? "border-brand-500 bg-brand-50/10" : ""
+                !selectedWilayah
+                  ? "opacity-40 cursor-not-allowed bg-gray-50 dark:bg-gray-900/30 border-gray-200 dark:border-gray-800"
+                  : "cursor-pointer hover:border-brand-500 hover:bg-brand-50/30 dark:hover:bg-brand-950/20 border-gray-300 dark:border-gray-800 text-gray-900 dark:text-gray-100",
+                file ? "border-brand-500 bg-brand-50/10 dark:bg-brand-950/10" : ""
               )}
               onClick={() => selectedWilayah && fileInputRef.current?.click()}
             >
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                onChange={handleFileChange} 
-                className="hidden" 
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                className="hidden"
                 accept=".xlsx,.xls"
                 disabled={!selectedWilayah}
               />
-              
+
               <div className="p-4 bg-brand-50 dark:bg-brand-500/10 rounded-full mb-4 group-hover:scale-110 transition-transform">
                 {isValidating ? (
                   <Loader2 className="h-8 w-8 text-brand-500 animate-spin" />
                 ) : (
-                  <FileText className={cn("h-8 w-8", file ? "text-brand-500" : "text-gray-400")} />
+                  <FileText className={cn("h-8 w-8", file ? "text-brand-500" : "text-gray-400 dark:text-gray-500")} />
                 )}
               </div>
-              
+
               <div className="text-center">
                 <p className="text-sm font-bold text-gray-900 dark:text-white">
                   {file ? file.name : "Klik untuk pilih file Excel"}
@@ -502,8 +519,8 @@ export default function PostoUploadPage() {
               </div>
 
               {!selectedWilayah && (
-                <div className="absolute inset-0 flex items-center justify-center bg-gray-50/50 backdrop-blur-[1px] rounded-2xl">
-                  <Badge variant="outline" className="bg-white border-amber-200 text-amber-700 animate-pulse">
+                <div className="absolute inset-0 flex items-center justify-center bg-gray-50/50 dark:bg-gray-900/50 backdrop-blur-[1px] rounded-2xl">
+                  <Badge variant="outline" className="bg-white dark:bg-gray-900 border-amber-200 dark:border-amber-900/30 text-amber-700 dark:text-amber-400 animate-pulse">
                     Pilih Wilayah Dulu
                   </Badge>
                 </div>
@@ -523,9 +540,9 @@ export default function PostoUploadPage() {
                     <p className="text-[10px] font-bold text-muted-foreground uppercase">Gagal</p>
                   </div>
                 </div>
-                
+
                 {summary.sukses > 0 && (
-                  <Button 
+                  <Button
                     className="w-full h-12 bg-brand-500 hover:bg-brand-600 text-white font-bold rounded-xl shadow-lg shadow-brand-500/20"
                     onClick={handleSubmit}
                     disabled={isSubmitting}
@@ -542,9 +559,9 @@ export default function PostoUploadPage() {
         {/* Guidelines Section */}
         <div className="lg:col-span-8 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="border-none shadow-xl shadow-gray-900/5 bg-white/80 dark:bg-gray-950/50 backdrop-blur-md">
+            <Card className="border border-gray-150 dark:border-gray-800/80 shadow-xl shadow-gray-900/5 bg-white/80 dark:bg-gray-950/50 backdrop-blur-md">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-bold flex items-center gap-2">
+                <CardTitle className="text-sm font-bold flex items-center gap-2 text-gray-900 dark:text-white">
                   <Info className="h-4 w-4 text-brand-500" /> Ketentuan Upload
                 </CardTitle>
               </CardHeader>
@@ -560,7 +577,7 @@ export default function PostoUploadPage() {
               </CardContent>
             </Card>
 
-            <Card className="border-none shadow-xl shadow-gray-900/5 bg-white/80 dark:bg-gray-950/50 backdrop-blur-md">
+            <Card className="border border-gray-150 dark:border-gray-800/80 shadow-xl shadow-gray-900/5 bg-white/80 dark:bg-gray-950/50 backdrop-blur-md">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-bold flex items-center gap-2 text-blue-500">
                   <Truck className="h-4 w-4" /> Daftar Jenis Truk & Sumbu
@@ -582,8 +599,8 @@ export default function PostoUploadPage() {
                     { n: "Trailler 40 Ft", s: "1.2-2.2.2" },
                   ].map((t, i) => (
                     <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 text-[10px]">
-                      <span className="font-medium truncate pr-1" title={t.n}>{i+1}. {t.n}</span>
-                      <Badge variant="outline" className="h-4 px-1 text-[8px] bg-white dark:bg-black font-mono shrink-0">{t.s}</Badge>
+                      <span className="font-medium truncate pr-1 text-gray-700 dark:text-gray-300" title={t.n}>{i + 1}. {t.n}</span>
+                      <Badge variant="outline" className="h-4 px-1 text-[8px] bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 font-mono shrink-0">{t.s}</Badge>
                     </div>
                   ))}
                 </div>
@@ -619,16 +636,16 @@ export default function PostoUploadPage() {
           )}
 
           {validationResult && (
-            <Card className="border-none shadow-2xl shadow-gray-900/5 overflow-hidden">
+            <Card className="border border-gray-150 dark:border-gray-800 shadow-2xl bg-white dark:bg-gray-950/50 backdrop-blur-md overflow-hidden">
               <CardHeader className="bg-white dark:bg-gray-950 border-b border-gray-100 dark:border-gray-800 flex flex-row items-center justify-between py-4">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
                     <TableIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                   </div>
-                  <CardTitle className="text-base font-bold">Preview Validasi</CardTitle>
+                  <CardTitle className="text-base font-bold text-gray-900 dark:text-white">Preview Validasi</CardTitle>
                 </div>
-                <Badge variant="outline" className="bg-gray-50 text-gray-600 border-gray-200 font-mono">
-                  CODE: {uploadcode.substring(0,8)}...
+                <Badge variant="outline" className="bg-gray-50 dark:bg-gray-900 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-800 font-mono">
+                  CODE: {uploadcode.substring(0, 8)}...
                 </Badge>
               </CardHeader>
               <CardContent className="p-0">
@@ -659,11 +676,11 @@ export default function PostoUploadPage() {
                         const isSO = item.tipe === "SOALL" || item.tipe === "SOCLUSTER";
                         const now = new Date();
                         const jatuhTempo = new Date(item.tgljatuhtempo);
-                        
+
                         return (
                           <tr key={idx} className={cn(
-                            "group hover:bg-gray-50/80 dark:hover:bg-gray-800/50 transition-colors",
-                            error ? "bg-red-50/50 dark:bg-red-900/10" : ""
+                            "group hover:bg-gray-50/80 dark:hover:bg-gray-800/50 transition-colors text-gray-700 dark:text-gray-300",
+                            error ? "bg-red-50/50 dark:bg-red-950/20 text-red-900 dark:text-red-200" : ""
                           )}>
                             <td className="px-3 py-3 font-medium whitespace-nowrap">
                               <div className="flex items-center gap-2">
@@ -676,52 +693,52 @@ export default function PostoUploadPage() {
                                 <span>{item.tglpostoString}</span>
                                 <div className="flex gap-1">
                                   {item.charter === "1" && (
-                                    <Badge variant="outline" className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-none text-[9px] px-1.5 py-0">CHARTER</Badge>
+                                    <Badge variant="outline" className="bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 hover:bg-amber-100 border-none text-[9px] px-1.5 py-0">CHARTER</Badge>
                                   )}
                                   {item.percepatan === 1 && (
-                                    <Badge variant="outline" className="bg-blue-100 text-blue-700 hover:bg-blue-100 border-none text-[9px] px-1.5 py-0">PERCEPATAN</Badge>
+                                    <Badge variant="outline" className="bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400 hover:bg-blue-100 border-none text-[9px] px-1.5 py-0">PERCEPATAN</Badge>
                                   )}
                                 </div>
                               </div>
                             </td>
                             <td className={cn(
                               "px-3 py-3 whitespace-nowrap font-medium",
-                              jatuhTempo < now ? "text-red-600 bg-red-100/30" : ""
+                              jatuhTempo < now ? "text-red-600 dark:text-red-400 bg-red-100/10 dark:bg-red-950/40" : ""
                             )}>
                               {item.tanggaljatuhtempoString}
                             </td>
                             <td className={cn(
                               "px-3 py-3 whitespace-nowrap font-bold font-mono",
-                              item.duplicate > 0 ? "text-red-600 bg-red-100/30" : ""
+                              item.duplicate > 0 ? "text-red-600 dark:text-red-400 bg-red-100/10 dark:bg-red-950/40" : ""
                             )}>
                               {item.noposto}
                               {item.duplicate > 0 && <span className="block text-[8px] uppercase font-black text-red-500">Duplikat</span>}
                             </td>
                             <td className="px-3 py-3 whitespace-nowrap">{item.tglakhirString}</td>
-                            <td className={cn("px-3 py-3 min-w-[120px]", item.cekAsal <= 0 ? "bg-red-100/30 text-red-600" : "")}>
+                            <td className={cn("px-3 py-3 min-w-[120px]", item.cekAsal <= 0 ? "bg-red-100/10 dark:bg-red-950/40 text-red-600 dark:text-red-400" : "")}>
                               <span className="font-bold">{item.asal}</span>
                               <span className="block text-[10px] text-muted-foreground truncate">{item.asal_des}</span>
                             </td>
-                            <td className={cn("px-3 py-3 min-w-[120px]", item.cekTujuan <= 0 ? "bg-red-100/30 text-red-600" : "")}>
+                            <td className={cn("px-3 py-3 min-w-[120px]", item.cekTujuan <= 0 ? "bg-red-100/10 dark:bg-red-950/40 text-red-600 dark:text-red-400" : "")}>
                               <span className="font-bold">{item.tujuan}</span>
                               <span className="block text-[10px] text-muted-foreground truncate">{item.tujuan_des}</span>
                             </td>
-                            <td className={cn("px-3 py-3 min-w-[120px]", item.cekTransportir <= 0 ? "bg-red-100/30 text-red-600" : "")}>
+                            <td className={cn("px-3 py-3 min-w-[120px]", item.cekTransportir <= 0 ? "bg-red-100/10 dark:bg-red-950/40 text-red-600 dark:text-red-400" : "")}>
                               <span className="font-bold">{item.transport}</span>
                               <span className="block text-[10px] text-muted-foreground truncate">{item.transport_des}</span>
                             </td>
                             <td className={cn(
-                              "px-3 py-3 min-w-[120px]", 
-                              isSO && item.cekDistributor <= 0 ? "bg-red-100/30 text-red-600" : ""
+                              "px-3 py-3 min-w-[120px]",
+                              isSO && item.cekDistributor <= 0 ? "bg-red-100/10 dark:bg-red-950/40 text-red-600 dark:text-red-400" : ""
                             )}>
                               <span className="font-bold">{item.distributor || "-"}</span>
                               <span className="block text-[10px] text-muted-foreground truncate">{item.distributor_des}</span>
                             </td>
-                            <td className={cn("px-3 py-3 min-w-[120px]", item.produkString === "" ? "bg-red-100/30 text-red-600" : "")}>
+                            <td className={cn("px-3 py-3 min-w-[120px]", item.produkString === "" ? "bg-red-100/10 dark:bg-red-950/40 text-red-600 dark:text-red-400" : "")}>
                               <span className="font-bold">{item.produk}</span>
                               <span className="block text-[10px] text-muted-foreground truncate">{item.produkString}</span>
                             </td>
-                            <td className={cn("px-3 py-3 text-right font-black text-sm", item.qty <= 0 ? "text-red-600" : "")}>
+                            <td className={cn("px-3 py-3 text-right font-black text-sm", item.qty <= 0 ? "text-red-600 dark:text-red-400" : "")}>
                               {item.qtyString}
                             </td>
                             <td className="px-3 py-3">{item.kapal || "-"}</td>

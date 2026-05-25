@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import {
   CalendarCheck,
   Plus,
@@ -20,6 +20,7 @@ import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { DataTable, type DataTableColumn, type DataTableParams } from "@/components/ui/DataTable"
 import { normalizeRole } from "@/lib/role-utils"
+import { useCompany } from "@/context/CompanyContext"
 
 interface QuotaRow {
   id: number
@@ -40,21 +41,23 @@ interface QuotaRow {
 export default function QuotaSchedulePage() {
   const { data: session } = useSession()
   const router = useRouter()
+  const { activeCompanyCode } = useCompany()
 
   const activeRole = normalizeRole((session?.user as any)?.role)
   const canEdit = ["candal", "superadmin", "admin", "pod"].includes(activeRole)
 
   const [metrics, setMetrics] = useState({ totalDailyQuota: 0, totalBooked: 0, totalIn: 0, totalOut: 0 })
 
-  // Fetch metrics once on load
+  // Re-fetch metrics setiap kali company berubah
   useEffect(() => {
-    fetch("/api/kuota/schedule")
+    const qs = activeCompanyCode ? `?companyCode=${encodeURIComponent(activeCompanyCode)}` : ""
+    fetch(`/api/kuota/schedule${qs}`)
       .then(r => r.json())
       .then(d => { if (d.metrics) setMetrics(d.metrics) })
       .catch(() => {})
-  }, [])
+  }, [activeCompanyCode])
 
-  const fetcher = async (params: DataTableParams) => {
+  const fetcher = useCallback(async (params: DataTableParams) => {
     const qs = new URLSearchParams({
       draw:   String(params.draw),
       start:  String(params.start),
@@ -64,6 +67,7 @@ export default function QuotaSchedulePage() {
       produk:  params.columnFilters?.produk  || "",
       status:  params.columnFilters?.status  || "",
     })
+    if (activeCompanyCode) qs.set("companyCode", activeCompanyCode)
     const res = await fetch(`/api/kuota/schedule?${qs}`)
     const data = await res.json()
     if (!data.success) throw new Error(data.error || "Gagal memuat data")
@@ -72,7 +76,7 @@ export default function QuotaSchedulePage() {
       recordsTotal:    data.recordsTotal    ?? 0,
       recordsFiltered: data.recordsFiltered ?? 0,
     }
-  }
+  }, [activeCompanyCode])
 
   const columns: DataTableColumn<QuotaRow>[] = [
     {
@@ -217,12 +221,12 @@ export default function QuotaSchedulePage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" className="dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-700">
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>
           {canEdit && (
-            <Button size="sm" onClick={() => router.push("/kuota/schedule/new")}>
+            <Button size="sm" onClick={() => router.push("/kuota/schedule/new")} className="dark:bg-brand-600 dark:text-white dark:hover:bg-brand-500">
               <Plus className="h-4 w-4 mr-2" />
               Tambah Kuota
             </Button>
@@ -286,7 +290,7 @@ export default function QuotaSchedulePage() {
             <span className="font-bold text-gray-900 dark:text-white">Daftar Kuota</span>
           </div>
           <DataTable<QuotaRow>
-            queryKey={["kuota-schedule"]}
+            queryKey={["kuota-schedule", activeCompanyCode ?? "all"]}
             fetcher={fetcher}
             columns={columns}
             rowKey={(r) => r.guid || r.id}

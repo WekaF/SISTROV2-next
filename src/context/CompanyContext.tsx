@@ -107,9 +107,9 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
         // sehingga saat queries refetch, useApi() sudah punya token baru
         if (json.aspnetToken) {
           setActiveAspnetToken(json.aspnetToken);
-          // Update NextAuth session async (untuk persistence setelah page reload)
-          // Tidak di-await — jangan delay query invalidation
-          updateSession({
+          // Await session update so server-side API routes get the new token
+          // before queries refetch via invalidateQueries below
+          await updateSession({
             aspnetToken: json.aspnetToken,
             companyCode: json.companyCode,
           }).catch((err) =>

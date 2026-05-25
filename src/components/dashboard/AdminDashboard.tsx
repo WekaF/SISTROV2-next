@@ -25,6 +25,14 @@ const COLORS = ["#3C50E0","#10B981","#F59E0B","#EF4444","#8B5CF6","#EC4899","#36
 const PLANT_CHART_LIMIT = 8;
 const fmt = (n: number) => n?.toLocaleString("id-ID") ?? "0";
 
+const cleanSeriesName = (name: string): string => {
+  if (!name) return "";
+  return name
+    .replace(/[\r\n]+/g, " ")
+    .replace(/['"\\()\[\]{}&/|:;=<>+*?^$!~`]/g, "")
+    .trim();
+};
+
 export const AdminDashboard = () => {
   const { data: streamData, status: streamStatus, lastUpdated } = useDashboardStream();
   const [mounted, setMounted] = useState(false);
@@ -106,7 +114,7 @@ export const AdminDashboard = () => {
       );
       const plants = Array.from(new Set<string>(raw.map((i: any) => (i.CompanyName || i.CompanyCode) as string)));
       const allSeries = plants.map((plant) => ({
-        name: plant,
+        name: cleanSeriesName(plant),
         data: uniqueDates.map((ds) => {
           const e = raw.find((i: any) => (i.CompanyName || i.CompanyCode) === plant && i.Tanggal === ds);
           return e ? (e.TotalTiket || 0) : 0;
@@ -264,7 +272,7 @@ export const AdminDashboard = () => {
 
   const topProdukOptions: any = {
     chart: { type: "donut", fontFamily: "inherit" },
-    labels: topProduk?.map((p: any) => p.NamaProduk || p.name) || [],
+    labels: topProduk?.map((p: any) => cleanSeriesName(p.NamaProduk || p.name)) || [],
     colors: COLORS.slice(0, topProduk?.length || 5),
     legend: { position: "bottom", fontSize: "11px" },
     stroke: { width: 2 },

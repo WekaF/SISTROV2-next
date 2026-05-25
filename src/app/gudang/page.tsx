@@ -414,12 +414,12 @@ export default function GudangListPage() {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-8 space-y-8 bg-slate-50 dark:bg-slate-950">
+          <div className="flex-1 overflow-y-auto p-8 space-y-8 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
             {/* Quick Stats */}
             <div className="grid grid-cols-3 gap-6">
               <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] shadow-sm border dark:border-slate-800">
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Stok Saat Ini</p>
-                <div className="text-3xl font-black text-brand-600">
+                <div className="text-3xl font-black text-brand-600 dark:text-brand-400">
                   {gudangDetail?.stok?.toLocaleString() || "0"} <span className="text-xs">TON</span>
                 </div>
               </div>
@@ -440,7 +440,7 @@ export default function GudangListPage() {
             {/* Log Table */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h4 className="text-lg font-black tracking-tight flex items-center gap-2">
+                <h4 className="text-lg font-black tracking-tight flex items-center gap-2 text-slate-900 dark:text-white">
                   <History className="h-5 w-5 text-slate-400" />
                   LOG STOK TERAKHIR
                 </h4>
@@ -451,42 +451,42 @@ export default function GudangListPage() {
                 <table className="w-full text-left text-sm">
                   <thead className="bg-slate-50 dark:bg-slate-800/50">
                     <tr>
-                      <th className="px-4 py-3 text-[10px] font-black uppercase text-slate-400 tracking-widest">No</th>
-                      <th className="px-4 py-3 text-[10px] font-black uppercase text-slate-400 tracking-widest">Gudang</th>
-                      <th className="px-4 py-3 text-[10px] font-black uppercase text-slate-400 tracking-widest">Stok</th>
-                      <th className="px-4 py-3 text-[10px] font-black uppercase text-slate-400 tracking-widest">Keterangan</th>
-                      <th className="px-4 py-3 text-[10px] font-black uppercase text-slate-400 tracking-widest">Update By</th>
-                      <th className="px-4 py-3 text-[10px] font-black uppercase text-slate-400 tracking-widest">Tanggal</th>
+                      <th className="px-4 py-3 text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-widest">No</th>
+                      <th className="px-4 py-3 text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-widest">Gudang</th>
+                      <th className="px-4 py-3 text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-widest">Stok</th>
+                      <th className="px-4 py-3 text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-widest">Keterangan</th>
+                      <th className="px-4 py-3 text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-widest">Update By</th>
+                      <th className="px-4 py-3 text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-widest">Tanggal</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                     {isLoadingDetail ? (
                       <tr>
-                        <td colSpan={5} className="p-12 text-center text-slate-400 font-bold uppercase tracking-widest animate-pulse">Memuat data...</td>
+                        <td colSpan={6} className="p-12 text-center text-slate-400 font-bold uppercase tracking-widest animate-pulse">Memuat data...</td>
                       </tr>
                     ) : stokLogs.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="p-12 text-center text-slate-400 font-bold uppercase tracking-widest">Tidak ada data log.</td>
+                        <td colSpan={6} className="p-12 text-center text-slate-400 font-bold uppercase tracking-widest">Tidak ada data log.</td>
                       </tr>
                     ) : (
                       stokLogs.map((log, idx) => (
                         <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                          <td className="px-4 py-3 font-mono text-xs">{idx + 1}</td>
-                          <td className="px-4 py-3 text-xs font-bold uppercase">{log.gudang}</td>
-                          <td className="px-4 py-3 text-right font-black text-brand-600">{log.stok?.toLocaleString() || "0"}</td>
+                          <td className="px-4 py-3 font-mono text-xs text-slate-500 dark:text-slate-400">{idx + 1}</td>
+                          <td className="px-4 py-3 text-xs font-bold uppercase text-slate-800 dark:text-slate-200">{log.gudang}</td>
+                          <td className="px-4 py-3 text-right font-black text-brand-600 dark:text-brand-400">{log.stok?.toLocaleString() || "0"}</td>
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2">
                               <div className={cn(
                                 "w-2 h-2 rounded-full",
                                 log.tipe?.toLowerCase().includes('in') ? "bg-green-500" : "bg-blue-500"
                               )} />
-                              <span className="text-xs font-bold">{log.tipe}</span>
+                              <span className="text-xs font-bold text-slate-800 dark:text-slate-200">{log.tipe}</span>
                             </div>
                           </td>
                           <td className="px-4 py-3">
-                            <span className="font-mono bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-xs font-black">{log.armada || "-"}</span>
+                            <span className="font-mono bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-xs font-black text-slate-700 dark:text-slate-300">{log.armada || "-"}</span>
                           </td>
-                          <td className="px-4 py-3 text-xs font-bold">{log.tanggalString}</td>
+                          <td className="px-4 py-3 text-xs font-bold text-slate-600 dark:text-slate-400">{log.tanggalString}</td>
                         </tr>
                       ))
                     )}
@@ -500,7 +500,7 @@ export default function GudangListPage() {
 
       {/* Modal Tambah Stok */}
       <Dialog open={isTambahStokOpen} onOpenChange={setIsTambahStokOpen}>
-        <DialogContent className="max-w-xl p-0 border-none shadow-2xl overflow-hidden bg-white dark:bg-slate-950">
+        <DialogContent className="max-w-xl p-0 border-none shadow-2xl overflow-hidden bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100">
           <div className="bg-brand-600 p-8 text-white relative">
             <div className="absolute top-0 right-0 p-8 opacity-20">
               <Plus className="h-24 w-24" />
@@ -529,22 +529,22 @@ export default function GudangListPage() {
             <div className="bg-brand-50 dark:bg-brand-500/5 p-6 rounded-3xl border border-brand-100 dark:border-brand-500/20 flex justify-between items-center group hover:bg-brand-500/10 transition-all cursor-default">
               <div>
                 <span className="text-xs font-black text-brand-700 dark:text-brand-400 uppercase tracking-[0.2em]">Stok Saat Ini</span>
-                <p className="text-sm text-brand-600/60 font-bold">Terakhir diupdate hari ini</p>
+                <p className="text-sm text-brand-600/60 dark:text-brand-400/80 font-bold">Terakhir diupdate hari ini</p>
               </div>
               <div className="text-right">
-                <span className="text-4xl font-black text-brand-600">{gudangDetail?.stok?.toLocaleString() || "0"}</span>
-                <span className="text-xs font-black text-brand-500 ml-1">TON</span>
+                <span className="text-4xl font-black text-brand-600 dark:text-brand-400">{gudangDetail?.stok?.toLocaleString() || "0"}</span>
+                <span className="text-xs font-black text-brand-500 dark:text-brand-400 ml-1">TON</span>
               </div>
             </div>
 
             <div className="space-y-3">
               <label className="text-sm font-black text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                <Plus className="h-4 w-4 text-brand-600" />
+                <Plus className="h-4 w-4 text-brand-600 dark:text-brand-400" />
                 Tambahan Stok (Ton) <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <div className="absolute left-6 top-1/2 -translate-y-1/2 flex items-center gap-2 pr-4 border-r-2 border-slate-100 dark:border-slate-800">
-                   <Plus className="h-5 w-5 text-brand-600" />
+                   <Plus className="h-5 w-5 text-brand-600 dark:text-brand-400" />
                 </div>
                 <Input
                   type="number"
@@ -552,14 +552,14 @@ export default function GudangListPage() {
                   placeholder="0.00"
                   value={tambahanStok}
                   onChange={(e) => setTambahanStok(Number(e.target.value))}
-                  className="h-16 pl-20 text-2xl font-black border-2 focus:ring-brand-500 rounded-2xl bg-slate-50/50"
+                  className="h-16 pl-20 text-2xl font-black border-2 focus:ring-brand-500 rounded-2xl bg-slate-50/50 dark:bg-slate-900/50 text-slate-900 dark:text-white border-slate-200 dark:border-slate-800"
                   autoFocus
                 />
               </div>
             </div>
 
             <div className="bg-blue-50 dark:bg-blue-500/5 p-5 rounded-2xl border border-blue-100 dark:border-blue-500/20 flex gap-4 items-start shadow-sm shadow-blue-500/5">
-              <div className="p-2 bg-blue-100 dark:bg-blue-500/10 rounded-xl text-blue-600">
+              <div className="p-2 bg-blue-100 dark:bg-blue-500/10 rounded-xl text-blue-600 dark:text-blue-400">
                 <Info className="h-5 w-5" />
               </div>
               <p className="text-xs text-blue-700 dark:text-blue-400 font-medium leading-relaxed">
@@ -571,7 +571,7 @@ export default function GudangListPage() {
             <div className="flex gap-4 pt-2">
               <Button 
                 variant="outline" 
-                className="flex-1 h-14 font-bold rounded-2xl border-2 hover:bg-slate-50 transition-all" 
+                className="flex-1 h-14 font-bold rounded-2xl border-2 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all dark:border-slate-700 dark:text-slate-200" 
                 onClick={() => setIsTambahStokOpen(false)} 
                 disabled={isSaving}
               >

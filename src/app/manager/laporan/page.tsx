@@ -114,9 +114,17 @@ export default function ManagerLaporanPage() {
     theme: { mode: theme },
   };
 
+  const cleanName = (name: string): string => {
+    if (!name) return "";
+    return name
+      .replace(/[\r\n]+/g, " ")
+      .replace(/['"\\()\[\]{}&/|:;=<>+*?^$!~`]/g, "")
+      .trim();
+  };
+
   const topSeries = [{
     name: "Tonase",
-    data: produkData?.top.map(p => ({ x: p.namaProduk, y: Math.round(p.totalTonase) })) || [],
+    data: produkData?.top.map(p => ({ x: cleanName(p.namaProduk), y: Math.round(p.totalTonase) })) || [],
   }];
 
   const bottomBarOptions: ApexCharts.ApexOptions = {
@@ -127,7 +135,7 @@ export default function ManagerLaporanPage() {
 
   const bottomSeries = [{
     name: "Tonase",
-    data: produkData?.bottom.slice(0, 8).map(p => ({ x: p.namaProduk, y: Math.round(p.totalTonase) })) || [],
+    data: produkData?.bottom.slice(0, 8).map(p => ({ x: cleanName(p.namaProduk), y: Math.round(p.totalTonase) })) || [],
   }];
 
   return (

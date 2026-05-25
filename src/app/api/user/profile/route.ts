@@ -12,14 +12,20 @@ export async function GET() {
     if (!res.ok) throw new Error("Failed to fetch user profile");
     
     const data = await res.json();
+    const userObj = data.user || {};
+    
     return NextResponse.json({
-      id: data.id || data.ID,
-      username: data.username || data.UserName,
-      email: data.email || data.Email,
-      fullname: data.fullname || data.FullName || data.Nama,
-      department: data.department || data.Department,
-      bagian: data.bagian || data.Bagian,
-      sapvendorcode: data.sapvendorcode || data.SAPVendorCode
+      id: userObj.UserId || userObj.id || data.id || "",
+      username: userObj.username || userObj.UserName || data.username || "",
+      email: userObj.email || userObj.Email || data.email || "",
+      fullname: userObj.fullname || userObj.FullName || userObj.Nama || data.fullname || "",
+      fullName: userObj.fullname || userObj.FullName || userObj.Nama || data.fullname || "",
+      department: userObj.department || userObj.Department || data.department || "",
+      bagian: userObj.bagian || userObj.Bagian || data.bagian || "",
+      nik: userObj.nik || userObj.NIK || data.nik || "",
+      sapvendorcode: userObj.companycode || userObj.company_code || data.sapvendorcode || "",
+      sapVendorCode: userObj.companycode || userObj.company_code || data.sapvendorcode || "",
+      avatarUrl: userObj.avatarUrl || userObj.avatarurl || data.avatarUrl || ""
     });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
