@@ -5,76 +5,42 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { Eye, EyeOff } from "lucide-react";
 
-interface CompanyOption {
-  company_code: string;
-  company: string;
-}
-
 export default function SignInForm() {
-  const [showPassword, setShowPassword]         = useState(false);
-  const [username, setUsername]                 = useState("");
-  const [password, setPassword]                 = useState("");
-  const [error, setError]                       = useState("");
-  const [isLoading, setIsLoading]               = useState(false);
-  const [isChecked, setIsChecked]               = useState(false);
-  const [companyOptions, setCompanyOptions]     = useState<CompanyOption[]>([]);
-  const [selectedCompany, setSelectedCompany]   = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [username, setUsername]         = useState("");
+  const [password, setPassword]         = useState("");
+  const [error, setError]               = useState("");
+  const [isLoading, setIsLoading]       = useState(false);
+  const [isChecked, setIsChecked]       = useState(false);
   const router       = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl  = searchParams?.get("callbackUrl") || "/";
-
-  const doSignIn = async (companycode: string) => {
-    const res = await signIn("credentials", {
-      redirect: false,
-      username: username.trim().toLowerCase(),
-      password,
-      companycode,
-      callbackUrl,
-    });
-    if (res?.error) {
-      setError(res.error);
-    } else if (res?.ok) {
-      router.push(callbackUrl);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
 
-    // If company picker is visible and user has selected one, sign in directly
-    if (companyOptions.length > 1) {
-      if (!selectedCompany) {
-        setError("Pilih perusahaan terlebih dahulu");
-        setIsLoading(false);
-        return;
-      }
-      try {
-        await doSignIn(selectedCompany);
-      } catch {
-        setError("Terjadi kesalahan. Silakan coba lagi.");
-      } finally {
-        setIsLoading(false);
-      }
-      return;
-    }
-
     try {
       const res = await fetch(
         `/aspnet-proxy/api/Company/GetUserCompanies?username=${encodeURIComponent(username.trim().toLowerCase())}`
       );
-      const companies: CompanyOption[] = res.ok ? await res.json() : [];
+      const companies: { company_code: string }[] = res.ok ? await res.json() : [];
+      const companycode = companies.length > 0 ? companies[0].company_code : "";
 
-      if (companies.length > 1) {
-        // Multiple companies — show picker, wait for user selection
-        setCompanyOptions(companies);
-        setIsLoading(false);
-        return;
+      const result = await signIn("credentials", {
+        redirect: false,
+        username: username.trim().toLowerCase(),
+        password,
+        companycode,
+        callbackUrl,
+      });
+
+      if (result?.error) {
+        setError(result.error);
+      } else if (result?.ok) {
+        router.push(callbackUrl);
       }
-
-      const companycode = companies.length === 1 ? companies[0].company_code : "";
-      await doSignIn(companycode);
     } catch {
       setError("Terjadi kesalahan. Silakan coba lagi.");
     } finally {
@@ -130,50 +96,11 @@ export default function SignInForm() {
             <input
               type="text"
               value={username}
-              onChange={(e) => {
-                setUsername(e.target.value);
-                // Reset company picker if user changes username
-                if (companyOptions.length > 0) {
-                  setCompanyOptions([]);
-                  setSelectedCompany("");
-                }
-              }}
+              onChange={(e) => setUsername(e.target.value)}
               className="w-full px-4 py-2.5 bg-white dark:bg-[#1e2a44] border border-gray-300 dark:border-transparent rounded-md text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm"
               required
             />
           </div>
-
-          {/* Inline company picker — shown only when multiple companies found */}
-          {companyOptions.length > 1 && (
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                Pilih Perusahaan
-              </label>
-              <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
-                {companyOptions.map((c) => (
-                  <button
-                    key={c.company_code}
-                    type="button"
-                    onClick={() => setSelectedCompany(c.company_code)}
-                    className={`w-full flex items-center justify-between px-4 py-2.5 rounded-md text-sm border transition-all ${
-                      selectedCompany === c.company_code
-                        ? "bg-blue-600 text-white border-blue-600 dark:bg-blue-500 dark:border-blue-500"
-                        : "bg-white dark:bg-[#1e2a44] border-gray-300 dark:border-transparent text-gray-900 dark:text-white hover:border-blue-400"
-                    }`}
-                  >
-                    <span>{c.company}</span>
-                    <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
-                      selectedCompany === c.company_code
-                        ? "bg-blue-500 text-white dark:bg-blue-400"
-                        : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
-                    }`}>
-                      {c.company_code}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
 
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">Kata Sandi</label>
