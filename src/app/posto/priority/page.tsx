@@ -44,8 +44,11 @@ export default function PostoPriorityPage() {
   const [search, setSearch] = useState("");
   const [showGudangPanel, setShowGudangPanel] = useState(true);
 
-  // Load warehouse list on mount
+  // Reload warehouse list whenever active company changes
   useEffect(() => {
+    setGudangList([]);
+    setSelectedGudang(new Set());
+    setPostoItems([]);
     async function fetchGudang() {
       setLoadingGudang(true);
       try {
@@ -58,7 +61,8 @@ export default function PostoPriorityPage() {
       }
     }
     fetchGudang();
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeCompanyCode]);
 
   const fetchPrioritas = useCallback(async () => {
     if (selectedGudang.size === 0) {
