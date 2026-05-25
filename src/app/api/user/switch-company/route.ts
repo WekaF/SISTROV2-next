@@ -32,8 +32,15 @@ export const POST = withAudit(async function(request: NextRequest) {
 
     // Try to get raw JWT to access _pw for re-auth
     const rawToken = await getToken({ req: request, secret: NEXTAUTH_SECRET });
-    const username = rawToken?.username as string | undefined;
+    const rawUsername = rawToken?.username as string | undefined;
     const encodedPw = rawToken?._pw as string | undefined;
+
+    // rawToken.username = full DB username e.g. "wahyu_pkg"
+    // Strip last _COMPANY suffix so re-auth sends bare username to /Token
+    const lastUnderscore = rawUsername ? rawUsername.lastIndexOf("_") : -1;
+    const username = (rawUsername && lastUnderscore > 0 && lastUnderscore < rawUsername.length - 1)
+      ? rawUsername.slice(0, lastUnderscore)
+      : rawUsername;
 
     // If session was created before _pw was stored (old session),
     // return success with cookie set but no new ASP.NET token.
