@@ -60,26 +60,39 @@ export default function PostoPage() {
 
   const fetcher = async (params: DataTableParams) => {
     if (!token) return { data: [], recordsTotal: 0, recordsFiltered: 0 };
+    const cf = params.columnFilters ?? {};
+    const cs = (key: string) => ({ value: cf[key] || "", regex: "false" });
     const payload: any = {
       draw: params.draw,
       start: params.start,
       length: params.length,
       search: params.search || "",
-      order: [{ column: 0, dir: "desc" }],
+      order: [{ column: 4, dir: "desc" }],
       SD: dateFilter || "",
       columns: [
-        { data: "noposto", name: "noposto", searchable: true, orderable: true },
-        { data: "tanggalString", name: "tglposto", searchable: true, orderable: true },
-        { data: "transportString", name: "transport", searchable: true, orderable: true },
-        { data: "produkString", name: "produk", searchable: true, orderable: true },
-        { data: "qty", name: "qty", searchable: true, orderable: true },
-        { data: "qtyrealisasi", name: "qtyrealisasi", searchable: true, orderable: true },
-        { data: "asalString", name: "asal", searchable: true, orderable: true },
-        { data: "tujuanString", name: "tujuan", searchable: true, orderable: true },
-        { data: "wilayah", name: "wilayah", searchable: true, orderable: true },
-        { data: "bagian", name: "bagian", searchable: true, orderable: true },
-        { data: "statusString", name: "status", searchable: true, orderable: true },
-        { data: "action", name: "", searchable: false, orderable: false }
+        { data: "numberString",            name: "",              searchable: false, orderable: false },
+        { data: "action",                  name: "",              searchable: false, orderable: false },
+        { data: "wilayah",                 name: "wilayah",       searchable: true,  orderable: true, search: cs("wilayah") },
+        { data: "tanggalString",           name: "tglposto",      searchable: true,  orderable: true, search: cs("tanggalString") },
+        { data: "noposto",                 name: "noposto",       searchable: true,  orderable: true, search: cs("noposto") },
+        { data: "tglakhirString",          name: "tglakhir",      searchable: true,  orderable: true, search: cs("tglakhirString") },
+        { data: "asalString",              name: "asal",          searchable: true,  orderable: true, search: cs("asalString") },
+        { data: "tujuanString",            name: "tujuan",        searchable: true,  orderable: true, search: cs("tujuanString") },
+        { data: "bagian",                  name: "bagian",        searchable: true,  orderable: true, search: cs("bagian") },
+        { data: "transportString",         name: "transport",     searchable: true,  orderable: true, search: cs("transportString") },
+        { data: "produkString",            name: "produk",        searchable: true,  orderable: true, search: cs("produkString") },
+        { data: "qty",                     name: "qty",           searchable: true,  orderable: true, search: cs("qty") },
+        { data: "qtyrencana",              name: "qtyrencana",    searchable: true,  orderable: true, search: cs("qtyrencana") },
+        { data: "qtysisaBooking",          name: "qtysisaBooking",searchable: true,  orderable: true, search: cs("qtysisaBooking") },
+        { data: "qtyrealisasi",            name: "qtyrealisasi",  searchable: true,  orderable: true, search: cs("qtyrealisasi") },
+        { data: "qtysisaRealisasi",        name: "qtysisaRealisasi", searchable: true, orderable: true, search: cs("qtysisaRealisasi") },
+        { data: "cutoff",                  name: "cutoff",        searchable: true,  orderable: true, search: cs("cutoff") },
+        { data: "kapal",                   name: "kapal",         searchable: true,  orderable: true, search: cs("kapal") },
+        { data: "kotatujuan",              name: "kotatujuan",    searchable: true,  orderable: true, search: cs("kotatujuan") },
+        { data: "updatedby",               name: "updatedby",     searchable: true,  orderable: true, search: cs("updatedby") },
+        { data: "tanggaljatuhtempoString", name: "tgljatuhtempo", searchable: true,  orderable: true, search: cs("tanggaljatuhtempoString") },
+        { data: "percepatan",              name: "percepatan",    searchable: false, orderable: true },
+        { data: "gruptruk",                name: "gruptruk",      searchable: false, orderable: true },
       ]
     };
 
@@ -184,57 +197,156 @@ export default function PostoPage() {
   const columns: DataTableColumn<any>[] = [
     {
       key: "noposto",
-      header: "POSTO ID",
-      render: (p) => <span className="font-mono font-bold">{p.noposto || p.id}</span>,
+      header: "No POSTO",
+      searchable: true,
+      render: (p) => <span className="font-mono font-bold text-xs">{p.noposto || p.id}</span>,
     },
     {
       key: "tanggalString",
-      header: "Date",
-      render: (p) => <span className="text-gray-500 font-mono text-xs">{p.tanggalString || p.date}</span>,
+      header: "Tanggal",
+      searchable: true,
+      render: (p) => <span className="text-gray-500 font-mono text-xs whitespace-nowrap">{p.tanggalString}</span>,
+    },
+    {
+      key: "tglakhirString",
+      header: "Batas",
+      searchable: true,
+      render: (p) => <span className="text-gray-500 font-mono text-xs whitespace-nowrap">{p.tglakhirString || "-"}</span>,
+    },
+    {
+      key: "tanggaljatuhtempoString",
+      header: "Jatuh Tempo",
+      searchable: true,
+      render: (p) => <span className="text-gray-500 font-mono text-xs whitespace-nowrap">{p.tanggaljatuhtempoString || "-"}</span>,
+    },
+    {
+      key: "wilayah",
+      header: "Wilayah",
+      searchable: true,
+      render: (p) => <span className="font-medium text-xs">{p.wilayah || "-"}</span>,
+    },
+    {
+      key: "asalString",
+      header: "Asal",
+      searchable: true,
+      render: (p) => <span className="text-xs">{p.asalString || p.asal || "-"}</span>,
+    },
+    {
+      key: "tujuanString",
+      header: "Tujuan",
+      searchable: true,
+      render: (p) => <span className="text-xs">{p.tujuanString || p.tujuan || "-"}</span>,
+    },
+    {
+      key: "bagian",
+      header: "Area",
+      searchable: true,
+      render: (p) => <span className="text-xs">{p.bagian || "-"}</span>,
     },
     {
       key: "transportString",
       header: "Transportir",
+      searchable: true,
       render: (p) => (
         <div>
-          <div className="text-sm font-medium">{p.transportString || p.transportir || p.TransName}</div>
-          <div className="text-[10px] text-gray-400 font-mono">{p.transport || p.transportirId || p.Trans}</div>
+          <div className="text-xs font-medium">{p.transportString || "-"}</div>
+          <div className="text-[10px] text-gray-400 font-mono">{p.transport || ""}</div>
         </div>
       ),
     },
     {
       key: "produkString",
-      header: "Product",
+      header: "Produk",
+      searchable: true,
       render: (p) => (
-        <div className="flex items-center gap-2">
-          <Package className="h-4 w-4 text-brand-500 shrink-0" />
-          <span className="text-sm font-bold">{p.produkString || p.product || p.Produk}</span>
+        <div className="flex items-center gap-1.5">
+          <Package className="h-3.5 w-3.5 text-brand-500 shrink-0" />
+          <span className="text-xs font-bold">{p.produkString || "-"}</span>
         </div>
       ),
     },
     {
       key: "qty",
-      header: "Qty (Ton)",
+      header: "Qty (T)",
       headerClassName: "text-right",
       className: "text-right font-bold",
-      render: (p) => (p.qty || p.Qty || 0).toLocaleString(),
+      searchable: true,
+      render: (p) => <span className="text-xs">{(p.qty || 0).toLocaleString()}</span>,
+    },
+    {
+      key: "qtyrencana",
+      header: "Booking",
+      headerClassName: "text-right",
+      className: "text-right",
+      searchable: true,
+      render: (p) => <span className="text-xs">{(p.qtyrencana || 0).toLocaleString()}</span>,
+    },
+    {
+      key: "qtysisaBooking",
+      header: "Sisa Booking",
+      headerClassName: "text-right",
+      className: "text-right",
+      searchable: true,
+      render: (p) => <span className="text-xs text-amber-600 dark:text-amber-400">{(p.qtysisaBooking ?? 0).toLocaleString()}</span>,
     },
     {
       key: "qtyrealisasi",
       header: "Realisasi",
       headerClassName: "text-right",
       className: "text-right",
+      searchable: true,
+      render: (p) => <span className="text-xs text-emerald-600 dark:text-emerald-400 font-bold">{(p.qtyrealisasi || 0).toLocaleString()}</span>,
+    },
+    {
+      key: "qtysisaRealisasi",
+      header: "Sisa Realisasi",
+      headerClassName: "text-right",
+      className: "text-right",
+      searchable: true,
+      render: (p) => <span className="text-xs">{(p.qtysisaRealisasi ?? 0).toLocaleString()}</span>,
+    },
+    {
+      key: "cutoff",
+      header: "CutOff",
+      searchable: true,
       render: (p) => (
-        <div>
-          <div className="text-sm font-bold text-emerald-600">{(p.qtyrealisasi || p.RE_TON || 0).toLocaleString()}</div>
-          <div className="text-[10px] text-gray-400 uppercase">Ton</div>
-        </div>
+        <span className={`text-xs font-medium ${(p.cutoff || "").includes("Cut Off (") ? "text-red-500" : "text-gray-400"}`}>
+          {p.cutoff || "Belum Cut Off"}
+        </span>
       ),
     },
-    { key: "asalString", header: "Asal", render: (p) => p.asalString || p.asal || p.Asal || "-" },
-    { key: "tujuanString", header: "Tujuan", render: (p) => p.tujuanString || p.tujuan || p.Tujuan || "-" },
-    { key: "wilayah", header: "Wilayah", render: (p) => <span className="font-medium">{p.wilayah || p.Wilayah || "-"}</span> },
-    { key: "bagian", header: "Bagian", render: (p) => p.bagian || p.Bagian || "-" },
+    {
+      key: "kapal",
+      header: "Kapal",
+      searchable: true,
+      render: (p) => <span className="text-xs">{p.kapal || "-"}</span>,
+    },
+    {
+      key: "kotatujuan",
+      header: "Kota Tujuan",
+      searchable: true,
+      render: (p) => <span className="text-xs">{p.kotatujuan || "-"}</span>,
+    },
+    {
+      key: "updatedby",
+      header: "PIC",
+      searchable: true,
+      render: (p) => <span className="text-xs text-gray-500">{p.updatedby || "-"}</span>,
+    },
+    {
+      key: "percepatan",
+      header: "Mekanisme",
+      render: (p) => (
+        <span className={`text-[10px] font-bold uppercase ${p.percepatan === "PERCEPATAN" ? "text-orange-500" : "text-gray-400"}`}>
+          {p.percepatan || "-"}
+        </span>
+      ),
+    },
+    {
+      key: "gruptruk",
+      header: "Grup Truk",
+      render: (p) => <span className="text-xs">{p.gruptruk || "-"}</span>,
+    },
     {
       key: "statusString",
       header: "Status",
@@ -255,43 +367,40 @@ export default function PostoPage() {
         const id = p.guid;
         const noposto = p.noposto;
         return (
-          <div className="flex items-center justify-end gap-2">
+          <div className="flex items-center justify-end gap-1.5">
             {isRekanan && (
               <Button
                 size="sm"
-                className="bg-[#003473] hover:bg-[#002855] text-white rounded-none shadow-lg shadow-blue-900/20 px-4 h-8 font-black uppercase text-[10px] tracking-widest transition-all hover:scale-105 active:scale-95 border-none"
+                className="bg-[#003473] hover:bg-[#002855] text-white rounded-none shadow-lg shadow-blue-900/20 px-3 h-7 font-black uppercase text-[10px] tracking-widest transition-all hover:scale-105 active:scale-95 border-none"
                 onClick={() => window.location.href = `/tiket/booking?guid=${id}`}
               >
-                <Ticket className="h-3.5 w-3.5 mr-1.5" /> Booking Tiket
+                <Ticket className="h-3 w-3 mr-1" /> Booking
               </Button>
             )}
-
             <Button
               variant="outline"
               size="sm"
-              className="bg-brand-50 text-brand-500 border-brand-200 hover:bg-brand-100 rounded-none h-8 font-bold text-[10px] uppercase tracking-wider"
+              className="bg-brand-50 text-brand-500 border-brand-200 hover:bg-brand-100 rounded-none h-7 font-bold text-[10px] uppercase tracking-wider"
               onClick={() => handleView(id, noposto)}
             >
-              <Eye className="h-4 w-4 mr-1" /> {isRekanan ? "Riwayat" : "View"}
+              <Eye className="h-3.5 w-3.5 mr-1" /> {isRekanan ? "Riwayat" : "View"}
             </Button>
-
             <Button
               variant="outline"
               size="sm"
-              className="text-slate-600 border-slate-200 hover:bg-slate-50 rounded-none h-8 text-[10px] uppercase tracking-wider"
+              className="text-slate-600 border-slate-200 hover:bg-slate-50 rounded-none h-7 text-[10px] uppercase tracking-wider"
               onClick={() => window.open(`/posto/print/${id || noposto}`, "_blank")}
             >
-              <Printer className="h-4 w-4 mr-1" /> Print
+              <Printer className="h-3.5 w-3.5 mr-1" /> Print
             </Button>
-
             {canEditPosto && (
-              <Button variant="outline" size="sm" className="text-amber-500 border-amber-200 hover:bg-amber-50 rounded-none h-8" onClick={() => handleEditInit(id, noposto)}>
-                <FileEdit className="h-4 w-4 mr-1" /> Edit
+              <Button variant="outline" size="sm" className="text-amber-500 border-amber-200 hover:bg-amber-50 rounded-none h-7" onClick={() => handleEditInit(id, noposto)}>
+                <FileEdit className="h-3.5 w-3.5 mr-1" /> Edit
               </Button>
             )}
             {canDeletePosto && (
-              <Button variant="outline" size="sm" className="text-red-500 border-red-200 hover:bg-red-50 rounded-none h-8" onClick={() => handleDelete(id, noposto)}>
-                <Trash2 className="h-4 w-4 mr-1" /> Hapus
+              <Button variant="outline" size="sm" className="text-red-500 border-red-200 hover:bg-red-50 rounded-none h-7" onClick={() => handleDelete(id, noposto)}>
+                <Trash2 className="h-3.5 w-3.5 mr-1" /> Hapus
               </Button>
             )}
           </div>
