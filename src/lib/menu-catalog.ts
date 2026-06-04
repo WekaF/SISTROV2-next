@@ -119,6 +119,7 @@ export const MENU_CATALOG: CatalogGroup[] = [
       { path: "/superadmin/settings/area-scope", label: "Area Scope User" },
       { path: "/superadmin/settings/role-menu", label: "Role & Menu Group" },
       { path: "/superadmin/settings/user-menu", label: "Menu Per User" },
+      { path: "/superadmin/settings/company-menu", label: "Menu per Perusahaan" },
       { path: "/superadmin/settings/shifts", label: "Manajemen Shift" },
     ],
   },
