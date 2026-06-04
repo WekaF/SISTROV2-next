@@ -98,9 +98,11 @@ export default function CompanyMenuPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ companyCode, menuGroup }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to save");
-      return data;
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Gagal menyimpan");
+      }
+      return res.json();
     },
     onSuccess: (_: unknown, vars: { companyCode: string | null; menuGroup: string }) => {
       queryClient.invalidateQueries({ queryKey: ["company-menu-templates"] });
@@ -121,9 +123,11 @@ export default function CompanyMenuPage() {
           ? "/api/admin/company-menu-template"
           : `/api/admin/company-menu-template?companyCode=${encodeURIComponent(companyCode)}`;
       const res = await fetch(url, { method: "DELETE" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to delete");
-      return data;
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Gagal menghapus");
+      }
+      return res.json();
     },
     onSuccess: (_: unknown, companyCode: string | null) => {
       queryClient.invalidateQueries({ queryKey: ["company-menu-templates"] });
