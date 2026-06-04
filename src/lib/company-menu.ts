@@ -1,5 +1,15 @@
 import { prismaLog } from "@/lib/prisma";
 
+function parseMenuItems(raw: string | null): string[] | null {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
 export interface CompanyMenuResolution {
   menuGroup: string;
   menuItems: string[] | null;
@@ -22,7 +32,7 @@ export async function resolveCompanyMenuTemplate(
     if (specific) {
       return {
         menuGroup: specific.menuGroup,
-        menuItems: specific.menuItems ? JSON.parse(specific.menuItems) : null,
+        menuItems: parseMenuItems(specific.menuItems),
         source: "company-override",
       };
     }
@@ -35,7 +45,7 @@ export async function resolveCompanyMenuTemplate(
   if (global) {
     return {
       menuGroup: global.menuGroup,
-      menuItems: global.menuItems ? JSON.parse(global.menuItems) : null,
+      menuItems: parseMenuItems(global.menuItems),
       source: "global-template",
     };
   }
