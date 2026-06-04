@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { getToken } from "next-auth/jwt";
 import type { NextRequest } from "next/server";
 import { withAudit } from "@/lib/with-audit";
+import { resolveCompanyMenuTemplate } from "@/lib/company-menu";
 
 const ASPNET_API_URL = process.env.ASPNET_API_URL || "https://sistro-dev.pupuk-indonesia.com";
 const NEXTAUTH_SECRET = process.env.NEXTAUTH_SECRET || "sistro-dev-secret-change-in-production";
@@ -86,11 +87,30 @@ export const POST = withAudit(async function(request: NextRequest) {
 
     const data = await tokenRes.json();
 
+    // Resolve menu for new company: user-level override (ASP.NET) wins, else company template
+    const userMenuGroup = (data.user_menu_group || "").trim();
+    let resolvedMenuGroup: string | null = null;
+    let resolvedMenuItems: string[] | null = null;
+
+    if (userMenuGroup) {
+      resolvedMenuGroup = userMenuGroup;
+    } else {
+      const companyTemplate = await resolveCompanyMenuTemplate(
+        data.companycode ?? companyCode
+      ).catch(() => null);
+      if (companyTemplate) {
+        resolvedMenuGroup = companyTemplate.menuGroup;
+        resolvedMenuItems = companyTemplate.menuItems;
+      }
+    }
+
     return NextResponse.json({
       success: true,
       activeCompany: companyCode,
       aspnetToken: data.access_token,
       companyCode: data.companycode ?? companyCode,
+      menuGroup: resolvedMenuGroup,
+      menuItems: resolvedMenuItems,
     });
   } catch (error: any) {
     console.error("[switch-company POST]", error);
