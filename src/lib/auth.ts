@@ -1,6 +1,7 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { logEvent } from "@/lib/audit-logger";
+import { resolveCompanyMenuTemplate } from "@/lib/company-menu";
 
 if (typeof window === 'undefined') {
   process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
@@ -160,12 +161,20 @@ export const authOptions: NextAuthOptions = {
           catch { console.error("Failed to parse user_menu_items:", userMenuItemsRaw); }
         }
 
+        // Company-level template lookup — never fails login on DB error
+        const companyTemplate = await resolveCompanyMenuTemplate(
+          credentials.companycode || null
+        ).catch(() => null);
+
         let menuGroups: string[];
         if (userMenuGroup) {
-          // Admin assigned a specific menu to this user — use it exclusively
+          // User-level override (highest priority — admin assigned this user a specific menu)
           menuGroups = [userMenuGroup];
+        } else if (companyTemplate) {
+          // Company-level template (applies to all users in this company not overridden)
+          menuGroups = [companyTemplate.menuGroup];
         } else {
-          // Derive from all roles, in priority order
+          // Derive from all roles, in priority order (role default fallback)
           const sortedRoles = [...roles].sort((a, b) => {
             const pa = ROLE_PRIORITY.indexOf(a) === -1 ? ROLE_PRIORITY.length : ROLE_PRIORITY.indexOf(a);
             const pb = ROLE_PRIORITY.indexOf(b) === -1 ? ROLE_PRIORITY.length : ROLE_PRIORITY.indexOf(b);
@@ -180,6 +189,9 @@ export const authOptions: NextAuthOptions = {
           if (menuGroups.length === 0) menuGroups.push("eksternal");
         }
 
+        // menuItems: user-level override (highest) → company template → null
+        const effectiveMenuItems = menuItems ?? companyTemplate?.menuItems ?? null;
+
         const highestRole = pickHighestRole(roles);
         const menuGroup = menuGroups[0];
 
@@ -191,7 +203,7 @@ export const authOptions: NextAuthOptions = {
           roles,
           menuGroup,
           menuGroups,
-          menuItems,
+          menuItems:     effectiveMenuItems,
           companyCode:   data.companycode ?? null,
           aspnetToken:   data.access_token,
           username:      data.username,
