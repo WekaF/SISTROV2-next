@@ -27,3 +27,16 @@ model AuditLog {
   @@index([createdAt])
   @@index([companyCode])
 }
+
+model CompanyMenuTemplate {
+  id          Int      @id @default(autoincrement())
+  companyCode String?  @unique  // null = global template; non-null = per-company override
+  menuGroup   String
+  menuItems   String?  // JSON array of path strings, null = use all items in menuGroup
+  createdBy   String
+  updatedBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([companyCode])
+}
