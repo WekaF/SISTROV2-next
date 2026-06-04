@@ -78,9 +78,17 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { searchParams } = new URL(request.url);
-  const companyCode = searchParams.has("companyCode")
-    ? searchParams.get("companyCode")
-    : null;
+  const hasCompanyCode = searchParams.has("companyCode");
+  const hasGlobal = searchParams.get("global") === "true";
+
+  if (!hasCompanyCode && !hasGlobal) {
+    return NextResponse.json(
+      { error: "Specify ?companyCode=XYZ to delete a company override, or ?global=true to delete the global template" },
+      { status: 400 }
+    );
+  }
+
+  const companyCode = hasCompanyCode ? searchParams.get("companyCode") : null;
 
   const existing = await prismaLog.companyMenuTemplate.findUnique({
     where: { companyCode },

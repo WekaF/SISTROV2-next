@@ -120,7 +120,7 @@ export default function CompanyMenuPage() {
     mutationFn: async (companyCode: string | null) => {
       const url =
         companyCode === null
-          ? "/api/admin/company-menu-template"
+          ? "/api/admin/company-menu-template?global=true"
           : `/api/admin/company-menu-template?companyCode=${encodeURIComponent(companyCode)}`;
       const res = await fetch(url, { method: "DELETE" });
       if (!res.ok) {

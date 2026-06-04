@@ -89,18 +89,23 @@ export const POST = withAudit(async function(request: NextRequest) {
 
     // Resolve menu for new company: user-level override (ASP.NET) wins, else company template
     const userMenuGroup = (data.user_menu_group || "").trim();
+    const userMenuItemsRaw = (data.user_menu_items || "").trim();
+    let userMenuItems: string[] | null = null;
+    try { if (userMenuItemsRaw) userMenuItems = JSON.parse(userMenuItemsRaw); } catch {}
+
     let resolvedMenuGroup: string | null = null;
     let resolvedMenuItems: string[] | null = null;
 
     if (userMenuGroup) {
       resolvedMenuGroup = userMenuGroup;
+      resolvedMenuItems = userMenuItems; // keep user-level item overrides
     } else {
       const companyTemplate = await resolveCompanyMenuTemplate(
         data.companycode ?? companyCode
       ).catch(() => null);
       if (companyTemplate) {
         resolvedMenuGroup = companyTemplate.menuGroup;
-        resolvedMenuItems = companyTemplate.menuItems;
+        resolvedMenuItems = userMenuItems ?? companyTemplate.menuItems;
       }
     }
 
