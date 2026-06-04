@@ -112,6 +112,8 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
           await updateSession({
             aspnetToken: json.aspnetToken,
             companyCode: json.companyCode,
+            ...(json.menuGroup !== undefined && { menuGroup: json.menuGroup }),
+            ...(json.menuItems !== undefined && { menuItems: json.menuItems }),
           }).catch((err) =>
             console.warn("[CompanyContext] updateSession error:", err)
           );
