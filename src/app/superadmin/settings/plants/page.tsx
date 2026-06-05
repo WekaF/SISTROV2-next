@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import Link from "next/link";
 import {
   Building2, Search, Edit, Loader2, X,
   CheckCircle2, XCircle, ChevronLeft, ChevronRight
@@ -149,6 +150,9 @@ export default function PlantConfigPage() {
             Kelola seluruh entitas plant dan unit bisnis di ekosistem SISTRO.
           </p>
         </div>
+        <Link href="/superadmin/settings/plants/new">
+          <Button variant="outline" size="sm">+ Install Plant Baru</Button>
+        </Link>
       </div>
 
       {/* Stats */}
