@@ -1,9 +1,9 @@
 "use client";
-import React from "react";
-import { 
-  FileText, 
-  Calendar, 
-  Download, 
+import React, { useMemo } from "react";
+import {
+  FileText,
+  Calendar,
+  Download,
   Search,
   PieChart as PieChartIcon,
   BarChart,
@@ -12,19 +12,48 @@ import {
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import dynamic from "next/dynamic";
+import { useTheme } from "@/context/ThemeContext";
 
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
 export default function ReportsPage() {
-  const chartOptions: any = {
-    chart: { type: 'bar', toolbar: { show: false } },
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+
+  const chartOptions = useMemo<any>(() => ({
+    chart: {
+      type: 'bar',
+      toolbar: { show: false },
+      background: "transparent",
+      foreColor: isDark ? "#e2e8f0" : "#334155",
+    },
     plotOptions: { bar: { borderRadius: 4, horizontal: false, columnWidth: '55%' } },
     dataLabels: { enabled: false },
     stroke: { show: true, width: 2, colors: ['transparent'] },
-    xaxis: { categories: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] },
+    xaxis: {
+      categories: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+      labels: {
+        style: {
+          colors: isDark ? "#94a3b8" : "#64748b",
+        },
+      },
+    },
+    yaxis: {
+      labels: {
+        style: {
+          colors: isDark ? "#94a3b8" : "#64748b",
+        },
+      },
+    },
+    grid: {
+      borderColor: isDark ? "#334155" : "#e2e8f0",
+    },
     fill: { opacity: 1, colors: ['#3C50E0', '#80CAEE'] },
-    tooltip: { y: { formatter: (val: number) => val + " Tiket" } },
-  };
+    tooltip: {
+      theme: isDark ? "dark" : "light",
+      y: { formatter: (val: number) => val + " Tiket" },
+    },
+  }), [isDark]);
 
   const chartSeries = [
     { name: 'Gresik', data: [44, 55, 57, 56, 61, 58, 63] },

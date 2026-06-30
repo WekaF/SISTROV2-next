@@ -1,10 +1,11 @@
 "use client";
-import React, { useState, useEffect, useCallback, Suspense, useRef } from "react";
+import React, { useState, useEffect, useCallback, Suspense, useRef, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useApi } from "@/hooks/use-api";
 import { ChevronDown, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTheme } from "@/context/ThemeContext";
 
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
@@ -42,16 +43,45 @@ interface ReportDataResponse {
   nextDaysData: NextDayData[];
 }
 
-function buildBarOptions(categories: string[], stacked: boolean, colors: string[]): object {
+function buildBarOptions(categories: string[], stacked: boolean, colors: string[], isDark: boolean): object {
   return {
-    chart: { type: "bar", stacked, toolbar: { show: false }, fontFamily: "inherit" },
+    chart: {
+      type: "bar",
+      stacked,
+      toolbar: { show: false },
+      fontFamily: "inherit",
+      background: "transparent",
+      foreColor: isDark ? "#e2e8f0" : "#334155",
+    },
     plotOptions: { bar: { borderRadius: 3, columnWidth: "70%" } },
     dataLabels: { enabled: false },
-    xaxis: { categories, labels: { style: { fontSize: "10px" }, rotate: -45 } },
-    yaxis: { labels: { style: { fontSize: "10px" } } },
+    xaxis: {
+      categories,
+      labels: {
+        style: {
+          fontSize: "10px",
+          colors: isDark ? "#94a3b8" : "#64748b",
+        },
+        rotate: -45,
+      },
+    },
+    yaxis: {
+      labels: {
+        style: {
+          fontSize: "10px",
+          colors: isDark ? "#94a3b8" : "#64748b",
+        },
+      },
+    },
+    grid: {
+      borderColor: isDark ? "#334155" : "#e2e8f0",
+    },
     fill: { opacity: 1, colors },
     legend: { position: "top" as const, fontSize: "12px" },
-    tooltip: { y: { formatter: (v: number) => v.toFixed(0) } },
+    tooltip: {
+      theme: isDark ? "dark" : "light",
+      y: { formatter: (v: number) => v.toFixed(0) },
+    },
   };
 }
 
@@ -59,6 +89,8 @@ function ReportContent() {
   const { apiJson } = useApi();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
 
   const companyFromUrl = searchParams.get("company") ?? "";
 
@@ -148,6 +180,26 @@ function ReportContent() {
     { name: "Shift 3", data: report.nextDaysData.map((d: NextDayData) => d.s3) },
   ] : [];
 
+  const terspesanOptions = useMemo(
+    () => buildBarOptions(report?.arrDate ?? [], true, ["#3B82F6", "#10B981", "#F59E0B"], isDark),
+    [report?.arrDate, isDark]
+  );
+
+  const termuatOptions = useMemo(
+    () => buildBarOptions(report?.arrDate ?? [], true, ["#6366F1", "#8B5CF6", "#A78BFA"], isDark),
+    [report?.arrDate, isDark]
+  );
+
+  const allOptions = useMemo(
+    () => buildBarOptions(report?.arrDate ?? [], false, ["#6366F1", "#3B82F6", "#10B981"], isDark),
+    [report?.arrDate, isDark]
+  );
+
+  const nextOptions = useMemo(
+    () => buildBarOptions(report?.arrDateNext ?? [], true, ["#3B82F6", "#10B981", "#F59E0B"], isDark),
+    [report?.arrDateNext, isDark]
+  );
+
   return (
     <div className="space-y-4">
       <div>
@@ -159,7 +211,7 @@ function ReportContent() {
 
       <div className="flex items-center gap-4 bg-white dark:bg-gray-800 p-4 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm">
         <label className="text-sm font-black whitespace-nowrap text-slate-600 dark:text-slate-400">PILIH PLANT:</label>
-        
+
         <div ref={dropdownRef} className="relative w-full max-w-xs z-30">
           {/* Dropdown Trigger Button */}
           <button
@@ -218,8 +270,8 @@ function ReportContent() {
                       }}
                       className={cn(
                         "w-full text-left px-4 py-2.5 text-xs font-bold transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/30 flex items-center justify-between",
-                        selectedCompany === c.company_code 
-                          ? "text-primary bg-primary/5 dark:bg-primary/10" 
+                        selectedCompany === c.company_code
+                          ? "text-primary bg-primary/5 dark:bg-primary/10"
                           : "text-slate-700 dark:text-slate-300"
                       )}
                     >
@@ -260,7 +312,7 @@ function ReportContent() {
             </h3>
             <div style={{ height: 260 }}>
               <Chart
-                options={buildBarOptions(report.arrDate, true, ["#3B82F6","#10B981","#F59E0B"]) as any}
+                options={terspesanOptions as any}
                 series={terspesanSeries}
                 type="bar"
                 height="100%"
@@ -274,7 +326,7 @@ function ReportContent() {
             </h3>
             <div style={{ height: 260 }}>
               <Chart
-                options={buildBarOptions(report.arrDate, true, ["#6366F1","#8B5CF6","#A78BFA"]) as any}
+                options={termuatOptions as any}
                 series={termuatSeries}
                 type="bar"
                 height="100%"
@@ -288,7 +340,7 @@ function ReportContent() {
             </h3>
             <div style={{ height: 260 }}>
               <Chart
-                options={buildBarOptions(report.arrDate, false, ["#6366F1","#3B82F6","#10B981"]) as any}
+                options={allOptions as any}
                 series={allSeries}
                 type="bar"
                 height="100%"
@@ -302,7 +354,7 @@ function ReportContent() {
             </h3>
             <div style={{ height: 260 }}>
               <Chart
-                options={buildBarOptions(report.arrDateNext, true, ["#3B82F6","#10B981","#F59E0B"]) as any}
+                options={nextOptions as any}
                 series={nextSeries}
                 type="bar"
                 height="100%"
