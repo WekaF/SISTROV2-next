@@ -358,7 +358,7 @@ function AntrianContent() {
            <Button 
             variant="outline" 
             size="sm" 
-            className="h-10 bg-white border-2 font-bold uppercase text-[10px] tracking-widest"
+            className="h-10 bg-white dark:bg-slate-900 border-2 font-bold uppercase text-[10px] tracking-widest"
             onClick={() => queryClient.invalidateQueries({ queryKey: ["antrian"] })}
           >
             <RefreshCw className="h-4 w-4 mr-2" />
@@ -549,7 +549,7 @@ function AntrianContent() {
                         "flex flex-col p-4 rounded-2xl border-2 transition-all group text-left",
                         selectedGudang === g.idgudang
                           ? "bg-brand-50 border-brand-500 shadow-lg shadow-brand-500/10"
-                          : "bg-white border-slate-50 hover:border-slate-200"
+                          : "bg-white dark:bg-slate-900 border-slate-50 dark:border-slate-700 hover:border-slate-200 dark:hover:border-slate-600"
                       )}
                       onClick={() => setSelectedGudang(g.idgudang)}
                     >
@@ -557,11 +557,11 @@ function AntrianContent() {
                         <div className="flex items-center gap-2.5">
                           <div className={cn(
                             "p-1.5 rounded-lg transition-colors",
-                            selectedGudang === g.idgudang ? "bg-brand-500 text-white" : "bg-slate-100 text-slate-400 group-hover:bg-slate-200"
+                            selectedGudang === g.idgudang ? "bg-brand-500 text-white" : "bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-300 group-hover:bg-slate-200 dark:group-hover:bg-slate-600"
                           )}>
                             <Warehouse className="h-3.5 w-3.5" />
                           </div>
-                          <span className={cn("font-black text-[13px] uppercase tracking-tight", selectedGudang === g.idgudang ? "text-brand-700" : "text-slate-700")}>{g.namagudang}</span>
+                          <span className={cn("font-black text-[13px] uppercase tracking-tight", selectedGudang === g.idgudang ? "text-brand-700" : "text-slate-700 dark:text-slate-300")}>{g.namagudang}</span>
                         </div>
                       </div>
 
