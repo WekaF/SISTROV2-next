@@ -24,10 +24,10 @@ export default function PostoPage() {
   const { activeCompanyCode } = useCompany();
   const companyCode = activeCompanyCode ?? undefined;
   const isRekanan = role === "rekanan" || role === "transport";
-  const userId = (session?.user as any)?.id as string | undefined;
+  const username = (session?.user as any)?.username as string | undefined;
   const isAdminTI = roles.some((r) => ["superadmin", "ti"].includes(r.toLowerCase()));
   const canDeleteThisPosto = (row: any) =>
-    isAdminTI || (!!userId && row.updatedby === userId);
+    isAdminTI || (!!username && row.updatedby === username);
 
   // Edit POSTO: SuperAdmin/TI, Admin, Candal, dan StaffArea
   // Gudang, Security, Timbangan TIDAK boleh edit
