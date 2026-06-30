@@ -105,6 +105,13 @@
   scrollbar-width: none;
 }
 
+@utility custom-scrollbar {
+  &::-webkit-scrollbar { width: 8px; height: 8px; }
+  &::-webkit-scrollbar-track { @apply bg-slate-100 dark:bg-slate-800; }
+  &::-webkit-scrollbar-thumb { @apply bg-slate-300 dark:bg-slate-600 rounded-full; }
+  &::-webkit-scrollbar-thumb:hover { @apply bg-slate-800 dark:bg-slate-400; }
+}
+
 @keyframes scan-anim {
   0%, 100% { top: 10% }
   50% { top: 90% }

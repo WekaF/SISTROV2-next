@@ -77,34 +77,34 @@ export default function ReportAntrianPerGudang() {
   const totalTrucks = data?.length || 0;
 
   return (
-    <div className="flex flex-col h-full bg-[#f1f5f9] space-y-4 p-4">
+    <div className="flex flex-col h-full bg-slate-100 dark:bg-slate-800 space-y-4 p-4">
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-6 border border-[#e2e8f0] shadow-sm gap-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white dark:bg-slate-900 p-6 border border-slate-200 dark:border-slate-700 shadow-sm gap-4">
         <div>
-          <h1 className="text-2xl font-black tracking-tighter text-[#0f172a] uppercase leading-none">
+          <h1 className="text-2xl font-black tracking-tighter text-slate-900 dark:text-slate-100 uppercase leading-none">
             Report Antrian Per Gudang
           </h1>
-          <p className="text-[11px] text-[#64748b] mt-2 font-bold uppercase tracking-widest flex items-center">
-            <span className="w-2 h-2 bg-[#10b981] rounded-full mr-2 animate-pulse" />
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2 font-bold uppercase tracking-widest flex items-center">
+            <span className="w-2 h-2 bg-emerald-500 rounded-full mr-2 animate-pulse" />
             Live Monitoring System
           </p>
         </div>
         <div className="flex items-center gap-3 w-full md:w-auto">
           <div className="flex gap-2 mr-2">
-            <div className="bg-[#f8fafc] border border-[#e2e8f0] px-4 py-2 flex flex-col items-center min-w-[80px]">
-              <span className="text-[10px] font-bold text-[#64748b] uppercase leading-none mb-1">Gudang</span>
-              <span className="text-xl font-black text-[#1e293b] leading-none">{warehouseCount}</span>
+            <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-4 py-2 flex flex-col items-center min-w-[80px]">
+              <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase leading-none mb-1">Gudang</span>
+              <span className="text-xl font-black text-slate-800 dark:text-slate-200 leading-none">{warehouseCount}</span>
             </div>
-            <div className="bg-[#f8fafc] border border-[#e2e8f0] px-4 py-2 flex flex-col items-center min-w-[80px]">
-              <span className="text-[10px] font-bold text-[#64748b] uppercase leading-none mb-1">Truk</span>
-              <span className="text-xl font-black text-[#1e293b] leading-none">{totalTrucks}</span>
+            <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-4 py-2 flex flex-col items-center min-w-[80px]">
+              <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase leading-none mb-1">Truk</span>
+              <span className="text-xl font-black text-slate-800 dark:text-slate-200 leading-none">{totalTrucks}</span>
             </div>
           </div>
           <Button 
             variant="default" 
             onClick={handleRefresh}
             disabled={isLoading || isRefreshing}
-            className="rounded-none bg-[#1e293b] hover:bg-[#334155] text-white font-bold h-12 px-6"
+            className="rounded-none bg-slate-800 dark:bg-slate-700 hover:bg-slate-700 dark:hover:bg-slate-600 text-white font-bold h-12 px-6"
           >
             <RefreshCcw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
             SYNC
@@ -117,7 +117,7 @@ export default function ReportAntrianPerGudang() {
         <div className="flex gap-6 h-full min-w-max pr-6">
           {isLoading && !data ? (
              Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="w-[400px] bg-white border border-[#e2e8f0] p-6 space-y-4 animate-pulse">
+                <div key={i} className="w-[400px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-6 space-y-4 animate-pulse">
                   <div className="h-6 bg-gray-200 w-3/4"></div>
                   <div className="h-4 bg-gray-100 w-1/2"></div>
                   <div className="space-y-3 mt-8">
@@ -127,84 +127,84 @@ export default function ReportAntrianPerGudang() {
                 </div>
              ))
           ) : warehouseCount === 0 ? (
-            <div className="flex flex-col items-center justify-center w-full bg-white border border-dashed border-[#cbd5e1] py-24 opacity-60">
-              <AlertCircle className="w-16 h-16 text-[#94a3b8] mb-4" />
-              <p className="text-[#64748b] font-black uppercase tracking-widest">Tidak ada antrian aktif saat ini</p>
+            <div className="flex flex-col items-center justify-center w-full bg-white dark:bg-slate-900 border border-dashed border-slate-300 dark:border-slate-600 py-24 opacity-60">
+              <AlertCircle className="w-16 h-16 text-slate-400 dark:text-slate-500 mb-4" />
+              <p className="text-slate-500 dark:text-slate-400 font-black uppercase tracking-widest">Tidak ada antrian aktif saat ini</p>
             </div>
           ) : (
             Object.entries(groupedData).map(([warehouse, trucks]) => (
               <div 
                 key={warehouse} 
-                className="w-[400px] flex flex-col bg-[#ffffff] border border-[#e2e8f0] shadow-md overflow-hidden"
+                className="w-[400px] flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-md overflow-hidden"
               >
                 {/* Warehouse Header */}
-                <div className="bg-[#0f172a] p-5 border-b-4 border-[#3b82f6]">
+                <div className="bg-slate-900 dark:bg-slate-950 p-5 border-b-4 border-blue-500">
                   <div className="flex justify-between items-start">
                     <h3 className="font-black text-white text-lg tracking-tighter leading-tight uppercase truncate mr-4" title={warehouse}>
                       {warehouse}
                     </h3>
-                    <div className="bg-[#3b82f6] text-white font-black text-sm px-2.5 py-0.5 shrink-0">
+                    <div className="bg-blue-500 text-white font-black text-sm px-2.5 py-0.5 shrink-0">
                       {trucks.length}
                     </div>
                   </div>
                   <div className="flex items-center mt-2">
-                     <MapPin className="w-3 h-3 text-[#3b82f6] mr-1.5" />
-                     <span className="text-[10px] font-bold text-[#94a3b8] uppercase tracking-[0.2em]">Pos Sektor Antrian</span>
+                     <MapPin className="w-3 h-3 text-blue-500 mr-1.5" />
+                     <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Pos Sektor Antrian</span>
                   </div>
                 </div>
 
                 {/* Trucks List */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#f8fafc] custom-scrollbar">
+                <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 dark:bg-slate-900 custom-scrollbar">
                   {trucks.map((truck, idx) => (
                     <div 
                       key={truck.id || idx} 
-                      className="bg-white border-l-4 border-[#3b82f6] border-y border-r border-[#e2e8f0] shadow-sm hover:shadow-md transition-all group relative"
+                      className="bg-white dark:bg-slate-900 border-l-4 border-blue-500 border-y border-r border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-all group relative"
                     >
                       <div className="p-4">
                         <div className="flex justify-between items-start mb-4">
                           <div className="flex items-center gap-4">
-                            <div className="bg-[#f1f5f9] p-2.5 text-[#1e293b] border border-[#e2e8f0]">
+                            <div className="bg-slate-100 dark:bg-slate-800 p-2.5 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700">
                               <Truck className="w-6 h-6" />
                             </div>
                             <div>
-                              <div className="text-lg font-black text-[#0f172a] tracking-tighter leading-none mb-1 uppercase">
+                              <div className="text-lg font-black text-slate-900 dark:text-slate-100 tracking-tighter leading-none mb-1 uppercase">
                                 {truck.nopol}
                               </div>
-                              <div className="text-[10px] font-black text-[#3b82f6] uppercase tracking-widest">
+                              <div className="text-[10px] font-black text-blue-500 uppercase tracking-widest">
                                 {truck.driver || "UNASSIGNED DRIVER"}
                               </div>
                             </div>
                           </div>
-                          <div className="text-[10px] font-black text-[#94a3b8] opacity-30">
+                          <div className="text-[10px] font-black text-slate-400 dark:text-slate-500 opacity-30">
                             #{truck.number}
                           </div>
                         </div>
 
                         <div className="space-y-3">
-                          <div className="bg-[#f8fafc] p-3 border border-[#f1f5f9] space-y-2">
+                          <div className="bg-slate-50 dark:bg-slate-900 p-3 border border-slate-100 dark:border-slate-800 space-y-2">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center">
-                                <Hash className="w-3 h-3 text-[#64748b] mr-2" />
-                                <span className="text-[10px] font-bold text-[#64748b] uppercase tracking-wider">Booking</span>
+                                <Hash className="w-3 h-3 text-slate-500 dark:text-slate-400 mr-2" />
+                                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Booking</span>
                               </div>
-                              <span className="text-xs font-black text-[#0f172a] tracking-tight">{truck.bookingno}</span>
+                              <span className="text-xs font-black text-slate-900 dark:text-slate-100 tracking-tight">{truck.bookingno}</span>
                             </div>
                             <div className="flex items-start justify-between">
                               <div className="flex items-center pt-1">
-                                <Package className="w-3 h-3 text-[#64748b] mr-2" />
-                                <span className="text-[10px] font-bold text-[#64748b] uppercase tracking-wider">Produk</span>
+                                <Package className="w-3 h-3 text-slate-500 dark:text-slate-400 mr-2" />
+                                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Produk</span>
                               </div>
-                              <span className="text-xs font-bold text-[#334155] text-right max-w-[200px] leading-tight">{truck.produkString}</span>
+                              <span className="text-xs font-bold text-slate-700 dark:text-slate-300 text-right max-w-[200px] leading-tight">{truck.produkString}</span>
                             </div>
                           </div>
 
-                          <div className="flex justify-between items-center bg-[#1e293b] p-2 px-3">
-                             <div className="flex items-center text-[9px] font-bold text-[#94a3b8] uppercase tracking-widest">
+                          <div className="flex justify-between items-center bg-slate-800 dark:bg-slate-700 p-2 px-3">
+                             <div className="flex items-center text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
                                <Calendar className="w-3 h-3 mr-2" />
                                {truck.updatedonString || "-"}
                              </div>
                              <div className="text-xs font-black text-white">
-                               {truck.qty} <span className="text-[#3b82f6]">TON</span>
+                               {truck.qty} <span className="text-blue-500">TON</span>
                              </div>
                           </div>
                         </div>
@@ -218,22 +218,6 @@ export default function ReportAntrianPerGudang() {
         </div>
       </div>
 
-      <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 8px;
-          height: 8px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: #f1f5f9;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #cbd5e1;
-          border-radius: 0;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #1e293b;
-        }
-      `}</style>
     </div>
   );
 }
