@@ -120,23 +120,31 @@ function AntrianContent() {
   const [isSaving, setIsSaving] = useState(false);
   const [gudangList, setGudangList] = useState<any[]>([]);
 
-  // Fetch options on mount
+  // Fetch options on mount and company switch
   useEffect(() => {
     const fetchOptions = async () => {
       try {
-        const prodData = await apiJson("/api/Produk/Data");
+        const url = activeCompanyCode
+          ? `/api/Produk/Data?companyCode=${encodeURIComponent(activeCompanyCode)}`
+          : "/api/Produk/Data";
+        const prodData = await apiJson(url);
         setProdukOptions(prodData || []);
       } catch (err) {
         console.error("Failed to fetch products", err);
       }
     };
     fetchOptions();
-  }, [apiJson]);
+  }, [apiJson, activeCompanyCode]);
 
   // Fetch Gudang Summary/Options
   const { data: gudangSummaryRaw, isLoading: isLoadingGudang } = useQuery({
     queryKey: ["gudang-summary", activeCompanyCode],
-    queryFn: () => apiJson("/api/Gudang/ListGudang"),
+    queryFn: () => {
+      const url = activeCompanyCode
+        ? `/api/Gudang/ListGudang?companyCode=${encodeURIComponent(activeCompanyCode)}`
+        : "/api/Gudang/ListGudang";
+      return apiJson(url);
+    },
     enabled: !!activeCompanyCode,
   });
 
