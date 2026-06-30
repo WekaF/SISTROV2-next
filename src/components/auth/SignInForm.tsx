@@ -57,7 +57,7 @@ export default function SignInForm() {
             <img
               src="/images/logo/logopihd.png"
               alt="Pupuk Indonesia"
-              className="h-10 object-contain grayscale dark:brightness-0 dark:invert"
+              className="h-10 object-contain brightness-0 dark:invert"
             />
           </div>
           <div className="w-px h-8 bg-gray-300 dark:bg-gray-600"></div>
@@ -157,7 +157,7 @@ export default function SignInForm() {
           <img
             src="/images/logo/logo-anper.png"
             alt="Anak Perusahaan"
-            className="h-10 object-contain mx-auto dark:brightness-0 dark:invert dark:opacity-80"
+            className="h-10 object-contain mx-auto brightness-0 dark:invert dark:opacity-80"
           />
         </div>
       </div>

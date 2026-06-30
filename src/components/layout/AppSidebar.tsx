@@ -164,7 +164,7 @@ const AppSidebar: React.FC = () => {
                 alt="Sistro"
                 width={70}
                 height={32}
-                className="object-contain dark:brightness-0 dark:invert"
+                className="object-contain brightness-0 dark:invert"
               />
               <div className="h-6 w-px bg-gray-200 dark:bg-gray-800" />
               <Image
@@ -172,7 +172,7 @@ const AppSidebar: React.FC = () => {
                 alt="Pupuk Indonesia"
                 width={80}
                 height={32}
-                className="object-contain dark:brightness-0 dark:invert"
+                className="object-contain brightness-0 dark:invert"
               />
             </div>
           )}
