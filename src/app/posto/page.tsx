@@ -205,19 +205,19 @@ export default function PostoPage() {
       key: "tanggalString",
       header: "Tanggal",
       searchable: true,
-      render: (p) => <span className="text-gray-500 font-mono text-xs whitespace-nowrap">{p.tanggalString}</span>,
+      render: (p) => <span className="text-gray-500 dark:text-gray-400 font-mono text-xs whitespace-nowrap">{p.tanggalString}</span>,
     },
     {
       key: "tglakhirString",
       header: "Batas",
       searchable: true,
-      render: (p) => <span className="text-gray-500 font-mono text-xs whitespace-nowrap">{p.tglakhirString || "-"}</span>,
+      render: (p) => <span className="text-gray-500 dark:text-gray-400 font-mono text-xs whitespace-nowrap">{p.tglakhirString || "-"}</span>,
     },
     {
       key: "tanggaljatuhtempoString",
       header: "Jatuh Tempo",
       searchable: true,
-      render: (p) => <span className="text-gray-500 font-mono text-xs whitespace-nowrap">{p.tanggaljatuhtempoString || "-"}</span>,
+      render: (p) => <span className="text-gray-500 dark:text-gray-400 font-mono text-xs whitespace-nowrap">{p.tanggaljatuhtempoString || "-"}</span>,
     },
     {
       key: "wilayah",
@@ -331,7 +331,7 @@ export default function PostoPage() {
       key: "updatedby",
       header: "PIC",
       searchable: true,
-      render: (p) => <span className="text-xs text-gray-500">{p.updatedby || "-"}</span>,
+      render: (p) => <span className="text-xs text-gray-500 dark:text-gray-400">{p.updatedby || "-"}</span>,
     },
     {
       key: "percepatan",
@@ -430,7 +430,7 @@ export default function PostoPage() {
             searchPlaceholder="Search No POSTO or Transportir..."
             toolbar={
               <div className="flex items-center gap-2">
-                <div className="flex items-center gap-2 text-sm text-gray-500">
+                <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                   <Calendar className="h-4 w-4 shrink-0" />
                   <Input
                     type="date"
@@ -503,8 +503,8 @@ export default function PostoPage() {
                   <div className="bg-gray-50 dark:bg-white/5 p-4 rounded-xl">
                     <p className="text-[10px] text-gray-400 uppercase font-black">Quantity Summary</p>
                     <div className="mt-3 grid grid-cols-2 gap-4">
-                      <div><p className="text-[10px] text-gray-500">Plan</p><p className="text-lg font-bold">{(selectedPosto.qty || selectedPosto.Qty || 0).toLocaleString()} T</p></div>
-                      <div><p className="text-[10px] text-gray-500">Realization</p><p className="text-lg font-bold text-emerald-600">{(selectedPosto.qtyrealisasi || selectedPosto.RE_TON || selectedPosto.realization || 0).toLocaleString()} T</p></div>
+                      <div><p className="text-[10px] text-gray-500 dark:text-gray-400">Plan</p><p className="text-lg font-bold">{(selectedPosto.qty || selectedPosto.Qty || 0).toLocaleString()} T</p></div>
+                      <div><p className="text-[10px] text-gray-500 dark:text-gray-400">Realization</p><p className="text-lg font-bold text-emerald-600">{(selectedPosto.qtyrealisasi || selectedPosto.RE_TON || selectedPosto.realization || 0).toLocaleString()} T</p></div>
                     </div>
                   </div>
                 </div>
@@ -564,7 +564,7 @@ export default function PostoPage() {
                       {
                         key: "tanggalString",
                         header: "Tanggal",
-                        render: (row: any) => <span className="text-gray-500 font-mono text-xs">{row.tanggalString}</span>
+                        render: (row: any) => <span className="text-gray-500 dark:text-gray-400 font-mono text-xs">{row.tanggalString}</span>
                       },
                       {
                         key: "shift",
@@ -614,15 +614,15 @@ export default function PostoPage() {
                   <div>Vendor: <strong>{selectedPosto.transportString || selectedPosto.TransName || selectedPosto.transportir}</strong></div>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-gray-500">Tanggal Posto</label>
+                  <label className="text-xs font-bold text-gray-500 dark:text-gray-400">Tanggal Posto</label>
                   <Input type="date" value={editForm.date} onChange={(e) => setEditForm({ ...editForm, date: e.target.value })} required />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-gray-500">Kuantitas (Ton)</label>
+                  <label className="text-xs font-bold text-gray-500 dark:text-gray-400">Kuantitas (Ton)</label>
                   <Input type="number" value={editForm.qty} onChange={(e) => setEditForm({ ...editForm, qty: Number(e.target.value) })} required />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-gray-500">Tanggal Jatuh Tempo</label>
+                  <label className="text-xs font-bold text-gray-500 dark:text-gray-400">Tanggal Jatuh Tempo</label>
                   <Input type="date" value={editForm.expiryDate} onChange={(e) => setEditForm({ ...editForm, expiryDate: e.target.value })} />
                 </div>
               </CardContent>

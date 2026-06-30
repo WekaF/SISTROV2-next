@@ -217,7 +217,7 @@ export default function TicketPage() {
                   </tr>
                 ) : tikets.length === 0 ? (
                   <tr>
-                    <td colSpan={isRekanan ? 7 : 8} className="px-5 py-12 text-center text-gray-500 italic">
+                    <td colSpan={isRekanan ? 7 : 8} className="px-5 py-12 text-center text-gray-500 dark:text-gray-400 italic">
                       Tidak ada data tiket.
                     </td>
                   </tr>
@@ -260,7 +260,7 @@ export default function TicketPage() {
                           {st.label}
                         </Badge>
                       </td>
-                      <td className="px-5 py-4 text-sm text-gray-500">
+                      <td className="px-5 py-4 text-sm text-gray-500 dark:text-gray-400">
                         <div className="flex items-center gap-1">
                           <Calendar className="h-3.5 w-3.5" />
                           {t.UpdatedOn ?? t.updatedon
