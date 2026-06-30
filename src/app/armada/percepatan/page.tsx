@@ -182,25 +182,25 @@ export default function ArmadaPercepatanPage() {
             <table className="w-full text-left">
               <thead className="bg-gray-50 dark:bg-white/[0.02]">
                 <tr className="border-b border-gray-100 dark:border-gray-800">
-                  <th className="px-6 py-4 text-[10px] font-black uppercase text-gray-500 tracking-widest">Plant</th>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase text-gray-500 tracking-widest">Jenis Kendaraan</th>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase text-gray-500 tracking-widest text-center">Sumbu</th>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase text-gray-500 tracking-widest text-center">Max Tonase</th>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase text-gray-500 tracking-widest text-center">Tonase Percepatan</th>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase text-gray-500 tracking-widest text-center">Valid From</th>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase text-gray-500 tracking-widest text-center">Valid To</th>
+                  <th className="px-6 py-4 text-[10px] font-black uppercase text-gray-500 dark:text-gray-400 tracking-widest">Plant</th>
+                  <th className="px-6 py-4 text-[10px] font-black uppercase text-gray-500 dark:text-gray-400 tracking-widest">Jenis Kendaraan</th>
+                  <th className="px-6 py-4 text-[10px] font-black uppercase text-gray-500 dark:text-gray-400 tracking-widest text-center">Sumbu</th>
+                  <th className="px-6 py-4 text-[10px] font-black uppercase text-gray-500 dark:text-gray-400 tracking-widest text-center">Max Tonase</th>
+                  <th className="px-6 py-4 text-[10px] font-black uppercase text-gray-500 dark:text-gray-400 tracking-widest text-center">Tonase Percepatan</th>
+                  <th className="px-6 py-4 text-[10px] font-black uppercase text-gray-500 dark:text-gray-400 tracking-widest text-center">Valid From</th>
+                  <th className="px-6 py-4 text-[10px] font-black uppercase text-gray-500 dark:text-gray-400 tracking-widest text-center">Valid To</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
+                    <td colSpan={7} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
                       <Loader2 className="h-8 w-8 animate-spin mx-auto text-emerald-500" />
                     </td>
                   </tr>
                 ) : filteredData.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-12 text-center text-gray-500 italic">
+                    <td colSpan={7} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400 italic">
                       Belum ada data percepatan
                     </td>
                   </tr>
@@ -242,10 +242,10 @@ export default function ArmadaPercepatanPage() {
                           </span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-center text-sm text-gray-500">
+                      <td className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
                         {p.TanggalAwal ? new Date(p.TanggalAwal).toLocaleDateString("id-ID") : "-"}
                       </td>
-                      <td className="px-6 py-4 text-center text-sm text-gray-500">
+                      <td className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
                         {p.TanggalAkhir ? new Date(p.TanggalAkhir).toLocaleDateString("id-ID") : "-"}
                       </td>
                     </tr>
@@ -318,17 +318,17 @@ export default function ArmadaPercepatanPage() {
                   <table className="w-full text-left">
                     <thead className="bg-gray-50 dark:bg-white/[0.02]">
                       <tr className="border-b border-gray-100 dark:border-white/5">
-                        <th className="px-4 py-3 text-[10px] font-black uppercase text-gray-500 tracking-widest">
+                        <th className="px-4 py-3 text-[10px] font-black uppercase text-gray-500 dark:text-gray-400 tracking-widest">
                           Jenis Truk
                         </th>
-                        <th className="px-4 py-3 text-[10px] font-black uppercase text-gray-500 tracking-widest">
+                        <th className="px-4 py-3 text-[10px] font-black uppercase text-gray-500 dark:text-gray-400 tracking-widest">
                           Sumbu
                         </th>
-                        <th className="px-4 py-3 text-[10px] font-black uppercase text-gray-500 tracking-widest text-center">
+                        <th className="px-4 py-3 text-[10px] font-black uppercase text-gray-500 dark:text-gray-400 tracking-widest text-center">
                           Max (Ton)
                         </th>
                         <th
-                          className="px-4 py-3 text-[10px] font-black uppercase text-gray-500 tracking-widest text-center"
+                          className="px-4 py-3 text-[10px] font-black uppercase text-gray-500 dark:text-gray-400 tracking-widest text-center"
                           style={{ width: 180 }}
                         >
                           Tonase Percepatan
@@ -346,7 +346,7 @@ export default function ArmadaPercepatanPage() {
                               {item.nama}
                             </Badge>
                           </td>
-                          <td className="px-4 py-3 text-center text-sm font-bold text-gray-700">
+                          <td className="px-4 py-3 text-center text-sm font-bold text-gray-700 dark:text-gray-300">
                             {Number(item.muatan).toLocaleString()}
                           </td>
                           <td className="px-4 py-3">
