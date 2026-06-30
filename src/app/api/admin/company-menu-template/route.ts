@@ -45,7 +45,7 @@ export async function POST(request: Request) {
 
   const username = (session?.user as any)?.username ?? "unknown";
 
-  const existing = await prismaLog.companyMenuTemplate.findUnique({
+  const existing = await prismaLog.companyMenuTemplate.findFirst({
     where: { companyCode: companyCode ?? null },
   });
 
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
 
   if (existing) {
     const updated = await prismaLog.companyMenuTemplate.update({
-      where: { companyCode: companyCode ?? null },
+      where: { id: existing.id },
       data: { menuGroup, menuItems: menuItemsJson, updatedBy: username },
     });
     return NextResponse.json({ success: true, data: updated });
@@ -90,7 +90,7 @@ export async function DELETE(request: Request) {
 
   const companyCode = hasCompanyCode ? searchParams.get("companyCode") : null;
 
-  const existing = await prismaLog.companyMenuTemplate.findUnique({
+  const existing = await prismaLog.companyMenuTemplate.findFirst({
     where: { companyCode },
   });
   if (!existing) {
@@ -98,7 +98,7 @@ export async function DELETE(request: Request) {
   }
 
   await prismaLog.companyMenuTemplate.delete({
-    where: { companyCode },
+    where: { id: existing.id },
   });
 
   return NextResponse.json({ success: true });

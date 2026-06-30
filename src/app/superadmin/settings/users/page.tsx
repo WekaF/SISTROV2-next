@@ -11,11 +11,32 @@ import Badge from "@/components/ui/badge/Badge";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useCompany } from "@/context/CompanyContext";
+import { useSession } from "next-auth/react";
+import { normalizeRole } from "@/lib/role-utils";
 
 export default function UserConfigPage() {
+  const { data: session } = useSession();
   const { addToast } = useToast();
   const queryClient = useQueryClient();
+  const { activeCompanyCode } = useCompany();
+
+  const userRole = session?.user ? normalizeRole((session.user as any).role) : null;
+  const isSuperAdmin = userRole === "superadmin";
+
   const [searchTerm, setSearchTerm] = useState("");
+
+  if (session && !isSuperAdmin) {
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        <div className="text-center space-y-2">
+          <ShieldCheck className="h-12 w-12 text-red-500 mx-auto" />
+          <h2 className="text-xl font-black uppercase tracking-tight text-red-500">Akses Ditolak</h2>
+          <p className="text-sm font-medium text-gray-500">Halaman ini hanya dapat diakses oleh SuperAdmin atau TI.</p>
+        </div>
+      </div>
+    );
+  }
 
   const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -34,9 +55,12 @@ export default function UserConfigPage() {
   const resetForm = () => { setFormData(emptyForm); setIsEditing(false); setSelectedUser(null); setShowPassword(false); setCurrentRoles([]); };
 
   const { data: usersData, isLoading } = useQuery({
-    queryKey: ["admin-users"],
+    queryKey: ["admin-users", activeCompanyCode],
     queryFn: async () => {
-      const res = await fetch("/api/admin/users");
+      const url = activeCompanyCode
+        ? `/api/admin/users?companyCode=${encodeURIComponent(activeCompanyCode)}`
+        : "/api/admin/users";
+      const res = await fetch(url);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to fetch users");
       return (data || []) as any[];

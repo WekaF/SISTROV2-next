@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { aspnetFetchServer } from "@/lib/api-client";
 
+import { cookies } from "next/headers";
+
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user) {
@@ -10,13 +12,21 @@ export async function GET(req: NextRequest) {
   }
 
   const token = (session?.user as any)?.aspnetToken as string;
-  const companyCode = new URL(req.url).searchParams.get("companyCode") ?? undefined;
+  let companyCode = new URL(req.url).searchParams.get("companyCode") ?? undefined;
+  if (!companyCode) {
+    const cookieStore = await cookies();
+    companyCode = cookieStore.get("sistro_active_company")?.value ?? undefined;
+  }
 
   try {
     const body: Record<string, unknown> = { Page: 1, Length: 1, mode: "aktif" };
     if (companyCode) body.companyCode = companyCode;
 
-    const res = await aspnetFetchServer("/api/Antrian/DataTable", token, {
+    const url = companyCode
+      ? `/api/Antrian/DataTable?companyCode=${encodeURIComponent(companyCode)}`
+      : "/api/Antrian/DataTable";
+
+    const res = await aspnetFetchServer(url, token, {
       method: "POST",
       body: JSON.stringify(body),
     });

@@ -420,6 +420,7 @@ export default function PostoPage() {
             columns={columns}
             queryKey={["posto", companyCode, dateFilter]}
             fetcher={fetcher}
+            defaultPageSize={50}
             rowKey={(p) => p.noposto || p.NoPOSTO || p.id}
             searchPlaceholder="Search No POSTO or Transportir..."
             toolbar={

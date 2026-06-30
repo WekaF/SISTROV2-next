@@ -180,7 +180,6 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
           { name: "Gudang Tujuan Bagian", path: "/gudang/tujuan-bagian" },
           { name: "Monitoring Pemuatan", path: "/gudang/targets" },
           { name: "Traffic Antrian", path: "/gudang/trafik" },
-          { name: "Bypass Antrian", path: "/gudang/bypass" },
         ],
       },
       {
@@ -284,7 +283,6 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
           { name: "Gudang Tujuan Bagian", path: "/gudang/tujuan-bagian" },
           { name: "Monitoring Pemuatan", path: "/gudang/targets" },
           { name: "Traffic Antrian", path: "/gudang/trafik" },
-          { name: "Bypass Antrian", path: "/gudang/bypass" },
         ],
       },
       {
@@ -299,8 +297,6 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
         ],
       },
       { icon: <ClipboardList className="h-5 w-5" />, name: "Tiket", path: "/admin/tickets" },
-      { icon: <Users className="h-5 w-5" />, name: "User Plant", path: "/superadmin/settings/users" },
-      { icon: <CalendarClock className="h-5 w-5" />, name: "Manajemen Shift", path: "/superadmin/settings/shifts" },
       {
         icon: <FileText className="h-5 w-5" />,
         name: "Laporan",
@@ -360,7 +356,6 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
         name: "Gudang",
         subItems: [
           { name: "Antrian", path: "/antrian" },
-          { name: "Bypass Antrian", path: "/antrian/bypass" },
           { name: "Gudang", path: "/gudang" },
           { name: "Trafik Antrian Gudang", path: "/gudang/trafik" },
         ],
@@ -630,7 +625,6 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
         name: "Gudang",
         subItems: [
           { name: "Antrian", path: "/antrian" },
-          { name: "Bypass Antrian", path: "/antrian/bypass" },
           { name: "Gudang", path: "/gudang" },
         ],
       },
@@ -683,7 +677,6 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
           { name: "Gudang Tujuan Bagian", path: "/gudang/tujuan-bagian" },
           { name: "Monitoring Pemuatan", path: "/gudang/targets" },
           { name: "Traffic Antrian", path: "/gudang/trafik" },
-          { name: "Bypass Antrian", path: "/gudang/bypass" },
         ],
       },
       {
@@ -744,7 +737,6 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
         name: "Gudang",
         subItems: [
           { name: "Antrian", path: "/antrian" },
-          { name: "Bypass Antrian", path: "/antrian/bypass" },
           { name: "Gudang", path: "/gudang" },
           { name: "Trafik Antrian Gudang", path: "/gudang/trafik" },
         ],
@@ -754,6 +746,7 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
         name: "Armada",
         subItems: [{ name: "List Armada", path: "/armada" }],
       },
+      { icon: <ArrowRightLeft className="h-5 w-5" />, name: "Resume Transit", path: "/resume-transit" },
       {
         icon: <FileText className="h-5 w-5" />,
         name: "Laporan",

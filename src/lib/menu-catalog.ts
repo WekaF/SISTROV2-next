@@ -39,7 +39,6 @@ export const MENU_CATALOG: CatalogGroup[] = [
     category: "Gudang",
     items: [
       { path: "/antrian", label: "Antrian" },
-      { path: "/antrian/bypass", label: "Bypass Antrian" },
       { path: "/antrian/all-plant", label: "Antrian All Plant" },
       { path: "/antrian/report-psp", label: "Antrian PSP" },
       { path: "/antrian/report-pkt", label: "Antrian PKT" },
@@ -48,7 +47,6 @@ export const MENU_CATALOG: CatalogGroup[] = [
       { path: "/gudang/tujuan-bagian", label: "Gudang Tujuan Bagian" },
       { path: "/gudang/targets", label: "Monitoring Pemuatan" },
       { path: "/gudang/trafik", label: "Traffic Antrian" },
-      { path: "/gudang/bypass", label: "Bypass Antrian (via Gudang)" },
     ],
   },
   {
@@ -120,7 +118,6 @@ export const MENU_CATALOG: CatalogGroup[] = [
       { path: "/superadmin/settings/role-menu", label: "Role & Menu Group" },
       { path: "/superadmin/settings/user-menu", label: "Menu Per User" },
       { path: "/superadmin/settings/company-menu", label: "Menu per Perusahaan" },
-      { path: "/superadmin/settings/shifts", label: "Manajemen Shift" },
     ],
   },
 ];

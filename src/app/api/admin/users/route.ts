@@ -2,21 +2,29 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { aspnetFetchServer } from "@/lib/api-client";
+import { cookies } from "next/headers";
 
 function isSuperAdmin(session: any): boolean {
   const roles = (session?.user as any)?.roles || [];
   return !!session?.user && roles.some((r: string) => ["superadmin", "ti"].includes(r.toLowerCase()));
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const session = await getServerSession(authOptions);
     const userRoles = (session?.user as any)?.roles || [];
     const isAdmin = !!session?.user && userRoles.some((r: string) => ["superadmin", "admin", "ti"].includes(r.toLowerCase()));
     if (!isAdmin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+    const { searchParams } = new URL(req.url);
+    const cookieStore = await cookies();
+    const companyCode = searchParams.get("companyCode") || cookieStore.get("sistro_active_company")?.value || "";
+
     const token = (session?.user as any)?.aspnetToken as string;
-    const res = await aspnetFetchServer('/api/UserAccount/ListUser', token);
+    const url = companyCode
+      ? `/api/UserAccount/ListUser?companyCode=${encodeURIComponent(companyCode)}`
+      : '/api/UserAccount/ListUser';
+    const res = await aspnetFetchServer(url, token);
     if (!res.ok) throw new Error("Failed to fetch users from API");
     
     const payload = await res.json();

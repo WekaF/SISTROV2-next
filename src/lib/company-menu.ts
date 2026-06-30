@@ -39,7 +39,7 @@ export async function resolveCompanyMenuTemplate(
   }
 
   // 2. Fall back to global template (companyCode IS NULL)
-  const global = await prismaLog.companyMenuTemplate.findUnique({
+  const global = await prismaLog.companyMenuTemplate.findFirst({
     where: { companyCode: null },
   });
   if (global) {

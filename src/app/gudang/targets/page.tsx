@@ -21,7 +21,9 @@ import {
 import { cn } from "@/lib/utils";
 
 interface GudangTarget {
-  id: string;
+  id: string | number;
+  idgudang?: string;
+  idproduk?: string;
   namagudang: string;
   namaproduk: string;
   antrianproduk: number;
@@ -207,7 +209,7 @@ export default function GudangTargetsPage() {
             columns={columns}
             queryKey={["gudang-targets", activeCompanyCode]}
             fetcher={fetcher}
-            rowKey={(r) => r.id}
+            rowKey={(r) => r.id || `${r.idgudang}-${r.idproduk}`}
             striped
             compact
             searchPlaceholder="Cari nama gudang / produk..."
