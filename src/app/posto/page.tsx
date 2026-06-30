@@ -24,16 +24,10 @@ export default function PostoPage() {
   const { activeCompanyCode } = useCompany();
   const companyCode = activeCompanyCode ?? undefined;
   const isRekanan = role === "rekanan" || role === "transport";
-
-  // Hanya StaffArea (semua varian) dan SuperAdmin/TI yang boleh menghapus POSTO
-  const POSTO_DELETE_ROLES = [
-    "staffarea", "staffarewilayah1", "staffarewilayah2",
-    "staffarealayah1", "staffarealayah2", "staffareajatim",
-    "superadmin", "ti",
-  ];
-  const canDeletePosto = roles.some((r) =>
-    POSTO_DELETE_ROLES.includes(r.toLowerCase())
-  );
+  const userId = (session?.user as any)?.id as string | undefined;
+  const isSuperAdmin = roles.some((r) => r.toLowerCase() === "superadmin");
+  const canDeleteThisPosto = (row: any) =>
+    isSuperAdmin || (!!userId && row.updatedby === userId);
 
   // Edit POSTO: SuperAdmin/TI, Admin, Candal, dan StaffArea
   // Gudang, Security, Timbangan TIDAK boleh edit
@@ -398,7 +392,7 @@ export default function PostoPage() {
                 <FileEdit className="h-3.5 w-3.5 mr-1" /> Edit
               </Button>
             )}
-            {canDeletePosto && (
+            {canDeleteThisPosto(p) && (
               <Button variant="outline" size="sm" className="text-red-500 border-red-200 hover:bg-red-50 rounded-none h-7" onClick={() => handleDelete(id, noposto)}>
                 <Trash2 className="h-3.5 w-3.5 mr-1" /> Hapus
               </Button>
