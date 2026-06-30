@@ -258,14 +258,14 @@ export default function AllUsersPage() {
                             <div className="flex items-center justify-center gap-1">
                               <button
                                 onClick={() => openEdit(u.username)}
-                                className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-500 hover:text-white transition-colors flex items-center justify-center"
+                                className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-400 hover:bg-indigo-500 hover:text-white transition-colors flex items-center justify-center"
                                 title="Edit"
                               >
                                 <Edit className="h-3.5 w-3.5" />
                               </button>
                               <button
                                 onClick={() => addToast({ title: "Info", description: "Fitur hapus dalam pengembangan.", variant: "warning" })}
-                                className="w-8 h-8 rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center"
+                                className="w-8 h-8 rounded-lg bg-red-50 text-red-500 dark:bg-red-500/15 dark:text-red-400 hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center"
                                 title="Hapus"
                               >
                                 <Trash2 className="h-3.5 w-3.5" />
@@ -330,7 +330,7 @@ export default function AllUsersPage() {
                     <Input value={editForm.username} disabled className="mt-1 bg-muted" />
                   </div>
                   <div>
-                    <label className="text-xs font-semibold uppercase tracking-wide text-indigo-600">Email *</label>
+                    <label className="text-xs font-semibold uppercase tracking-wide text-indigo-600 dark:text-indigo-400">Email *</label>
                     <Input
                       type="email"
                       value={editForm.email}
@@ -391,7 +391,7 @@ export default function AllUsersPage() {
                 </div>
 
                 <div className="rounded-xl border border-dashed border-red-200 bg-red-50 dark:bg-red-500/10 dark:border-red-500/30 p-4">
-                  <label className="text-xs font-semibold text-red-600 uppercase tracking-wide block mb-1">
+                  <label className="text-xs font-semibold text-red-600 dark:text-red-400 uppercase tracking-wide block mb-1">
                     Ganti Password (Opsional)
                   </label>
                   <div className="relative mt-1">
