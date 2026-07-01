@@ -101,6 +101,7 @@ function SectionAccordion({ section }: { section: Section }) {
   return (
     <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
       <button
+        type="button"
         onClick={() => setOpen((v) => !v)}
         className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
       >
@@ -258,7 +259,7 @@ export default function AntrianHorizontalPage() {
         </div>
       )}
 
-      {!isLoading && sections.length === 0 && !error && (
+      {!isLoading && !!selectedCompany && sections.length === 0 && !error && (
         <div className="text-center text-[11px] text-slate-400 font-bold uppercase tracking-widest py-16 bg-slate-50 dark:bg-slate-950 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
           Belum ada data antrian.
         </div>
