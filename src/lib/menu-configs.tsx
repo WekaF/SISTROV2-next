@@ -175,6 +175,8 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
         name: "Gudang",
         subItems: [
           { name: "Antrian", path: "/antrian" },
+          { name: "Antrian Horizontal", path: "/antrian/horizontal" },
+          { name: "Antrian Report", path: "/antrian/report" },
           { name: "List Gudang", path: "/gudang" },
           { name: "Antrian Per Unit", path: "/gudang/unit-queue" },
           { name: "Gudang Tujuan Bagian", path: "/gudang/tujuan-bagian" },
@@ -212,7 +214,7 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
         icon: <FileText className="h-5 w-5" />,
         name: "Laporan",
         subItems: [
-          { name: "Laporan Tiket PI", path: "/reports/tiket-pi" },
+          { name: "laporan tiket", path: "/reports/tiket-pi" },
           { name: "Report Pemesanan Tiket", path: "/reports/booking" },
           { name: "Report Realisasi Pemuatan", path: "/reports/loading" },
           { name: "Report Pembatalan Tiket", path: "/reports/cancelation" },
@@ -279,6 +281,8 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
         name: "Gudang",
         subItems: [
           { name: "Antrian", path: "/antrian" },
+          { name: "Antrian Horizontal", path: "/antrian/horizontal" },
+          { name: "Antrian Report", path: "/antrian/report" },
           { name: "List Gudang", path: "/gudang" },
           { name: "Antrian Per Unit", path: "/gudang/unit-queue" },
           { name: "Gudang Tujuan Bagian", path: "/gudang/tujuan-bagian" },
@@ -357,6 +361,8 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
         name: "Gudang",
         subItems: [
           { name: "Antrian", path: "/antrian" },
+          { name: "Antrian Horizontal", path: "/antrian/horizontal" },
+          { name: "Antrian Report", path: "/antrian/report" },
           { name: "Gudang", path: "/gudang" },
           { name: "Trafik Antrian Gudang", path: "/gudang/trafik" },
         ],
@@ -446,6 +452,8 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
           { name: "Antrian All Plant", path: "/antrian/all-plant" },
           { name: "Antrian PSP", path: "/antrian/report-psp" },
           { name: "Antrian PKT", path: "/antrian/report-pkt" },
+          { name: "Antrian Horizontal", path: "/antrian/horizontal" },
+          { name: "Antrian Report", path: "/antrian/report" },
         ],
       },
       { icon: <ArrowRightLeft className="h-5 w-5" />, name: "Resume Transit", path: "/resume-transit" },
@@ -453,7 +461,7 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
         icon: <FileText className="h-5 w-5" />,
         name: "Laporan",
         subItems: [
-          { name: "Laporan Tiket PI", path: "/reports/tiket-pi" },
+          { name: "laporan tiket", path: "/reports/tiket-pi" },
         ],
       },
     ],
@@ -587,6 +595,8 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
         name: "Gudang",
         subItems: [
           { name: "Antrian", path: "/antrian" },
+          { name: "Antrian Horizontal", path: "/antrian/horizontal" },
+          { name: "Antrian Report", path: "/antrian/report" },
           { name: "Gudang", path: "/gudang" },
           { name: "Gudang Tujuan Bagian", path: "/gudang/tujuan-bagian" },
           { name: "Trafik Antrian Gudang", path: "/gudang/trafik" },
@@ -797,7 +807,7 @@ export function getPathsForGroup(group: string): string[] {
     item.subItems
       ? item.subItems.map((s) => s.path)
       : item.path
-      ? [item.path]
-      : []
+        ? [item.path]
+        : []
   );
 }
