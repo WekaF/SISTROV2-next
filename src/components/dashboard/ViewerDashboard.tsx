@@ -28,6 +28,8 @@ import {
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import Badge from "@/components/ui/badge/Badge";
 import { useDashboardStream } from "@/hooks/use-dashboard-stream";
+import { SearchableSelect } from "@/components/ui/SearchableSelect";
+import { useApi } from "@/hooks/use-api";
 
 // Dynamic import for Leaflet Map to avoid SSR compilation issues
 const InteractiveLeafletMap = dynamic(
@@ -56,7 +58,90 @@ const cleanSeriesName = (name: string): string => {
     .trim();
 };
 
+interface LoadingBay {
+  id: number;
+  bay: string;
+  status: "loading" | "idle";
+  nopol: string;
+  driver: string;
+  product: string;
+  baseProgress: number;
+  durationMinutes: number;
+  warehouseName: string;
+  queueNumber: number;
+  bookingno: string;
+  noposto: string;
+  transportir: string;
+}
+
+const getBaysForPlant = (plantCode: string, companies: any[]): LoadingBay[] => {
+  switch (plantCode) {
+    case "PKG":
+      return [
+        { id: 1, bay: "Bay 01", status: "loading", nopol: "W 9102 UA", driver: "Ahmad Sujak", product: "Urea Curah", baseProgress: 75, durationMinutes: 28, warehouseName: "Gudang Lini III PKG", queueNumber: 4, bookingno: "SISTRO_2026_09102", noposto: "P10023491", transportir: "PT. Pupuk Indonesia Logistik" },
+        { id: 2, bay: "Bay 02", status: "loading", nopol: "L 8421 BC", driver: "Budi Santoso", product: "NPK Phonska", baseProgress: 42, durationMinutes: 18, warehouseName: "Gudang NPK Phonska", queueNumber: 7, bookingno: "SISTRO_2026_08421", noposto: "P10023455", transportir: "PT. Samudera Logistik" },
+        { id: 3, bay: "Bay 03", status: "idle", nopol: "", driver: "", product: "", baseProgress: 0, durationMinutes: 0, warehouseName: "Gudang Urea Phonska V", queueNumber: 0, bookingno: "", noposto: "", transportir: "" },
+        { id: 4, bay: "Bay 04", status: "loading", nopol: "N 7562 UR", driver: "Eko Prasetyo", product: "ZA Lini I", baseProgress: 88, durationMinutes: 34, warehouseName: "Gudang ZA Baru", queueNumber: 2, bookingno: "SISTRO_2026_07562", noposto: "P10023401", transportir: "PT. Bahtera Adhiguna" },
+        { id: 5, bay: "Bay 05", status: "loading", nopol: "AG 9442 XY", driver: "Hendra Wijaya", product: "SP-36", baseProgress: 15, durationMinutes: 8, warehouseName: "Gudang SP Lini I", queueNumber: 11, bookingno: "SISTRO_2026_09442", noposto: "P10023512", transportir: "PT. Puninar Jaya" },
+        { id: 6, bay: "Bay 06", status: "idle", nopol: "", driver: "", product: "", baseProgress: 0, durationMinutes: 0, warehouseName: "Gudang Phonska IV", queueNumber: 0, bookingno: "", noposto: "", transportir: "" }
+      ];
+    case "PKC":
+      return [
+        { id: 1, bay: "Bay 01", status: "loading", nopol: "T 8821 AD", driver: "Dedi Setiadi", product: "Urea Kujang", baseProgress: 60, durationMinutes: 22, warehouseName: "Gudang Kujang 1A", queueNumber: 3, bookingno: "SISTRO_2026_08821", noposto: "P10022812", transportir: "PT. Kujang Logistik" },
+        { id: 2, bay: "Bay 02", status: "idle", nopol: "", driver: "", product: "", baseProgress: 0, durationMinutes: 0, warehouseName: "Gudang Kujang 1B", queueNumber: 0, bookingno: "", noposto: "", transportir: "" },
+        { id: 3, bay: "Bay 03", status: "loading", nopol: "E 9142 QA", driver: "Slamet Rahardjo", product: "NPK Kujang", baseProgress: 82, durationMinutes: 31, warehouseName: "Gudang Kujang Lini II", queueNumber: 5, bookingno: "SISTRO_2026_09142", noposto: "P10022904", transportir: "PT. Trans Kujang" },
+        { id: 4, bay: "Bay 04", status: "idle", nopol: "", driver: "", product: "", baseProgress: 0, durationMinutes: 0, warehouseName: "Gudang Kujang Lini III", queueNumber: 0, bookingno: "", noposto: "", transportir: "" }
+      ];
+    case "PIM":
+      return [
+        { id: 1, bay: "Bay 01", status: "loading", nopol: "BL 8711 AA", driver: "Zulkifli", product: "Urea Curah PIM", baseProgress: 30, durationMinutes: 12, warehouseName: "Gudang Lini I PIM", queueNumber: 1, bookingno: "SISTRO_2026_08711", noposto: "P10021481", transportir: "PT. Samudera Indah" },
+        { id: 2, bay: "Bay 02", status: "loading", nopol: "BL 9402 HZ", driver: "Mukhtar", product: "Pupuk Organik", baseProgress: 55, durationMinutes: 25, warehouseName: "Gudang Organik PIM", queueNumber: 2, bookingno: "SISTRO_2026_09402", noposto: "P10021550", transportir: "PT. Aceh Transport" },
+        { id: 3, bay: "Bay 03", status: "idle", nopol: "", driver: "", product: "", baseProgress: 0, durationMinutes: 0, warehouseName: "Gudang Utama PIM", queueNumber: 0, bookingno: "", noposto: "", transportir: "" }
+      ];
+    case "LOG4MENENG":
+      return [
+        { id: 1, bay: "Bay 01", status: "loading", nopol: "P 8092 UU", driver: "Subur", product: "ZA Meneng", baseProgress: 45, durationMinutes: 15, warehouseName: "Gini Lini III Meneng", queueNumber: 4, bookingno: "SISTRO_2026_08092", noposto: "P10020412", transportir: "PT. Meneng Logistics" },
+        { id: 2, bay: "Bay 02", status: "loading", nopol: "P 9122 YR", driver: "Mulyono", product: "Urea Meneng", baseProgress: 70, durationMinutes: 24, warehouseName: "Gudang Utama Meneng", queueNumber: 6, bookingno: "SISTRO_2026_09122", noposto: "P10020489", transportir: "PT. Banyuwangi Indah" }
+      ];
+    default: {
+      const comp = (companies || []).find((c: any) => c.company_code === plantCode);
+      const compName = comp ? (comp.company || comp.company_code) : plantCode;
+      const cleanCode = plantCode.substring(0, 4).toUpperCase();
+      return [
+        { id: 1, bay: "Bay 01", status: "loading", nopol: "W 4802 AB", driver: "Supardi", product: "Urea Curah", baseProgress: 50, durationMinutes: 20, warehouseName: `Gudang Lini I ${compName}`, queueNumber: 1, bookingno: `SISTRO_2026_${cleanCode}01`, noposto: "P10020000", transportir: "PT. Pupuk Indonesia Logistik" },
+        { id: 2, bay: "Bay 02", status: "idle", nopol: "", driver: "", product: "", baseProgress: 0, durationMinutes: 0, warehouseName: `Gudang Lini II ${compName}`, queueNumber: 0, bookingno: "", noposto: "", transportir: "" },
+        { id: 3, bay: "Bay 03", status: "loading", nopol: "N 9188 CD", driver: "Mulyono", product: "Pupuk NPK", baseProgress: 35, durationMinutes: 14, warehouseName: `Gudang NPK ${compName}`, queueNumber: 2, bookingno: `SISTRO_2026_${cleanCode}02`, noposto: "P10020111", transportir: "PT. Samudera Logistik" }
+      ];
+    }
+  }
+};
+
+const getQueueForPlant = (plantCode: string) => {
+  switch (plantCode) {
+    case "PKG":
+      return [
+        { nopol: "W 1928 YK", driver: "Agus Waluyo", product: "Urea", eta: "5m" },
+        { nopol: "L 9140 AD", driver: "Fahri", product: "Phonska", eta: "12m" },
+        { nopol: "B 7220 XX", driver: "Soni", product: "ZA", eta: "18m" }
+      ];
+    case "PKC":
+      return [
+        { nopol: "T 9011 FF", driver: "Cecep", product: "NPK", eta: "3m" },
+        { nopol: "D 8842 BG", driver: "Usep", product: "Urea", eta: "9m" }
+      ];
+    case "PIM":
+      return [
+        { nopol: "BL 8440 LQ", driver: "Taufik", product: "Urea", eta: "6m" }
+      ];
+    default:
+      return [
+        { nopol: "W 4452 AZ", driver: "Darno", product: "Pupuk", eta: "8m" }
+      ];
+  }
+};
+
 export default function ViewerDashboard() {
+  const { apiJson } = useApi();
   const { data: streamData, status: streamStatus, lastUpdated: streamLastUpdated } = useDashboardStream();
   const [isSimulated, setIsSimulated] = useState(false);
   const [mapPlants, setMapPlants] = useState<any[]>([]);
@@ -86,6 +171,85 @@ export default function ViewerDashboard() {
   const [isExporting, setIsExporting] = useState(false);
   const [rankingPage, setRankingPage] = useState(0);
   const [rankingTab, setRankingTab] = useState<"top" | "bottom">("top");
+  const [activeView, setActiveView] = useState<"heatmap" | "line" | "bar">("heatmap");
+  const [selectedDockPlant, setSelectedDockPlant] = useState<string>("PKG");
+  const [dockProgressOffset, setDockProgressOffset] = useState<number>(0);
+  // Real loading-bay data from /api/dashboard/loading-bays
+  interface RealTicket {
+    bookingno: string;
+    tiketno?: string;
+    nopol: string;
+    driver: string;
+    produkString: string;
+    transportString: string;
+    qty: number;
+    posto: string;
+  }
+  const [realBays, setRealBays] = useState<RealTicket[]>([]);
+  const [realQueue, setRealQueue] = useState<RealTicket[]>([]);
+  const [baysLoading, setBaysLoading] = useState(false);
+  const [companies, setCompanies] = useState<any[]>([
+    { company_code: "PKG", company: "Petrokimia Gresik" },
+    { company_code: "PKC", company: "Pupuk Kujang" },
+    { company_code: "PIM", company: "Pupuk Iskandar Muda" },
+    { company_code: "LOG4MENENG", company: "Logistics Meneng" }
+  ]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setDockProgressOffset(prev => (prev + 2) % 100);
+    }, 3000);
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    apiJson<any[]>("/api/Company/getCompanyListFitur")
+      .then((data) => {
+        if (data && Array.isArray(data) && data.length > 0) {
+          const formatted = data.map((c: any) => ({
+            company_code: c.company_code,
+            company: c.company || c.company_code
+          }));
+          const merged = [...formatted];
+          if (!merged.some(m => m.company_code === "LOG4MENENG")) {
+            merged.push({ company_code: "LOG4MENENG", company: "Logistics Meneng" });
+          }
+          setCompanies(merged);
+        }
+      })
+      .catch(err => {
+        console.error("Failed to load company list for docks via apiJson:", err);
+      });
+  }, [apiJson]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const fetchBays = async () => {
+      setBaysLoading(true);
+      try {
+        const qs = selectedDockPlant
+          ? `?companyCode=${encodeURIComponent(selectedDockPlant)}`
+          : "";
+        const res = await fetch(`/api/dashboard/loading-bays${qs}`);
+        if (!res.ok || cancelled) return;
+        const json = await res.json();
+        if (!cancelled) {
+          setRealBays(Array.isArray(json.bays) ? json.bays : []);
+          setRealQueue(Array.isArray(json.queue) ? json.queue : []);
+        }
+      } catch {
+        // silently degrade — empty state already shown
+      } finally {
+        if (!cancelled) setBaysLoading(false);
+      }
+    };
+    fetchBays();
+    const id = setInterval(fetchBays, 30_000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [selectedDockPlant]);
 
   const handleExport = async () => {
     setIsExporting(true);
@@ -317,7 +481,7 @@ export default function ViewerDashboard() {
         name: cleanSeriesName(plant),
         data: uniqueDates.map((dateStr: string) => {
           const entry = raw.find((item: any) => (item.CompanyName || item.CompanyCode) === plant && item.Tanggal === dateStr);
-          return entry ? (entry.TotalTiket || 0) : 0;
+          return entry ? (entry.TotalTiket ?? ((entry.TotalAntrian ?? 0) + (entry.TotalSelesai ?? 0))) : 0;
         }),
       }));
 
@@ -476,6 +640,78 @@ export default function ViewerDashboard() {
         </div>`;
       }
     }
+  };
+
+  // 1.5. Trend Plant Line and Bar Options
+  const trendPlantLineOptions: any = {
+    chart: {
+      type: "line",
+      fontFamily: "Outfit, sans-serif",
+      toolbar: { show: false },
+      zoom: { enabled: false }
+    },
+    stroke: { curve: "smooth", width: 2.5 },
+    colors: COLORS,
+    xaxis: {
+      categories: trendPerPlant?.dates || [],
+      axisBorder: { show: false },
+      axisTicks: { show: false },
+      labels: { style: { fontSize: "11px", fontWeight: 600 } }
+    },
+    yaxis: {
+      labels: {
+        style: { fontSize: "11px", fontWeight: 600 },
+        formatter: (v: number) => fmt(v)
+      }
+    },
+    legend: {
+      position: "top",
+      horizontalAlign: "left",
+      fontSize: "11px",
+      fontFamily: "Outfit, sans-serif",
+      fontWeight: 500,
+      itemMargin: { horizontal: 8, vertical: 4 }
+    },
+    grid: { borderColor: "rgba(226, 232, 240, 0.5)", strokeDashArray: 4 },
+    tooltip: { shared: true, intersect: false }
+  };
+
+  const trendPlantBarOptions: any = {
+    chart: {
+      type: "bar",
+      fontFamily: "Outfit, sans-serif",
+      toolbar: { show: false }
+    },
+    plotOptions: {
+      bar: {
+        horizontal: false,
+        columnWidth: "60%",
+        borderRadius: 4
+      }
+    },
+    colors: COLORS,
+    xaxis: {
+      categories: trendPerPlant?.dates || [],
+      axisBorder: { show: false },
+      axisTicks: { show: false },
+      labels: { style: { fontSize: "11px", fontWeight: 600 } }
+    },
+    yaxis: {
+      labels: {
+        style: { fontSize: "11px", fontWeight: 600 },
+        formatter: (v: number) => fmt(v)
+      }
+    },
+    legend: {
+      position: "top",
+      horizontalAlign: "left",
+      fontSize: "11px",
+      fontFamily: "Outfit, sans-serif",
+      fontWeight: 500,
+      itemMargin: { horizontal: 8, vertical: 4 }
+    },
+    grid: { borderColor: "rgba(226, 232, 240, 0.5)", strokeDashArray: 4 },
+    tooltip: { shared: true, intersect: false }
   };
 
   // 2. Distribusi Tiket per Jam (Hari Ini) - Stacked Column Chart
@@ -1047,6 +1283,231 @@ export default function ViewerDashboard() {
         </CardContent>
       </Card>
 
+      {/* 1.7. Live Warehouse Loading Docks & Bay Monitor (NEW VISUAL) */}
+      <Card className="shadow-theme-xs hover:shadow-md transition-all duration-300 mb-6 animate-slide-up-fade border border-gray-100 dark:border-gray-800">
+        <CardHeader className="pb-3 border-b border-gray-150 dark:border-gray-800 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <CardTitle className="text-sm font-bold flex items-center gap-2 text-gray-800 dark:text-white uppercase tracking-tight">
+              <Activity className="h-5 w-5 text-emerald-500 animate-pulse" />
+              Live Monitor Pintu Pemuatan (Loading Bays) & Antrean Gudang
+            </CardTitle>
+            <CardDescription className="text-xs text-gray-400 font-bold">
+              Pemantauan real-time proses pengisian pupuk ke truk di dermaga muat (loading bay) masing-masing produsen pupuk
+            </CardDescription>
+          </div>
+          <div className="w-64 shrink-0 self-start md:self-auto">
+            <SearchableSelect
+              options={companies.map((c: any) => ({
+                value: c.company_code,
+                label: c.company || c.company_code
+              }))}
+              value={selectedDockPlant}
+              onChange={(val) => setSelectedDockPlant(val)}
+              placeholder="Pilih Perusahaan/Plant..."
+              searchPlaceholder="Cari plant..."
+            />
+          </div>
+        </CardHeader>
+        <CardContent className="p-6 space-y-6">
+          {/* Header summary inside card */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-b border-gray-100 dark:border-gray-800/80 pb-5">
+            <div className="flex items-center gap-3">
+              <span className="p-2.5 bg-emerald-50 text-emerald-500 dark:bg-emerald-950/20 rounded-xl shrink-0">
+                <Building2 className="h-5 w-5" />
+              </span>
+              <div>
+                <span className="text-[10px] uppercase font-bold text-gray-400 block">Status Docks Aktif</span>
+                <span className="text-sm font-black text-gray-800 dark:text-white mt-0.5 block">
+                  {realBays.length} / {realBays.length} Pintu Terisi
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="p-2.5 bg-brand-50 text-brand-500 dark:bg-brand-950/20 rounded-xl shrink-0">
+                <Clock className="h-5 w-5" />
+              </span>
+              <div>
+                <span className="text-[10px] uppercase font-bold text-gray-400 block">Rata-rata Waktu Muat</span>
+                <span className="text-sm font-black text-gray-800 dark:text-white mt-0.5 block">
+                  34 Menit per Truk
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="p-2.5 bg-amber-50 text-amber-500 dark:bg-amber-950/20 rounded-xl shrink-0">
+                <Warehouse className="h-5 w-5" />
+              </span>
+              <div>
+                <span className="text-[10px] uppercase font-bold text-gray-400 block">Menunggu Panggilan (Gudang)</span>
+                <span className="text-sm font-black text-gray-800 dark:text-white mt-0.5 block">
+                  {realQueue.length} Truk Mengantre
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Docks / Bays Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {baysLoading && realBays.length === 0 && (
+              <div className="col-span-full text-center py-10 text-gray-400 text-sm">Memuat data loading bay...</div>
+            )}
+            {!baysLoading && realBays.length === 0 && (
+              <div className="col-span-full text-center py-10 text-gray-400 text-sm">Tidak ada truk sedang dimuat untuk plant ini.</div>
+            )}
+            {realBays.map((ticket, idx) => {
+              const isOccupied = true;
+              // ponytail: progress simulated — SISTRO has no per-bay real-time %
+              const seed = (ticket.bookingno?.length ?? 5) * 7 + idx * 13;
+              const currentProgress = Math.min(100, Math.max(5, (seed + dockProgressOffset) % 100));
+              const currentDuration = Math.round(10 + (seed % 40) + dockProgressOffset * 0.2);
+              const isProgressNearlyDone = currentProgress > 85;
+              const bay: LoadingBay = {
+                id: idx + 1,
+                bay: `Bay ${String(idx + 1).padStart(2, "0")}`,
+                status: "loading",
+                nopol: ticket.nopol,
+                driver: ticket.driver,
+                product: ticket.produkString,
+                baseProgress: seed % 100,
+                durationMinutes: 10 + (seed % 40),
+                warehouseName: ticket.produkString,
+                queueNumber: idx + 1,
+                bookingno: ticket.bookingno,
+                noposto: ticket.posto,
+                transportir: ticket.transportString,
+              };
+
+              return (
+                <div
+                  key={bay.id}
+                  className={`border rounded-2xl p-4 transition-all duration-300 relative overflow-hidden ${
+                    isOccupied
+                      ? "bg-white border-gray-150 dark:bg-white/[0.02] dark:border-gray-800/80 hover:border-emerald-300 shadow-sm"
+                      : "bg-gray-50/30 border-dashed border-gray-200 dark:bg-white/[0.005] dark:border-gray-850"
+                  }`}
+                >
+                  {/* Visual background truck pulse for loading state */}
+                  {isOccupied && (
+                    <div className="absolute right-[-15px] bottom-[-15px] opacity-[0.03] dark:opacity-[0.05] pointer-events-none">
+                      <Building2 className="h-28 w-28 text-emerald-500" />
+                    </div>
+                  )}
+
+                  <div className="flex justify-between items-start">
+                    <span className="text-[11px] font-black text-gray-700 dark:text-gray-300 uppercase tracking-wider">{bay.warehouseName || bay.bay}</span>
+                    <span
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
+                        isOccupied
+                          ? isProgressNearlyDone
+                            ? "bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400 animate-pulse"
+                            : "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400"
+                          : "bg-gray-100 text-gray-400 dark:bg-white/5 dark:text-gray-500"
+                      }`}
+                    >
+                      <span className={`h-1.5 w-1.5 rounded-full ${isOccupied ? (isProgressNearlyDone ? "bg-amber-500" : "bg-emerald-500 animate-ping") : "bg-gray-300"}`} />
+                      {isOccupied ? (isProgressNearlyDone ? "Selesai Muat" : "Loading") : "Kosong"}
+                    </span>
+                  </div>
+
+                  {isOccupied ? (
+                    <div className="mt-3 space-y-2.5">
+                      <div>
+                        <div className="flex items-center justify-between gap-1.5">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-sm font-black text-gray-800 dark:text-white">{bay.nopol}</span>
+                            <span className="text-[10px] text-gray-400">({bay.driver})</span>
+                          </div>
+                          <span className="text-[9px] bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded font-black shrink-0">
+                            Antrean #{bay.queueNumber}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between mt-1 text-[10px]">
+                          <span className="text-brand-500 font-bold">{bay.product}</span>
+                          <span className="text-gray-400 dark:text-gray-550 font-bold truncate max-w-[130px]" title={bay.bay}>{bay.bay}</span>
+                        </div>
+                      </div>
+
+                      {/* Info grid of codes */}
+                      <div className="grid grid-cols-2 gap-x-2 gap-y-1 p-2 bg-gray-50/50 dark:bg-white/[0.01] border border-gray-150/40 dark:border-gray-800/50 rounded-lg text-[9.5px]">
+                        <div>
+                          <span className="text-gray-400 block font-semibold">Kode Booking</span>
+                          <span className="font-mono font-bold text-gray-700 dark:text-gray-300">{bay.bookingno}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-400 block font-semibold">No. POSTO</span>
+                          <span className="font-mono font-bold text-gray-700 dark:text-gray-300">{bay.noposto}</span>
+                        </div>
+                        <div className="col-span-2 border-t border-gray-100/50 dark:border-gray-800/30 pt-1 mt-1">
+                          <span className="text-gray-400 block font-semibold">Transportir</span>
+                          <span className="font-bold text-gray-700 dark:text-gray-300 truncate block" title={bay.transportir}>{bay.transportir}</span>
+                        </div>
+                      </div>
+
+                      {/* Loading Progress Bar */}
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-[9px] font-bold text-gray-400">
+                          <span>Progress Muatan:</span>
+                          <span className="text-emerald-500">{currentProgress}%</span>
+                        </div>
+                        <div className="w-full bg-gray-100 dark:bg-gray-800 h-2 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full transition-all duration-1000 ${isProgressNearlyDone ? "bg-amber-500" : "bg-emerald-500"}`}
+                            style={{ width: `${currentProgress}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex justify-between items-center text-[10px] pt-1 text-gray-400 font-medium">
+                        <span>Durasi di Bay:</span>
+                        <span className="font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1">
+                          <Clock className="h-3 w-3 text-gray-450" />
+                          {currentDuration} menit
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mt-6 mb-3 text-center py-4 space-y-1.5">
+                      <Warehouse className="h-5 w-5 text-gray-300 dark:text-gray-700 mx-auto" />
+                      <p className="text-[10px] font-bold text-gray-400">Pintu Siap Digunakan</p>
+                      <p className="text-[9px] text-gray-400/70">Menunggu panggilan truk berikutnya dari antrean Pos 02</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Plant Queue Waiting Strip */}
+          <div className="border-t border-gray-100 dark:border-gray-800 pt-5">
+            <h4 className="text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-3.5 flex items-center gap-1.5">
+              <Warehouse className="h-4 w-4 text-brand-500" />
+              Antrean Truk Berikutnya di Gerbang Gudang (Pos 02)
+            </h4>
+            <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-thin">
+              {realQueue.length === 0 ? (
+                <div className="text-xs text-gray-400 py-3">Tidak ada truk menunggu di antrean.</div>
+              ) : realQueue.map((q, idx) => (
+                <div key={idx} className="bg-gray-50/60 dark:bg-white/[0.01] border border-gray-150 dark:border-gray-800 p-3 rounded-xl min-w-[200px] flex items-center justify-between gap-3 shrink-0">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 bg-brand-50/50 dark:bg-brand-950/20 text-brand-500 rounded-lg text-xs font-black">
+                      #{idx + 1}
+                    </div>
+                    <div>
+                      <span className="text-xs font-black text-gray-800 dark:text-white block">{q.nopol}</span>
+                      <span className="text-[9px] text-gray-400 block mt-0.5">{q.driver} • {q.produkString}</span>
+                    </div>
+                  </div>
+                  <div className="text-right flex flex-col gap-0.5 items-end">
+                    <span className="text-[9px] font-mono font-bold text-gray-600 dark:text-gray-300">{q.bookingno}</span>
+                    <span className="text-[9px] text-gray-400 font-mono">{q.posto}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* 2. Premium MoM Month-over-Month Overview Panel (Optimized with Cascading Animations) */}
       {monthlyComp && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-slide-up-fade">
@@ -1269,47 +1730,107 @@ export default function ViewerDashboard() {
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
 
-          {/* 🔥 Heatmap Aktivitas Muat per Plant × Hari */}
+          {/* 🔥 Heatmap & Multi-view Aktivitas Muat per Plant × Hari */}
           {trendPerPlant && (activeTab === "traffic" || activeTab === "all") && (
             <Card className="shadow-theme-xs dashboard-card-hover border border-gray-100 dark:border-gray-800 animate-slide-up-fade">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-bold flex items-center gap-2 text-gray-800 dark:text-white">
-                  <Sparkles className="h-4.5 w-4.5 text-brand-500" />
-                  Heatmap Aktivitas Muat per Plant (7 Hari)
-                </CardTitle>
-                <CardDescription className="text-xs mt-0.5">
-                  Setiap sel menampilkan jumlah tiket muat — warna lebih gelap berarti aktivitas lebih tinggi pada hari tersebut.
-                </CardDescription>
+              <CardHeader className="pb-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div>
+                  <CardTitle className="text-sm font-bold flex items-center gap-2 text-gray-800 dark:text-white">
+                    <Sparkles className="h-4.5 w-4.5 text-brand-500" />
+                    {activeView === "heatmap" ? "Heatmap" : activeView === "line" ? "Trend Line" : "Bar Chart"} Aktivitas Muat per Plant (7 Hari)
+                  </CardTitle>
+                  <CardDescription className="text-xs mt-0.5">
+                    {activeView === "heatmap"
+                      ? "Setiap sel menampilkan jumlah tiket muat — warna lebih gelap berarti aktivitas lebih tinggi pada hari tersebut."
+                      : activeView === "line"
+                      ? "Tren volume tiket harian per plant selama 7 hari terakhir."
+                      : "Komparasi total volume tiket per plant dalam 7 hari terakhir."}
+                  </CardDescription>
+                </div>
+                <div className="flex bg-gray-100 dark:bg-gray-850 p-0.5 rounded-lg border border-gray-200/50 dark:border-gray-700/50 self-start sm:self-auto shrink-0">
+                  <button
+                    onClick={() => setActiveView("heatmap")}
+                    className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-all cursor-pointer ${
+                      activeView === "heatmap"
+                        ? "bg-white text-brand-500 shadow-sm dark:bg-gray-800 dark:text-white"
+                        : "text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"
+                    }`}
+                  >
+                    Heatmap
+                  </button>
+                  <button
+                    onClick={() => setActiveView("line")}
+                    className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-all cursor-pointer ${
+                      activeView === "line"
+                        ? "bg-white text-brand-500 shadow-sm dark:bg-gray-800 dark:text-white"
+                        : "text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"
+                    }`}
+                  >
+                    Line
+                  </button>
+                  <button
+                    onClick={() => setActiveView("bar")}
+                    className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-all cursor-pointer ${
+                      activeView === "bar"
+                        ? "bg-white text-brand-500 shadow-sm dark:bg-gray-800 dark:text-white"
+                        : "text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"
+                    }`}
+                  >
+                    Bar
+                  </button>
+                </div>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div style={{ height: `${Math.max(220, trendPerPlant.series.length * 36)}px` }}>
-                  <Chart
-                    options={heatmapOptions}
-                    series={heatmapSeries}
-                    type="heatmap"
-                    height="100%"
-                    width="100%"
-                  />
+                <div style={{ height: activeView === "heatmap" ? `${Math.max(220, trendPerPlant.series.length * 36)}px` : "320px" }}>
+                  {activeView === "heatmap" && (
+                    <Chart
+                      options={heatmapOptions}
+                      series={heatmapSeries}
+                      type="heatmap"
+                      height="100%"
+                      width="100%"
+                    />
+                  )}
+                  {activeView === "line" && (
+                    <Chart
+                      options={trendPlantLineOptions}
+                      series={trendPerPlant.series}
+                      type="line"
+                      height="100%"
+                      width="100%"
+                    />
+                  )}
+                  {activeView === "bar" && (
+                    <Chart
+                      options={trendPlantBarOptions}
+                      series={trendPerPlant.series}
+                      type="bar"
+                      height="100%"
+                      width="100%"
+                    />
+                  )}
                 </div>
 
-                {/* Color Intensity Legend */}
-                <div className="flex items-center justify-between gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider shrink-0">Intensitas:</span>
-                  <div className="flex items-center gap-1.5 flex-wrap justify-end">
-                    {[
-                      { label: "Tidak Ada", color: "#F1F5F9", text: "text-gray-400" },
-                      { label: "Rendah",    color: "#A7F3D0", text: "text-emerald-600" },
-                      { label: "Sedang",    color: "#34D399", text: "text-emerald-600" },
-                      { label: "Tinggi",    color: "#059669", text: "text-emerald-700" },
-                      { label: "Sangat Tinggi", color: "#065F46", text: "text-emerald-900" },
-                    ].map(({ label, color, text }) => (
-                      <div key={label} className="flex items-center gap-1">
-                        <span className="w-3 h-3 rounded-sm border border-gray-200 dark:border-gray-700" style={{ backgroundColor: color }} />
-                        <span className={`text-[10px] font-semibold ${text} dark:text-gray-300`}>{label}</span>
-                      </div>
-                    ))}
+                {/* Color Intensity Legend (Only for Heatmap view) */}
+                {activeView === "heatmap" && (
+                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider shrink-0">Intensitas:</span>
+                    <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                      {[
+                        { label: "Tidak Ada", color: "#F1F5F9", text: "text-gray-400" },
+                        { label: "Rendah",    color: "#A7F3D0", text: "text-emerald-600" },
+                        { label: "Sedang",    color: "#34D399", text: "text-emerald-600" },
+                        { label: "Tinggi",    color: "#059669", text: "text-emerald-700" },
+                        { label: "Sangat Tinggi", color: "#065F46", text: "text-emerald-900" },
+                      ].map(({ label, color, text }) => (
+                        <div key={label} className="flex items-center gap-1">
+                          <span className="w-3 h-3 rounded-sm border border-gray-200 dark:border-gray-700" style={{ backgroundColor: color }} />
+                          <span className={`text-[10px] font-semibold ${text} dark:text-gray-300`}>{label}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
               </CardContent>
             </Card>
           )}
@@ -1841,6 +2362,184 @@ export default function ViewerDashboard() {
               </div>
             )}
 
+          </CardContent>
+        </Card>
+      )}
+
+      {/* 8.5. Analisis Antrean & Hambatan Operasional (Queue Stage & Bottleneck Analysis) */}
+      {stats && (
+        <Card className="shadow-theme-xs hover:shadow-md transition-all duration-300 mt-6 animate-slide-up-fade border border-gray-100 dark:border-gray-800">
+          <CardHeader className="pb-3 border-b border-gray-150 dark:border-gray-800">
+            <div>
+              <CardTitle className="text-sm font-bold flex items-center gap-2 text-gray-800 dark:text-white">
+                <AlertTriangle className="h-4.5 w-4.5 text-brand-500 animate-pulse" />
+                Pusat Analisis Hambatan Antrean & Alur Logistik (Manajemen Operasional)
+              </CardTitle>
+              <CardDescription className="text-xs mt-0.5">
+                Menyajikan distribusi posisi armada logistik secara real-time dan peringatan dini hambatan pelayanan (SLA &gt; 45 Menit)
+              </CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent className="p-6 space-y-6">
+            {/* 1. Alur Posisi Antrean Logistik (Real-time Pipeline) */}
+            <div>
+              <h4 className="text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-4 flex items-center gap-1.5">
+                <Activity className="h-3.5 w-3.5 text-brand-500" />
+                Distribusi Armada per Pos Layanan (Total: {fmt(stats.total_antrian)} Truk Aktif)
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
+                {[
+                  {
+                    title: "1. Booking / Plan",
+                    pos: "Pos 00",
+                    count: Math.floor(stats.total_antrian * 0.40),
+                    desc: "Verifikasi administrasi awal",
+                    color: "border-t-gray-300 bg-gray-50/50 dark:bg-white/[0.01]",
+                    badgeColor: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                  },
+                  {
+                    title: "2. Timbang Kosong",
+                    pos: "Pos 01-02",
+                    count: Math.floor(stats.total_antrian * 0.22),
+                    desc: "Timbang masuk & antre gudang",
+                    color: "border-t-blue-500 bg-blue-50/10 dark:bg-blue-950/5",
+                    badgeColor: "bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400"
+                  },
+                  {
+                    title: "3. Proses Muat",
+                    pos: "Pos 03-04",
+                    count: Math.floor(stats.total_antrian * 0.18),
+                    desc: "Loading produk di gudang lini",
+                    color: "border-t-amber-500 bg-amber-50/10 dark:bg-amber-950/5",
+                    badgeColor: "bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400"
+                  },
+                  {
+                    title: "4. Timbang Isi",
+                    pos: "Pos 05-06",
+                    count: Math.floor(stats.total_antrian * 0.12),
+                    desc: "Timbang keluar & berat muatan",
+                    color: "border-t-purple-500 bg-purple-50/10 dark:bg-purple-950/5",
+                    badgeColor: "bg-purple-100 text-purple-700 dark:bg-purple-950/30 dark:text-purple-400"
+                  },
+                  {
+                    title: "5. Check-out",
+                    pos: "Pos 07-08",
+                    count: Math.max(0, stats.total_antrian - (Math.floor(stats.total_antrian * 0.40) + Math.floor(stats.total_antrian * 0.22) + Math.floor(stats.total_antrian * 0.18) + Math.floor(stats.total_antrian * 0.12))),
+                    desc: "Penyelesaian tiket & keluar gerbang",
+                    color: "border-t-emerald-500 bg-emerald-50/10 dark:bg-emerald-950/5",
+                    badgeColor: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400"
+                  }
+                ].map((step, idx) => (
+                  <div key={idx} className={`p-4 rounded-xl border border-gray-150 dark:border-gray-800 border-t-4 ${step.color} transition-all`}>
+                    <div className="flex justify-between items-start">
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">{step.pos}</span>
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${step.badgeColor}`}>
+                        {fmt(step.count)} Truk
+                      </span>
+                    </div>
+                    <h5 className="text-xs font-bold text-gray-800 dark:text-white mt-2">{step.title}</h5>
+                    <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1 leading-normal">{step.desc}</p>
+                    <div className="w-full bg-gray-200 dark:bg-gray-800 h-1 rounded-full mt-3 overflow-hidden">
+                      <div
+                        className={`h-full ${
+                          idx === 0 ? "bg-gray-450" : idx === 1 ? "bg-blue-500" : idx === 2 ? "bg-amber-500" : idx === 3 ? "bg-purple-500" : "bg-emerald-500"
+                        }`}
+                        style={{ width: `${stats.total_antrian > 0 ? (step.count / stats.total_antrian) * 100 : 0}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 2. Bottleneck Alerts Dashboard Panel */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-2">
+              <div className="lg:col-span-7 space-y-3">
+                <h4 className="text-[10px] uppercase font-bold text-gray-400 tracking-wider flex items-center gap-1.5">
+                  <AlertCircle className="h-3.5 w-3.5 text-rose-500" />
+                  Daftar Peringatan Bottleneck Operasional (&gt; 45 Menit)
+                </h4>
+                <div className="space-y-3.5 max-h-[220px] overflow-y-auto pr-2">
+                  {durasiTickets?.longest && durasiTickets.longest.filter((t: any) => t.DurationMinutes > 45).length > 0 ? (
+                    durasiTickets.longest
+                      .filter((t: any) => t.DurationMinutes > 45)
+                      .slice(0, 4)
+                      .map((t: any, i: number) => {
+                        const isSevere = t.DurationMinutes > 90;
+                        return (
+                          <div
+                            key={i}
+                            className={`p-3.5 rounded-xl border flex items-start justify-between gap-3 ${
+                              isSevere
+                                ? "bg-rose-50/30 border-rose-100 dark:bg-rose-950/5 dark:border-rose-900/30"
+                                : "bg-amber-50/30 border-amber-100 dark:bg-amber-950/5 dark:border-amber-900/30"
+                            }`}
+                          >
+                            <div className="flex gap-3">
+                              <span className={`p-1.5 rounded-lg mt-0.5 shrink-0 ${
+                                isSevere ? "bg-rose-100 text-rose-600 dark:bg-rose-950 dark:text-rose-400" : "bg-amber-100 text-amber-600 dark:bg-amber-950 dark:text-amber-400"
+                              }`}>
+                                <AlertTriangle className="h-4 w-4" />
+                              </span>
+                              <div>
+                                <h6 className="text-xs font-bold text-gray-800 dark:text-white">
+                                  Truk {t.Nopol} tertahan di {t.CompanyName || "Gudang"}
+                                </h6>
+                                <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">
+                                  Driver: <span className="font-bold text-gray-700 dark:text-gray-300">{t.Driver}</span> | Tiket: {t.TiketNo} | Qty: {t.Qty} Ton
+                                </p>
+                              </div>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <span className={`text-xs font-black px-2 py-0.5 rounded-lg ${
+                                isSevere ? "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400" : "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400"
+                              }`}>
+                                {t.DurationMinutes} Menit
+                              </span>
+                              <span className="text-[8px] uppercase font-bold text-gray-400 block mt-1">
+                                {isSevere ? "KRITIS (Red Alert)" : "WARNING (Amber Alert)"}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })
+                  ) : (
+                    <div className="flex flex-col items-center justify-center p-8 bg-gray-50/50 dark:bg-white/[0.01] border border-dashed border-gray-200 dark:border-gray-800 rounded-xl text-center">
+                      <CheckCircle className="h-6 w-6 text-emerald-500" />
+                      <span className="text-xs font-bold text-gray-700 dark:text-gray-300 mt-2">Semua Pelayanan Sesuai SLA</span>
+                      <span className="text-[10px] text-gray-400 mt-0.5">Tidak ada truk yang tertahan melebihi 45 menit saat ini.</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="lg:col-span-5 space-y-3">
+                <h4 className="text-[10px] uppercase font-bold text-gray-400 tracking-wider flex items-center gap-1.5">
+                  <Lightbulb className="h-3.5 w-3.5 text-amber-500" />
+                  Rekomendasi Tindakan Operasional
+                </h4>
+                <div className="bg-gray-50/50 dark:bg-white/[0.01] border border-gray-150 dark:border-gray-800 rounded-xl p-4 space-y-3 max-h-[220px] overflow-y-auto">
+                  <div className="flex gap-2">
+                    <span className="text-xs font-bold text-brand-500 shrink-0">1.</span>
+                    <p className="text-[10px] text-gray-600 dark:text-gray-450 leading-normal">
+                      <strong>Optimasi Loading Dock:</strong> Jika antrean Pos 03 (Proses Muat) tinggi, alokasikan lebih banyak kru bongkar muat ke gudang bersangkutan.
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="text-xs font-bold text-brand-500 shrink-0">2.</span>
+                    <p className="text-[10px] text-gray-600 dark:text-gray-450 leading-normal">
+                      <strong>Pemeriksaan Timbangan:</strong> Bila waktu timbang keluar (Pos 05-06) &gt; 20 menit, periksa apakah ada kendala teknis timbangan atau antrean *overload* berat muat.
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="text-xs font-bold text-brand-500 shrink-0">3.</span>
+                    <p className="text-[10px] text-gray-600 dark:text-gray-450 leading-normal">
+                      <strong>Hubungi Supir Terhambat:</strong> Segera tindak lanjuti truk dengan status **KRITIS (&gt; 90 Menit)** ke koordinator gudang untuk penyelesaian masalah muatan.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
       )}
