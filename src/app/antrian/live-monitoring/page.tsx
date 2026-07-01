@@ -31,6 +31,22 @@ interface RealTicket {
   transportString: string;
   qty: number;
   posto: string;
+  updatedonString?: string;
+}
+
+function calcMuatMenit(updatedonString?: string): number | null {
+  if (!updatedonString) return null;
+  let d = new Date(updatedonString);
+  if (isNaN(d.getTime())) {
+    const parts = updatedonString.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(.+)$/);
+    if (parts) {
+      d = new Date(`${parts[2]}/${parts[1]}/${parts[3]} ${parts[4]}`);
+    }
+  }
+  if (isNaN(d.getTime())) return null;
+  const diffMs = Date.now() - d.getTime();
+  if (diffMs < 0) return null;
+  return Math.round(diffMs / 60000);
 }
 
 export default function LiveMonitoringAntrianPage() {
@@ -39,7 +55,6 @@ export default function LiveMonitoringAntrianPage() {
   const [realBays, setRealBays] = useState<RealTicket[]>([]);
   const [realQueue, setRealQueue] = useState<RealTicket[]>([]);
   const [baysLoading, setBaysLoading] = useState(false);
-  const [dockProgressOffset, setDockProgressOffset] = useState<number>(0);
   const [companies, setCompanies] = useState<{ company_code: string; company: string }[]>([
     { company_code: "PKG", company: "Petrokimia Gresik" },
     { company_code: "PKC", company: "Pupuk Kujang" },
@@ -47,13 +62,7 @@ export default function LiveMonitoringAntrianPage() {
     { company_code: "LOG4MENENG", company: "Logistics Meneng" },
   ]);
 
-  // Animation ticker
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setDockProgressOffset(prev => (prev + 2) % 100);
-    }, 3000);
-    return () => clearInterval(timer);
-  }, []);
+
 
   // Fetch company list from API
   useEffect(() => {
@@ -88,6 +97,7 @@ export default function LiveMonitoringAntrianPage() {
           { data: "qty",             name: "qty",         searchable: false, orderable: false },
           { data: "posto",           name: "posto",       searchable: false, orderable: false },
           { data: "tiketno",         name: "tiketno",     searchable: false, orderable: false },
+          { data: "updatedonString", name: "updatedon",   searchable: false, orderable: false },
         ];
         const basePayload = {
           draw: 1,
@@ -95,12 +105,20 @@ export default function LiveMonitoringAntrianPage() {
           search: { value: "" },
           order: [{ column: 0, dir: "desc" }],
           columns: BASE_COLUMNS,
+          SD: "2020-01-01",
+          ED: "2030-01-01",
           ...(activeCompanyCode ? { companyCode: activeCompanyCode } : {}),
         };
         const [baysResult, queueResult] = await Promise.all([
           apiTable<{ data: any[] }>("/api/Tiket/DataTableFilterLegacy", { ...basePayload, length: 20, position: "03" }),
           apiTable<{ data: any[] }>("/api/Tiket/DataTableFilterLegacy", { ...basePayload, length: 10, position: "02" }),
         ]);
+        
+        console.log(`[live-monitoring] API Result for ${activeCompanyCode}:`, {
+          baysCount: baysResult?.data?.length,
+          queueCount: queueResult?.data?.length,
+        });
+
         if (!cancelled) {
           setRealBays(Array.isArray(baysResult?.data) ? baysResult.data : []);
           setRealQueue(Array.isArray(queueResult?.data) ? queueResult.data : []);
@@ -198,25 +216,20 @@ export default function LiveMonitoringAntrianPage() {
             )}
             {realBays.map((ticket, idx) => {
               const isOccupied = true;
-              // ponytail: progress simulated — SISTRO has no per-bay real-time %
-              const seed = (ticket.bookingno?.length ?? 5) * 7 + idx * 13;
-              const currentProgress = Math.min(100, Math.max(5, (seed + dockProgressOffset) % 100));
-              const currentDuration = Math.round(10 + (seed % 40) + dockProgressOffset * 0.2);
-              const isProgressNearlyDone = currentProgress > 85;
-              const bay: LoadingBay = {
+              const menit = calcMuatMenit(ticket.updatedonString);
+              const isProgressNearlyDone = menit !== null && menit > 45;
+
+              const bay = {
                 id: idx + 1,
                 bay: `Bay ${String(idx + 1).padStart(2, "0")}`,
-                status: "loading",
+                warehouseName: ticket.produkString,
                 nopol: ticket.nopol,
                 driver: ticket.driver,
-                product: ticket.produkString,
-                baseProgress: seed % 100,
-                durationMinutes: 10 + (seed % 40),
-                warehouseName: ticket.produkString,
                 queueNumber: idx + 1,
+                product: ticket.produkString,
                 bookingno: ticket.bookingno,
                 noposto: ticket.posto,
-                transportir: ticket.transportString,
+                transportir: ticket.transportString
               };
 
               return (
@@ -283,27 +296,27 @@ export default function LiveMonitoringAntrianPage() {
                         </div>
                       </div>
 
-                      {/* Loading Progress Bar */}
-                      <div className="space-y-1">
-                        <div className="flex justify-between text-[9px] font-bold text-gray-400">
-                          <span>Progress Muatan:</span>
-                          <span className="text-emerald-500">{currentProgress}%</span>
-                        </div>
-                        <div className="w-full bg-gray-100 dark:bg-gray-800 h-2 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full transition-all duration-1000 ${isProgressNearlyDone ? "bg-amber-500" : "bg-emerald-500"}`}
-                            style={{ width: `${currentProgress}%` }}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="flex justify-between items-center text-[10px] pt-1 text-gray-400 font-medium">
-                        <span>Durasi di Bay:</span>
-                        <span className="font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1">
-                          <Clock className="h-3 w-3 text-gray-450" />
-                          {currentDuration} menit
-                        </span>
-                      </div>
+                      {/* Duration counter — real data from updatedonString */}
+                      {(() => {
+                        const isKritis = menit !== null && menit > 90;
+                        return (
+                          <div className={`flex items-center justify-between px-3 py-2 rounded-xl text-[10px] font-bold ${
+                            isKritis
+                              ? "bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400"
+                              : isProgressNearlyDone
+                              ? "bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400"
+                              : "bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400"
+                          }`}>
+                            <span className="flex items-center gap-1.5">
+                              <Clock className="h-3.5 w-3.5" />
+                              Durasi Proses Muat
+                            </span>
+                            <span className="text-sm font-black">
+                              {menit !== null ? `${menit} mnt` : "—"}
+                            </span>
+                          </div>
+                        );
+                      })()}
                     </div>
                   ) : (
                     <div className="mt-6 mb-3 text-center py-4 space-y-1.5">
