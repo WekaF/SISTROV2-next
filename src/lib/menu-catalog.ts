@@ -42,6 +42,8 @@ export const MENU_CATALOG: CatalogGroup[] = [
       { path: "/antrian/all-plant", label: "Antrian All Plant" },
       { path: "/antrian/report-psp", label: "Antrian PSP" },
       { path: "/antrian/report-pkt", label: "Antrian PKT" },
+      { path: "/antrian/horizontal", label: "Antrian Horizontal" },
+      { path: "/antrian/report", label: "Antrian Report" },
       { path: "/gudang", label: "List Gudang" },
       { path: "/gudang/unit-queue", label: "Antrian Per Unit" },
       { path: "/gudang/tujuan-bagian", label: "Gudang Tujuan Bagian" },
@@ -82,7 +84,7 @@ export const MENU_CATALOG: CatalogGroup[] = [
     category: "Laporan",
     items: [
       { path: "/reports", label: "Summary Laporan" },
-      { path: "/reports/tiket-pi", label: "Laporan Tiket PI" },
+      { path: "/reports/tiket-pi", label: "laporan tiket" },
       { path: "/reports/booking", label: "Report Pemesanan Tiket" },
       { path: "/reports/loading", label: "Report Realisasi Pemuatan" },
       { path: "/reports/cancelation", label: "Report Pembatalan Tiket" },
