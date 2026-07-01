@@ -28,8 +28,7 @@ import {
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import Badge from "@/components/ui/badge/Badge";
 import { useDashboardStream } from "@/hooks/use-dashboard-stream";
-import { SearchableSelect } from "@/components/ui/SearchableSelect";
-import { useApi } from "@/hooks/use-api";
+import { useCompany } from "@/context/CompanyContext";
 
 // Dynamic import for Leaflet Map to avoid SSR compilation issues
 const InteractiveLeafletMap = dynamic(
@@ -141,7 +140,7 @@ const getQueueForPlant = (plantCode: string) => {
 };
 
 export default function ViewerDashboard() {
-  const { apiJson } = useApi();
+  const { activeCompanyCode } = useCompany();
   const { data: streamData, status: streamStatus, lastUpdated: streamLastUpdated } = useDashboardStream();
   const [isSimulated, setIsSimulated] = useState(false);
   const [mapPlants, setMapPlants] = useState<any[]>([]);
@@ -172,7 +171,6 @@ export default function ViewerDashboard() {
   const [rankingPage, setRankingPage] = useState(0);
   const [rankingTab, setRankingTab] = useState<"top" | "bottom">("top");
   const [activeView, setActiveView] = useState<"heatmap" | "line" | "bar">("heatmap");
-  const [selectedDockPlant, setSelectedDockPlant] = useState<string>("PKG");
   const [dockProgressOffset, setDockProgressOffset] = useState<number>(0);
   // Real loading-bay data from /api/dashboard/loading-bays
   interface RealTicket {
@@ -188,12 +186,6 @@ export default function ViewerDashboard() {
   const [realBays, setRealBays] = useState<RealTicket[]>([]);
   const [realQueue, setRealQueue] = useState<RealTicket[]>([]);
   const [baysLoading, setBaysLoading] = useState(false);
-  const [companies, setCompanies] = useState<any[]>([
-    { company_code: "PKG", company: "Petrokimia Gresik" },
-    { company_code: "PKC", company: "Pupuk Kujang" },
-    { company_code: "PIM", company: "Pupuk Iskandar Muda" },
-    { company_code: "LOG4MENENG", company: "Logistics Meneng" }
-  ]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -202,33 +194,14 @@ export default function ViewerDashboard() {
     return () => clearInterval(timer);
   }, []);
 
-  useEffect(() => {
-    apiJson<any[]>("/api/Company/getCompanyListFitur")
-      .then((data) => {
-        if (data && Array.isArray(data) && data.length > 0) {
-          const formatted = data.map((c: any) => ({
-            company_code: c.company_code,
-            company: c.company || c.company_code
-          }));
-          const merged = [...formatted];
-          if (!merged.some(m => m.company_code === "LOG4MENENG")) {
-            merged.push({ company_code: "LOG4MENENG", company: "Logistics Meneng" });
-          }
-          setCompanies(merged);
-        }
-      })
-      .catch(err => {
-        console.error("Failed to load company list for docks via apiJson:", err);
-      });
-  }, [apiJson]);
 
   useEffect(() => {
     let cancelled = false;
     const fetchBays = async () => {
       setBaysLoading(true);
       try {
-        const qs = selectedDockPlant
-          ? `?companyCode=${encodeURIComponent(selectedDockPlant)}`
+        const qs = activeCompanyCode
+          ? `?companyCode=${encodeURIComponent(activeCompanyCode)}`
           : "";
         const res = await fetch(`/api/dashboard/loading-bays${qs}`);
         if (!res.ok || cancelled) return;
@@ -249,7 +222,7 @@ export default function ViewerDashboard() {
       cancelled = true;
       clearInterval(id);
     };
-  }, [selectedDockPlant]);
+  }, [activeCompanyCode]);
 
   const handleExport = async () => {
     setIsExporting(true);
@@ -1295,17 +1268,10 @@ export default function ViewerDashboard() {
               Pemantauan real-time proses pengisian pupuk ke truk di dermaga muat (loading bay) masing-masing produsen pupuk
             </CardDescription>
           </div>
-          <div className="w-64 shrink-0 self-start md:self-auto">
-            <SearchableSelect
-              options={companies.map((c: any) => ({
-                value: c.company_code,
-                label: c.company || c.company_code
-              }))}
-              value={selectedDockPlant}
-              onChange={(val) => setSelectedDockPlant(val)}
-              placeholder="Pilih Perusahaan/Plant..."
-              searchPlaceholder="Cari plant..."
-            />
+          <div className="shrink-0 self-start md:self-auto">
+            <span className="text-xs font-bold text-gray-500 dark:text-gray-400 px-3 py-1.5 bg-gray-100 dark:bg-white/[0.05] rounded-lg">
+              {activeCompanyCode ?? "—"}
+            </span>
           </div>
         </CardHeader>
         <CardContent className="p-6 space-y-6">
