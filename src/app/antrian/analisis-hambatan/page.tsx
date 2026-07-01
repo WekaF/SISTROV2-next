@@ -62,6 +62,7 @@ export default function AnalisisHambatanPage() {
                 <Activity className="h-3.5 w-3.5 text-brand-500" />
                 Distribusi Armada per Pos Layanan (Total: {fmt(stats.total_antrian)} Truk Aktif)
               </h4>
+              {/* ponytail: stage counts are illustrative % of total_antrian — backend has no per-stage breakdown API yet */}
               <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
                 {[
                   {
