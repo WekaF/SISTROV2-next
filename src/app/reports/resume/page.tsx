@@ -96,6 +96,7 @@ export default function ResumeBookingPage() {
   };
 
   const handleExportPdf = async () => {
+    const printWin = window.open("", "_blank");
     setExporting(true);
     const data = await fetchFullData();
     if (data.length > 0) {
@@ -106,8 +107,9 @@ export default function ResumeBookingPage() {
         "bookingno", "posto", "tanggalString", "nopol", "driver", "produkString", "qty", "asal", "tujuan", "positionString"
       ];
       const { exportToPdf } = await import("@/lib/export-helper");
-      exportToPdf(data, headers, keys, `Resume Booking Tiket (${filters.SD} s.d ${filters.ED})`);
+      exportToPdf(data, headers, keys, `Resume Booking Tiket (${filters.SD} s.d ${filters.ED})`, printWin);
     } else {
+      printWin?.close();
       addToast({ title: "Tidak ada data", description: "Tidak ada data untuk diexport", variant: "destructive" });
     }
     setExporting(false);

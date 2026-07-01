@@ -14,8 +14,8 @@ export function exportToExcel(data: any[], headers: string[], keys: string[], fi
   XLSX.writeFile(wb, `${filename}.xlsx`);
 }
 
-export function exportToPdf(data: any[], headers: string[], keys: string[], title: string) {
-  const printWindow = window.open("", "_blank");
+export function exportToPdf(data: any[], headers: string[], keys: string[], title: string, preOpenedWindow?: Window | null) {
+  const printWindow = preOpenedWindow ?? window.open("", "_blank");
   if (!printWindow) return;
 
   const logoSistroUrl = window.location.origin + "/images/logo/logosistro.png";

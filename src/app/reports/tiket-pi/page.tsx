@@ -179,12 +179,14 @@ export default function LaporanTiketPiPage() {
   };
 
   const handleExportPdf = async () => {
+    const printWin = window.open("", "_blank");
     setExporting(true);
     const data = await fetchFullData();
     if (data.length > 0) {
       const { exportToPdf } = await import("@/lib/export-helper");
-      exportToPdf(data, EXPORT_HEADERS, EXPORT_KEYS as string[], `Laporan Tiket PI (${filters.SD} s.d ${filters.ED})`);
+      exportToPdf(data, EXPORT_HEADERS, EXPORT_KEYS as string[], `Laporan Tiket PI (${filters.SD} s.d ${filters.ED})`, printWin);
     } else {
+      printWin?.close();
       addToast({ title: "Tidak ada data", description: "Tidak ada data untuk diexport", variant: "destructive" });
     }
     setExporting(false);
@@ -243,7 +245,7 @@ export default function LaporanTiketPiPage() {
               >
                 <option value="">Semua Perusahaan</option>
                 {companies.map((c) => (
-                  <option key={c.id} value={c.code}>{c.name}</option>
+                  <option key={c.code} value={c.code}>{c.name}</option>
                 ))}
               </select>
             </div>
