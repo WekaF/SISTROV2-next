@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Building2, Clock, Warehouse, Activity } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { SearchableSelect } from "@/components/ui/SearchableSelect";
-import { useApi } from "@/hooks/use-api";
+import { useCompany } from "@/context/CompanyContext";
 
 interface LoadingBay {
   id: number;
@@ -33,14 +33,7 @@ interface RealTicket {
 }
 
 export default function LiveMonitoringAntrianPage() {
-  const { apiJson } = useApi();
-  const [companies, setCompanies] = useState<any[]>([
-    { company_code: "PKG", company: "Petrokimia Gresik" },
-    { company_code: "PKC", company: "Pupuk Kujang" },
-    { company_code: "PIM", company: "Pupuk Iskandar Muda" },
-    { company_code: "LOG4MENENG", company: "Logistics Meneng" },
-  ]);
-  const [selectedDockPlant, setSelectedDockPlant] = useState<string>("PKG");
+  const { companies, activeCompanyCode, switchCompany } = useCompany();
   const [realBays, setRealBays] = useState<RealTicket[]>([]);
   const [realQueue, setRealQueue] = useState<RealTicket[]>([]);
   const [baysLoading, setBaysLoading] = useState(false);
@@ -54,33 +47,14 @@ export default function LiveMonitoringAntrianPage() {
     return () => clearInterval(timer);
   }, []);
 
-  // Company list
-  useEffect(() => {
-    apiJson<any[]>("/api/Company/getCompanyListFitur")
-      .then((data) => {
-        if (data && Array.isArray(data) && data.length > 0) {
-          const formatted = data.map((c: any) => ({
-            company_code: c.company_code,
-            company: c.company || c.company_code,
-          }));
-          const merged = [...formatted];
-          if (!merged.some(m => m.company_code === "LOG4MENENG")) {
-            merged.push({ company_code: "LOG4MENENG", company: "Logistics Meneng" });
-          }
-          setCompanies(merged);
-        }
-      })
-      .catch(err => console.error("Failed to load company list:", err));
-  }, [apiJson]);
-
   // Fetch loading bays, poll every 30s
   useEffect(() => {
     let cancelled = false;
     const fetchBays = async () => {
       setBaysLoading(true);
       try {
-        const qs = selectedDockPlant
-          ? `?companyCode=${encodeURIComponent(selectedDockPlant)}`
+        const qs = activeCompanyCode
+          ? `?companyCode=${encodeURIComponent(activeCompanyCode)}`
           : "";
         const res = await fetch(`/api/dashboard/loading-bays${qs}`);
         if (!res.ok || cancelled) return;
@@ -101,7 +75,7 @@ export default function LiveMonitoringAntrianPage() {
       cancelled = true;
       clearInterval(id);
     };
-  }, [selectedDockPlant]);
+  }, [activeCompanyCode]);
 
   return (
     <div className="space-y-6">
@@ -123,12 +97,12 @@ export default function LiveMonitoringAntrianPage() {
           </div>
           <div className="w-64 shrink-0 self-start md:self-auto">
             <SearchableSelect
-              options={companies.map((c: any) => ({
+              options={companies.map((c) => ({
                 value: c.company_code,
-                label: c.company || c.company_code,
+                label: c.company,
               }))}
-              value={selectedDockPlant}
-              onChange={(val) => setSelectedDockPlant(val)}
+              value={activeCompanyCode ?? ""}
+              onChange={(val) => { switchCompany(val).catch(console.error); }}
               placeholder="Pilih Perusahaan/Plant..."
               searchPlaceholder="Cari plant..."
             />
