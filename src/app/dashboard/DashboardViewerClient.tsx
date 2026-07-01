@@ -4,7 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useApi } from "@/hooks/use-api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Truck, Package, Clock, AlertCircle } from "lucide-react";
+import { Loader2, Truck, Package, Clock, AlertCircle, FileText } from "lucide-react";
 import ViewerDashboard from "@/components/dashboard/ViewerDashboard";
 import StaffAreaDashboard from "@/components/dashboard/StaffAreaDashboard";
 import { normalizeRole } from "@/lib/role-utils";
@@ -39,11 +39,13 @@ export default function DashboardViewerClient() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const username = (session?.user as any)?.username as string | undefined;
   const allRoles: string[] = ((session?.user as any)?.roles as string[] | undefined) ?? [(session?.user as any)?.role ?? ""];
   const normalizedRoles = allRoles.map(r => normalizeRole(r));
   const isStaffArea = normalizedRoles.includes("staffarea");
 
-  const isAuthorizedForTransit = normalizedRoles.includes("superadmin") || normalizedRoles.includes("viewer");
+  const isPiAdmin = username?.toLowerCase() === "pi_admin";
+  const isAuthorizedForTransit = isPiAdmin || normalizedRoles.includes("superadmin") || normalizedRoles.includes("pkd") || normalizedRoles.includes("viewer");
 
   useEffect(() => {
     if (!company) return;
@@ -85,7 +87,22 @@ export default function DashboardViewerClient() {
   }
 
   if (!company) {
-    return <ViewerDashboard />;
+    return (
+      <>
+        {isPiAdmin && (
+          <div className="p-6 pb-0">
+            <a
+              href="/reports/tiket-pi"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-blue-600 text-blue-600 hover:bg-blue-50 dark:border-blue-400 dark:text-blue-400 dark:hover:bg-blue-950 text-sm font-medium transition-colors"
+            >
+              <FileText className="h-4 w-4" />
+              Laporan Tiket PI
+            </a>
+          </div>
+        )}
+        <ViewerDashboard />
+      </>
+    );
   }
 
   return (

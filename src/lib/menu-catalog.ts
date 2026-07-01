@@ -82,6 +82,8 @@ export const MENU_CATALOG: CatalogGroup[] = [
     category: "Laporan",
     items: [
       { path: "/reports", label: "Summary Laporan" },
+      { path: "/reports/tiket-pi", label: "Laporan Tiket PI" },
+      { path: "/reports/tickets", label: "Laporan Tiket" },
       { path: "/reports/booking", label: "Report Pemesanan Tiket" },
       { path: "/reports/loading", label: "Report Realisasi Pemuatan" },
       { path: "/reports/cancelation", label: "Report Pembatalan Tiket" },
