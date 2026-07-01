@@ -237,8 +237,8 @@ export default function ViewerDashboard() {
           setRealBays(Array.isArray(json.bays) ? json.bays : []);
           setRealQueue(Array.isArray(json.queue) ? json.queue : []);
         }
-      } catch {
-        // silently degrade — empty state already shown
+      } catch (err) {
+        console.error("[loading-bays] fetch error:", err);
       } finally {
         if (!cancelled) setBaysLoading(false);
       }
@@ -1318,7 +1318,7 @@ export default function ViewerDashboard() {
               <div>
                 <span className="text-[10px] uppercase font-bold text-gray-400 block">Status Docks Aktif</span>
                 <span className="text-sm font-black text-gray-800 dark:text-white mt-0.5 block">
-                  {realBays.length} / {realBays.length} Pintu Terisi
+                  {realBays.length} Truk Sedang Dimuat
                 </span>
               </div>
             </div>
