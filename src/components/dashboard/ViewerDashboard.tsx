@@ -73,47 +73,6 @@ interface LoadingBay {
   transportir: string;
 }
 
-const getBaysForPlant = (plantCode: string, companies: any[]): LoadingBay[] => {
-  switch (plantCode) {
-    case "PKG":
-      return [
-        { id: 1, bay: "Bay 01", status: "loading", nopol: "W 9102 UA", driver: "Ahmad Sujak", product: "Urea Curah", baseProgress: 75, durationMinutes: 28, warehouseName: "Gudang Lini III PKG", queueNumber: 4, bookingno: "SISTRO_2026_09102", noposto: "P10023491", transportir: "PT. Pupuk Indonesia Logistik" },
-        { id: 2, bay: "Bay 02", status: "loading", nopol: "L 8421 BC", driver: "Budi Santoso", product: "NPK Phonska", baseProgress: 42, durationMinutes: 18, warehouseName: "Gudang NPK Phonska", queueNumber: 7, bookingno: "SISTRO_2026_08421", noposto: "P10023455", transportir: "PT. Samudera Logistik" },
-        { id: 3, bay: "Bay 03", status: "idle", nopol: "", driver: "", product: "", baseProgress: 0, durationMinutes: 0, warehouseName: "Gudang Urea Phonska V", queueNumber: 0, bookingno: "", noposto: "", transportir: "" },
-        { id: 4, bay: "Bay 04", status: "loading", nopol: "N 7562 UR", driver: "Eko Prasetyo", product: "ZA Lini I", baseProgress: 88, durationMinutes: 34, warehouseName: "Gudang ZA Baru", queueNumber: 2, bookingno: "SISTRO_2026_07562", noposto: "P10023401", transportir: "PT. Bahtera Adhiguna" },
-        { id: 5, bay: "Bay 05", status: "loading", nopol: "AG 9442 XY", driver: "Hendra Wijaya", product: "SP-36", baseProgress: 15, durationMinutes: 8, warehouseName: "Gudang SP Lini I", queueNumber: 11, bookingno: "SISTRO_2026_09442", noposto: "P10023512", transportir: "PT. Puninar Jaya" },
-        { id: 6, bay: "Bay 06", status: "idle", nopol: "", driver: "", product: "", baseProgress: 0, durationMinutes: 0, warehouseName: "Gudang Phonska IV", queueNumber: 0, bookingno: "", noposto: "", transportir: "" }
-      ];
-    case "PKC":
-      return [
-        { id: 1, bay: "Bay 01", status: "loading", nopol: "T 8821 AD", driver: "Dedi Setiadi", product: "Urea Kujang", baseProgress: 60, durationMinutes: 22, warehouseName: "Gudang Kujang 1A", queueNumber: 3, bookingno: "SISTRO_2026_08821", noposto: "P10022812", transportir: "PT. Kujang Logistik" },
-        { id: 2, bay: "Bay 02", status: "idle", nopol: "", driver: "", product: "", baseProgress: 0, durationMinutes: 0, warehouseName: "Gudang Kujang 1B", queueNumber: 0, bookingno: "", noposto: "", transportir: "" },
-        { id: 3, bay: "Bay 03", status: "loading", nopol: "E 9142 QA", driver: "Slamet Rahardjo", product: "NPK Kujang", baseProgress: 82, durationMinutes: 31, warehouseName: "Gudang Kujang Lini II", queueNumber: 5, bookingno: "SISTRO_2026_09142", noposto: "P10022904", transportir: "PT. Trans Kujang" },
-        { id: 4, bay: "Bay 04", status: "idle", nopol: "", driver: "", product: "", baseProgress: 0, durationMinutes: 0, warehouseName: "Gudang Kujang Lini III", queueNumber: 0, bookingno: "", noposto: "", transportir: "" }
-      ];
-    case "PIM":
-      return [
-        { id: 1, bay: "Bay 01", status: "loading", nopol: "BL 8711 AA", driver: "Zulkifli", product: "Urea Curah PIM", baseProgress: 30, durationMinutes: 12, warehouseName: "Gudang Lini I PIM", queueNumber: 1, bookingno: "SISTRO_2026_08711", noposto: "P10021481", transportir: "PT. Samudera Indah" },
-        { id: 2, bay: "Bay 02", status: "loading", nopol: "BL 9402 HZ", driver: "Mukhtar", product: "Pupuk Organik", baseProgress: 55, durationMinutes: 25, warehouseName: "Gudang Organik PIM", queueNumber: 2, bookingno: "SISTRO_2026_09402", noposto: "P10021550", transportir: "PT. Aceh Transport" },
-        { id: 3, bay: "Bay 03", status: "idle", nopol: "", driver: "", product: "", baseProgress: 0, durationMinutes: 0, warehouseName: "Gudang Utama PIM", queueNumber: 0, bookingno: "", noposto: "", transportir: "" }
-      ];
-    case "LOG4MENENG":
-      return [
-        { id: 1, bay: "Bay 01", status: "loading", nopol: "P 8092 UU", driver: "Subur", product: "ZA Meneng", baseProgress: 45, durationMinutes: 15, warehouseName: "Gini Lini III Meneng", queueNumber: 4, bookingno: "SISTRO_2026_08092", noposto: "P10020412", transportir: "PT. Meneng Logistics" },
-        { id: 2, bay: "Bay 02", status: "loading", nopol: "P 9122 YR", driver: "Mulyono", product: "Urea Meneng", baseProgress: 70, durationMinutes: 24, warehouseName: "Gudang Utama Meneng", queueNumber: 6, bookingno: "SISTRO_2026_09122", noposto: "P10020489", transportir: "PT. Banyuwangi Indah" }
-      ];
-    default: {
-      const comp = (companies || []).find((c: any) => c.company_code === plantCode);
-      const compName = comp ? (comp.company || comp.company_code) : plantCode;
-      const cleanCode = plantCode.substring(0, 4).toUpperCase();
-      return [
-        { id: 1, bay: "Bay 01", status: "loading", nopol: "W 4802 AB", driver: "Supardi", product: "Urea Curah", baseProgress: 50, durationMinutes: 20, warehouseName: `Gudang Lini I ${compName}`, queueNumber: 1, bookingno: `SISTRO_2026_${cleanCode}01`, noposto: "P10020000", transportir: "PT. Pupuk Indonesia Logistik" },
-        { id: 2, bay: "Bay 02", status: "idle", nopol: "", driver: "", product: "", baseProgress: 0, durationMinutes: 0, warehouseName: `Gudang Lini II ${compName}`, queueNumber: 0, bookingno: "", noposto: "", transportir: "" },
-        { id: 3, bay: "Bay 03", status: "loading", nopol: "N 9188 CD", driver: "Mulyono", product: "Pupuk NPK", baseProgress: 35, durationMinutes: 14, warehouseName: `Gudang NPK ${compName}`, queueNumber: 2, bookingno: `SISTRO_2026_${cleanCode}02`, noposto: "P10020111", transportir: "PT. Samudera Logistik" }
-      ];
-    }
-  }
-};
 
 const getQueueForPlant = (plantCode: string) => {
   switch (plantCode) {
