@@ -35,7 +35,7 @@ interface RealTicket {
 
 export default function LiveMonitoringAntrianPage() {
   const { activeCompanyCode, switchCompany } = useCompany();
-  const { apiJson } = useApi();
+  const { apiJson, apiTable } = useApi();
   const [realBays, setRealBays] = useState<RealTicket[]>([]);
   const [realQueue, setRealQueue] = useState<RealTicket[]>([]);
   const [baysLoading, setBaysLoading] = useState(false);
@@ -79,18 +79,34 @@ export default function LiveMonitoringAntrianPage() {
     const fetchBays = async () => {
       setBaysLoading(true);
       try {
-        const qs = activeCompanyCode
-          ? `?companyCode=${encodeURIComponent(activeCompanyCode)}`
-          : "";
-        const res = await fetch(`/api/dashboard/loading-bays${qs}`);
-        if (!res.ok || cancelled) return;
-        const json = await res.json();
+        const BASE_COLUMNS = [
+          { data: "bookingno",       name: "bookingno",   searchable: false, orderable: true  },
+          { data: "nopol",           name: "nopol",       searchable: false, orderable: false },
+          { data: "driver",          name: "driver",      searchable: false, orderable: false },
+          { data: "produkString",    name: "idproduk",    searchable: false, orderable: false },
+          { data: "transportString", name: "idtransport", searchable: false, orderable: false },
+          { data: "qty",             name: "qty",         searchable: false, orderable: false },
+          { data: "posto",           name: "posto",       searchable: false, orderable: false },
+          { data: "tiketno",         name: "tiketno",     searchable: false, orderable: false },
+        ];
+        const basePayload = {
+          draw: 1,
+          start: 0,
+          search: { value: "" },
+          order: [{ column: 0, dir: "desc" }],
+          columns: BASE_COLUMNS,
+          ...(activeCompanyCode ? { companyCode: activeCompanyCode } : {}),
+        };
+        const [baysResult, queueResult] = await Promise.all([
+          apiTable<{ data: any[] }>("/api/Tiket/DataTableFilterLegacy", { ...basePayload, length: 20, position: "03" }),
+          apiTable<{ data: any[] }>("/api/Tiket/DataTableFilterLegacy", { ...basePayload, length: 10, position: "02" }),
+        ]);
         if (!cancelled) {
-          setRealBays(Array.isArray(json.bays) ? json.bays : []);
-          setRealQueue(Array.isArray(json.queue) ? json.queue : []);
+          setRealBays(Array.isArray(baysResult?.data) ? baysResult.data : []);
+          setRealQueue(Array.isArray(queueResult?.data) ? queueResult.data : []);
         }
       } catch (err) {
-        console.error("[loading-bays] fetch error:", err);
+        console.error("[live-monitoring] fetch error:", err);
       } finally {
         if (!cancelled) setBaysLoading(false);
       }
@@ -101,7 +117,7 @@ export default function LiveMonitoringAntrianPage() {
       cancelled = true;
       clearInterval(id);
     };
-  }, [activeCompanyCode]);
+  }, [activeCompanyCode, apiTable]);
 
   return (
     <div className="space-y-6">
