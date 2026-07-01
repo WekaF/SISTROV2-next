@@ -70,10 +70,14 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const companyCode = searchParams.get("companyCode");
 
-  const [bays, queue] = await Promise.all([
-    fetchTicketsByPosition(token, companyCode, "03", 20),
-    fetchTicketsByPosition(token, companyCode, "02", 10),
-  ]);
-
-  return NextResponse.json({ bays, queue });
+  try {
+    const [bays, queue] = await Promise.all([
+      fetchTicketsByPosition(token, companyCode, "03", 20),
+      fetchTicketsByPosition(token, companyCode, "02", 10),
+    ]);
+    return NextResponse.json({ bays, queue });
+  } catch (err) {
+    console.error("[loading-bays] fetch error:", err);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
 }
