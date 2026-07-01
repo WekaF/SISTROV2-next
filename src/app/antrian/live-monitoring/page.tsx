@@ -31,14 +31,14 @@ interface RealTicket {
   transportString: string;
   qty: number;
   posto: string;
-  updatedonString?: string;
+  timemuat?: string;
 }
 
-function calcMuatMenit(updatedonString?: string): number | null {
-  if (!updatedonString) return null;
-  let d = new Date(updatedonString);
+function calcMuatMenit(timemuat?: string): number | null {
+  if (!timemuat) return null;
+  let d = new Date(timemuat);
   if (isNaN(d.getTime())) {
-    const parts = updatedonString.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(.+)$/);
+    const parts = timemuat.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(.+)$/);
     if (parts) {
       d = new Date(`${parts[2]}/${parts[1]}/${parts[3]} ${parts[4]}`);
     }
@@ -97,7 +97,7 @@ export default function LiveMonitoringAntrianPage() {
           { data: "qty",             name: "qty",         searchable: false, orderable: false },
           { data: "posto",           name: "posto",       searchable: false, orderable: false },
           { data: "tiketno",         name: "tiketno",     searchable: false, orderable: false },
-          { data: "updatedonString", name: "updatedon",   searchable: false, orderable: false },
+          { data: "timemuat",        name: "timemuat",    searchable: false, orderable: false },
         ];
         const basePayload = {
           draw: 1,
@@ -216,7 +216,7 @@ export default function LiveMonitoringAntrianPage() {
             )}
             {realBays.map((ticket, idx) => {
               const isOccupied = true;
-              const menit = calcMuatMenit(ticket.updatedonString);
+              const menit = calcMuatMenit(ticket.timemuat);
               const isProgressNearlyDone = menit !== null && menit > 45;
 
               const bay = {
