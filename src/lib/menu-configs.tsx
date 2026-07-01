@@ -454,10 +454,6 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
         name: "Laporan",
         subItems: [
           { name: "Laporan Tiket PI", path: "/reports/tiket-pi" },
-          { name: "Report Pemesanan Tiket", path: "/reports/booking" },
-          { name: "Report Realisasi Pemuatan", path: "/reports/loading" },
-          { name: "Report Pembatalan Tiket", path: "/reports/cancelation" },
-          { name: "Resume Booking Tiket", path: "/reports/resume" },
         ],
       },
     ],
