@@ -27,8 +27,10 @@ import {
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import Badge from "@/components/ui/badge/Badge";
+import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import { useDashboardStream } from "@/hooks/use-dashboard-stream";
 import { useCompany } from "@/context/CompanyContext";
+import { useApi } from "@/hooks/use-api";
 
 // Dynamic import for Leaflet Map to avoid SSR compilation issues
 const InteractiveLeafletMap = dynamic(
@@ -99,15 +101,40 @@ const getQueueForPlant = (plantCode: string) => {
 };
 
 export default function ViewerDashboard() {
-  const { activeCompanyCode } = useCompany();
+  const { activeCompanyCode, switchCompany } = useCompany();
+  const { apiJson } = useApi();
   const { data: streamData, status: streamStatus, lastUpdated: streamLastUpdated } = useDashboardStream();
   const [isSimulated, setIsSimulated] = useState(false);
   const [mapPlants, setMapPlants] = useState<any[]>([]);
   const [mounted, setMounted] = useState(false);
+  const [dockCompanies, setDockCompanies] = useState<{ company_code: string; company: string }[]>([
+    { company_code: "PKG", company: "Petrokimia Gresik" },
+    { company_code: "PKC", company: "Pupuk Kujang" },
+    { company_code: "PIM", company: "Pupuk Iskandar Muda" },
+    { company_code: "LOG4MENENG", company: "Logistics Meneng" },
+  ]);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Fetch company list from API
+  useEffect(() => {
+    apiJson<any[]>("/api/Company/getCompanyListFitur")
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          const formatted = data.map((c: any) => ({
+            company_code: c.company_code,
+            company: c.company || c.company_code,
+          }));
+          if (!formatted.some(m => m.company_code === "LOG4MENENG")) {
+            formatted.push({ company_code: "LOG4MENENG", company: "Logistics Meneng" });
+          }
+          setDockCompanies(formatted);
+        }
+      })
+      .catch((err) => console.error("[ViewerDashboard] company list fetch error:", err));
+  }, [apiJson]);
 
   // States for all dashboard metrics
   const [activeTab, setActiveTab] = useState<"traffic" | "performance" | "all">("traffic");
@@ -1227,10 +1254,17 @@ export default function ViewerDashboard() {
               Pemantauan real-time proses pengisian pupuk ke truk di dermaga muat (loading bay) masing-masing produsen pupuk
             </CardDescription>
           </div>
-          <div className="shrink-0 self-start md:self-auto">
-            <span className="text-xs font-bold text-gray-500 dark:text-gray-400 px-3 py-1.5 bg-gray-100 dark:bg-white/[0.05] rounded-lg">
-              {activeCompanyCode ?? "—"}
-            </span>
+          <div className="w-64 shrink-0 self-start md:self-auto">
+            <SearchableSelect
+              options={dockCompanies.map((c) => ({
+                value: c.company_code,
+                label: c.company,
+              }))}
+              value={activeCompanyCode ?? ""}
+              onChange={(val) => { switchCompany(val).catch(console.error); }}
+              placeholder="Pilih Perusahaan/Plant..."
+              searchPlaceholder="Cari plant..."
+            />
           </div>
         </CardHeader>
         <CardContent className="p-6 space-y-6">

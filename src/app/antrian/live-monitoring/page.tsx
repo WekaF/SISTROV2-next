@@ -4,6 +4,7 @@ import { Building2, Clock, Warehouse, Activity } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import { useCompany } from "@/context/CompanyContext";
+import { useApi } from "@/hooks/use-api";
 
 interface LoadingBay {
   id: number;
@@ -33,11 +34,18 @@ interface RealTicket {
 }
 
 export default function LiveMonitoringAntrianPage() {
-  const { companies, activeCompanyCode, switchCompany } = useCompany();
+  const { activeCompanyCode, switchCompany } = useCompany();
+  const { apiJson } = useApi();
   const [realBays, setRealBays] = useState<RealTicket[]>([]);
   const [realQueue, setRealQueue] = useState<RealTicket[]>([]);
   const [baysLoading, setBaysLoading] = useState(false);
   const [dockProgressOffset, setDockProgressOffset] = useState<number>(0);
+  const [companies, setCompanies] = useState<{ company_code: string; company: string }[]>([
+    { company_code: "PKG", company: "Petrokimia Gresik" },
+    { company_code: "PKC", company: "Pupuk Kujang" },
+    { company_code: "PIM", company: "Pupuk Iskandar Muda" },
+    { company_code: "LOG4MENENG", company: "Logistics Meneng" },
+  ]);
 
   // Animation ticker
   useEffect(() => {
@@ -46,6 +54,24 @@ export default function LiveMonitoringAntrianPage() {
     }, 3000);
     return () => clearInterval(timer);
   }, []);
+
+  // Fetch company list from API
+  useEffect(() => {
+    apiJson<any[]>("/api/Company/getCompanyListFitur")
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          const formatted = data.map((c: any) => ({
+            company_code: c.company_code,
+            company: c.company || c.company_code,
+          }));
+          if (!formatted.some(m => m.company_code === "LOG4MENENG")) {
+            formatted.push({ company_code: "LOG4MENENG", company: "Logistics Meneng" });
+          }
+          setCompanies(formatted);
+        }
+      })
+      .catch((err) => console.error("[live-monitoring] company list fetch error:", err));
+  }, [apiJson]);
 
   // Fetch loading bays, poll every 30s
   useEffect(() => {
