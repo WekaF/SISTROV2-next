@@ -34,19 +34,26 @@ interface RealTicket {
   timemuat?: string;
 }
 
-function calcMuatMenit(timemuat?: string): number | null {
+function calcMuatDetik(timemuat: string | undefined, now: number): number | null {
   if (!timemuat) return null;
   let d = new Date(timemuat);
   if (isNaN(d.getTime())) {
     const parts = timemuat.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(.+)$/);
-    if (parts) {
-      d = new Date(`${parts[2]}/${parts[1]}/${parts[3]} ${parts[4]}`);
-    }
+    if (parts) d = new Date(`${parts[2]}/${parts[1]}/${parts[3]} ${parts[4]}`);
   }
   if (isNaN(d.getTime())) return null;
-  const diffMs = Date.now() - d.getTime();
-  if (diffMs < 0) return null;
-  return Math.round(diffMs / 60000);
+  const diff = now - d.getTime();
+  if (diff < 0) return null;
+  return Math.floor(diff / 1000);
+}
+
+function fmtDurasi(detik: number): string {
+  const h = Math.floor(detik / 3600);
+  const m = Math.floor((detik % 3600) / 60);
+  const s = detik % 60;
+  const mm = m.toString().padStart(2, "0");
+  const ss = s.toString().padStart(2, "0");
+  return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
 }
 
 export default function LiveMonitoringAntrianPage() {
@@ -55,12 +62,18 @@ export default function LiveMonitoringAntrianPage() {
   const [realBays, setRealBays] = useState<RealTicket[]>([]);
   const [realQueue, setRealQueue] = useState<RealTicket[]>([]);
   const [baysLoading, setBaysLoading] = useState(false);
+  const [now, setNow] = useState(Date.now());
   const [companies, setCompanies] = useState<{ company_code: string; company: string }[]>([
     { company_code: "PKG", company: "Petrokimia Gresik" },
     { company_code: "PKC", company: "Pupuk Kujang" },
     { company_code: "PIM", company: "Pupuk Iskandar Muda" },
     { company_code: "LOG4MENENG", company: "Logistics Meneng" },
   ]);
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
 
 
 
@@ -216,8 +229,8 @@ export default function LiveMonitoringAntrianPage() {
             )}
             {realBays.map((ticket, idx) => {
               const isOccupied = true;
-              const menit = calcMuatMenit(ticket.timemuat);
-              const isProgressNearlyDone = menit !== null && menit > 45;
+              const detik = calcMuatDetik(ticket.timemuat, now);
+              const isProgressNearlyDone = detik !== null && detik > 45 * 60;
 
               const bay = {
                 id: idx + 1,
@@ -298,7 +311,7 @@ export default function LiveMonitoringAntrianPage() {
 
                       {/* Duration counter — real data from updatedonString */}
                       {(() => {
-                        const isKritis = menit !== null && menit > 90;
+                        const isKritis = detik !== null && detik > 90 * 60;
                         return (
                           <div className={`flex items-center justify-between px-3 py-2 rounded-xl text-[10px] font-bold ${
                             isKritis
@@ -309,10 +322,10 @@ export default function LiveMonitoringAntrianPage() {
                           }`}>
                             <span className="flex items-center gap-1.5">
                               <Clock className="h-3.5 w-3.5" />
-                              Durasi Proses Muat
+                              Durasi Muat (live)
                             </span>
-                            <span className="text-sm font-black">
-                              {menit !== null ? `${menit} mnt` : "—"}
+                            <span className="text-sm font-black font-mono tracking-tight">
+                              {detik !== null ? fmtDurasi(detik) : "—"}
                             </span>
                           </div>
                         );
