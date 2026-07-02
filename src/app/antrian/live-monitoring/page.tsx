@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import { Building2, Clock, Warehouse, Activity } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { SearchableSelect } from "@/components/ui/SearchableSelect";
@@ -308,14 +309,13 @@ export default function LiveMonitoringAntrianPage() {
                         </div>
                         <div className="flex items-center justify-between mt-1 text-[10px]">
                           <span className="text-brand-500 font-bold">{bay.product}</span>
-                          <span className="text-gray-400 dark:text-gray-550 font-bold truncate max-w-[130px]" title={bay.bay}>{bay.bay}</span>
                         </div>
                       </div>
 
                       <div className="grid grid-cols-2 gap-x-2 gap-y-1 p-2 bg-gray-50/50 dark:bg-white/[0.01] border border-gray-150/40 dark:border-gray-800/50 rounded-lg text-[9.5px]">
                         <div>
                           <span className="text-gray-400 block font-semibold">Kode Booking</span>
-                          <span className="font-mono font-bold text-gray-700 dark:text-gray-300">{bay.bookingno}</span>
+                          <Link href={`/track/tiket?id=${bay.bookingno}`} target="_blank" className="font-mono font-bold text-brand-600 dark:text-brand-400 hover:underline">{bay.bookingno}</Link>
                         </div>
                         <div>
                           <span className="text-gray-400 block font-semibold">No. POSTO</span>
