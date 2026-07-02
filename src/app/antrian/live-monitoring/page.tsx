@@ -32,6 +32,8 @@ interface RealTicket {
   qty: number;
   posto: string;
   timemuat?: string;
+  company?: string;
+  gudangtujuan?: string;
 }
 
 function calcMuatDetik(timemuat: string | undefined, now: number): number | null {
@@ -235,7 +237,7 @@ export default function LiveMonitoringAntrianPage() {
               const bay = {
                 id: idx + 1,
                 bay: `Bay ${String(idx + 1).padStart(2, "0")}`,
-                warehouseName: ticket.produkString,
+                warehouseName: ticket.gudangtujuan || "",
                 nopol: ticket.nopol,
                 driver: ticket.driver,
                 queueNumber: idx + 1,
@@ -261,7 +263,14 @@ export default function LiveMonitoringAntrianPage() {
                   )}
 
                   <div className="flex justify-between items-start">
-                    <span className="text-[11px] font-black text-gray-700 dark:text-gray-300 uppercase tracking-wider">{bay.warehouseName || bay.bay}</span>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[9px] font-black text-brand-500 uppercase tracking-widest">
+                        {ticket.company || activeCompanyCode}
+                      </span>
+                      <span className="text-[11px] font-black text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                        {bay.warehouseName || "Gudang Belum Ditentukan"}
+                      </span>
+                    </div>
                     <span
                       className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
                         isOccupied
@@ -307,6 +316,12 @@ export default function LiveMonitoringAntrianPage() {
                           <span className="text-gray-400 block font-semibold">Transportir</span>
                           <span className="font-bold text-gray-700 dark:text-gray-300 truncate block" title={bay.transportir}>{bay.transportir}</span>
                         </div>
+                        {ticket.gudangtujuan && (
+                          <div className="col-span-2 border-t border-gray-100/50 dark:border-gray-800/30 pt-1 mt-1">
+                            <span className="text-gray-400 block font-semibold">Gudang Muat</span>
+                            <span className="font-bold text-emerald-600 dark:text-emerald-400 truncate block" title={ticket.gudangtujuan}>{ticket.gudangtujuan}</span>
+                          </div>
+                        )}
                       </div>
 
                       {/* Duration counter — real data from updatedonString */}
