@@ -123,8 +123,8 @@ export default function LiveMonitoringAntrianPage() {
           ...(activeCompanyCode ? { companyCode: activeCompanyCode } : {}),
         };
         const [baysResult, queueResult] = await Promise.all([
-          apiTable<{ data: any[] }>("/api/Tiket/DataTableFilterLegacy", { ...basePayload, length: 20, position: "03" }),
-          apiTable<{ data: any[] }>("/api/Tiket/DataTableFilterLegacy", { ...basePayload, length: 10, position: "02" }),
+          apiTable<{ data: any[] }>("/api/Tiket/DataTableMonitorPosition", { ...basePayload, length: 200, position: "03" }),
+          apiTable<{ data: any[] }>("/api/Tiket/DataTableMonitorPosition", { ...basePayload, length: 200, position: "02" }),
         ]);
         
         console.log(`[live-monitoring] API Result for ${activeCompanyCode}:`, {
