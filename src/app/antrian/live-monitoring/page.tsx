@@ -185,7 +185,7 @@ export default function LiveMonitoringAntrianPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Live Monitor Antrian Gudang</h1>
-        <p className="text-sm text-gray-500 mt-1">Pemantauan real-time armada Pos 02 · 03 · 04 per plant</p>
+        <p className="text-sm text-gray-500 mt-1">Pemantauan real-time posisi armada per plant</p>
       </div>
 
       <Card className="shadow-theme-xs hover:shadow-md transition-all duration-300 border border-gray-100 dark:border-gray-800">
