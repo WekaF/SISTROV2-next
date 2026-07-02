@@ -63,6 +63,8 @@ export default function LiveMonitoringAntrianPage() {
   const { apiJson, apiTable } = useApi();
   const [realBays, setRealBays] = useState<RealTicket[]>([]);
   const [realQueue, setRealQueue] = useState<RealTicket[]>([]);
+  const [realCheckout, setRealCheckout] = useState<RealTicket[]>([]);
+  const [totalCheckout, setTotalCheckout] = useState(0);
   const [baysLoading, setBaysLoading] = useState(false);
   const [now, setNow] = useState(Date.now());
   const [companies, setCompanies] = useState<{ company_code: string; company: string }[]>([
@@ -124,19 +126,23 @@ export default function LiveMonitoringAntrianPage() {
           ED: "2030-01-01",
           ...(activeCompanyCode ? { companyCode: activeCompanyCode } : {}),
         };
-        const [baysResult, queueResult] = await Promise.all([
-          apiTable<{ data: any[] }>("/api/Tiket/DataTableMonitorPosition", { ...basePayload, length: 200, position: "03" }),
-          apiTable<{ data: any[] }>("/api/Tiket/DataTableMonitorPosition", { ...basePayload, length: 200, position: "02" }),
+        const [baysResult, queueResult, checkoutResult] = await Promise.all([
+          apiTable<{ data: any[]; recordsTotal: number }>("/api/Tiket/DataTableMonitorPosition", { ...basePayload, length: 200, position: "03" }),
+          apiTable<{ data: any[]; recordsTotal: number }>("/api/Tiket/DataTableMonitorPosition", { ...basePayload, length: 200, position: "02" }),
+          apiTable<{ data: any[]; recordsTotal: number }>("/api/Tiket/DataTableMonitorPosition", { ...basePayload, length: 200, position: "04" }),
         ]);
-        
+
         console.log(`[live-monitoring] API Result for ${activeCompanyCode}:`, {
           baysCount: baysResult?.data?.length,
           queueCount: queueResult?.data?.length,
+          checkoutCount: checkoutResult?.data?.length,
         });
 
         if (!cancelled) {
           setRealBays(Array.isArray(baysResult?.data) ? baysResult.data : []);
           setRealQueue(Array.isArray(queueResult?.data) ? queueResult.data : []);
+          setRealCheckout(Array.isArray(checkoutResult?.data) ? checkoutResult.data : []);
+          setTotalCheckout((checkoutResult as any)?.recordsTotal ?? checkoutResult?.data?.length ?? 0);
         }
       } catch (err) {
         console.error("[live-monitoring] fetch error:", err);
@@ -155,8 +161,8 @@ export default function LiveMonitoringAntrianPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Live Monitor Pintu Pemuatan</h1>
-        <p className="text-sm text-gray-500 mt-1">Pemantauan real-time loading bay per plant</p>
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Live Monitor Antrian Gudang</h1>
+        <p className="text-sm text-gray-500 mt-1">Pemantauan real-time armada Pos 02 · 03 · 04 per plant</p>
       </div>
 
       <Card className="shadow-theme-xs hover:shadow-md transition-all duration-300 border border-gray-100 dark:border-gray-800">
@@ -164,10 +170,10 @@ export default function LiveMonitoringAntrianPage() {
           <div>
             <CardTitle className="text-sm font-bold flex items-center gap-2 text-gray-800 dark:text-white uppercase tracking-tight">
               <Activity className="h-5 w-5 text-emerald-500 animate-pulse" />
-              Live Monitor Pintu Pemuatan (Loading Bays) & Antrean Gudang
+              Live Monitor Proses Muat Gudang — Pos 02 · 03 · 04
             </CardTitle>
             <CardDescription className="text-xs text-gray-400 font-bold">
-              Pemantauan real-time proses pengisian pupuk ke truk di dermaga muat (loading bay) masing-masing produsen pupuk
+              Armada Timbang Kosong (Pos 02) · Sedang Dimuat (Pos 03) · Checkout Gudang (Pos 04)
             </CardDescription>
           </div>
           <div className="w-64 shrink-0 self-start md:self-auto">
@@ -187,35 +193,35 @@ export default function LiveMonitoringAntrianPage() {
           {/* Summary strip */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-b border-gray-100 dark:border-gray-800/80 pb-5">
             <div className="flex items-center gap-3">
+              <span className="p-2.5 bg-amber-50 text-amber-500 dark:bg-amber-950/20 rounded-xl shrink-0">
+                <Warehouse className="h-5 w-5" />
+              </span>
+              <div>
+                <span className="text-[10px] uppercase font-bold text-gray-400 block">Pos 02 — Antrian Timbang Kosong</span>
+                <span className="text-sm font-black text-gray-800 dark:text-white mt-0.5 block">
+                  {realQueue.length} Truk Mengantre
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
               <span className="p-2.5 bg-emerald-50 text-emerald-500 dark:bg-emerald-950/20 rounded-xl shrink-0">
                 <Building2 className="h-5 w-5" />
               </span>
               <div>
-                <span className="text-[10px] uppercase font-bold text-gray-400 block">Status Docks Aktif</span>
+                <span className="text-[10px] uppercase font-bold text-gray-400 block">Pos 03 — Sedang Dimuat di Gudang</span>
                 <span className="text-sm font-black text-gray-800 dark:text-white mt-0.5 block">
                   {realBays.length} Truk Sedang Dimuat
                 </span>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <span className="p-2.5 bg-brand-50 text-brand-500 dark:bg-brand-950/20 rounded-xl shrink-0">
-                <Clock className="h-5 w-5" />
+              <span className="p-2.5 bg-purple-50 text-purple-500 dark:bg-purple-950/20 rounded-xl shrink-0">
+                <Activity className="h-5 w-5" />
               </span>
               <div>
-                <span className="text-[10px] uppercase font-bold text-gray-400 block">Rata-rata Waktu Muat</span>
+                <span className="text-[10px] uppercase font-bold text-gray-400 block">Pos 04 — Checkout Gudang Pemuatan</span>
                 <span className="text-sm font-black text-gray-800 dark:text-white mt-0.5 block">
-                  34 Menit per Truk
-                </span>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="p-2.5 bg-amber-50 text-amber-500 dark:bg-amber-950/20 rounded-xl shrink-0">
-                <Warehouse className="h-5 w-5" />
-              </span>
-              <div>
-                <span className="text-[10px] uppercase font-bold text-gray-400 block">Menunggu Panggilan (Gudang)</span>
-                <span className="text-sm font-black text-gray-800 dark:text-white mt-0.5 block">
-                  {realQueue.length} Truk Mengantre
+                  {totalCheckout} Truk Selesai Muat
                 </span>
               </div>
             </div>
@@ -227,7 +233,7 @@ export default function LiveMonitoringAntrianPage() {
               <div className="col-span-full text-center py-10 text-gray-400 text-sm">Memuat data loading bay...</div>
             )}
             {!baysLoading && realBays.length === 0 && (
-              <div className="col-span-full text-center py-10 text-gray-400 text-sm">Tidak ada truk sedang dimuat untuk plant ini.</div>
+              <div className="col-span-full text-center py-10 text-gray-400 text-sm">Tidak ada truk sedang dimuat di Pos 03 untuk plant ini.</div>
             )}
             {realBays.map((ticket, idx) => {
               const isOccupied = true;
@@ -350,7 +356,7 @@ export default function LiveMonitoringAntrianPage() {
                     <div className="mt-6 mb-3 text-center py-4 space-y-1.5">
                       <Warehouse className="h-5 w-5 text-gray-300 dark:text-gray-700 mx-auto" />
                       <p className="text-[10px] font-bold text-gray-400">Pintu Siap Digunakan</p>
-                      <p className="text-[9px] text-gray-400/70">Menunggu panggilan truk berikutnya dari antrean Pos 02</p>
+                      <p className="text-[9px] text-gray-400/70">Menunggu panggilan truk dari antrian Timbang Kosong (Pos 02)</p>
                     </div>
                   )}
                 </div>
@@ -358,11 +364,40 @@ export default function LiveMonitoringAntrianPage() {
             })}
           </div>
 
+          {/* Pos 04 — Checkout Gudang Pemuatan */}
+          {realCheckout.length > 0 && (
+            <div className="border-t border-gray-100 dark:border-gray-800 pt-5">
+              <h4 className="text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-3.5 flex items-center gap-1.5">
+                <Activity className="h-4 w-4 text-purple-500" />
+                Pos 04 — Checkout Gudang Pemuatan ({realCheckout.length} Truk Selesai Muat)
+              </h4>
+              <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-thin">
+                {realCheckout.map((q, idx) => (
+                  <div key={idx} className="bg-purple-50/40 dark:bg-purple-950/10 border border-purple-100 dark:border-purple-900/30 p-3 rounded-xl min-w-[200px] flex items-center justify-between gap-3 shrink-0">
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-2 bg-purple-100/80 dark:bg-purple-950/30 text-purple-600 dark:text-purple-400 rounded-lg text-xs font-black">
+                        #{idx + 1}
+                      </div>
+                      <div>
+                        <span className="text-xs font-black text-gray-800 dark:text-white block">{q.nopol}</span>
+                        <span className="text-[9px] text-gray-400 block mt-0.5">{q.driver} • {q.produkString}</span>
+                      </div>
+                    </div>
+                    <div className="text-right flex flex-col gap-0.5 items-end">
+                      <span className="text-[9px] font-mono font-bold text-gray-600 dark:text-gray-300">{q.bookingno}</span>
+                      <span className="text-[8px] px-1.5 py-0.5 bg-purple-100 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 rounded font-bold">Selesai Muat</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Queue strip */}
           <div className="border-t border-gray-100 dark:border-gray-800 pt-5">
             <h4 className="text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-3.5 flex items-center gap-1.5">
-              <Warehouse className="h-4 w-4 text-brand-500" />
-              Antrean Truk Berikutnya di Gerbang Gudang (Pos 02)
+              <Warehouse className="h-4 w-4 text-amber-500" />
+              Pos 02 — Antrian Timbang Kosong (Menunggu Masuk Gudang)
             </h4>
             <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-thin">
               {realQueue.length === 0 ? (
