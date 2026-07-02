@@ -141,9 +141,10 @@ const formatDT = (iso: string | null) => {
 
 function TrackingContent() {
   const searchParams = useSearchParams();
-  const { apiFetch } = useApi();
+  const { apiFetch, token } = useApi();
   const { addToast } = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
+  const autoSearched = useRef(false);
 
   const [inputValue, setInputValue] = useState("");
   const [ticketData, setTicketData] = useState<TicketData | null>(null);
@@ -186,12 +187,14 @@ function TrackingContent() {
   };
 
   useEffect(() => {
+    if (!token || autoSearched.current) return;
     const idParam = searchParams.get("id");
     if (idParam) {
+      autoSearched.current = true;
       setInputValue(idParam);
       handleSearch(idParam);
     }
-  }, [searchParams]);
+  }, [searchParams, token]);
 
   const handleRefresh = () => {
     if (ticketData?.bookingno) {
