@@ -14,7 +14,6 @@ import {
   Users,
   ShieldCheck,
   CalendarClock,
-  Activity,
 } from "lucide-react";
 
 export type NavItem = {
@@ -178,19 +177,12 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
           { name: "Antrian", path: "/antrian" },
           { name: "Antrian Horizontal", path: "/antrian/horizontal" },
           { name: "Antrian Report", path: "/antrian/report" },
+          { name: "Live Monitor Pintu Pemuatan", path: "/antrian/live-monitoring" },
           { name: "List Gudang", path: "/gudang" },
           { name: "Antrian Per Unit", path: "/gudang/unit-queue" },
           { name: "Gudang Tujuan Bagian", path: "/gudang/tujuan-bagian" },
           { name: "Monitoring Pemuatan", path: "/gudang/targets" },
           { name: "Traffic Antrian", path: "/gudang/trafik" },
-        ],
-      },
-      {
-        icon: <Activity className="h-5 w-5" />,
-        name: "Live Monitoring Antrian",
-        subItems: [
-          { name: "Live Monitor Pintu Pemuatan", path: "/antrian/live-monitoring" },
-          { name: "Analisis Hambatan Antrean", path: "/antrian/analisis-hambatan" },
         ],
       },
       {
@@ -405,13 +397,12 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
   staffarea: {
     nav: [
       { icon: <LayoutGrid className="h-5 w-5" />, name: "Dashboard", path: "/" },
-      { icon: <BarChart3 className="h-5 w-5" />, name: "Antrian", path: "/antrian" },
       {
-        icon: <Activity className="h-5 w-5" />,
-        name: "Live Monitoring Antrian",
+        icon: <BarChart3 className="h-5 w-5" />,
+        name: "Antrian",
         subItems: [
+          { name: "Antrian", path: "/antrian" },
           { name: "Live Monitor Pintu Pemuatan", path: "/antrian/live-monitoring" },
-          { name: "Analisis Hambatan Antrean", path: "/antrian/analisis-hambatan" },
         ],
       },
       {
@@ -467,14 +458,7 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
         name: "Antrian",
         subItems: [
           { name: "Antrian All Plant", path: "/antrian/all-plant" },
-        ],
-      },
-      {
-        icon: <Activity className="h-5 w-5" />,
-        name: "Live Monitoring Antrian",
-        subItems: [
           { name: "Live Monitor Pintu Pemuatan", path: "/antrian/live-monitoring" },
-          { name: "Analisis Hambatan Antrean", path: "/antrian/analisis-hambatan" },
         ],
       },
       { icon: <ArrowRightLeft className="h-5 w-5" />, name: "Resume Transit", path: "/resume-transit" },
@@ -618,17 +602,10 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
           { name: "Antrian", path: "/antrian" },
           { name: "Antrian Horizontal", path: "/antrian/horizontal" },
           { name: "Antrian Report", path: "/antrian/report" },
+          { name: "Live Monitor Pintu Pemuatan", path: "/antrian/live-monitoring" },
           { name: "Gudang", path: "/gudang" },
           { name: "Gudang Tujuan Bagian", path: "/gudang/tujuan-bagian" },
           { name: "Trafik Antrian Gudang", path: "/gudang/trafik" },
-        ],
-      },
-      {
-        icon: <Activity className="h-5 w-5" />,
-        name: "Live Monitoring Antrian",
-        subItems: [
-          { name: "Live Monitor Pintu Pemuatan", path: "/antrian/live-monitoring" },
-          { name: "Analisis Hambatan Antrean", path: "/antrian/analisis-hambatan" },
         ],
       },
       {
