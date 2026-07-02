@@ -1,9 +1,11 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const ASPNET_URL = process.env.ASPNET_API_URL || "https://sistro-dev.pupuk-indonesia.com";
 
 const nextConfig: NextConfig = {
   turbopack: {
+    root: path.resolve(__dirname),
     rules: {
       "*.svg": {
         loaders: ["@svgr/webpack"],
@@ -27,14 +29,6 @@ const nextConfig: NextConfig = {
       {
         source: "/aspnet-proxy/api/tiket/detail-data",
         destination: "/api/tiket/detail-data",
-      },
-      {
-        source: "/aspnet-proxy/api/Tiket/TrackData",
-        destination: "/api/tiket/track-data",
-      },
-      {
-        source: "/aspnet-proxy/api/tiket/track-data",
-        destination: "/api/tiket/track-data",
       },
       {
         source: "/aspnet-proxy/:path*",
