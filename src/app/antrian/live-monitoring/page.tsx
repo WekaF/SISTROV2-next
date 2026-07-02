@@ -60,7 +60,7 @@ function fmtDurasi(detik: number): string {
 
 export default function LiveMonitoringAntrianPage() {
   const { activeCompanyCode, switchCompany } = useCompany();
-  const { apiJson, apiTable } = useApi();
+  const { apiJson, apiTable, token } = useApi();
   const [realBays, setRealBays] = useState<RealTicket[]>([]);
   const [realQueue, setRealQueue] = useState<RealTicket[]>([]);
   const [realCheckout, setRealCheckout] = useState<RealTicket[]>([]);
@@ -83,6 +83,7 @@ export default function LiveMonitoringAntrianPage() {
 
   // Fetch company list from API
   useEffect(() => {
+    if (!token) return;
     apiJson<any[]>("/api/Company/getCompanyListFitur")
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
@@ -97,10 +98,11 @@ export default function LiveMonitoringAntrianPage() {
         }
       })
       .catch((err) => console.error("[live-monitoring] company list fetch error:", err));
-  }, [apiJson]);
+  }, [apiJson, token]);
 
   // Fetch loading bays, poll every 30s
   useEffect(() => {
+    if (!token) return;
     let cancelled = false;
     const fetchBays = async () => {
       setBaysLoading(true);
@@ -116,14 +118,15 @@ export default function LiveMonitoringAntrianPage() {
           { data: "tiketno",         name: "tiketno",     searchable: false, orderable: false },
           { data: "timemuat",        name: "timemuat",    searchable: false, orderable: false },
         ];
+        const today = new Date().toISOString().split("T")[0];
         const basePayload = {
           draw: 1,
           start: 0,
           search: { value: "" },
           order: [{ column: 0, dir: "desc" }],
           columns: BASE_COLUMNS,
-          SD: "2020-01-01",
-          ED: "2030-01-01",
+          SD: today,
+          ED: today,
           ...(activeCompanyCode ? { companyCode: activeCompanyCode } : {}),
         };
         const [baysResult, queueResult, checkoutResult] = await Promise.all([
@@ -156,7 +159,7 @@ export default function LiveMonitoringAntrianPage() {
       cancelled = true;
       clearInterval(id);
     };
-  }, [activeCompanyCode, apiTable]);
+  }, [activeCompanyCode, apiTable, token]);
 
   return (
     <div className="space-y-6">
