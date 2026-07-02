@@ -4,7 +4,6 @@ import Link from "next/link";
 import { Building2, Clock, Warehouse, Activity } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { SearchableSelect } from "@/components/ui/SearchableSelect";
-import { useCompany } from "@/context/CompanyContext";
 import { useApi } from "@/hooks/use-api";
 
 interface LoadingBay {
@@ -75,7 +74,7 @@ function fmtDurasi(detik: number): string {
 }
 
 export default function LiveMonitoringAntrianPage() {
-  const { activeCompanyCode, switchCompany } = useCompany();
+  const [selectedCompany, setSelectedCompany] = useState("PKG");
   const { apiJson, apiTable, token } = useApi();
   const [realBays, setRealBays] = useState<RealTicket[]>([]);
   const [realQueue, setRealQueue] = useState<RealTicket[]>([]);
@@ -87,6 +86,7 @@ export default function LiveMonitoringAntrianPage() {
     { company_code: "PKG", company: "Petrokimia Gresik" },
     { company_code: "PKC", company: "Pupuk Kujang" },
     { company_code: "PIM", company: "Pupuk Iskandar Muda" },
+    { company_code: "PI", company: "Pupuk Indonesia (Semua Plant)" },
     { company_code: "LOG4MENENG", company: "Logistics Meneng" },
   ]);
 
@@ -109,6 +109,9 @@ export default function LiveMonitoringAntrianPage() {
           }));
           if (!formatted.some(m => m.company_code === "LOG4MENENG")) {
             formatted.push({ company_code: "LOG4MENENG", company: "Logistics Meneng" });
+          }
+          if (!formatted.some(m => m.company_code === "PI")) {
+            formatted.push({ company_code: "PI", company: "Pupuk Indonesia (Semua Plant)" });
           }
           setCompanies(formatted);
         }
@@ -144,7 +147,7 @@ export default function LiveMonitoringAntrianPage() {
           columns: BASE_COLUMNS,
           SD: today,
           ED: today,
-          ...(activeCompanyCode ? { companyCode: activeCompanyCode } : {}),
+          companyCode: selectedCompany,
         };
         const [baysResult, queueResult, checkoutResult] = await Promise.all([
           apiTable<{ data: any[]; recordsTotal: number }>("/api/Tiket/DataTableMonitorPosition", { ...basePayload, length: 200, position: "03" }),
@@ -152,7 +155,7 @@ export default function LiveMonitoringAntrianPage() {
           apiTable<{ data: any[]; recordsTotal: number }>("/api/Tiket/DataTableMonitorPosition", { ...basePayload, length: 200, position: "04" }),
         ]);
 
-        console.log(`[live-monitoring] API Result for ${activeCompanyCode}:`, {
+        console.log(`[live-monitoring] API Result for ${selectedCompany}:`, {
           baysCount: baysResult?.data?.length,
           queueCount: queueResult?.data?.length,
           checkoutCount: checkoutResult?.data?.length,
@@ -176,7 +179,7 @@ export default function LiveMonitoringAntrianPage() {
       cancelled = true;
       clearInterval(id);
     };
-  }, [activeCompanyCode, apiTable, token]);
+  }, [selectedCompany, apiTable, token]);
 
   return (
     <div className="space-y-6">
@@ -202,8 +205,8 @@ export default function LiveMonitoringAntrianPage() {
                 value: c.company_code,
                 label: c.company,
               }))}
-              value={activeCompanyCode ?? ""}
-              onChange={(val) => { switchCompany(val).catch(console.error); }}
+              value={selectedCompany}
+              onChange={(val) => setSelectedCompany(val)}
               placeholder="Pilih Perusahaan/Plant..."
               searchPlaceholder="Cari plant..."
             />
@@ -292,7 +295,7 @@ export default function LiveMonitoringAntrianPage() {
                   <div className="flex justify-between items-start">
                     <div className="flex flex-col gap-0.5">
                       <span className="text-[9px] font-black text-brand-500 uppercase tracking-widest">
-                        {ticket.company || activeCompanyCode}
+                        {ticket.company || selectedCompany}
                       </span>
                       <span className="text-[11px] font-black text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                         {bay.warehouseName || "Gudang Belum Ditentukan"}
