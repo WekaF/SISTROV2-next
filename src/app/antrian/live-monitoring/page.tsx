@@ -173,10 +173,10 @@ export default function LiveMonitoringAntrianPage() {
           <div>
             <CardTitle className="text-sm font-bold flex items-center gap-2 text-gray-800 dark:text-white uppercase tracking-tight">
               <Activity className="h-5 w-5 text-emerald-500 animate-pulse" />
-              Live Monitor Proses Muat Gudang — Pos 02 · 03 · 04
+              Live Monitor Proses Muat Gudang
             </CardTitle>
             <CardDescription className="text-xs text-gray-400 font-bold">
-              Armada Timbang Kosong (Pos 02) · Sedang Dimuat (Pos 03) · Checkout Gudang (Pos 04)
+              Antrian Timbang Kosong · Sedang Dimuat di Gudang · Checkout Gudang Pemuatan
             </CardDescription>
           </div>
           <div className="w-64 shrink-0 self-start md:self-auto">
@@ -200,7 +200,7 @@ export default function LiveMonitoringAntrianPage() {
                 <Warehouse className="h-5 w-5" />
               </span>
               <div>
-                <span className="text-[10px] uppercase font-bold text-gray-400 block">Pos 02 — Antrian Timbang Kosong</span>
+                <span className="text-[10px] uppercase font-bold text-gray-400 block">Antrian Timbang Kosong</span>
                 <span className="text-sm font-black text-gray-800 dark:text-white mt-0.5 block">
                   {realQueue.length} Truk Mengantre
                 </span>
@@ -211,7 +211,7 @@ export default function LiveMonitoringAntrianPage() {
                 <Building2 className="h-5 w-5" />
               </span>
               <div>
-                <span className="text-[10px] uppercase font-bold text-gray-400 block">Pos 03 — Sedang Dimuat di Gudang</span>
+                <span className="text-[10px] uppercase font-bold text-gray-400 block">Sedang Dimuat di Gudang</span>
                 <span className="text-sm font-black text-gray-800 dark:text-white mt-0.5 block">
                   {realBays.length} Truk Sedang Dimuat
                 </span>
@@ -222,7 +222,7 @@ export default function LiveMonitoringAntrianPage() {
                 <Activity className="h-5 w-5" />
               </span>
               <div>
-                <span className="text-[10px] uppercase font-bold text-gray-400 block">Pos 04 — Checkout Gudang Pemuatan</span>
+                <span className="text-[10px] uppercase font-bold text-gray-400 block">Checkout Gudang Pemuatan</span>
                 <span className="text-sm font-black text-gray-800 dark:text-white mt-0.5 block">
                   {totalCheckout} Truk Selesai Muat
                 </span>
@@ -372,7 +372,7 @@ export default function LiveMonitoringAntrianPage() {
             <div className="border-t border-gray-100 dark:border-gray-800 pt-5">
               <h4 className="text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-3.5 flex items-center gap-1.5">
                 <Activity className="h-4 w-4 text-purple-500" />
-                Pos 04 — Checkout Gudang Pemuatan ({realCheckout.length} Truk Selesai Muat)
+                Checkout Gudang Pemuatan ({realCheckout.length} Truk Selesai Muat)
               </h4>
               <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-thin">
                 {realCheckout.map((q, idx) => (
@@ -400,7 +400,7 @@ export default function LiveMonitoringAntrianPage() {
           <div className="border-t border-gray-100 dark:border-gray-800 pt-5">
             <h4 className="text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-3.5 flex items-center gap-1.5">
               <Warehouse className="h-4 w-4 text-amber-500" />
-              Pos 02 — Antrian Timbang Kosong (Menunggu Masuk Gudang)
+              Antrian Timbang Kosong (Menunggu Masuk Gudang)
             </h4>
             <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-thin">
               {realQueue.length === 0 ? (
