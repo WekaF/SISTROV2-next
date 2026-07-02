@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import {
   Users, Search, UserPlus, ShieldCheck, Mail, UserCheck,
-  Building, Key, Edit, Trash2, X, Loader2, Check, Eye, EyeOff,
+  Key, Edit, Trash2, X, Loader2, Check, Eye, EyeOff,
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -48,7 +48,7 @@ export default function UserConfigPage() {
 
   const emptyForm = {
     id: "", username: "", password: "", fullName: "", email: "",
-    isActive: true, roles: [] as string[], companyIds: [] as string[], sapVendorCode: ""
+    isActive: true, roles: [] as string[], sapVendorCode: ""
   };
   const [formData, setFormData] = useState(emptyForm);
 
@@ -75,17 +75,8 @@ export default function UserConfigPage() {
     }
   });
 
-  const { data: companiesData } = useQuery({
-    queryKey: ["admin-companies-lookup"],
-    queryFn: async () => {
-      const res = await fetch("/api/admin/companies/lookup");
-      return res.json() as Promise<any[]>;
-    }
-  });
-
   const users = usersData || [];
   const availableRoles = rolesData || [];
-  const availableCompanies = companiesData || [];
 
   const filteredUsers = users.filter((u: any) => {
     const matchSearch =
@@ -174,7 +165,6 @@ export default function UserConfigPage() {
       email: user.email || "",
       isActive: user.isactive ?? true,
       roles: [...existingRoles],             // editable copy
-      companyIds: [],
       sapVendorCode: user.sapvendorcode || ""
     });
     setIsEditing(true);
@@ -207,13 +197,6 @@ export default function UserConfigPage() {
     }));
   };
 
-  const toggleCompany = (id: string) => {
-    setFormData(prev => ({
-      ...prev,
-      companyIds: prev.companyIds.includes(id) ? prev.companyIds.filter(c => c !== id) : [...prev.companyIds, id]
-    }));
-  };
-
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
@@ -228,7 +211,7 @@ export default function UserConfigPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Konfigurasi Pengguna</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Kelola akses, role, dan mapping pengguna ke seluruh company/plant.</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Kelola akses dan role pengguna.</p>
         </div>
         <Button
           className="bg-brand-500 hover:bg-brand-600 shadow-lg shadow-brand-500/20"
@@ -344,7 +327,7 @@ export default function UserConfigPage() {
             <CardHeader className="flex flex-row items-center justify-between border-b pb-4">
               <div>
                 <CardTitle>{isEditing ? "Edit Pengguna" : "Tambah User Baru"}</CardTitle>
-                <CardDescription>{isEditing ? "Update profil, role, dan plant mapping." : "Buat akun pengguna baru dengan role dan akses plant."}</CardDescription>
+                <CardDescription>{isEditing ? "Update profil dan role pengguna." : "Buat akun pengguna baru dengan role."}</CardDescription>
               </div>
               <Button variant="ghost" size="icon" onClick={() => { setShowModal(false); resetForm(); }}><X className="h-4 w-4" /></Button>
             </CardHeader>
@@ -415,28 +398,6 @@ export default function UserConfigPage() {
                           className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 border ${isSelected ? 'bg-brand-500 text-white border-brand-500 shadow-md shadow-brand-500/20' : 'bg-white text-gray-600 border-gray-200 hover:border-brand-200'}`}>
                           {isSelected && <Check className="h-3 w-3" />}
                           {role.Name || role.name}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <label className="text-[10px] font-black uppercase text-gray-400">Plant / Company Mapping</label>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-1">
-                    {availableCompanies.map((company: any, idx: number) => {
-                      const id = company.code || company.id || company.company_code;
-                      if (!id) return null;
-                      const isSelected = formData.companyIds.includes(id);
-                      return (
-                        <button key={`company-${id}-${idx}`} type="button" onClick={() => toggleCompany(id)}
-                          className={`p-3 rounded-xl text-xs font-medium text-left transition-all border ${isSelected ? 'bg-emerald-50 text-emerald-700 border-emerald-200 ring-2 ring-emerald-500/20' : 'bg-gray-50/50 text-gray-600 border-gray-100 hover:bg-gray-50'}`}>
-                          <div className="flex items-center gap-2">
-                            <div className={`p-1 rounded ${isSelected ? 'bg-emerald-500 text-white' : 'bg-gray-200 text-gray-500'}`}>
-                              <Building className="h-3 w-3" />
-                            </div>
-                            <span className="truncate">{company.name || company.Name}</span>
-                          </div>
                         </button>
                       );
                     })}
