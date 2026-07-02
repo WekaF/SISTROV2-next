@@ -100,31 +100,10 @@ const getQueueForPlant = (plantCode: string) => {
   }
 };
 
-function calcMuatDetik(timemuat: string | undefined, now: number): number | null {
-  if (!timemuat) return null;
-  let d = new Date(timemuat);
-  if (isNaN(d.getTime())) {
-    const parts = timemuat.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(.+)$/);
-    if (parts) d = new Date(`${parts[2]}/${parts[1]}/${parts[3]} ${parts[4]}`);
-  }
-  if (isNaN(d.getTime())) return null;
-  const diff = now - d.getTime();
-  if (diff < 0) return null;
-  return Math.floor(diff / 1000);
-}
-
-function fmtDurasi(detik: number): string {
-  const h = Math.floor(detik / 3600);
-  const m = Math.floor((detik % 3600) / 60);
-  const s = detik % 60;
-  const mm = m.toString().padStart(2, "0");
-  const ss = s.toString().padStart(2, "0");
-  return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
-}
 
 export default function ViewerDashboard() {
   const { activeCompanyCode, switchCompany } = useCompany();
-  const { apiJson, apiTable } = useApi();
+  const { apiJson, token } = useApi();
   const { data: streamData, status: streamStatus, lastUpdated: streamLastUpdated } = useDashboardStream();
   const [isSimulated, setIsSimulated] = useState(false);
   const [mapPlants, setMapPlants] = useState<any[]>([]);
@@ -142,6 +121,7 @@ export default function ViewerDashboard() {
 
   // Fetch company list from API
   useEffect(() => {
+    if (!token) return;
     apiJson<any[]>("/api/Company/getCompanyListFitur")
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
@@ -156,7 +136,7 @@ export default function ViewerDashboard() {
         }
       })
       .catch((err) => console.error("[ViewerDashboard] company list fetch error:", err));
-  }, [apiJson]);
+  }, [apiJson, token]);
 
   // States for all dashboard metrics
   const [activeTab, setActiveTab] = useState<"traffic" | "performance" | "all">("traffic");
@@ -179,75 +159,7 @@ export default function ViewerDashboard() {
   const [rankingPage, setRankingPage] = useState(0);
   const [rankingTab, setRankingTab] = useState<"top" | "bottom">("top");
   const [activeView, setActiveView] = useState<"heatmap" | "line" | "bar">("heatmap");
-  // Real loading-bay data from /api/dashboard/loading-bays
-  interface RealTicket {
-    bookingno: string;
-    tiketno?: string;
-    nopol: string;
-    driver: string;
-    produkString: string;
-    transportString: string;
-    qty: number;
-    posto: string;
-    timemuat?: string;
-  }
-  const [realBays, setRealBays] = useState<RealTicket[]>([]);
-  const [realQueue, setRealQueue] = useState<RealTicket[]>([]);
-  const [baysLoading, setBaysLoading] = useState(false);
-  const [now, setNow] = useState(Date.now());
 
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    const fetchBays = async () => {
-      setBaysLoading(true);
-      try {
-        const BASE_COLUMNS = [
-          { data: "bookingno",       name: "bookingno",   searchable: false, orderable: true  },
-          { data: "nopol",           name: "nopol",       searchable: false, orderable: false },
-          { data: "driver",          name: "driver",      searchable: false, orderable: false },
-          { data: "produkString",    name: "idproduk",    searchable: false, orderable: false },
-          { data: "transportString", name: "idtransport", searchable: false, orderable: false },
-          { data: "qty",             name: "qty",         searchable: false, orderable: false },
-          { data: "posto",           name: "posto",       searchable: false, orderable: false },
-          { data: "tiketno",         name: "tiketno",     searchable: false, orderable: false },
-          { data: "timemuat",        name: "timemuat",    searchable: false, orderable: false },
-        ];
-        const basePayload = {
-          draw: 1,
-          start: 0,
-          search: { value: "" },
-          order: [{ column: 0, dir: "desc" }],
-          columns: BASE_COLUMNS,
-          SD: "2020-01-01",
-          ED: "2030-01-01",
-          ...(activeCompanyCode ? { companyCode: activeCompanyCode } : {}),
-        };
-        const [baysResult, queueResult] = await Promise.all([
-          apiTable<{ data: any[] }>("/api/Tiket/DataTableFilterLegacy", { ...basePayload, length: 20, position: "03" }),
-          apiTable<{ data: any[] }>("/api/Tiket/DataTableFilterLegacy", { ...basePayload, length: 10, position: "02" }),
-        ]);
-        if (!cancelled) {
-          setRealBays(Array.isArray(baysResult?.data) ? baysResult.data : []);
-          setRealQueue(Array.isArray(queueResult?.data) ? queueResult.data : []);
-        }
-      } catch (err) {
-        console.error("[loading-bays] fetch error:", err);
-      } finally {
-        if (!cancelled) setBaysLoading(false);
-      }
-    };
-    fetchBays();
-    const id = setInterval(fetchBays, 30_000);
-    return () => {
-      cancelled = true;
-      clearInterval(id);
-    };
-  }, [activeCompanyCode, apiTable]);
 
   const handleExport = async () => {
     setIsExporting(true);

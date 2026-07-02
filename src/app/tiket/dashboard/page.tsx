@@ -63,7 +63,7 @@ const POSITION_BADGE: Record<string, "info" | "warning" | "success" | "error" | 
 };
 
 export default function TiketDashboardPage() {
-  const { apiJson, apiTable } = useApi();
+  const { apiJson, apiTable, token } = useApi();
 
   // Form input states (temporary filters) - Start Date & End Date default to null/empty string
   const [tempCompany, setTempCompany] = useState("PKG"); // default PKG (Petrokimia Gresik)
@@ -98,6 +98,7 @@ export default function TiketDashboardPage() {
 
   // Fetch plant list from getCompanyListFitur
   useEffect(() => {
+    if (!token) return;
     apiJson<PlantOption[]>("/api/Company/getCompanyListFitur")
       .then((data) => {
         if (data && data.length > 0) {
@@ -110,7 +111,7 @@ export default function TiketDashboardPage() {
         }
       })
       .catch(console.error);
-  }, [apiJson]);
+  }, [apiJson, token]);
 
   // Fetch product list specifically from ProdukMappingList (tabel produk mapping) when tempCompany changes
   useEffect(() => {
