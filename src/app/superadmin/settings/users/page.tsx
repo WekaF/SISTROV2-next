@@ -43,8 +43,6 @@ export default function UserConfigPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [showPassword, setShowPassword] = useState(false);
-  // snapshot of roles before edit — used to compute diff on save
-  const [currentRoles, setCurrentRoles] = useState<string[]>([]);
 
   const emptyForm = {
     id: "", username: "", password: "", fullName: "", email: "",
@@ -52,7 +50,7 @@ export default function UserConfigPage() {
   };
   const [formData, setFormData] = useState(emptyForm);
 
-  const resetForm = () => { setFormData(emptyForm); setIsEditing(false); setSelectedUser(null); setShowPassword(false); setCurrentRoles([]); };
+  const resetForm = () => { setFormData(emptyForm); setIsEditing(false); setSelectedUser(null); setShowPassword(false); };
 
   const { data: usersData, isLoading } = useQuery({
     queryKey: ["admin-users", activeCompanyCode],
@@ -125,11 +123,8 @@ export default function UserConfigPage() {
       if (!data.success && !res.ok) throw new Error(data.error || "Update failed");
       return data;
     },
-    onSuccess: (data: any) => {
-      const desc = data.roleErrors?.length
-        ? `Profil disimpan. Peringatan role: ${data.roleErrors.join('; ')}`
-        : "Konfigurasi pengguna dan role berhasil disimpan.";
-      addToast({ title: "User Diperbarui", description: desc, variant: data.roleErrors?.length ? "warning" : "success" });
+    onSuccess: () => {
+      addToast({ title: "User Diperbarui", description: "Konfigurasi pengguna dan role berhasil disimpan.", variant: "success" });
       setShowModal(false);
       resetForm();
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
@@ -155,8 +150,6 @@ export default function UserConfigPage() {
 
   const handleEditClick = (user: any) => {
     setSelectedUser(user);
-    const existingRoles = user.roles || [];
-    setCurrentRoles(existingRoles);          // snapshot before any changes
     setFormData({
       id: user.id,
       username: user.username || "",
@@ -164,7 +157,7 @@ export default function UserConfigPage() {
       fullName: user.fullname || "",
       email: user.email || "",
       isActive: user.isactive ?? true,
-      roles: [...existingRoles],             // editable copy
+      roles: [...(user.roles || [])],
       sapVendorCode: user.sapvendorcode || ""
     });
     setIsEditing(true);
@@ -184,8 +177,7 @@ export default function UserConfigPage() {
         fullName: formData.fullName,
         email: formData.email,
         isActive: formData.isActive,
-        currentRoles,           // roles sebelum edit (untuk diff)
-        newRoles: formData.roles // roles setelah edit
+        newRoles: formData.roles
       });
     }
   };

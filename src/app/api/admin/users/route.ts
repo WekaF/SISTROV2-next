@@ -95,59 +95,24 @@ export async function PUT(req: Request) {
 
     const body = await req.json();
     const token = (session?.user as any)?.aspnetToken as string;
-    const errors: string[] = [];
 
-    // 1. Update basic profile
+    // UpdateUserProfile replaces the user's full role set with whatever is sent
+    // in Roles (it wipes existing roles then re-adds from that list), so send
+    // the complete desired role list here instead of diffing add/remove separately.
     const res = await aspnetFetchServer('/api/UserAccount/UpdateUserProfile', token, {
       method: 'POST',
       body: JSON.stringify({
         Id: body.id,
         FullName: body.fullName,
         Email: body.email,
-        IsActive: body.isActive
+        IsActive: body.isActive,
+        Roles: Array.isArray(body.newRoles) ? body.newRoles : undefined
       })
     });
 
     if (!res.ok) {
       const err = await res.text();
       return NextResponse.json({ success: false, error: err }, { status: res.status });
-    }
-
-    // 2. Sync roles if provided
-    if (Array.isArray(body.newRoles) && Array.isArray(body.currentRoles)) {
-      const currentSet = new Set<string>(body.currentRoles.map((r: string) => r.toLowerCase()));
-      const newSet     = new Set<string>(body.newRoles.map((r: string) => r.toLowerCase()));
-
-      // Roles to add (in newRoles but not in currentRoles)
-      const toAdd = body.newRoles.filter((r: string) => !currentSet.has(r.toLowerCase()));
-      // Roles to remove (in currentRoles but not in newRoles)
-      const toRemove = body.currentRoles.filter((r: string) => !newSet.has(r.toLowerCase()));
-
-      for (const role of toAdd) {
-        const addRes = await aspnetFetchServer('/api/UserAccount/AddtoRole', token, {
-          method: 'POST',
-          body: JSON.stringify({ guid: body.id, role })
-        });
-        if (!addRes.ok) {
-          const msg = await addRes.text().catch(() => 'unknown error');
-          errors.push(`Gagal tambah role "${role}": ${msg}`);
-        }
-      }
-
-      for (const role of toRemove) {
-        const removeRes = await aspnetFetchServer('/api/UserAccount/RemoveUserFromRole', token, {
-          method: 'POST',
-          body: JSON.stringify({ guid: body.id, role })
-        });
-        if (!removeRes.ok) {
-          const msg = await removeRes.text().catch(() => 'unknown error');
-          errors.push(`Gagal hapus role "${role}": ${msg}`);
-        }
-      }
-    }
-
-    if (errors.length > 0) {
-      return NextResponse.json({ success: true, message: "Profil diperbarui, namun ada error pada sinkronisasi role.", roleErrors: errors });
     }
 
     return NextResponse.json({ success: true, message: "User dan role berhasil diperbarui" });
