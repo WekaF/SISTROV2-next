@@ -253,7 +253,7 @@ export default function LiveMonitoringAntrianPage() {
               <div className="col-span-full text-center py-10 text-gray-400 text-sm">Memuat data loading bay...</div>
             )}
             {!baysLoading && realBays.length === 0 && (
-              <div className="col-span-full text-center py-10 text-gray-400 text-sm">Tidak ada truk sedang dimuat di Pos 03 untuk plant ini.</div>
+              <div className="col-span-full text-center py-10 text-gray-400 text-sm">Tidak ada truk yang sedang dimuat di gudang saat ini.</div>
             )}
             {realBays.map((ticket, idx) => {
               const isOccupied = true;
