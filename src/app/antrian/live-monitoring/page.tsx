@@ -33,19 +33,34 @@ interface RealTicket {
   qty: number;
   posto: string;
   timemuat?: string;
+  timegudang?: string;
   company?: string;
   gudangtujuan?: string;
 }
 
-function calcMuatDetik(timemuat: string | undefined, now: number): number | null {
-  if (!timemuat) return null;
-  let d = new Date(timemuat);
+function parseTs(ts: string | undefined): Date | null {
+  if (!ts) return null;
+  let d = new Date(ts);
   if (isNaN(d.getTime())) {
-    const parts = timemuat.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(.+)$/);
+    const parts = ts.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(.+)$/);
     if (parts) d = new Date(`${parts[2]}/${parts[1]}/${parts[3]} ${parts[4]}`);
   }
-  if (isNaN(d.getTime())) return null;
-  const diff = now - d.getTime();
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function calcMuatDetik(timemuat: string | undefined, timegudang: string | undefined, now: number): number | null {
+  const start = parseTs(timemuat) ?? parseTs(timegudang);
+  if (!start) return null;
+  const diff = now - start.getTime();
+  if (diff < 0) return null;
+  return Math.floor(diff / 1000);
+}
+
+function calcStaticDetik(from: string | undefined, to: string | undefined): number | null {
+  const a = parseTs(from);
+  const b = parseTs(to);
+  if (!a || !b) return null;
+  const diff = b.getTime() - a.getTime();
   if (diff < 0) return null;
   return Math.floor(diff / 1000);
 }
@@ -118,6 +133,7 @@ export default function LiveMonitoringAntrianPage() {
           { data: "posto",           name: "posto",       searchable: false, orderable: false },
           { data: "tiketno",         name: "tiketno",     searchable: false, orderable: false },
           { data: "timemuat",        name: "timemuat",    searchable: false, orderable: false },
+          { data: "timegudang",      name: "timegudang",  searchable: false, orderable: false },
         ];
         const today = new Date().toISOString().split("T")[0];
         const basePayload = {
@@ -241,7 +257,8 @@ export default function LiveMonitoringAntrianPage() {
             )}
             {realBays.map((ticket, idx) => {
               const isOccupied = true;
-              const detik = calcMuatDetik(ticket.timemuat, now);
+              const detik = calcMuatDetik(ticket.timemuat, ticket.timegudang, now);
+              const isCounting = !!ticket.timemuat;
               const isProgressNearlyDone = detik !== null && detik > 45 * 60;
 
               const bay = {
@@ -346,7 +363,7 @@ export default function LiveMonitoringAntrianPage() {
                           }`}>
                             <span className="flex items-center gap-1.5">
                               <Clock className="h-3.5 w-3.5" />
-                              Durasi Muat (live)
+                              {isCounting ? "Durasi Muat (live)" : "Menunggu Mulai Muat"}
                             </span>
                             <span className="text-sm font-black font-mono tracking-tight">
                               {detik !== null ? fmtDurasi(detik) : "—"}
@@ -388,7 +405,12 @@ export default function LiveMonitoringAntrianPage() {
                     </div>
                     <div className="text-right flex flex-col gap-0.5 items-end">
                       <span className="text-[9px] font-mono font-bold text-gray-600 dark:text-gray-300">{q.bookingno}</span>
-                      <span className="text-[8px] px-1.5 py-0.5 bg-purple-100 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 rounded font-bold">Selesai Muat</span>
+                      {(() => {
+                        const durDetik = calcStaticDetik(q.timegudang, q.timemuat);
+                        return durDetik !== null
+                          ? <span className="text-[8px] px-1.5 py-0.5 bg-purple-100 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 rounded font-bold">{fmtDurasi(durDetik)}</span>
+                          : <span className="text-[8px] px-1.5 py-0.5 bg-purple-100 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 rounded font-bold">Selesai Muat</span>;
+                      })()}
                     </div>
                   </div>
                 ))}
