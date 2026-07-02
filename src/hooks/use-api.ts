@@ -112,11 +112,12 @@ import { useState, useEffect } from "react";
  * Tanpa perlu manajemen state manual di page.
  */
 export function useApiTable({ url, defaultLength = 10 }: { url: string, defaultLength?: number }) {
-  const { apiTable } = useApi();
+  const { apiTable, token } = useApi();
   const [data, setData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const refresh = useCallback(async () => {
+    if (!token) return;
     setIsLoading(true);
     try {
       const res = await apiTable(url, {
@@ -132,7 +133,7 @@ export function useApiTable({ url, defaultLength = 10 }: { url: string, defaultL
     } finally {
       setIsLoading(false);
     }
-  }, [apiTable, url, defaultLength]);
+  }, [apiTable, url, defaultLength, token]);
 
   useEffect(() => {
     refresh();
