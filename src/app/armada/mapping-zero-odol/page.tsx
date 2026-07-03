@@ -26,6 +26,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 
 // Types based on legacy API
 interface MappingData {
@@ -64,6 +65,15 @@ export default function MappingZeroOdolPage() {
     enddatetime: "",
     tujuan: "",
   });
+  const [deleteMappingTarget, setDeleteMappingTarget] = useState<number | null>(null);
+  const [showOdolConfirm, setShowOdolConfirm] = useState(false);
+  const [showPercepatanConfirm, setShowPercepatanConfirm] = useState(false);
+
+  const handleDeleteMappingConfirm = () => {
+    if (deleteMappingTarget == null) return;
+    deleteMappingMutation.mutate(deleteMappingTarget);
+    setDeleteMappingTarget(null);
+  };
 
   const allRoles: string[] = ((session?.user as any)?.roles as string[] | undefined) ?? [
     (session?.user as any)?.role,
@@ -298,11 +308,7 @@ export default function MappingZeroOdolPage() {
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8 text-red-500 hover:bg-red-50"
-                  onClick={() => {
-                    if (confirm("Hapus mapping ini?")) {
-                      deleteMappingMutation.mutate(id);
-                    }
-                  }}
+                  onClick={() => setDeleteMappingTarget(id)}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -444,11 +450,7 @@ export default function MappingZeroOdolPage() {
                   <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium">Global Policy</p>
                 </div>
                 <button
-                  onClick={() => {
-                    if (confirm(`Apakah Anda Yakin ingin ${isOdolActive ? 'menonaktifkan' : 'mengaktifkan'} ZERO ODOL?`)) {
-                      toggleOdolMutation.mutate(!isOdolActive);
-                    }
-                  }}
+                  onClick={() => setShowOdolConfirm(true)}
                   disabled={toggleOdolMutation.isPending || !canManage}
                   className={cn(
                     "relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
@@ -471,11 +473,7 @@ export default function MappingZeroOdolPage() {
                   <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium">Priority Flow</p>
                 </div>
                 <button
-                  onClick={() => {
-                    if (confirm(`Apakah Anda Yakin ingin ${isPercepatanActive ? 'menonaktifkan' : 'mengaktifkan'} PERCEPATAN?`)) {
-                      togglePercepatanMutation.mutate(!isPercepatanActive);
-                    }
-                  }}
+                  onClick={() => setShowPercepatanConfirm(true)}
                   disabled={togglePercepatanMutation.isPending || !canManage}
                   className={cn(
                     "relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
@@ -574,6 +572,39 @@ export default function MappingZeroOdolPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={deleteMappingTarget !== null}
+        onOpenChange={(open) => !open && setDeleteMappingTarget(null)}
+        title="Hapus Mapping"
+        description="Apakah Anda yakin ingin menghapus mapping ini? Tindakan ini tidak dapat dibatalkan."
+        onConfirm={handleDeleteMappingConfirm}
+        confirmText="Hapus"
+        cancelText="Batal"
+        variant="danger"
+      />
+
+      <ConfirmDialog
+        open={showOdolConfirm}
+        onOpenChange={setShowOdolConfirm}
+        title="Ubah Status ZERO ODOL"
+        description={`Apakah Anda yakin ingin ${isOdolActive ? 'menonaktifkan' : 'mengaktifkan'} ZERO ODOL?`}
+        onConfirm={() => toggleOdolMutation.mutate(!isOdolActive)}
+        confirmText="Ya, Ubah"
+        cancelText="Batal"
+        variant="warning"
+      />
+
+      <ConfirmDialog
+        open={showPercepatanConfirm}
+        onOpenChange={setShowPercepatanConfirm}
+        title="Ubah Status PERCEPATAN"
+        description={`Apakah Anda yakin ingin ${isPercepatanActive ? 'menonaktifkan' : 'mengaktifkan'} PERCEPATAN?`}
+        onConfirm={() => togglePercepatanMutation.mutate(!isPercepatanActive)}
+        confirmText="Ya, Ubah"
+        cancelText="Batal"
+        variant="warning"
+      />
     </div>
   );
 }
