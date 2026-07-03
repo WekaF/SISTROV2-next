@@ -15,7 +15,7 @@ import { useApi } from "@/hooks/use-api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/components/ui/toast";
 import { Input } from "@/components/ui/input";
-import { normalizeRole } from "@/lib/role-utils";
+import { normalizeRole, isReadOnlyRole } from "@/lib/role-utils";
 
 interface TicketActionsProps {
   bookingNo: string;
@@ -45,6 +45,7 @@ export function TicketActions({
   const isSuperAdmin = userRole === "superadmin" || userRole === "ti";
   const isStaffArea = userRole === "staffarea";
   const isTransport = userRole === "transport" || userRole === "rekanan";
+  const isMonitoringRole = isReadOnlyRole(userRole) || userRole === "gudang";
 
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isRescheduleOpen, setIsRescheduleOpen] = useState(false);
@@ -65,7 +66,7 @@ export function TicketActions({
   const canReschedule = isSuperAdmin || isStaffArea;
 
   // Permission: View/Print allowed for these roles
-  const canInteract = isSuperAdmin || isStaffArea || isTransport;
+  const canInteract = isSuperAdmin || isStaffArea || isTransport || isMonitoringRole;
 
   const handlePrint = () => {
     // New Next.js native print route
