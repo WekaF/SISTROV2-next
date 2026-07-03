@@ -26,6 +26,19 @@ function AdminTicketsContent() {
 
   const columns: DataTableColumn<any>[] = [
     {
+      key: "actions",
+      header: "Aksi",
+      render: (row: any) => (
+        <TicketActions
+          bookingNo={row.bookingno}
+          status={row.position || row.status}
+          currentNopol={row.nopol}
+          currentDriver={row.driver}
+          className="justify-start"
+        />
+      ),
+    },
+    {
       key: "bookingno",
       header: "Booking No",
       searchable: true,
@@ -99,21 +112,6 @@ function AdminTicketsContent() {
           </Badge>
         );
       },
-    },
-    {
-      key: "actions",
-      header: "Aksi",
-      headerClassName: "text-right",
-      className: "text-right",
-      render: (row: any) => (
-        <TicketActions 
-          bookingNo={row.bookingno} 
-          status={row.position || row.status} 
-          currentNopol={row.nopol}
-          currentDriver={row.driver}
-          className="justify-end"
-        />
-      ),
     },
   ];
 
