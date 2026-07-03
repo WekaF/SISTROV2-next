@@ -222,6 +222,30 @@ export default function ScanTiketPage() {
         body: JSON.stringify({ bookingno: ticket.bookingno })
       });
 
+      if (!res.ok) {
+        // Backend bisa menolak dengan Content(BadRequest, "pesan string mentah")
+        // yang TIDAK berbentuk {validasi, text}. Baca sebagai text dulu, coba
+        // unwrap kalau ternyata JSON-quoted string, lalu tampilkan apa adanya.
+        const rawBody = await res.text();
+        let message = rawBody;
+        try {
+          const parsed = JSON.parse(rawBody);
+          if (typeof parsed === "string") {
+            message = parsed;
+          } else if (parsed && typeof parsed.text === "string") {
+            message = parsed.text;
+          }
+        } catch {
+          // rawBody bukan JSON valid, pakai apa adanya
+        }
+        addToast({
+          title: "Gagal",
+          description: message || "Gagal memproses aksi scan.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const result: ActionResponse = await res.json();
 
       if (result.validasi === "success") {
