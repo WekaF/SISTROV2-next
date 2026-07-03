@@ -43,6 +43,7 @@ export default function ProfilePage() {
   // Verify Password Modal State
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [confirmError, setConfirmError] = useState<string | null>(null);
 
   // Reset Password State
   const [passwordForm, setPasswordForm] = useState({
@@ -95,13 +96,14 @@ export default function ProfilePage() {
     }
     setMessage(null);
     setConfirmPassword("");
+    setConfirmError(null);
     setShowConfirmModal(true);
   };
 
   // Actual Profile Save with Password Verification
   const handleConfirmSave = async () => {
     if (!confirmPassword) {
-      alert("Password verifikasi wajib diisi!");
+      setConfirmError("Password verifikasi wajib diisi!");
       return;
     }
 
@@ -519,12 +521,15 @@ export default function ProfilePage() {
                   <Input
                     type="password"
                     value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    onChange={(e) => { setConfirmPassword(e.target.value); setConfirmError(null); }}
                     className="pl-10 h-10 text-xs font-semibold"
                     placeholder="Masukkan Password Anda"
                     autoFocus
                   />
                 </div>
+                {confirmError && (
+                  <p className="text-xs text-red-500 font-bold">{confirmError}</p>
+                )}
               </div>
             </div>
 
