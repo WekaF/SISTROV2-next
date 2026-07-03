@@ -170,16 +170,7 @@ export default function ScanTiketPage() {
     }
   }, [ticket, isActionLoading, scanMode]);
 
-  const handleSearch = async (e?: React.FormEvent, overrideNo?: string) => {
-    e?.preventDefault();
-    const cleanBookingNo = (overrideNo || bookingNo).trim();
-    if (!cleanBookingNo) return;
-
-    setIsLoading(true);
-    setSearchError(null);
-    setTicket(null);
-    setLogs([]);
-
+  const fetchTicketDetail = async (cleanBookingNo: string): Promise<boolean> => {
     try {
       const res = await apiFetch("/api/Tiket/DetailData", {
         method: "POST",
@@ -195,15 +186,30 @@ export default function ScanTiketPage() {
           new Date(b.updatedon).getTime() - new Date(a.updatedon).getTime()
         );
         setLogs(sortedLogs);
+        return true;
       } else {
         const errorText = await res.text();
         setSearchError(errorText || "Tiket tidak ditemukan.");
+        return false;
       }
     } catch (err: any) {
       setSearchError("Terjadi kesalahan saat menghubungi server.");
-    } finally {
-      setIsLoading(false);
+      return false;
     }
+  };
+
+  const handleSearch = async (e?: React.FormEvent, overrideNo?: string) => {
+    e?.preventDefault();
+    const cleanBookingNo = (overrideNo || bookingNo).trim();
+    if (!cleanBookingNo) return;
+
+    setIsLoading(true);
+    setSearchError(null);
+    setTicket(null);
+    setLogs([]);
+
+    await fetchTicketDetail(cleanBookingNo);
+    setIsLoading(false);
   };
 
   const handleAction = async () => {
@@ -225,20 +231,9 @@ export default function ScanTiketPage() {
           variant: "success",
         });
 
-        // Update local ticket with new position and logs from result
-        if (ticket) {
-          setTicket({
-            ...ticket,
-            position: result.position,
-            positionString: result.text.includes("Security In") ? "Security In" :
-              result.text.includes("Security Out") ? "Security Out / Selesai" :
-                ticket.positionString
-          });
-        }
-        const sortedLogs = [...(result.log || [])].sort((a, b) =>
-          new Date(b.updatedon).getTime() - new Date(a.updatedon).getTime()
-        );
-        setLogs(sortedLogs);
+        // Refetch full detail from server — response dari CheckinDW1_GP cuma bawa
+        // kode posisi, bukan label/status lengkap. Jangan tebak di frontend.
+        await fetchTicketDetail(ticket.bookingno);
         setBookingNo("");
       } else if (result.validasi === "warning") {
         addToast({
