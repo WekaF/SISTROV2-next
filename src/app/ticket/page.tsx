@@ -22,6 +22,7 @@ import { useCompany } from "@/context/CompanyContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useApi } from "@/hooks/use-api";
 import { useToast } from "@/components/ui/toast";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 
 interface TiketData {
   BookingNo?: string;
@@ -135,9 +136,16 @@ export default function TicketPage() {
     },
   });
 
-  const handleDelete = (bookingno: string) => {
-    if (!confirm(`Hapus tiket ${bookingno}?`)) return;
-    deleteMutation.mutate(bookingno);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+
+  const handleDeleteClick = (bookingno: string) => {
+    setDeleteTarget(bookingno);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (!deleteTarget) return;
+    deleteMutation.mutate(deleteTarget);
+    setDeleteTarget(null);
   };
 
   return (
@@ -286,7 +294,7 @@ export default function TicketPage() {
                               title="Hapus Tiket"
                               className="text-red-400 hover:text-red-600 hover:bg-red-50"
                               disabled={deleteMutation.isPending}
-                              onClick={() => handleDelete(bn)}
+                              onClick={() => handleDeleteClick(bn)}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -370,6 +378,17 @@ export default function TicketPage() {
           </Card>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title="Hapus Tiket"
+        description={`Apakah Anda yakin ingin menghapus tiket ${deleteTarget}? Tindakan ini tidak dapat dibatalkan.`}
+        onConfirm={handleDeleteConfirm}
+        confirmText="Hapus"
+        cancelText="Batal"
+        variant="danger"
+      />
     </div>
   );
 }
