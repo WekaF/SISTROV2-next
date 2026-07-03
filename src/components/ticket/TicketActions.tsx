@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Eye, Printer, Loader2, FileEdit, Search, AlertCircle, CheckCircle2, Clock } from "lucide-react";
+import { Eye, Printer, Loader2, FileEdit, Search, AlertCircle, CheckCircle2, Clock, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -24,8 +24,10 @@ interface TicketActionsProps {
   currentNopol?: string;
   currentDriver?: string;
   postoGuid?: string;
+  posto?: string;
   showView?: boolean;
   showPrint?: boolean;
+  showDelete?: boolean;
   className?: string;
 }
 
@@ -35,8 +37,10 @@ export function TicketActions({
   status,
   currentNopol,
   currentDriver,
+  posto,
   showView = true,
   showPrint = true,
+  showDelete = false,
   className = "",
 }: TicketActionsProps) {
   const { data: session, status: sessionStatus } = useSession();
@@ -67,6 +71,16 @@ export function TicketActions({
 
   // Permission: View/Print allowed for these roles
   const canInteract = isSuperAdmin || isStaffArea || isTransport || isMonitoringRole;
+
+  // Posto codes starting with anything other than "5" are SO-type (same heuristic
+  // already used in TicketEditModal below to pick GP vs kontainer input mode).
+  const isSOPosto = !!posto && posto.charAt(0) !== "5";
+
+  // Permission: Delete allowed for SuperAdmin/TI and StaffArea always;
+  // Transport only when the ticket's posto is SO-type.
+  const canDelete = isSuperAdmin || isStaffArea || (isTransport && isSOPosto);
+
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
   const handlePrint = () => {
     // New Next.js native print route
@@ -123,6 +137,17 @@ export function TicketActions({
         </Button>
       )}
 
+      {showDelete && canDelete && (
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-8 w-8 p-0 rounded-none border-gray-200 hover:border-rose-500 hover:bg-rose-50 hover:text-rose-600 transition-all duration-300 hover:scale-110 active:scale-90"
+          onClick={() => setIsDeleteOpen(true)}
+          title="Hapus Tiket"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </Button>
+      )}
 
       {/* Ticket Edit Modal */}
       {canEdit && (
@@ -141,6 +166,15 @@ export function TicketActions({
         onClose={() => setIsRescheduleOpen(false)}
         bookingNo={bookingNo}
       />
+
+      {/* Ticket Delete Modal */}
+      {showDelete && canDelete && (
+        <TicketDeleteModal
+          isOpen={isDeleteOpen}
+          onClose={() => setIsDeleteOpen(false)}
+          bookingNo={bookingNo}
+        />
+      )}
     </div>
   );
 }
@@ -537,6 +571,112 @@ export function TicketRescheduleModal({
             disabled={!selectedShiftId || !alasan || updateShiftMutation.isPending}
           >
             {updateShiftMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : "Simpan Jadwal"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+interface TicketDeleteModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  bookingNo: string;
+}
+
+export function TicketDeleteModal({
+  isOpen,
+  onClose,
+  bookingNo,
+}: TicketDeleteModalProps) {
+  const { apiJson } = useApi();
+  const { addToast } = useToast();
+  const queryClient = useQueryClient();
+
+  const [alasanId, setAlasanId] = useState("");
+
+  useEffect(() => {
+    if (!isOpen) setAlasanId("");
+  }, [isOpen]);
+
+  const { data: reasons } = useQuery({
+    queryKey: ["reasons-delete"],
+    queryFn: () => apiJson(`/api/Alasan/DataFilter?param=delete`),
+    enabled: isOpen,
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      return apiJson("/api/Tiket/DeleteData", {
+        method: "POST",
+        body: JSON.stringify({
+          bookingno: bookingNo,
+          posto: alasanId, // Backend DeleteData expects the Mst_alasan reason id here, not the actual posto value
+        }),
+      });
+    },
+    onSuccess: () => {
+      addToast({ title: "Berhasil", description: "Tiket berhasil dihapus.", variant: "success" });
+      queryClient.invalidateQueries({ queryKey: ["rekanan-tickets"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-tickets-global"] });
+      onClose();
+    },
+    onError: (err: any) => {
+      addToast({ title: "Gagal", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const handleDelete = () => {
+    if (!alasanId) {
+      addToast({ title: "Peringatan", description: "Alasan penghapusan harus diisi.", variant: "warning" });
+      return;
+    }
+    deleteMutation.mutate();
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[450px] p-0 overflow-hidden rounded-none border-none shadow-2xl">
+        <DialogHeader className="p-6 bg-rose-50/50 dark:bg-rose-500/10 border-b border-gray-100 dark:border-gray-800">
+          <DialogTitle className="text-xl font-black uppercase tracking-tight text-gray-900 dark:text-white flex items-center gap-2">
+            <AlertCircle className="h-5 w-5 text-rose-600" />
+            Hapus Tiket
+          </DialogTitle>
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">
+            Booking No: <span className="text-rose-600">{bookingNo}</span>
+          </p>
+        </DialogHeader>
+
+        <div className="p-8 space-y-6 bg-white dark:bg-gray-900">
+          <p className="text-sm font-bold text-rose-600">
+            Tindakan ini tidak dapat dibatalkan. Tiket akan dihapus permanen dari sistem.
+          </p>
+
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Alasan Penghapusan :</label>
+            <select
+              className="w-full h-11 px-4 rounded-none font-bold bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 outline-none focus:border-rose-500 transition-all text-sm"
+              value={alasanId}
+              onChange={(e) => setAlasanId(e.target.value)}
+            >
+              <option value="">Pilih Alasan...</option>
+              {Array.isArray(reasons) && reasons.map((r: any) => (
+                <option key={r.id} value={r.id}>{r.alasan}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="p-8 bg-gray-50/50 dark:bg-white/[0.02] border-t border-gray-100 dark:border-gray-800 flex justify-end gap-3">
+          <Button variant="ghost" onClick={onClose} className="rounded-none px-6 font-bold uppercase text-[10px] tracking-widest h-11">
+            Batal
+          </Button>
+          <Button
+            onClick={handleDelete}
+            disabled={deleteMutation.isPending}
+            className="bg-rose-600 hover:bg-rose-700 text-white rounded-none px-8 font-black uppercase text-[10px] tracking-widest h-11 shadow-xl shadow-rose-500/20"
+          >
+            {deleteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Hapus Tiket"}
           </Button>
         </div>
       </DialogContent>
