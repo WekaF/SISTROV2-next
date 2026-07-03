@@ -34,6 +34,8 @@ function AdminTicketsContent() {
           status={row.position || row.status}
           currentNopol={row.nopol}
           currentDriver={row.driver}
+          posto={row.posto}
+          showDelete={true}
           className="justify-start"
         />
       ),
