@@ -12,6 +12,7 @@ import { useSession } from "next-auth/react";
 import { useCompany } from "@/context/CompanyContext";
 import { useApi } from "@/hooks/use-api";
 import { useToast } from "@/components/ui/toast";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { DataTable, type DataTableColumn, type DataTableParams } from "@/components/ui/DataTable";
@@ -41,6 +42,7 @@ export default function SOPage() {
   const [dateFilter, setDateFilter] = useState("");
   const [selectedSO, setSelectedSO] = useState<any>(null);
   const [isViewOpen, setIsViewOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   const fetcher = async (params: DataTableParams) => {
     const payload: any = {
@@ -108,12 +110,16 @@ export default function SOPage() {
     }
   };
 
-  const handleDelete = async (noposto: string) => {
-    if (!window.confirm(`Apakah Anda yakin ingin menghapus SO ${noposto}?`)) return;
+  const handleDeleteClick = (noposto: string) => {
+    setDeleteTarget(noposto);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
     try {
       const res = await apiFetch("/api/POSTO/DeleteData", {
         method: "POST",
-        body: JSON.stringify({ noposto }),
+        body: JSON.stringify({ noposto: deleteTarget }),
       });
       if (res.ok) queryClient.invalidateQueries({ queryKey: ["so"] });
     } catch {
@@ -304,7 +310,7 @@ export default function SOPage() {
                 variant="outline"
                 size="sm"
                 className="text-red-500 border-red-200 hover:bg-red-50 rounded-none h-8 dark:border-red-900 dark:hover:bg-red-900/20"
-                onClick={() => handleDelete(noposto)}
+                onClick={() => handleDeleteClick(noposto)}
               >
                 <Trash2 className="h-4 w-4 mr-1" /> Hapus
               </Button>
@@ -505,6 +511,17 @@ export default function SOPage() {
           </Card>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title="Hapus SO"
+        description={`Apakah Anda yakin ingin menghapus SO ${deleteTarget}? Tindakan ini tidak dapat dibatalkan.`}
+        onConfirm={handleDeleteConfirm}
+        confirmText="Hapus"
+        cancelText="Batal"
+        variant="danger"
+      />
     </div>
   );
 }
