@@ -968,6 +968,7 @@ export default function ArmadaPengajuanPage() {
                   <CardTitle className="text-lg font-black uppercase tracking-tight text-gray-900 dark:text-white">Formulir Pengajuan Armada</CardTitle>
                   <CardDescription className="text-xs text-gray-500 mt-1">Silakan lengkapi data teknis dan lampiran dokumen unit kendaraan Anda.</CardDescription>
                 </div>
+                <Badge color="indigo" variant="light" size="md">Step 01: Pendaftaran</Badge>
               </div>
             </CardHeader>
             <CardContent className="p-8">
