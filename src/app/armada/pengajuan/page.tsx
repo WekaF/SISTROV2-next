@@ -905,6 +905,16 @@ export default function ArmadaPengajuanPage() {
 
           <div className="grid grid-cols-2 gap-3 mt-2">
             <div className="space-y-1.5">
+              <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest px-1">No Rangka STNK <span className="text-red-500">*</span></label>
+              <Input value={f.no_rangka_stnk} onChange={(e) => set({ no_rangka_stnk: e.target.value })} className="h-9 rounded-xl text-[10px] uppercase font-mono" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest px-1">No Mesin STNK <span className="text-red-500">*</span></label>
+              <Input value={f.no_mesin_stnk} onChange={(e) => set({ no_mesin_stnk: e.target.value })} className="h-9 rounded-xl text-[10px] uppercase font-mono" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3 mt-2">
+            <div className="space-y-1.5">
               <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest px-1">No Rangka KIR</label>
               <Input value={f.no_rangka_kir} onChange={(e) => set({ no_rangka_kir: e.target.value })} className="h-9 rounded-xl text-[10px] uppercase font-mono" />
             </div>
@@ -958,7 +968,6 @@ export default function ArmadaPengajuanPage() {
                   <CardTitle className="text-lg font-black uppercase tracking-tight text-gray-900 dark:text-white">Formulir Pengajuan Armada</CardTitle>
                   <CardDescription className="text-xs text-gray-500 mt-1">Silakan lengkapi data teknis dan lampiran dokumen unit kendaraan Anda.</CardDescription>
                 </div>
-                <Badge color="indigo" variant="light" size="md">Step 01: Pendaftaran</Badge>
               </div>
             </CardHeader>
             <CardContent className="p-8">
