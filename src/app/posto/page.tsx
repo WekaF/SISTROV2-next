@@ -9,6 +9,7 @@ import { useSession } from "next-auth/react";
 import { useCompany } from "@/context/CompanyContext";
 import { useApi } from "@/hooks/use-api";
 import { useToast } from "@/components/ui/toast";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { DataTable, type DataTableColumn, type DataTableParams } from "@/components/ui/DataTable";
@@ -51,6 +52,7 @@ export default function PostoPage() {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editForm, setEditForm] = useState({ date: "", qty: 0, expiryDate: "" });
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; noposto?: string } | null>(null);
 
   const fetcher = async (params: DataTableParams) => {
     if (!token) return { data: [], recordsTotal: 0, recordsFiltered: 0 };
@@ -61,7 +63,7 @@ export default function PostoPage() {
       start: params.start,
       length: params.length,
       search: params.search || "",
-      order: [{ column: 4, dir: "desc" }],
+      order: [{ column: 3, dir: "desc" }],
       SD: dateFilter || "",
       columns: [
         { data: "numberString",            name: "",              searchable: false, orderable: false },
@@ -135,7 +137,11 @@ export default function PostoPage() {
       const res = await apiJson("/api/POSTO/DetailData", { method: "POST", body: JSON.stringify({ guid: id, noposto: noposto }) });
       const item = res?.data ?? res;
       setSelectedPosto(item);
-      setEditForm({ date: item.TglPOSTO || "", qty: item.Qty || 0, expiryDate: item.tgljatuhtempo || "" });
+      setEditForm({
+        date: item.tglakhir ? String(item.tglakhir).slice(0, 10) : "",
+        qty: item.qty || 0,
+        expiryDate: item.tgljatuhtempo ? String(item.tgljatuhtempo).slice(0, 10) : "",
+      });
       setIsEditOpen(true);
     } catch {
       addToast({ title: "Error", description: "Gagal memuat data POSTO", variant: "destructive" });
@@ -151,9 +157,10 @@ export default function PostoPage() {
         method: "POST",
         body: JSON.stringify({
           id: selectedPosto.NoPOSTO || selectedPosto.id,
-          date: editForm.date,
+          noposto: selectedPosto.NoPOSTO || selectedPosto.noposto,
+          tglakhir: editForm.date,
           qty: editForm.qty,
-          expiryDate: editForm.expiryDate,
+          tgljatuhtempo: editForm.expiryDate,
         }),
       });
       if (res.ok) {
@@ -169,11 +176,19 @@ export default function PostoPage() {
     }
   };
 
-  const handleDelete = async (id: string, noposto?: string) => {
-    if (!window.confirm(`Apakah Anda yakin ingin menghapus POSTO ${noposto || id}?`)) return;
+  const handleDeleteClick = (id: string, noposto?: string) => {
+    setDeleteTarget({ id, noposto });
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    const { id, noposto } = deleteTarget;
     try {
       const res = await apiFetch("/api/POSTO/DeleteData", { method: "POST", body: JSON.stringify({ guid: id, noposto: noposto }) });
-      if (res.ok) queryClient.invalidateQueries({ queryKey: ["posto"] });
+      if (res.ok) {
+        queryClient.invalidateQueries({ queryKey: ["posto"] });
+        setDeleteTarget(null);
+      }
     } catch {
       addToast({ title: "Error", description: "Error saat menghapus data", variant: "destructive" });
     }
@@ -189,6 +204,53 @@ export default function PostoPage() {
   };
 
   const columns: DataTableColumn<any>[] = [
+    {
+      key: "action",
+      header: "Action",
+      render: (p) => {
+        const id = p.guid;
+        const noposto = p.noposto;
+        return (
+          <div className="flex items-center justify-start gap-1.5">
+            {isRekanan && (
+              <Button
+                size="sm"
+                className="bg-[#003473] hover:bg-[#002855] text-white rounded-none shadow-lg shadow-blue-900/20 px-3 h-7 font-black uppercase text-[10px] tracking-widest transition-all hover:scale-105 active:scale-95 border-none"
+                onClick={() => window.location.href = `/tiket/booking?guid=${id}`}
+              >
+                <Ticket className="h-3 w-3 mr-1" /> Booking
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              className="bg-brand-50 text-brand-500 border-brand-200 hover:bg-brand-100 rounded-none h-7 font-bold text-[10px] uppercase tracking-wider"
+              onClick={() => handleView(id, noposto)}
+            >
+              <Eye className="h-3.5 w-3.5 mr-1" /> {isRekanan ? "Riwayat" : "View"}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-slate-600 border-slate-200 hover:bg-slate-50 rounded-none h-7 text-[10px] uppercase tracking-wider"
+              onClick={() => window.open(`/posto/print/${id || noposto}`, "_blank")}
+            >
+              <Printer className="h-3.5 w-3.5 mr-1" /> Print
+            </Button>
+            {canEditPosto && (
+              <Button variant="outline" size="sm" className="text-amber-500 border-amber-200 hover:bg-amber-50 rounded-none h-7" onClick={() => handleEditInit(id, noposto)}>
+                <FileEdit className="h-3.5 w-3.5 mr-1" /> Edit
+              </Button>
+            )}
+            {canDeleteThisPosto(p) && (
+              <Button variant="outline" size="sm" className="text-red-500 border-red-200 hover:bg-red-50 rounded-none h-7" onClick={() => handleDeleteClick(id, noposto)}>
+                <Trash2 className="h-3.5 w-3.5 mr-1" /> Hapus
+              </Button>
+            )}
+          </div>
+        );
+      },
+    },
     {
       key: "noposto",
       header: "No POSTO",
@@ -351,55 +413,6 @@ export default function PostoPage() {
           {p.statusString || p.status || p.Status}
         </Badge>
       ),
-    },
-    {
-      key: "action",
-      header: "Action",
-      headerClassName: "text-right",
-      className: "text-right",
-      render: (p) => {
-        const id = p.guid;
-        const noposto = p.noposto;
-        return (
-          <div className="flex items-center justify-end gap-1.5">
-            {isRekanan && (
-              <Button
-                size="sm"
-                className="bg-[#003473] hover:bg-[#002855] text-white rounded-none shadow-lg shadow-blue-900/20 px-3 h-7 font-black uppercase text-[10px] tracking-widest transition-all hover:scale-105 active:scale-95 border-none"
-                onClick={() => window.location.href = `/tiket/booking?guid=${id}`}
-              >
-                <Ticket className="h-3 w-3 mr-1" /> Booking
-              </Button>
-            )}
-            <Button
-              variant="outline"
-              size="sm"
-              className="bg-brand-50 text-brand-500 border-brand-200 hover:bg-brand-100 rounded-none h-7 font-bold text-[10px] uppercase tracking-wider"
-              onClick={() => handleView(id, noposto)}
-            >
-              <Eye className="h-3.5 w-3.5 mr-1" /> {isRekanan ? "Riwayat" : "View"}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-slate-600 border-slate-200 hover:bg-slate-50 rounded-none h-7 text-[10px] uppercase tracking-wider"
-              onClick={() => window.open(`/posto/print/${id || noposto}`, "_blank")}
-            >
-              <Printer className="h-3.5 w-3.5 mr-1" /> Print
-            </Button>
-            {canEditPosto && (
-              <Button variant="outline" size="sm" className="text-amber-500 border-amber-200 hover:bg-amber-50 rounded-none h-7" onClick={() => handleEditInit(id, noposto)}>
-                <FileEdit className="h-3.5 w-3.5 mr-1" /> Edit
-              </Button>
-            )}
-            {canDeleteThisPosto(p) && (
-              <Button variant="outline" size="sm" className="text-red-500 border-red-200 hover:bg-red-50 rounded-none h-7" onClick={() => handleDelete(id, noposto)}>
-                <Trash2 className="h-3.5 w-3.5 mr-1" /> Hapus
-              </Button>
-            )}
-          </div>
-        );
-      },
     },
   ];
 
@@ -609,7 +622,7 @@ export default function PostoPage() {
                   <div>Vendor: <strong>{selectedPosto.transportString || selectedPosto.TransName || selectedPosto.transportir}</strong></div>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-gray-500 dark:text-gray-400">Tanggal Posto</label>
+                  <label className="text-xs font-bold text-gray-500 dark:text-gray-400">Tanggal Akhir POSTO</label>
                   <Input type="date" value={editForm.date} onChange={(e) => setEditForm({ ...editForm, date: e.target.value })} required />
                 </div>
                 <div className="space-y-1">
@@ -631,6 +644,17 @@ export default function PostoPage() {
           </Card>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title="Hapus POSTO"
+        description={`Apakah Anda yakin ingin menghapus POSTO ${deleteTarget?.noposto || deleteTarget?.id}? Tindakan ini tidak dapat dibatalkan.`}
+        onConfirm={handleDeleteConfirm}
+        confirmText="Hapus"
+        cancelText="Batal"
+        variant="danger"
+      />
     </div>
   );
 }
