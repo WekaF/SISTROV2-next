@@ -370,13 +370,19 @@ export default function PostoUploadPage() {
         body: params.toString()
       });
 
-      if (res.ok) {
+      let data: any = null;
+      try { data = await res.json(); } catch { /* non-JSON response */ }
+
+      const isSuccess = res.ok && data?.status !== "error";
+
+      if (isSuccess) {
         setSubmitDone(true);
         setValidationResult(null);
         setFile(null);
         if (fileInputRef.current) fileInputRef.current.value = "";
       } else {
-        addToast({ title: "Gagal", description: "Gagal menyimpan data", variant: "destructive" });
+        const errMsg = data?.message || "Gagal menyimpan data";
+        addToast({ title: "Gagal", description: errMsg, variant: "destructive" });
       }
     } catch (err) {
       console.error(err);

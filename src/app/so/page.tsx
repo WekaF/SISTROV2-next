@@ -204,6 +204,42 @@ export default function SOPage() {
   // ── Columns — same style as POSTO ──
   const columns: DataTableColumn<SOItem>[] = [
     {
+      key: "action",
+      header: "Action",
+      render: (p) => (
+        <div className="flex items-center justify-start gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="bg-brand-50 text-brand-500 border-brand-200 hover:bg-brand-100 rounded-none h-8 font-bold text-[10px] uppercase tracking-wider"
+            onClick={() => handleView(p.noposto)}
+          >
+            <Eye className="h-4 w-4 mr-1" /> View
+          </Button>
+          {!isRekanan && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-amber-500 border-amber-200 hover:bg-amber-50 rounded-none h-8"
+                onClick={() => handleEditInit(p.noposto)}
+              >
+                <FileEdit className="h-4 w-4 mr-1" /> Edit
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-red-500 border-red-200 hover:bg-red-50 rounded-none h-8"
+                onClick={() => { setDeleteTarget(p.noposto); setDeleteReason("34"); setIsDeleteOpen(true); }}
+              >
+                <Trash2 className="h-4 w-4 mr-1" /> Hapus
+              </Button>
+            </>
+          )}
+        </div>
+      ),
+    },
+    {
       key: "noposto",
       header: "NO SO",
       render: (p) => <span className="font-mono font-bold text-brand-600">{p.noposto}</span>,
@@ -272,44 +308,6 @@ export default function SOPage() {
     { key: "tujuanString", header: "Tujuan", render: (p) => p.tujuanString || "-" },
     { key: "wilayah", header: "Wilayah", render: (p) => <span className="font-medium">{p.wilayah || "-"}</span> },
     { key: "updatedby", header: "PIC", render: (p) => <span className="text-[10px] uppercase font-bold text-gray-400">{p.updatedby || "-"}</span> },
-    {
-      key: "action",
-      header: "Action",
-      headerClassName: "text-right",
-      className: "text-right",
-      render: (p) => (
-        <div className="flex items-center justify-end gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="bg-brand-50 text-brand-500 border-brand-200 hover:bg-brand-100 rounded-none h-8 font-bold text-[10px] uppercase tracking-wider"
-            onClick={() => handleView(p.noposto)}
-          >
-            <Eye className="h-4 w-4 mr-1" /> View
-          </Button>
-          {!isRekanan && (
-            <>
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-amber-500 border-amber-200 hover:bg-amber-50 rounded-none h-8"
-                onClick={() => handleEditInit(p.noposto)}
-              >
-                <FileEdit className="h-4 w-4 mr-1" /> Edit
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-red-500 border-red-200 hover:bg-red-50 rounded-none h-8"
-                onClick={() => { setDeleteTarget(p.noposto); setDeleteReason("34"); setIsDeleteOpen(true); }}
-              >
-                <Trash2 className="h-4 w-4 mr-1" /> Hapus
-              </Button>
-            </>
-          )}
-        </div>
-      ),
-    },
   ];
 
   return (

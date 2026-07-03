@@ -224,7 +224,7 @@ export function DataTable<T>({
                     <td
                       key={col.key}
                       className={cn(
-                        "px-4 text-[12px] transition-all duration-200 font-medium",
+                        "px-4 text-[12px] transition-all duration-200 font-medium whitespace-nowrap",
                         compact ? "py-1" : "py-4",
                         col.className
                       )}

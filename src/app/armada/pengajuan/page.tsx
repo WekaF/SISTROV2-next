@@ -122,6 +122,12 @@ const formatNopol = (val: string) => {
   return clean;
 };
 
+// Backend returns dd-MM-yyyy; <input type="date"> requires yyyy-MM-dd.
+const toIsoDate = (val: string) => {
+  const m = val.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+  return m ? `${m[3]}-${m[2]}-${m[1]}` : val;
+};
+
 const emptyForm = () => ({
   nopol: "",
   sumbu: "",
@@ -269,6 +275,9 @@ export default function ArmadaPengajuanPage() {
   // ── delete modal ──
   const [deleteId, setDeleteId] = useState<number | null>(null);
 
+  // ── approve confirm modal ──
+  const [approveId, setApproveId] = useState<number | null>(null);
+
   const [isCharterFilter, setIsCharterFilter] = useState(false);
 
   // ── tolak modal ──
@@ -388,7 +397,7 @@ export default function ArmadaPengajuanPage() {
       beratkendaraan: r.beratkendaraan?.toString() ?? "",
       beratpenumpang: r.beratpenumpang?.toString() ?? "",
       tahun_pembuatan: r.tahun_pembuatan?.toString() ?? "",
-      masa_berlaku_kir: r.masa_berlaku_kir_string ?? "",
+      masa_berlaku_kir: toIsoDate(r.masa_berlaku_kir_string ?? ""),
       no_rangka_stnk: r.no_rangka_stnk ?? "",
       no_mesin_stnk: r.no_mesin_stnk ?? "",
       no_rangka_kir: r.no_rangka_kir ?? "",
@@ -524,6 +533,7 @@ export default function ArmadaPengajuanPage() {
     },
     onSuccess: () => {
       addToast({ title: "Berhasil", description: "Armada telah disetujui.", variant: "success" });
+      setApproveId(null);
       queryClient.invalidateQueries({ queryKey: ["armada-review-baru"] });
     },
     onError: (e: any) => addToast({ title: "Gagal", description: e.message, variant: "destructive" }),
@@ -700,10 +710,8 @@ export default function ArmadaPengajuanPage() {
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="h-8 w-8 text-emerald-600 hover:bg-emerald-50" 
-                onClick={() => {
-                  if (confirm("Setujui armada ini?")) approveMutation.mutate(aId);
-                }}
+                className="h-8 w-8 text-emerald-600 hover:bg-emerald-50"
+                onClick={() => setApproveId(aId)}
                 title="Setujui"
                 disabled={approveMutation.isPending}
               >
@@ -878,7 +886,7 @@ export default function ArmadaPengajuanPage() {
         <div className="space-y-4 p-5 rounded-2xl border border-gray-100 dark:border-gray-800 bg-white/50 dark:bg-white/[0.01]">
           <div className="space-y-1.5">
             <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest px-1">Masa Berlaku KIR <span className="text-red-500">*</span></label>
-            <Input placeholder="DD-MM-YYYY" value={f.masa_berlaku_kir} onChange={(e) => set({ masa_berlaku_kir: e.target.value })} className="h-10 rounded-xl" />
+            <Input type="date" value={f.masa_berlaku_kir} onChange={(e) => set({ masa_berlaku_kir: e.target.value })} className="h-10 rounded-xl" />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -968,7 +976,6 @@ export default function ArmadaPengajuanPage() {
                   <CardTitle className="text-lg font-black uppercase tracking-tight text-gray-900 dark:text-white">Formulir Pengajuan Armada</CardTitle>
                   <CardDescription className="text-xs text-gray-500 mt-1">Silakan lengkapi data teknis dan lampiran dokumen unit kendaraan Anda.</CardDescription>
                 </div>
-                <Badge color="indigo" variant="light" size="md">Step 01: Pendaftaran</Badge>
               </div>
             </CardHeader>
             <CardContent className="p-8">
@@ -1141,6 +1148,29 @@ export default function ArmadaPengajuanPage() {
             <Button variant="outline" className="rounded-xl font-bold h-10" onClick={() => setDeleteId(null)}>Batal</Button>
             <Button variant="destructive" className="rounded-xl font-bold h-10 shadow-theme-sm" onClick={() => deleteId && deleteMutation.mutate(deleteId)}>
               {deleteMutation.isPending ? "Menghapus..." : "Ya, Hapus Data"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Approve Confirmation */}
+      <Dialog open={!!approveId} onOpenChange={(o) => !o && setApproveId(null)}>
+        <DialogContent className="max-w-sm p-6 text-center border-none shadow-theme-lg">
+          <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-4">
+            <CheckCircle2 className="h-8 w-8" />
+          </div>
+          <DialogTitle className="text-lg font-black uppercase tracking-tight mb-2">Setujui Armada?</DialogTitle>
+          <DialogDescription className="text-sm text-gray-500 mb-6">
+            Apakah Anda yakin ingin menyetujui pengajuan armada ini?
+          </DialogDescription>
+          <div className="grid grid-cols-2 gap-3">
+            <Button variant="outline" className="rounded-xl font-bold h-10" onClick={() => setApproveId(null)}>Batal</Button>
+            <Button
+              className="rounded-xl font-bold h-10 shadow-theme-sm bg-emerald-600 hover:bg-emerald-700 text-white"
+              disabled={approveMutation.isPending}
+              onClick={() => approveId && approveMutation.mutate(approveId)}
+            >
+              {approveMutation.isPending ? "Menyetujui..." : "Ya, Setujui"}
             </Button>
           </div>
         </DialogContent>
