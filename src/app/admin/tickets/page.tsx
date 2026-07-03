@@ -162,7 +162,7 @@ function AdminTicketsContent() {
                 search: { value: searchTerm },
                 companyCode: activeCompanyCode,
                 cmd: 'refresh',
-                order: p.order?.length ? p.order : [{ column: 11, dir: "desc" }],
+                order: p.order?.length ? p.order : [{ column: 11, dir: "desc" }], // 11 = "id" column below; keep in sync if columns[] changes
                 columns: [
                   { data: "bookingno", name: "bookingno", searchable: true, orderable: true, search: { value: p.columnFilters?.bookingno || "" } },
                   { data: "posto", name: "posto", searchable: true, orderable: true, search: { value: p.columnFilters?.posto || "" } },
@@ -175,7 +175,7 @@ function AdminTicketsContent() {
                   { data: "qty", name: "qty", searchable: true, orderable: true },
                   { data: "positionString", name: "positionString", searchable: true, orderable: true },
                   { data: "position", name: "position", searchable: true, orderable: true },
-                  { data: "id", name: "id", searchable: false, orderable: true }
+                  { data: "id", name: "id", searchable: false, orderable: true } // hidden sort key, keep as last column
                 ]
               };
               return apiTable('/api/Tiket/DataTableFilterLegacy', payload);
