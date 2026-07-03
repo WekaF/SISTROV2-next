@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button"
 import Badge from "@/components/ui/badge/Badge"
 import { useSession } from "next-auth/react"
 import { useRouter, useParams, useSearchParams } from "next/navigation"
+import { useToast } from "@/components/ui/toast"
 
 interface Level3Row {
   id: number
@@ -52,6 +53,7 @@ function KuotaLevel3Content() {
   const searchParams = useSearchParams()
   const id = params.id as string
   const l1 = searchParams.get("l1") || ""
+  const { addToast } = useToast()
 
   const userRole = (session?.user as any)?.role?.toLowerCase() ?? ""
   const canEdit = ["candal", "superadmin", "admin"].includes(userRole)
@@ -123,7 +125,7 @@ function KuotaLevel3Content() {
         setHeader(previousHeader)
         setEditModal({ open: true, row: targetRow })
         setEditKuota(String(targetRow.kuota))
-        alert(json.error || "Gagal menyimpan")
+        addToast({ title: "Gagal", description: json.error || "Gagal menyimpan", variant: "destructive" })
       } else {
         // Background sync with server
         const refreshRes = await fetch(`/api/kuota/level3/${id}`)
@@ -139,7 +141,7 @@ function KuotaLevel3Content() {
       setHeader(previousHeader)
       setEditModal({ open: true, row: targetRow })
       setEditKuota(String(targetRow.kuota))
-      alert("Terjadi kesalahan sistem")
+      addToast({ title: "Error", description: "Terjadi kesalahan sistem", variant: "destructive" })
     } finally {
       setSaving(false)
     }
