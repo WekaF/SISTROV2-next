@@ -29,6 +29,7 @@ import {
 import * as XLSX from 'xlsx';
 import { useApi } from "@/hooks/use-api";
 import { useSession } from "next-auth/react";
+import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 
 // --- Interfaces ---
@@ -139,6 +140,7 @@ function parseQty(val: any): string {
 export default function PostoUploadPage() {
   const { data: session } = useSession();
   const { apiJson, apiFetch, token } = useApi();
+  const { addToast } = useToast();
 
   const [file, setFile] = useState<File | null>(null);
   const [selectedWilayah, setSelectedWilayah] = useState("");
@@ -224,7 +226,7 @@ export default function PostoUploadPage() {
       if (validInitialRows.length > 0 && selectedWilayah) {
         triggerValidation(validInitialRows, selectedWilayah);
       } else if (!selectedWilayah) {
-        alert("Pilih wilayah terlebih dahulu");
+        addToast({ title: "Peringatan", description: "Pilih wilayah terlebih dahulu", variant: "warning" });
       }
     };
     reader.readAsArrayBuffer(selectedFile);
@@ -267,7 +269,7 @@ export default function PostoUploadPage() {
 
     } catch (err) {
       console.error(err);
-      alert("Terjadi kesalahan saat validasi");
+      addToast({ title: "Error", description: "Terjadi kesalahan saat validasi", variant: "destructive" });
     } finally {
       setIsValidating(false);
     }
@@ -308,7 +310,7 @@ export default function PostoUploadPage() {
 
     const validRows = validationResult.listposto.filter(item => !isRowError(item));
     if (validRows.length === 0) {
-      alert("Tidak ada data valid untuk disimpan");
+      addToast({ title: "Peringatan", description: "Tidak ada data valid untuk disimpan", variant: "warning" });
       return;
     }
 
@@ -374,11 +376,11 @@ export default function PostoUploadPage() {
         setFile(null);
         if (fileInputRef.current) fileInputRef.current.value = "";
       } else {
-        alert("Gagal menyimpan data");
+        addToast({ title: "Gagal", description: "Gagal menyimpan data", variant: "destructive" });
       }
     } catch (err) {
       console.error(err);
-      alert("Terjadi kesalahan saat menyimpan");
+      addToast({ title: "Error", description: "Terjadi kesalahan saat menyimpan", variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
