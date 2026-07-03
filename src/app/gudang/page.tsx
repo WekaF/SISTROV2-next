@@ -21,6 +21,7 @@ import {
 import { useApi } from "@/hooks/use-api";
 import { useCompany } from "@/context/CompanyContext";
 import { useToast } from "@/components/ui/toast";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { DataTable, DataTableColumn } from "@/components/ui/DataTable";
 import Badge from "@/components/ui/badge/Badge";
 import { Button } from "@/components/ui/button";
@@ -194,12 +195,15 @@ export default function GudangListPage() {
     }
   };
 
-  const handleToggleAktif = async (row: GudangData, currentAktif: boolean) => {
-    const nextStatus = !currentAktif;
-    if (!window.confirm(`Yakin mengubah status gudang ${row.namagudang} menjadi ${nextStatus ? 'Aktif' : 'Nonaktif'}?`)) {
-      return;
-    }
+  const [toggleTarget, setToggleTarget] = useState<{ row: GudangData; nextStatus: boolean } | null>(null);
 
+  const handleToggleAktifClick = (row: GudangData, currentAktif: boolean) => {
+    setToggleTarget({ row, nextStatus: !currentAktif });
+  };
+
+  const handleToggleAktifConfirm = async () => {
+    if (!toggleTarget) return;
+    const { row, nextStatus } = toggleTarget;
     try {
       await apiJson("/api/Gudang/GudangMuatSetting", {
         method: "POST",
@@ -207,6 +211,7 @@ export default function GudangListPage() {
       });
       addToast({ title: "Sukses", description: `Gudang ${nextStatus ? 'diaktifkan' : 'dinonaktifkan'}`, variant: "success" });
       queryClient.invalidateQueries({ queryKey: ["gudang-list"] });
+      setToggleTarget(null);
     } catch (err) {
       addToast({ title: "Error", description: "Gagal mengubah status gudang", variant: "destructive" });
     }
@@ -265,7 +270,7 @@ export default function GudangListPage() {
                 "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
                 isAktif ? "bg-green-500" : "bg-slate-200 dark:bg-slate-700"
               )}
-              onClick={() => handleToggleAktif(row, isAktif)}
+              onClick={() => handleToggleAktifClick(row, isAktif)}
             >
               <span
                 className={cn(
@@ -593,6 +598,17 @@ export default function GudangListPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!toggleTarget}
+        onOpenChange={(open) => !open && setToggleTarget(null)}
+        title="Ubah Status Gudang"
+        description={`Yakin mengubah status gudang ${toggleTarget?.row.namagudang} menjadi ${toggleTarget?.nextStatus ? 'Aktif' : 'Nonaktif'}?`}
+        onConfirm={handleToggleAktifConfirm}
+        confirmText="Ya, Ubah"
+        cancelText="Batal"
+        variant="warning"
+      />
     </div>
   );
 }
