@@ -296,7 +296,7 @@ export default function ArmadaPage() {
       start: params.start,
       length: params.length,
       search: params.search || "",
-      order: [
+      order: params.order?.length ? params.order : [
         {
           column: expiryColIndex !== -1 ? expiryColIndex : 0,
           dir: "asc"
@@ -551,6 +551,19 @@ export default function ArmadaPage() {
       },
     },
   ];
+
+  // Wire up header-click sorting: index must match the backend `columns` array built in
+  // `fetcher` above, which mirrors this array's order 1:1 (including the conditional
+  // Transportir/KodeVendor entries), so we derive it from actual position rather than
+  // hardcoding numbers that would drift when isRekanan changes the array shape.
+  // Dokumen/Action are left out: neither has a real backend field mapping in fetcher.
+  const sortableKeys = new Set([
+    "Nopol", "Tahun", "Transportir", "KodeVendor", "JenisKendaraan", "Sumbu",
+    "QtyMax", "JBI", "BeratKendaraan", "NoRangka", "NoMesin", "Status", "Approver", "Expiry",
+  ]);
+  columns.forEach((col, idx) => {
+    if (sortableKeys.has(col.key)) col.sortColumn = idx;
+  });
 
   return (
     <div className="space-y-6">

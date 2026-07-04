@@ -603,6 +603,7 @@ export default function ArmadaPengajuanPage() {
     {
       key: "nopol",
       header: "Nomor Polisi",
+      sortColumn: 0,
       className: "font-mono font-bold text-gray-900 dark:text-white",
       render: (row) => (
         <div className="flex flex-col">
@@ -619,6 +620,7 @@ export default function ArmadaPengajuanPage() {
     {
       key: "aprrovestatus",
       header: "Status",
+      sortColumn: 1,
       render: (row) => {
         const s = getStatusBadge(row.aprrovestatus ?? "");
         return <Badge color={s.color} size="sm">{s.label}</Badge>;
@@ -627,12 +629,14 @@ export default function ArmadaPengajuanPage() {
     {
       key: "approver",
       header: "Approver",
+      sortColumn: 2,
       className: "text-xs font-medium text-gray-600 dark:text-gray-400",
       render: (row) => <span className="truncate block max-w-[150px]" title={row.approver}>{row.approver || "—"}</span>
     },
     {
       key: "sumbu",
       header: "Sumbu",
+      sortColumn: 3,
       className: "text-xs whitespace-nowrap",
       render: (row) => (
         <div className="flex flex-col">
@@ -644,6 +648,7 @@ export default function ArmadaPengajuanPage() {
     {
       key: "masa_berlaku_kir_string",
       header: "Legalitas",
+      sortColumn: 4,
       className: "text-xs whitespace-nowrap",
       render: (row) => (
         <div className="flex flex-col">
@@ -655,6 +660,7 @@ export default function ArmadaPengajuanPage() {
     {
       key: "createdSubmission",
       header: "Diajukan Pada",
+      sortColumn: 5,
       className: "text-[10px] text-gray-400 font-mono",
     },
     {
