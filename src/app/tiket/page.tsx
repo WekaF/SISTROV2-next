@@ -97,6 +97,7 @@ function RekananTicketContent() {
     {
       key: "bookingno",
       header: "No Booking",
+      sortColumn: 0,
       render: (t) => (
         <div className="font-bold text-gray-900 dark:text-white font-mono text-sm tracking-tight">
           {t.bookingno ?? "-"}
@@ -106,6 +107,7 @@ function RekananTicketContent() {
     {
       key: "posto",
       header: "POSTO",
+      sortColumn: 1,
       render: (t) => (
         <div className="font-bold text-gray-900 dark:text-white font-mono text-sm tracking-tight">
           {t.posto ?? "-"}
@@ -115,6 +117,7 @@ function RekananTicketContent() {
     {
       key: "tanggalString",
       header: "Tanggal Muat",
+      sortColumn: 2,
       render: (t) => (
         <div className="font-bold text-gray-900 dark:text-white font-mono text-sm tracking-tight">
           {t.tanggalString ?? "-"}
@@ -124,6 +127,7 @@ function RekananTicketContent() {
     {
       key: "shift",
       header: "Shift",
+      sortColumn: 3,
       render: (t) => (
         <div className="font-bold text-gray-900 dark:text-white font-mono text-sm tracking-tight">
           {t.shift ?? "-"}
@@ -133,6 +137,7 @@ function RekananTicketContent() {
     {
       key: "produkString",
       header: "Produk",
+      sortColumn: 4,
       render: (t) => (
         <div>
           <div className="font-bold text-gray-900 dark:text-white font-mono text-sm tracking-tight">
@@ -145,6 +150,7 @@ function RekananTicketContent() {
     {
       key: "nopol",
       header: "Armada",
+      sortColumn: 5,
       render: (t) => (
         <div className="bg-gray-900 text-white px-2 py-1 rounded font-mono text-xs font-bold inline-block">
           {t.Nopol || t.nopol}
@@ -154,6 +160,7 @@ function RekananTicketContent() {
     {
       key: "driver",
       header: "Driver",
+      sortColumn: 6,
       render: (t) => (
         <div className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase">
           {t.DriverName || t.driver}
@@ -172,6 +179,7 @@ function RekananTicketContent() {
     {
       key: "positionString",
       header: "Posisi / Status",
+      sortColumn: 9,
       render: (t) => (
         <div className="flex flex-col gap-1">
           <div className="font-bold text-gray-900 dark:text-white font-mono text-sm tracking-tight uppercase">

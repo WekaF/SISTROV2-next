@@ -45,21 +45,25 @@ function AdminTicketsContent() {
       header: "Booking No",
       searchable: true,
       className: "font-black text-brand-600 font-mono text-[11px]",
+      sortColumn: 0,
     },
     {
       key: "posto",
       header: "POSTO",
       searchable: true,
       className: "font-bold text-gray-900 dark:text-white text-[11px]",
+      sortColumn: 1,
     },
     {
       key: "tanggalString",
       header: "Tanggal",
       className: "text-[11px] font-bold",
+      sortColumn: 2,
     },
     {
       key: "shift",
       header: "Shift",
+      sortColumn: 3,
       render: (row: any) => (
         <div className="flex items-center gap-1.5">
           <Clock className="h-3 w-3 text-gray-400" />
@@ -72,26 +76,31 @@ function AdminTicketsContent() {
       header: "No. Polisi",
       searchable: true,
       className: "font-black text-[11px] uppercase tracking-wider",
+      sortColumn: 4,
     },
     {
       key: "driver",
       header: "Driver",
       searchable: true,
       className: "text-[11px] font-bold text-gray-600 dark:text-gray-400 truncate max-w-[120px]",
+      sortColumn: 5,
     },
     {
       key: "produkString",
       header: "Produk",
       className: "text-[11px] font-bold text-gray-900 dark:text-white",
+      sortColumn: 6,
     },
     {
       key: "transportString",
       header: "Transportir",
       className: "text-[10px] font-bold text-gray-500 uppercase tracking-tight truncate max-w-[150px]",
+      sortColumn: 7,
     },
     {
       key: "qty",
       header: "Qty",
+      sortColumn: 8,
       render: (row: any) => (
         <div className="font-black text-[11px]">
           {row.qty?.toLocaleString()} <span className="text-[8px] text-gray-400 uppercase">TON</span>
@@ -101,6 +110,7 @@ function AdminTicketsContent() {
     {
       key: "positionString",
       header: "Status",
+      sortColumn: 9,
       render: (row: any) => {
         const pos = row.position || "00";
         let variant: any = "default";

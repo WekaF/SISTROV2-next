@@ -210,7 +210,7 @@ export default function TiketDashboardPage() {
       companyCode: appliedCompany,
       produk: appliedProduct === "all" ? "" : appliedProduct,
       position: appliedPosition === "all" ? "" : appliedPosition,
-      order: [{ column: 0, dir: "desc" }],
+      order: params.order?.length ? params.order : [{ column: 0, dir: "desc" }],
       columns: [
         { data: "bookingno", name: "bookingno", searchable: true, orderable: true },
         { data: "posto", name: "posto", searchable: true, orderable: true },
@@ -244,6 +244,7 @@ export default function TiketDashboardPage() {
       header: "POSTO",
       className: "font-semibold text-gray-800 dark:text-gray-200",
       headerClassName: "w-[150px] py-3 text-left font-black uppercase text-gray-400 text-[10px] tracking-wider",
+      sortColumn: 1,
     },
     {
       key: "tanggalPOSTO",
@@ -269,6 +270,7 @@ export default function TiketDashboardPage() {
       header: "Tanggal",
       className: "text-slate-500",
       headerClassName: "w-[150px] py-3 text-left font-black uppercase text-gray-400 text-[10px] tracking-wider",
+      sortColumn: 2,
     },
     {
       key: "shift",
@@ -284,11 +286,13 @@ export default function TiketDashboardPage() {
       key: "produkString",
       header: "Produk",
       headerClassName: "w-[220px] py-3 text-left font-black uppercase text-gray-400 text-[10px] tracking-wider",
+      sortColumn: 5,
     },
     {
       key: "transportString",
       header: "Transportir",
       headerClassName: "w-[200px] py-3 text-left font-black uppercase text-gray-400 text-[10px] tracking-wider",
+      sortColumn: 6,
     },
     {
       key: "asal",
@@ -299,6 +303,7 @@ export default function TiketDashboardPage() {
       key: "tujuan",
       header: "Tujuan",
       headerClassName: "w-[180px] py-3 text-left font-black uppercase text-gray-400 text-[10px] tracking-wider",
+      sortColumn: 7,
     },
     {
       key: "Kabupaten",
@@ -310,11 +315,13 @@ export default function TiketDashboardPage() {
       header: "Nopol",
       className: "font-bold text-gray-800 dark:text-gray-200",
       headerClassName: "w-[120px] py-3 text-left font-black uppercase text-gray-400 text-[10px] tracking-wider",
+      sortColumn: 3,
     },
     {
       key: "driver",
       header: "Driver",
       headerClassName: "w-[120px] py-3 text-left font-black uppercase text-gray-400 text-[10px] tracking-wider",
+      sortColumn: 4,
     },
     {
       key: "statuspemuatan",
@@ -334,6 +341,7 @@ export default function TiketDashboardPage() {
         </Badge>
       ) : "-",
       headerClassName: "w-[180px] py-3 text-left font-black uppercase text-gray-400 text-[10px] tracking-wider",
+      sortColumn: 8,
     },
     {
       key: "string_timesec",
@@ -382,6 +390,7 @@ export default function TiketDashboardPage() {
       header: "Kode SISTRO",
       className: "font-bold text-blue-600 dark:text-blue-400 font-mono",
       headerClassName: "w-[150px] py-3 text-left font-black uppercase text-gray-400 text-[10px] tracking-wider",
+      sortColumn: 0,
     },
     {
       key: "donumber",
