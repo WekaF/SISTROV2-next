@@ -93,6 +93,7 @@ export default function LaporanGudangPage() {
         length: params.length,
         search: params.search || "",
         company: activeCompanyCode || "",
+        order: params.order?.length ? params.order : [{ column: 0, dir: "desc" }],
         columns: [
           { data: "number", name: "ID", searchable: false, orderable: false },
           { data: "Deskripsi", name: "Deskripsi", searchable: true, orderable: true },
@@ -115,10 +116,10 @@ export default function LaporanGudangPage() {
 
   const columns: DataTableColumn<GudangRow>[] = [
     { key: "number", header: "No", render: (r) => <span>{r.number}</span> },
-    { key: "Deskripsi", header: "Nama Gudang", render: (r) => <span className="font-medium">{r.Deskripsi}</span> },
-    { key: "KodeGudang", header: "Kode", render: (r) => <span className="font-mono text-xs">{r.KodeGudang}</span> },
-    { key: "wilayah", header: "Wilayah", render: (r) => <span className="text-xs">{r.wilayah}</span> },
-    { key: "kabupaten", header: "Kabupaten", render: (r) => <span className="text-xs">{r.kabupaten}</span> },
+    { key: "Deskripsi", header: "Nama Gudang", sortColumn: 1, render: (r) => <span className="font-medium">{r.Deskripsi}</span> },
+    { key: "KodeGudang", header: "Kode", sortColumn: 2, render: (r) => <span className="font-mono text-xs">{r.KodeGudang}</span> },
+    { key: "wilayah", header: "Wilayah", sortColumn: 3, render: (r) => <span className="text-xs">{r.wilayah}</span> },
+    { key: "kabupaten", header: "Kabupaten", sortColumn: 4, render: (r) => <span className="text-xs">{r.kabupaten}</span> },
     { key: "alamat", header: "Alamat", render: (r) => <span className="text-xs">{r.alamat}</span> },
   ];
 

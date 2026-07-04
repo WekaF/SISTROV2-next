@@ -114,6 +114,7 @@ export default function LogBypassPage() {
         ED: filters.ED,
         bookingcode: filters.bookingcode,
         company: activeCompanyCode || "",
+        order: params.order?.length ? params.order : [{ column: 0, dir: "desc" }],
         columns: [
           { data: "number", name: "bookingcode", searchable: false, orderable: false },
           { data: "bookingcode", name: "bookingcode", searchable: true, orderable: true },
@@ -137,12 +138,12 @@ export default function LogBypassPage() {
 
   const columns: DataTableColumn<BypassRow>[] = [
     { key: "number", header: "No", render: (r) => <span>{r.number}</span> },
-    { key: "bookingcode", header: "Booking No", render: (r) => <span className="font-mono text-xs">{r.bookingcode}</span> },
+    { key: "bookingcode", header: "Booking No", sortColumn: 1, render: (r) => <span className="font-mono text-xs">{r.bookingcode}</span> },
     { key: "reason", header: "Alasan Bypass", render: (r) => <span className="text-xs">{r.reason}</span> },
     { key: "posisi_awal", header: "Posisi Awal", render: (r) => <span className="text-xs">{r.posisi_awal}</span> },
     { key: "posisi_akhir", header: "Posisi Akhir", render: (r) => <span className="text-xs">{r.posisi_akhir}</span> },
     { key: "updatedby", header: "Oleh", render: (r) => <span className="text-xs">{r.updatedby}</span> },
-    { key: "tanggalupdate", header: "Waktu Update", render: (r) => <span className="text-xs whitespace-nowrap">{r.tanggalupdate}</span> },
+    { key: "tanggalupdate", header: "Waktu Update", sortColumn: 6, render: (r) => <span className="text-xs whitespace-nowrap">{r.tanggalupdate}</span> },
   ];
 
   return (

@@ -118,6 +118,7 @@ export default function LaporanPostoPage() {
         SD: filters.SD,
         ED: filters.ED,
         company: activeCompanyCode || "",
+        order: params.order?.length ? params.order : [{ column: 0, dir: "desc" }],
         columns: [
           { data: "number", name: "noposto", searchable: false, orderable: false },
           { data: "noposto", name: "noposto", searchable: true, orderable: true },
@@ -144,14 +145,14 @@ export default function LaporanPostoPage() {
 
   const columns: DataTableColumn<PostoRow>[] = [
     { key: "number", header: "No", render: (r) => <span>{r.number}</span> },
-    { key: "noposto", header: "No POSTO", render: (r) => <span className="font-mono text-xs">{r.noposto}</span> },
-    { key: "tglposto", header: "Tgl POSTO", render: (r) => <span className="text-xs">{r.tglposto}</span> },
-    { key: "tgljatuhtempo", header: "Jatuh Tempo", render: (r) => <span className="text-xs">{r.tgljatuhtempo}</span> },
-    { key: "qty", header: "Qty (ton)", render: (r) => <span className="text-right block">{r.qty?.toLocaleString("id-ID")}</span> },
+    { key: "noposto", header: "No POSTO", sortColumn: 1, render: (r) => <span className="font-mono text-xs">{r.noposto}</span> },
+    { key: "tglposto", header: "Tgl POSTO", sortColumn: 2, render: (r) => <span className="text-xs">{r.tglposto}</span> },
+    { key: "tgljatuhtempo", header: "Jatuh Tempo", sortColumn: 3, render: (r) => <span className="text-xs">{r.tgljatuhtempo}</span> },
+    { key: "qty", header: "Qty (ton)", sortColumn: 4, render: (r) => <span className="text-right block">{r.qty?.toLocaleString("id-ID")}</span> },
     { key: "produkString", header: "Produk", render: (r) => <span>{r.produkString}</span> },
     { key: "gudangAsalString", header: "Asal", render: (r) => <span className="text-xs">{r.gudangAsalString}</span> },
     { key: "gudangTujuanString", header: "Tujuan", render: (r) => <span className="text-xs">{r.gudangTujuanString}</span> },
-    { key: "tipe", header: "Tipe", render: (r) => <span className="text-xs">{r.tipe}</span> },
+    { key: "tipe", header: "Tipe", sortColumn: 8, render: (r) => <span className="text-xs">{r.tipe}</span> },
     { key: "statusString", header: "Status", render: (r) => <span className="text-xs">{r.statusString}</span> },
   ];
 

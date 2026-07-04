@@ -123,6 +123,7 @@ export default function LogKuotaPage() {
         ASD: filters.ASD,
         AED: filters.AED,
         company: activeCompanyCode || "",
+        order: params.order?.length ? params.order : [{ column: 0, dir: "desc" }],
         columns: [
           { data: "number", name: "tanggalupdate", searchable: false, orderable: false },
           { data: "tanggal", name: "tanggal", searchable: false, orderable: true },
@@ -149,7 +150,7 @@ export default function LogKuotaPage() {
 
   const columns: DataTableColumn<KuotaLogRow>[] = [
     { key: "number", header: "No", render: (r) => <span>{r.number}</span> },
-    { key: "tanggal", header: "Tgl Kuota", render: (r) => <span className="text-xs">{r.tanggal}</span> },
+    { key: "tanggal", header: "Tgl Kuota", sortColumn: 1, render: (r) => <span className="text-xs">{r.tanggal}</span> },
     { key: "tipe", header: "Tipe", render: (r) => <span className="text-xs">{r.tipe}</span> },
     { key: "scope", header: "Scope", render: (r) => <span className="text-xs">{r.scope}</span> },
     { key: "produk", header: "Produk", render: (r) => <span>{r.produk}</span> },
@@ -157,7 +158,7 @@ export default function LogKuotaPage() {
     { key: "after", header: "Sesudah", render: (r) => <span className="text-right block">{r.after?.toLocaleString("id-ID")}</span> },
     { key: "aktivitas", header: "Aktivitas", render: (r) => <span className="text-xs">{r.aktivitas}</span> },
     { key: "oleh", header: "Oleh", render: (r) => <span className="text-xs">{r.oleh}</span> },
-    { key: "tanggalupdate", header: "Waktu Aktivitas", render: (r) => <span className="text-xs whitespace-nowrap">{r.tanggalupdate}</span> },
+    { key: "tanggalupdate", header: "Waktu Aktivitas", sortColumn: 9, render: (r) => <span className="text-xs whitespace-nowrap">{r.tanggalupdate}</span> },
   ];
 
   return (

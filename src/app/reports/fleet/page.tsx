@@ -107,6 +107,7 @@ export default function LaporanArmadaPage() {
         length: params.length,
         search: params.search || "",
         company: activeCompanyCode || "",
+        order: params.order?.length ? params.order : [{ column: 0, dir: "desc" }],
         columns: [
           { data: "number", name: "nopol", searchable: false, orderable: false },
           { data: "nopol", name: "nopol", searchable: true, orderable: true },
@@ -132,21 +133,22 @@ export default function LaporanArmadaPage() {
 
   const columns: DataTableColumn<ArmadaRow>[] = [
     { key: "number", header: "No", render: (r) => <span>{r.number}</span> },
-    { key: "nopol", header: "Nopol", render: (r) => <span className="font-mono text-xs font-bold">{r.nopol}</span> },
-    { key: "transportString", header: "Transportir", render: (r) => <span>{r.transportString}</span> },
-    { key: "sumbu", header: "Sumbu", render: (r) => <span className="text-xs">{r.sumbu}</span> },
-    { key: "jeniskendaraan", header: "Jenis", render: (r) => <span className="text-xs">{r.jeniskendaraan}</span> },
-    { key: "qtymax", header: "Qty Max (ton)", render: (r) => <span className="text-right block">{r.qtymax?.toLocaleString("id-ID")}</span> },
+    { key: "nopol", header: "Nopol", sortColumn: 1, render: (r) => <span className="font-mono text-xs font-bold">{r.nopol}</span> },
+    { key: "transportString", header: "Transportir", sortColumn: 2, render: (r) => <span>{r.transportString}</span> },
+    { key: "sumbu", header: "Sumbu", sortColumn: 3, render: (r) => <span className="text-xs">{r.sumbu}</span> },
+    { key: "jeniskendaraan", header: "Jenis", sortColumn: 4, render: (r) => <span className="text-xs">{r.jeniskendaraan}</span> },
+    { key: "qtymax", header: "Qty Max (ton)", sortColumn: 5, render: (r) => <span className="text-right block">{r.qtymax?.toLocaleString("id-ID")}</span> },
     {
       key: "status_armada",
       header: "Status",
+      sortColumn: 6,
       render: (r) => (
         <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${r.status_armada === "1" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
           {r.status_armada === "1" ? "Aktif" : "Nonaktif"}
         </span>
       ),
     },
-    { key: "masa_berlaku_kir_string", header: "Berlaku KIR s.d.", render: (r) => <span className="text-xs whitespace-nowrap">{r.masa_berlaku_kir_string}</span> },
+    { key: "masa_berlaku_kir_string", header: "Berlaku KIR s.d.", sortColumn: 7, render: (r) => <span className="text-xs whitespace-nowrap">{r.masa_berlaku_kir_string}</span> },
     { key: "keterangan", header: "Ket KIR", render: (r) => <span className="text-xs">{r.keterangan}</span> },
   ];
 
