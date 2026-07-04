@@ -71,6 +71,9 @@ export default function SecurityDashboard() {
   const antriAktif = streamData?.antriAktif ?? 0;
   const proses = streamData?.proses ?? 0;
   const selesai = streamData?.selesai ?? 0;
+  const overdueCount = streamData?.overdueCount ?? 0;
+  const avgDurasiMenit = streamData?.avgDurasiMenit ?? 0;
+  const shiftBreakdown = streamData?.shiftBreakdown ?? { pagi: 0, siang: 0, malam: 0 };
 
   return (
     <div className="space-y-6">
@@ -99,12 +102,26 @@ export default function SecurityDashboard() {
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
         <Card className="border-gray-200 dark:border-gray-800 transition-all hover:shadow-md">
           <CardContent className="p-5 flex items-center justify-between">
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Antrian Gerbang</span>
               <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white font-mono">{antriAktif}</h2>
-              <p className="text-[10px] text-gray-400">Armada menunggu validasi masuk</p>
+              <div className="pt-0.5">
+                {antriAktif >= 8 ? (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase bg-rose-50 dark:bg-rose-950/20 text-rose-700 dark:text-rose-400 px-2 py-0.5 rounded border border-rose-100/50 dark:border-rose-900/30">
+                    Antrian Padat (~{antriAktif * 3} m)
+                  </span>
+                ) : antriAktif >= 3 ? (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded border border-amber-100/50 dark:border-amber-900/30">
+                    Antrian Sedang (~{antriAktif * 2} m)
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded border border-emerald-100/50 dark:border-emerald-900/30">
+                    Lancar (~1 m)
+                  </span>
+                )}
+              </div>
             </div>
-            <div className="p-3 bg-amber-50 text-amber-600 rounded-xl dark:bg-amber-900/20">
+            <div className="p-3 bg-amber-50 text-amber-600 rounded-xl dark:bg-amber-900/20 dark:text-amber-400">
               <Clock className="h-6 w-6" />
             </div>
           </CardContent>
@@ -112,12 +129,16 @@ export default function SecurityDashboard() {
 
         <Card className="border-gray-200 dark:border-gray-800 transition-all hover:shadow-md">
           <CardContent className="p-5 flex items-center justify-between">
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Armada di Area</span>
               <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white font-mono">{proses}</h2>
-              <p className="text-[10px] text-gray-400">Sedang loading / timbang</p>
+              <div className="pt-0.5">
+                <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase bg-blue-50 dark:bg-blue-950/20 text-blue-700 dark:text-blue-400 px-2 py-0.5 rounded border border-blue-100/50 dark:border-blue-900/30">
+                  Loading/Timbang aktif
+                </span>
+              </div>
             </div>
-            <div className="p-3 bg-blue-50 text-blue-600 rounded-xl dark:bg-blue-900/20">
+            <div className="p-3 bg-blue-50 text-blue-600 rounded-xl dark:bg-blue-900/20 dark:text-blue-400">
               <TicketCheck className="h-6 w-6" />
             </div>
           </CardContent>
@@ -125,12 +146,16 @@ export default function SecurityDashboard() {
 
         <Card className="border-gray-200 dark:border-gray-800 transition-all hover:shadow-md">
           <CardContent className="p-5 flex items-center justify-between">
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Armada Keluar</span>
               <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white font-mono">{selesai}</h2>
-              <p className="text-[10px] text-gray-400">Armada keluar gerbang hari ini</p>
+              <div className="pt-0.5">
+                <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded border border-emerald-100/50 dark:border-emerald-900/30">
+                  Selesai hari ini
+                </span>
+              </div>
             </div>
-            <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl dark:bg-emerald-900/20">
+            <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl dark:bg-emerald-900/20 dark:text-emerald-400">
               <CheckCircle2 className="h-6 w-6" />
             </div>
           </CardContent>
@@ -208,6 +233,20 @@ export default function SecurityDashboard() {
 
         {/* Security Alerts and SOP Quick Reference */}
         <div className="space-y-6">
+          {overdueCount > 0 && (
+            <Card className="border-red-200 dark:border-red-900/30 bg-red-50/50 dark:bg-red-950/20 text-red-900 dark:text-red-300 shadow-sm animate-in fade-in duration-300">
+              <CardContent className="p-4 flex gap-3 items-start">
+                <ShieldAlert className="h-5 w-5 text-red-500 shrink-0 mt-0.5 animate-pulse" />
+                <div className="space-y-1">
+                  <span className="text-xs font-extrabold uppercase tracking-wide">Pemberitahuan Overdue</span>
+                  <p className="text-xs text-red-700/90 dark:text-red-400/90">
+                    Ada <strong>{overdueCount} armada</strong> tertahan di area dalam lebih dari 2 jam.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <Card className="border-gray-200 dark:border-gray-800">
             <CardHeader className="py-4 px-5 border-b border-gray-100 dark:border-gray-800">
               <CardTitle className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
@@ -228,6 +267,34 @@ export default function SecurityDashboard() {
                 <div>
                   <span className="font-bold">SOP Checkpoint Active</span>
                   <p className="mt-0.5 text-blue-600/80 dark:text-blue-400/80">Every truck entering must have valid booking barcode. Manual entry requires supervisor override.</p>
+                </div>
+              </div>
+
+              {/* Shift Stats & Average Duration */}
+              <div className="pt-3 border-t border-gray-100 dark:border-gray-800 space-y-3">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Durasi Rata-rata</span>
+                  <span className="font-mono font-bold text-gray-900 dark:text-white bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">
+                    {avgDurasiMenit} Menit
+                  </span>
+                </div>
+                
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Armada Per Shift (Today)</span>
+                  <div className="grid grid-cols-3 gap-2 text-center text-[11px]">
+                    <div className="py-1.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-gray-800/50 rounded">
+                      <span className="block text-[9px] text-gray-400 uppercase">Shift 1</span>
+                      <span className="font-mono font-bold text-gray-700 dark:text-gray-300">{shiftBreakdown.pagi}</span>
+                    </div>
+                    <div className="py-1.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-gray-800/50 rounded">
+                      <span className="block text-[9px] text-gray-400 uppercase">Shift 2</span>
+                      <span className="font-mono font-bold text-gray-700 dark:text-gray-300">{shiftBreakdown.siang}</span>
+                    </div>
+                    <div className="py-1.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-gray-800/50 rounded">
+                      <span className="block text-[9px] text-gray-400 uppercase">Shift 3</span>
+                      <span className="font-mono font-bold text-gray-700 dark:text-gray-300">{shiftBreakdown.malam}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </CardContent>

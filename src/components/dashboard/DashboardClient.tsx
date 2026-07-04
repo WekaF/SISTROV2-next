@@ -7,6 +7,9 @@ import { TransportDashboard } from "@/components/dashboard/TransportDashboard";
 import { LogisticsMetrics } from "@/components/dashboard/LogisticsMetrics";
 import ViewerDashboard from "@/components/dashboard/ViewerDashboard";
 import StaffAreaDashboard from "@/components/dashboard/StaffAreaDashboard";
+import SecurityDashboard from "@/components/dashboard/SecurityDashboard";
+import JBTDashboard from "@/components/dashboard/JBTDashboard";
+import GudangDashboard from "@/components/dashboard/GudangDashboard";
 import { normalizeRole } from "@/lib/role-utils";
 
 import { ClipboardList, TrendingUp, Clock, Filter } from "lucide-react";
@@ -96,6 +99,12 @@ export default function DashboardClient({ session, dbRole }: { session: any, dbR
         <TransportDashboard />
       ) : role === "viewer" ? (
         <ViewerDashboard />
+      ) : role === "security" ? (
+        <SecurityDashboard />
+      ) : role === "jembatan_timbang" ? (
+        <JBTDashboard />
+      ) : role === "gudang" ? (
+        <GudangDashboard />
       ) : (
         <>
           <LogisticsMetrics />

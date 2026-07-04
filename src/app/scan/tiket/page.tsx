@@ -306,10 +306,10 @@ export default function ScanTiketPage() {
 
   // Helper for position color
   const getPositionBadge = (pos: string, text: string) => {
-    if (pos === "00") return <Badge color="warning">{text}</Badge>;
-    if (pos === "06") return <Badge color="indigo">{text}</Badge>;
-    if (pos === "07") return <Badge color="success">{text}</Badge>;
-    return <Badge color="info">{text}</Badge>;
+    if (pos === "00") return <Badge color="warning" className="dark:bg-orange-950/40 dark:text-orange-400 dark:border-orange-900/30">{text}</Badge>;
+    if (pos === "06") return <Badge color="indigo" className="dark:bg-indigo-950/40 dark:text-indigo-400 dark:border-indigo-900/30">{text}</Badge>;
+    if (pos === "07") return <Badge color="success" className="dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-900/30">{text}</Badge>;
+    return <Badge color="info" className="dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-900/30">{text}</Badge>;
   };
 
   return (
@@ -338,16 +338,16 @@ export default function ScanTiketPage() {
               </CardTitle>
               <CardDescription>Masukkan Kode Booking Sistro.</CardDescription>
             </div>
-            <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
+            <div className="flex bg-slate-100 dark:bg-slate-900 p-1 rounded-xl border border-slate-200 dark:border-slate-800">
               <button 
                 onClick={() => setScanMode("manual")}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black transition-all ${scanMode === "manual" ? 'bg-white dark:bg-gray-700 shadow-sm text-primary' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black transition-all ${scanMode === "manual" ? 'bg-white dark:bg-slate-800 shadow-sm text-primary' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
               >
                 <Keyboard className="h-4 w-4" /> MANUAL / BT
               </button>
               <button 
                 onClick={() => setScanMode("camera")}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black transition-all ${scanMode === "camera" ? 'bg-white dark:bg-gray-700 shadow-sm text-primary' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black transition-all ${scanMode === "camera" ? 'bg-white dark:bg-slate-800 shadow-sm text-primary' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
               >
                 <Camera className="h-4 w-4" /> KAMERA
               </button>
@@ -355,8 +355,8 @@ export default function ScanTiketPage() {
           </CardHeader>
           <CardContent className="p-6">
             <div className={scanMode === "camera" ? "space-y-4 block" : "hidden"}>
-              <div id="reader" className="overflow-hidden rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 min-h-[300px]"></div>
-              <div className="flex items-center justify-center gap-3 p-4 bg-blue-50 text-blue-700 rounded-xl border border-blue-100 shadow-sm animate-pulse">
+              <div id="reader" className="overflow-hidden rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 min-h-[300px]"></div>
+              <div className="flex items-center justify-center gap-3 p-4 bg-blue-50 dark:bg-blue-950/20 text-blue-700 dark:text-blue-400 rounded-xl border border-blue-100 dark:border-blue-900/30 shadow-sm animate-pulse">
                 <Camera className="h-5 w-5" />
                 <span className="text-sm font-black uppercase tracking-widest">Kamera Aktif - Dekatkan Kode QR</span>
               </div>
@@ -369,7 +369,7 @@ export default function ScanTiketPage() {
                     ref={inputRef}
                     type="text"
                     placeholder="BOOKINGNO / SCAN QR..."
-                    className="w-full h-14 pl-4 pr-12 text-xl font-mono font-bold tracking-wider uppercase bg-slate-100 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all"
+                    className="w-full h-14 pl-4 pr-12 text-xl font-mono font-bold tracking-wider uppercase bg-slate-100 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all"
                     value={bookingNo}
                     onChange={(e) => setBookingNo(e.target.value)}
                     disabled={isLoading}
@@ -388,14 +388,14 @@ export default function ScanTiketPage() {
                   CARI
                 </Button>
               </form>
-              <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-2 rounded-lg border border-slate-100">
+              <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest bg-slate-50 dark:bg-slate-900/50 px-3 py-2 rounded-lg border border-slate-100 dark:border-slate-800/50">
                 <Info className="h-3 w-3" />
                 Bluetooth scanner akan otomatis mengisi input di atas saat aktif
               </div>
             </div>
 
             {searchError && (
-              <div className="mt-4 p-3 bg-red-50 border border-red-100 rounded-lg flex items-center gap-3 text-red-600 text-sm font-medium animate-in fade-in slide-in-from-top-1">
+              <div className="mt-4 p-3 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 rounded-lg flex items-center gap-3 text-red-600 dark:text-red-400 text-sm font-medium animate-in fade-in slide-in-from-top-1">
                 <AlertCircle className="h-5 w-5 shrink-0" />
                 {searchError}
               </div>
@@ -410,9 +410,9 @@ export default function ScanTiketPage() {
               {/* Logo & Header */}
               <div className="bg-white dark:bg-gray-800 px-6 py-4 flex items-center justify-between border-b dark:border-gray-700">
                 <div className="flex items-center gap-3">
-                  <Image src="/images/logo/logosistro.png" alt="Sistro Logo" width={80} height={36} className="object-contain" />
-                  <div className="h-8 w-px bg-slate-200" />
-                  <Image src="/images/logo/logocompany.png" alt="Pupuk Indonesia Logo" width={90} height={36} className="object-contain" />
+                  <Image src="/images/logo/logosistro.png" alt="Sistro Logo" width={80} height={36} className="object-contain dark:invert" />
+                  <div className="h-8 w-px bg-slate-200 dark:bg-gray-700" />
+                  <Image src="/images/logo/logocompany.png" alt="Pupuk Indonesia Logo" width={90} height={36} className="object-contain dark:invert" />
                 </div>
                 <div className="text-right">
                   <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Digital Logistics</div>
@@ -458,29 +458,29 @@ export default function ScanTiketPage() {
                     <div className="flex items-center gap-4">
                       <div>
                         <div className="text-[10px] text-slate-400 font-bold uppercase">Nopol</div>
-                        <Badge className="text-lg font-mono px-3 py-1 bg-slate-900 text-white rounded-md border-none">{ticket.nopol}</Badge>
+                        <Badge className="text-lg font-mono px-3 py-1 bg-slate-900 dark:bg-slate-950 text-white rounded-md border-none">{ticket.nopol}</Badge>
                       </div>
                       <div>
                         <div className="text-[10px] text-slate-400 font-bold uppercase">Jenis</div>
-                        <div className="font-bold text-slate-700">{ticket.jeniskendaraan}</div>
+                        <div className="font-bold text-slate-700 dark:text-slate-300">{ticket.jeniskendaraan}</div>
                       </div>
                     </div>
                     <div>
                       <div className="text-[10px] text-slate-400 font-bold uppercase mb-1">Driver / Pengemudi</div>
-                      <div className="flex items-center gap-2 font-black text-slate-800 uppercase">
-                        <User className="h-4 w-4 text-slate-300" />
+                      <div className="flex items-center gap-2 font-black text-slate-800 dark:text-slate-200 uppercase">
+                        <User className="h-4 w-4 text-slate-300 dark:text-slate-600" />
                         {ticket.driver || "-"}
                       </div>
                     </div>
                     <div>
                       <div className="text-[10px] text-slate-400 font-bold uppercase">Perusahaan</div>
-                      <div className="font-bold text-slate-700">{ticket.transportString}</div>
+                      <div className="font-bold text-slate-700 dark:text-slate-300">{ticket.transportString}</div>
                     </div>
                   </div>
                 </div>
 
                 {/* Right: Delivery */}
-                <div className="p-6 bg-slate-50/30">
+                <div className="p-6 bg-slate-50/30 dark:bg-gray-800/50">
                   <div className="flex items-center gap-2 mb-4 text-slate-400">
                     <Package className="h-4 w-4" />
                     <span className="text-xs font-bold uppercase tracking-widest">Data Pengiriman</span>
@@ -489,46 +489,46 @@ export default function ScanTiketPage() {
                     <div className="flex justify-between items-start">
                       <div>
                         <div className="text-[10px] text-slate-400 font-bold uppercase">POSTO / Order</div>
-                        <div className="font-mono font-bold text-slate-600">{ticket.posto}</div>
+                        <div className="font-mono font-bold text-slate-600 dark:text-slate-400">{ticket.posto}</div>
                       </div>
                       <div className="text-right">
                         <div className="text-[10px] text-slate-400 font-bold uppercase">Tipe</div>
-                        <div className="text-xs font-black text-slate-600">{ticket.tipe}</div>
+                        <div className="text-xs font-black text-slate-600 dark:text-slate-400">{ticket.tipe}</div>
                       </div>
                     </div>
                     <div>
                       <div className="text-[10px] text-slate-400 font-bold uppercase">Produk</div>
                       <div className="flex items-baseline gap-2">
-                        <span className="text-lg font-black text-slate-800">{ticket.produkString}</span>
-                        <span className="text-sm font-bold text-slate-400">{ticket.qty} TON</span>
+                        <span className="text-lg font-black text-slate-800 dark:text-slate-200">{ticket.produkString}</span>
+                        <span className="text-sm font-bold text-slate-400 dark:text-slate-500">{ticket.qty} TON</span>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
                       <div className="flex-1">
                         <div className="text-[10px] text-slate-400 font-bold uppercase">Asal</div>
-                        <div className="text-xs font-bold text-slate-700 truncate" title={ticket.asal}>{ticket.asal}</div>
+                        <div className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate" title={ticket.asal}>{ticket.asal}</div>
                       </div>
-                      <ArrowRight className="h-4 w-4 text-slate-300 shrink-0" />
+                      <ArrowRight className="h-4 w-4 text-slate-300 dark:text-slate-600 shrink-0" />
                       <div className="flex-1">
                         <div className="text-[10px] text-slate-400 font-bold uppercase">Tujuan</div>
-                        <div className="text-xs font-bold text-slate-700 truncate" title={ticket.tujuan}>{ticket.tujuan}</div>
+                        <div className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate" title={ticket.tujuan}>{ticket.tujuan}</div>
                       </div>
                     </div>
                     <div className="flex gap-2 items-center pt-1 flex-wrap">
                       {ticket.gudangtujuan && (
-                        <div className="flex items-center gap-1.5 px-2 py-1 bg-blue-50 text-blue-700 rounded text-[10px] font-black uppercase">
+                        <div className="flex items-center gap-1.5 px-2 py-1 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 rounded text-[10px] font-black uppercase">
                           <Building2 className="h-3 w-3" />
                           {ticket.gudangtujuan}
                         </div>
                       )}
                       {ticket.company && (
-                        <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-200 text-slate-700 rounded text-[10px] font-black uppercase">
+                        <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded text-[10px] font-black uppercase">
                           <MapPin className="h-3 w-3" />
                           {ticket.company}
                         </div>
                       )}
                       {ticket.percepatan && ticket.percepatan !== "0" && (
-                        <div className="flex items-center gap-1.5 px-2 py-1 bg-amber-100 text-amber-700 rounded text-[10px] font-black uppercase">
+                        <div className="flex items-center gap-1.5 px-2 py-1 bg-amber-100 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 rounded text-[10px] font-black uppercase">
                           <Zap className="h-3 w-3" />
                           PERCEPATAN
                         </div>
@@ -539,7 +539,7 @@ export default function ScanTiketPage() {
               </div>
 
               {/* Status & Action Bar */}
-              <div className="px-6 py-4 bg-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-200">
+              <div className="px-6 py-4 bg-slate-100 dark:bg-gray-900/50 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-200 dark:border-gray-700">
                 <div className="flex items-center gap-3">
                   <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Status:</div>
                   {getPositionBadge(ticket.position, ticket.positionString)}
@@ -551,7 +551,7 @@ export default function ScanTiketPage() {
                     <Button
                       variant="outline"
                       size="lg"
-                      className="h-14 px-6 border-slate-300 font-bold gap-2 text-slate-600 hover:bg-slate-50 transition-all shadow-sm"
+                      className="h-14 px-6 border-slate-300 dark:border-gray-700 font-bold gap-2 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-gray-800 transition-all shadow-sm"
                       onClick={handlePrint}
                       disabled={isActionLoading || !ticket.tiketno}
                     >
@@ -578,7 +578,7 @@ export default function ScanTiketPage() {
                     <Button
                       variant="outline"
                       size="lg"
-                      className="h-14 px-8 border-rose-500 text-rose-500 hover:bg-rose-50 font-bold text-lg gap-3 transition-all"
+                      className="h-14 px-8 border-rose-500 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 font-bold text-lg gap-3 transition-all"
                       onClick={() => {
                         setTicket(null);
                         setBookingNo("");
@@ -592,7 +592,7 @@ export default function ScanTiketPage() {
                   )}
 
                   {ticket.position === "07" && (
-                    <div className="flex items-center gap-3 px-6 py-3 bg-emerald-50 text-emerald-700 rounded-xl border border-emerald-100 shadow-sm animate-in zoom-in-95">
+                    <div className="flex items-center gap-3 px-6 py-3 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 rounded-xl border border-emerald-100 dark:border-emerald-900/30 shadow-sm animate-in zoom-in-95">
                       <CheckCircle2 className="h-6 w-6" />
                       <span className="font-black text-sm uppercase tracking-wider">Tiket Selesai</span>
                     </div>
@@ -604,7 +604,7 @@ export default function ScanTiketPage() {
             {/* Timeline Logs */}
             <Card className="shadow-xl border-none bg-slate-50/50 dark:bg-gray-900/50">
               <CardHeader className="pb-4 border-b dark:border-gray-700 bg-white dark:bg-gray-800">
-                <CardTitle className="text-base flex items-center gap-2 text-slate-800">
+                <CardTitle className="text-base flex items-center gap-2 text-slate-800 dark:text-slate-200">
                   <div className="p-2 bg-primary/10 rounded-lg">
                     <History className="h-5 w-5 text-primary" />
                   </div>
@@ -612,7 +612,7 @@ export default function ScanTiketPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                <div className="divide-y divide-slate-100">
+                <div className="divide-y divide-slate-100 dark:divide-gray-800">
                   {logs.length > 0 ? (
                     logs.map((log, idx) => {
                       const isLatest = idx === 0;
@@ -623,15 +623,15 @@ export default function ScanTiketPage() {
                             }`}
                         >
                           <div className="flex flex-col items-center gap-1 mt-1">
-                            <div className={`h-3 w-3 rounded-full ${isLatest ? 'bg-primary ring-4 ring-primary/20' : 'bg-slate-300'
+                            <div className={`h-3 w-3 rounded-full ${isLatest ? 'bg-primary ring-4 ring-primary/20' : 'bg-slate-300 dark:bg-slate-600'
                               }`} />
                             {idx !== logs.length - 1 && (
-                              <div className="w-0.5 h-full min-h-[20px] bg-slate-100" />
+                              <div className="w-0.5 h-full min-h-[20px] bg-slate-100 dark:bg-slate-800" />
                             )}
                           </div>
                           <div className="flex-1 space-y-1">
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                              <span className={`text-sm font-bold tracking-tight uppercase ${isLatest ? 'text-primary' : 'text-slate-600'
+                              <span className={`text-sm font-bold tracking-tight uppercase ${isLatest ? 'text-primary' : 'text-slate-600 dark:text-slate-400'
                                 }`}>
                                 {log.position}
                               </span>

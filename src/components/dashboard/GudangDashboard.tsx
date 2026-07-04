@@ -6,7 +6,8 @@ import { useApi } from "@/hooks/use-api";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { 
   Building2, History, Package, Play, 
-  CheckCircle2, Clock, BarChart3, ListOrdered, Ticket 
+  CheckCircle2, Clock, BarChart3, ListOrdered, Ticket,
+  AlertCircle
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import Badge from "@/components/ui/badge/Badge";
@@ -46,6 +47,8 @@ export default function GudangDashboard() {
   const proses = streamData?.proses ?? 0;
   const selesai = streamData?.selesai ?? 0;
   const totalTonase = streamData?.totalTonase ?? 0;
+  const overdueCount = streamData?.overdueCount ?? 0;
+  const shiftBreakdown = streamData?.shiftBreakdown ?? { pagi: 0, siang: 0, malam: 0 };
 
   // Gudang Breakdown Chart options
   const gudangCategories = streamData?.gudangBreakdown?.map((g: any) => g.gudang) ?? [];
@@ -286,31 +289,117 @@ export default function GudangDashboard() {
           </CardContent>
         </Card>
 
-        {/* Queue chart */}
-        <Card className="border-gray-200 dark:border-gray-800">
-          <CardHeader className="py-4 px-5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-            <div>
+        {/* Statistics & Queue Details Sidebar */}
+        <div className="space-y-6">
+          {/* Overdue Alert Widget */}
+          {overdueCount > 0 && (
+            <Card className="border-red-200 dark:border-red-900/30 bg-red-50/50 dark:bg-red-950/20 text-red-900 dark:text-red-300">
+              <CardContent className="p-4 flex gap-3 items-start">
+                <AlertCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <span className="text-sm font-extrabold uppercase tracking-wide">Pemuatan Overdue!</span>
+                  <p className="text-xs text-red-700/90 dark:text-red-400/90">
+                    Ada <strong>{overdueCount} armada</strong> tertahan di area muat lebih dari 2 jam. Segera verifikasi kendala operasional.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Queue Breakdown Widget */}
+          <Card className="border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-800">
+            <CardHeader className="py-4 px-5 border-b border-gray-100 dark:border-gray-800">
               <CardTitle className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                <BarChart3 className="h-4 w-4 text-brand-500" /> Antrian Per Gudang
+                <BarChart3 className="h-4 w-4 text-primary" /> Status Antrian Gudang
               </CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent className="p-4">
-            {gudangData.length > 0 ? (
-              <Chart 
-                options={chartOptions} 
-                series={chartSeries} 
-                type="bar" 
-                height={260} 
-              />
-            ) : (
-              <div className="flex flex-col items-center justify-center h-48 text-gray-400">
-                <ListOrdered className="h-10 w-10 mb-2 opacity-50" />
-                <span className="text-xs">Tidak ada antrian aktif di gudang.</span>
+              <CardDescription className="text-xs text-gray-400">Distribusi & tingkat kepadatan per gudang</CardDescription>
+            </CardHeader>
+            <CardContent className="p-5 space-y-4">
+              {streamData?.gudangBreakdown && streamData.gudangBreakdown.length > 0 ? (
+                <div className="space-y-4">
+                  {streamData.gudangBreakdown.map((item: any) => {
+                    const count = item.count;
+                    const maxCount = Math.max(...streamData.gudangBreakdown.map((g: any) => g.count), 1);
+                    const percentage = Math.min(100, Math.round((count / maxCount) * 100));
+                    
+                    // Dynamic status color & label
+                    let statusColor = "bg-emerald-500";
+                    let statusBg = "bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 border border-emerald-100/50 dark:border-emerald-900/30";
+                    let statusLabel = "Lancar";
+                    if (count >= 6) {
+                      statusColor = "bg-rose-500";
+                      statusBg = "bg-rose-50 dark:bg-rose-950/20 text-rose-700 dark:text-rose-400 border border-rose-100/50 dark:border-rose-900/30";
+                      statusLabel = "Padat";
+                    } else if (count >= 3) {
+                      statusColor = "bg-amber-500";
+                      statusBg = "bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 border border-amber-100/50 dark:border-amber-900/30";
+                      statusLabel = "Sedang";
+                    }
+
+                    return (
+                      <div key={item.gudang} className="space-y-1.5">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-bold text-gray-700 dark:text-gray-300 uppercase tracking-tight flex items-center gap-1.5">
+                            <Building2 className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
+                            {item.gudang}
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-[10px] font-black uppercase px-1.5 py-0.5 rounded ${statusBg}`}>
+                              {statusLabel}
+                            </span>
+                            <span className="font-mono font-bold text-gray-900 dark:text-white">
+                              {count} Unit
+                            </span>
+                          </div>
+                        </div>
+                        <div className="h-2 w-full bg-slate-100 dark:bg-gray-700/50 rounded-full overflow-hidden">
+                          <div 
+                            className={`h-full ${statusColor} rounded-full transition-all duration-500`}
+                            style={{ width: `${percentage}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-8 text-gray-400 dark:text-gray-500">
+                  <ListOrdered className="h-10 w-10 mb-2 opacity-50" />
+                  <span className="text-xs">Tidak ada antrian aktif di gudang.</span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Shift Statistics Widget */}
+          <Card className="border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-800">
+            <CardHeader className="py-4 px-5 border-b border-gray-100 dark:border-gray-800">
+              <CardTitle className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <History className="h-4 w-4 text-primary" /> Statistik Beban Shift
+              </CardTitle>
+              <CardDescription className="text-xs text-gray-400">Jumlah armada diproses berdasarkan shift</CardDescription>
+            </CardHeader>
+            <CardContent className="p-5">
+              <div className="grid grid-cols-3 gap-3 text-center">
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-gray-900/30 border border-slate-100 dark:border-gray-850/50 space-y-1">
+                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-tight">Shift 1</span>
+                  <div className="text-lg font-black text-slate-800 dark:text-slate-200 font-mono">{shiftBreakdown.pagi}</div>
+                  <span className="text-[9px] text-slate-400 dark:text-slate-500">06:00 - 14:00</span>
+                </div>
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-gray-900/30 border border-slate-100 dark:border-gray-850/50 space-y-1">
+                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-tight">Shift 2</span>
+                  <div className="text-lg font-black text-slate-800 dark:text-slate-200 font-mono">{shiftBreakdown.siang}</div>
+                  <span className="text-[9px] text-slate-400 dark:text-slate-500">14:00 - 22:00</span>
+                </div>
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-gray-900/30 border border-slate-100 dark:border-gray-850/50 space-y-1">
+                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-tight">Shift 3</span>
+                  <div className="text-lg font-black text-slate-800 dark:text-slate-200 font-mono">{shiftBreakdown.malam}</div>
+                  <span className="text-[9px] text-slate-400 dark:text-slate-500">22:00 - 06:00</span>
+                </div>
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

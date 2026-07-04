@@ -50,7 +50,7 @@ export default function SOPage() {
       start: params.start,
       length: params.length,
       search: params.search || "",
-      order: [{ column: 0, dir: "desc" }],
+      order: params.order?.length ? params.order : [{ column: 0, dir: "desc" }],
       SD: dateFilter || "",
       tipe: "SO",
       columns: [
@@ -143,6 +143,7 @@ export default function SOPage() {
     {
       key: "noposto",
       header: "No SO",
+      sortColumn: 4,
       render: (p) => (
         <div>
           <span className="font-mono font-bold text-brand-600 dark:text-brand-400">{p.noposto}</span>
@@ -157,6 +158,7 @@ export default function SOPage() {
     {
       key: "tanggalString",
       header: "Tgl SO",
+      sortColumn: 3,
       render: (p) => (
         <div className="text-xs font-mono text-gray-500">
           <div>{p.tanggalString}</div>
@@ -169,6 +171,7 @@ export default function SOPage() {
     {
       key: "transportString",
       header: "Transportir",
+      sortColumn: 9,
       render: (p) => (
         <div>
           <div className="text-sm font-medium">{p.transportString || "-"}</div>
