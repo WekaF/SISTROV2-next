@@ -63,7 +63,7 @@ export default function PostoPage() {
       start: params.start,
       length: params.length,
       search: params.search || "",
-      order: [{ column: 3, dir: "desc" }],
+      order: params.order?.length ? params.order : [{ column: 3, dir: "desc" }],
       SD: dateFilter || "",
       columns: [
         { data: "numberString",            name: "",              searchable: false, orderable: false },
@@ -255,54 +255,63 @@ export default function PostoPage() {
       key: "noposto",
       header: "No POSTO",
       searchable: true,
+      sortColumn: 4,
       render: (p) => <span className="font-mono font-bold text-xs">{p.noposto || p.id}</span>,
     },
     {
       key: "tanggalString",
       header: "Tanggal",
       searchable: true,
+      sortColumn: 3,
       render: (p) => <span className="text-gray-500 dark:text-gray-400 font-mono text-xs whitespace-nowrap">{p.tanggalString}</span>,
     },
     {
       key: "tglakhirString",
       header: "Batas",
       searchable: true,
+      sortColumn: 5,
       render: (p) => <span className="text-gray-500 dark:text-gray-400 font-mono text-xs whitespace-nowrap">{p.tglakhirString || "-"}</span>,
     },
     {
       key: "tanggaljatuhtempoString",
       header: "Jatuh Tempo",
       searchable: true,
+      sortColumn: 20,
       render: (p) => <span className="text-gray-500 dark:text-gray-400 font-mono text-xs whitespace-nowrap">{p.tanggaljatuhtempoString || "-"}</span>,
     },
     {
       key: "wilayah",
       header: "Wilayah",
       searchable: true,
+      sortColumn: 2,
       render: (p) => <span className="font-medium text-xs">{p.wilayah || "-"}</span>,
     },
     {
       key: "asalString",
       header: "Asal",
       searchable: true,
+      sortColumn: 6,
       render: (p) => <span className="text-xs">{p.asalString || p.asal || "-"}</span>,
     },
     {
       key: "tujuanString",
       header: "Tujuan",
       searchable: true,
+      sortColumn: 7,
       render: (p) => <span className="text-xs">{p.tujuanString || p.tujuan || "-"}</span>,
     },
     {
       key: "bagian",
       header: "Area",
       searchable: true,
+      sortColumn: 8,
       render: (p) => <span className="text-xs">{p.bagian || "-"}</span>,
     },
     {
       key: "transportString",
       header: "Transportir",
       searchable: true,
+      sortColumn: 9,
       render: (p) => (
         <div>
           <div className="text-xs font-medium">{p.transportString || "-"}</div>
@@ -314,6 +323,7 @@ export default function PostoPage() {
       key: "produkString",
       header: "Produk",
       searchable: true,
+      sortColumn: 10,
       render: (p) => (
         <div className="flex items-center gap-1.5">
           <Package className="h-3.5 w-3.5 text-brand-500 shrink-0" />
@@ -327,6 +337,7 @@ export default function PostoPage() {
       headerClassName: "text-right",
       className: "text-right font-bold",
       searchable: true,
+      sortColumn: 11,
       render: (p) => <span className="text-xs">{(p.qty || 0).toLocaleString()}</span>,
     },
     {
@@ -335,6 +346,7 @@ export default function PostoPage() {
       headerClassName: "text-right",
       className: "text-right",
       searchable: true,
+      sortColumn: 12,
       render: (p) => <span className="text-xs">{(p.qtyrencana || 0).toLocaleString()}</span>,
     },
     {
@@ -343,6 +355,7 @@ export default function PostoPage() {
       headerClassName: "text-right",
       className: "text-right",
       searchable: true,
+      sortColumn: 13,
       render: (p) => <span className="text-xs text-amber-600 dark:text-amber-400">{(p.qtysisaBooking ?? 0).toLocaleString()}</span>,
     },
     {
@@ -351,6 +364,7 @@ export default function PostoPage() {
       headerClassName: "text-right",
       className: "text-right",
       searchable: true,
+      sortColumn: 14,
       render: (p) => <span className="text-xs text-emerald-600 dark:text-emerald-400 font-bold">{(p.qtyrealisasi || 0).toLocaleString()}</span>,
     },
     {
@@ -359,12 +373,14 @@ export default function PostoPage() {
       headerClassName: "text-right",
       className: "text-right",
       searchable: true,
+      sortColumn: 15,
       render: (p) => <span className="text-xs">{(p.qtysisaRealisasi ?? 0).toLocaleString()}</span>,
     },
     {
       key: "cutoff",
       header: "CutOff",
       searchable: true,
+      sortColumn: 16,
       render: (p) => (
         <span className={`text-xs font-medium ${(p.cutoff || "").includes("Cut Off (") ? "text-red-500" : "text-gray-400"}`}>
           {p.cutoff || "Belum Cut Off"}
@@ -375,18 +391,21 @@ export default function PostoPage() {
       key: "kapal",
       header: "Kapal",
       searchable: true,
+      sortColumn: 17,
       render: (p) => <span className="text-xs">{p.kapal || "-"}</span>,
     },
     {
       key: "kotatujuan",
       header: "Kota Tujuan",
       searchable: true,
+      sortColumn: 18,
       render: (p) => <span className="text-xs">{p.kotatujuan || "-"}</span>,
     },
     {
       key: "updatedby",
       header: "PIC",
       searchable: true,
+      sortColumn: 19,
       render: (p) => <span className="text-xs text-gray-500 dark:text-gray-400">{p.updatedby || "-"}</span>,
     },
     {
