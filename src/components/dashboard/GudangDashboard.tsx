@@ -77,7 +77,7 @@ export default function GudangDashboard() {
         search: { value: params.search },
         companyCode: activeCompanyCode ?? undefined,
         position,
-        order: [{ column: 0, dir: "desc" }],
+        order: params.order?.length ? params.order : [{ column: 0, dir: "desc" }],
         columns: [
           { data: "bookingno", name: "bookingno", searchable: true, orderable: true },
           { data: "nopol", name: "nopol", searchable: true, orderable: true },
@@ -101,6 +101,7 @@ export default function GudangDashboard() {
     {
       key: "bookingno",
       header: "No Booking / Tiket",
+      sortColumn: 0,
       render: (t) => (
         <div className="flex flex-col">
           <span className="font-mono font-bold text-gray-900 dark:text-white">{t.bookingno}</span>
@@ -111,16 +112,19 @@ export default function GudangDashboard() {
     {
       key: "nopol",
       header: "Plat Nomor",
+      sortColumn: 1,
       render: (t) => <span className="font-bold font-mono text-gray-800 dark:text-gray-200">{t.nopol}</span>,
     },
     {
       key: "driver",
       header: "Driver",
+      sortColumn: 2,
       render: (t) => <span className="text-gray-600 dark:text-gray-400">{t.driver}</span>,
     },
     {
       key: "produkString",
       header: "Produk",
+      sortColumn: 3,
       render: (t) => <span className="font-semibold text-brand-600 dark:text-brand-400">{t.produkString}</span>,
     },
     {
