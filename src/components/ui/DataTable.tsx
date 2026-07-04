@@ -176,33 +176,42 @@ export function DataTable<T>({
         <table className="w-full text-left text-sm border-collapse">
           <thead className={borderless ? "bg-gray-50/30 dark:bg-white/[0.01]" : "bg-gray-50/50 dark:bg-white/[0.02]"}>
             <tr className={borderless ? "" : "border-b border-gray-100 dark:border-gray-800"}>
-              {columns.map((col) => (
-                <th
-                  key={col.key}
-                  onClick={() => handleSort(col)}
-                  className={cn(
-                    "px-4 text-[10px] font-black uppercase text-gray-400 dark:text-gray-500 tracking-[0.2em] whitespace-nowrap",
-                    compact ? "py-1" : "py-4",
-                    col.sortColumn !== undefined && "cursor-pointer select-none hover:text-gray-600 dark:hover:text-gray-300",
-                    col.headerClassName
-                  )}
-                >
-                  <span className="inline-flex items-center gap-1">
-                    {col.header}
-                    {col.sortColumn !== undefined && (
-                      sort?.column === col.sortColumn ? (
-                        sort.dir === "asc" ? (
-                          <ArrowUp className="h-3 w-3 shrink-0" />
-                        ) : (
-                          <ArrowDown className="h-3 w-3 shrink-0" />
-                        )
-                      ) : (
-                        <ArrowUpDown className="h-3 w-3 shrink-0 opacity-30" />
-                      )
+              {columns.map((col) => {
+                const isSortable = col.sortColumn !== undefined;
+                const isActiveSort = isSortable && sort?.column === col.sortColumn;
+                return (
+                  <th
+                    key={col.key}
+                    aria-sort={isSortable ? (isActiveSort ? (sort!.dir === "asc" ? "ascending" : "descending") : "none") : undefined}
+                    className={cn(
+                      "px-4 text-[10px] font-black uppercase text-gray-400 dark:text-gray-500 tracking-[0.2em] whitespace-nowrap",
+                      compact ? "py-1" : "py-4",
+                      col.headerClassName
                     )}
-                  </span>
-                </th>
-              ))}
+                  >
+                    {isSortable ? (
+                      <button
+                        type="button"
+                        onClick={() => handleSort(col)}
+                        className="inline-flex items-center gap-1 uppercase tracking-[0.2em] cursor-pointer select-none hover:text-gray-600 dark:hover:text-gray-300"
+                      >
+                        {col.header}
+                        {isActiveSort ? (
+                          sort!.dir === "asc" ? (
+                            <ArrowUp className="h-3 w-3 shrink-0" />
+                          ) : (
+                            <ArrowDown className="h-3 w-3 shrink-0" />
+                          )
+                        ) : (
+                          <ArrowUpDown className="h-3 w-3 shrink-0 opacity-30" />
+                        )}
+                      </button>
+                    ) : (
+                      <span className="inline-flex items-center gap-1">{col.header}</span>
+                    )}
+                  </th>
+                );
+              })}
             </tr>
             {hasColumnSearch && (
               <tr className="bg-white dark:bg-gray-900 border-b border-gray-50 dark:border-gray-800">
