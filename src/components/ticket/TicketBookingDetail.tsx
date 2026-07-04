@@ -476,6 +476,7 @@ export function TicketBookingDetail({ guid }: TicketBookingDetailProps) {
                     key: "bookingno",
                     header: "No. Booking",
                     headerClassName: "bg-gray-50/50 dark:bg-white/[0.02] py-6",
+                    sortColumn: 1,
                     render: (row: any) => (
                       <div className="font-black text-brand-600 font-mono text-sm tracking-tighter">
                         {row.bookingno}
@@ -486,6 +487,7 @@ export function TicketBookingDetail({ guid }: TicketBookingDetailProps) {
                     key: "tanggalString",
                     header: "Tanggal Muat",
                     headerClassName: "bg-gray-50/50 dark:bg-white/[0.02] py-6",
+                    sortColumn: 2,
                     render: (row: any) => (
                       <div className="text-sm font-bold text-gray-600 dark:text-gray-400">
                         {row.tanggalString}
@@ -496,6 +498,7 @@ export function TicketBookingDetail({ guid }: TicketBookingDetailProps) {
                     key: "shift",
                     header: "Shift",
                     headerClassName: "bg-gray-50/50 dark:bg-white/[0.02] py-6 text-center",
+                    sortColumn: 3,
                     render: (row: any) => (
                       <div className="text-center font-black text-gray-900 dark:text-white">
                         {row.shift}
@@ -506,6 +509,7 @@ export function TicketBookingDetail({ guid }: TicketBookingDetailProps) {
                     key: "nopol",
                     header: "Nopol",
                     headerClassName: "bg-gray-50/50 dark:bg-white/[0.02] py-6",
+                    sortColumn: 4,
                     render: (row: any) => (
                       <div className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight">
                         {row.nopol}
@@ -516,6 +520,7 @@ export function TicketBookingDetail({ guid }: TicketBookingDetailProps) {
                     key: "driver",
                     header: "Driver",
                     headerClassName: "bg-gray-50/50 dark:bg-white/[0.02] py-6",
+                    sortColumn: 5,
                     render: (row: any) => (
                       <div className="text-sm font-bold text-gray-500 uppercase truncate max-w-[150px]">
                         {row.driver || "-"}
@@ -526,6 +531,7 @@ export function TicketBookingDetail({ guid }: TicketBookingDetailProps) {
                     key: "qty",
                     header: "Qty",
                     headerClassName: "bg-gray-50/50 dark:bg-white/[0.02] py-6 text-right",
+                    sortColumn: 6,
                     render: (row: any) => (
                       <div className="text-right font-black text-brand-600">
                         {row.qty} <span className="text-[9px] text-gray-400">TON</span>
@@ -536,6 +542,7 @@ export function TicketBookingDetail({ guid }: TicketBookingDetailProps) {
                     key: "updatedonString",
                     header: "Tanggal Pesan",
                     headerClassName: "bg-gray-50/50 dark:bg-white/[0.02] py-6",
+                    sortColumn: 7,
                     render: (row: any) => (
                       <div className="text-sm font-medium text-gray-400">
                         {row.updatedonString}
