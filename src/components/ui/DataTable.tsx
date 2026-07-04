@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
-import { Search, RefreshCw, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { Search, RefreshCw, ChevronLeft, ChevronRight, Loader2, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ export interface DataTableColumn<T> {
   className?: string;
   headerClassName?: string;
   searchable?: boolean; // New: enable column search
+  sortColumn?: number; // Backend DataTables column index to sort by when this header is clicked. Omit to make the column unsortable.
   render?: (row: T, index: number) => React.ReactNode;
 }
 
@@ -73,6 +74,7 @@ export function DataTable<T>({
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(defaultPageSize);
   const [draw, setDraw] = useState(1);
+  const [sort, setSort] = useState<{ column: number; dir: "asc" | "desc" } | null>(null);
 
   // Global search debounce
   useEffect(() => {
@@ -92,7 +94,17 @@ export function DataTable<T>({
     return () => clearTimeout(t);
   }, [columnFilters]);
 
-  const fullKey = [...queryKey, debouncedSearch, debouncedColumnFilters, page, pageSize];
+  const handleSort = (col: DataTableColumn<T>) => {
+    if (col.sortColumn === undefined) return;
+    setSort((prev) =>
+      prev && prev.column === col.sortColumn
+        ? { column: col.sortColumn as number, dir: prev.dir === "asc" ? "desc" : "asc" }
+        : { column: col.sortColumn as number, dir: "asc" }
+    );
+    setPage(0);
+  };
+
+  const fullKey = [...queryKey, debouncedSearch, debouncedColumnFilters, page, pageSize, sort];
 
   const { data, isLoading, isFetching } = useQuery({
     queryKey: fullKey,
@@ -103,6 +115,7 @@ export function DataTable<T>({
         length: pageSize,
         search: debouncedSearch,
         columnFilters: debouncedColumnFilters,
+        order: sort ? [sort] : undefined,
       }),
     refetchInterval,
   });
@@ -166,13 +179,28 @@ export function DataTable<T>({
               {columns.map((col) => (
                 <th
                   key={col.key}
+                  onClick={() => handleSort(col)}
                   className={cn(
                     "px-4 text-[10px] font-black uppercase text-gray-400 dark:text-gray-500 tracking-[0.2em] whitespace-nowrap",
                     compact ? "py-1" : "py-4",
+                    col.sortColumn !== undefined && "cursor-pointer select-none hover:text-gray-600 dark:hover:text-gray-300",
                     col.headerClassName
                   )}
                 >
-                  {col.header}
+                  <span className="inline-flex items-center gap-1">
+                    {col.header}
+                    {col.sortColumn !== undefined && (
+                      sort?.column === col.sortColumn ? (
+                        sort.dir === "asc" ? (
+                          <ArrowUp className="h-3 w-3 shrink-0" />
+                        ) : (
+                          <ArrowDown className="h-3 w-3 shrink-0" />
+                        )
+                      ) : (
+                        <ArrowUpDown className="h-3 w-3 shrink-0 opacity-30" />
+                      )
+                    )}
+                  </span>
                 </th>
               ))}
             </tr>
