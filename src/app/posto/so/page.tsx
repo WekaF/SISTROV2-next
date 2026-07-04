@@ -184,6 +184,7 @@ export default function SOPage() {
     {
       key: "produkString",
       header: "Produk",
+      sortColumn: 10,
       render: (p) => (
         <div className="flex items-center gap-2">
           <Package className="h-4 w-4 text-brand-500 shrink-0" />
@@ -194,6 +195,7 @@ export default function SOPage() {
     {
       key: "qty",
       header: "Kuantitas",
+      sortColumn: 11,
       headerClassName: "text-right",
       className: "text-right",
       render: (p) => (
@@ -206,6 +208,7 @@ export default function SOPage() {
     {
       key: "qtyrencana",
       header: "Booking",
+      sortColumn: 12,
       headerClassName: "text-right",
       className: "text-right",
       render: (p) => (
@@ -221,6 +224,7 @@ export default function SOPage() {
     {
       key: "qtyrealisasi",
       header: "Realisasi",
+      sortColumn: 14,
       headerClassName: "text-right",
       className: "text-right",
       render: (p) => (
@@ -236,6 +240,7 @@ export default function SOPage() {
     {
       key: "asalString",
       header: "Asal / Tujuan",
+      sortColumn: 6,
       render: (p) => (
         <div className="text-xs">
           <div className="font-medium">{p.asalString || p.asal || "-"}</div>
@@ -246,6 +251,7 @@ export default function SOPage() {
     {
       key: "bagian",
       header: "Area",
+      sortColumn: 8,
       render: (p) => (
         <div className="text-xs">
           <div className="font-medium">{p.wilayah || "-"}</div>
