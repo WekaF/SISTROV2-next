@@ -128,6 +128,8 @@ export default function LogKuotaPage() {
           { data: "number", name: "tanggalupdate", searchable: false, orderable: false },
           { data: "tanggal", name: "tanggal", searchable: false, orderable: true },
           { data: "tipe", name: "action", searchable: true, orderable: false },
+          // scope is orderable:true in the export-only fetchFullData columns array above,
+          // but orderable:false here — the live endpoint doesn't support sorting by it. Don't "fix" this to match the export array.
           { data: "scope", name: "scope", searchable: true, orderable: false },
           { data: "produk", name: "produk", searchable: true, orderable: false },
           { data: "before", name: "before", searchable: false, orderable: false },
