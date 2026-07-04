@@ -128,6 +128,7 @@ export default function LaporanPembatalanPage() {
         start: params.start,
         length: params.length,
         search: params.search || "",
+        order: params.order?.length ? params.order : [{ column: 0, dir: "desc" }],
         SD: filters.SD,
         ED: filters.ED,
         company: activeCompanyCode || "",
@@ -161,9 +162,9 @@ export default function LaporanPembatalanPage() {
 
   const columns: DataTableColumn<CancelRow>[] = [
     { key: "number", header: "No", render: (r) => <span>{r.number}</span> },
-    { key: "posto", header: "POSTO", render: (r) => <span className="font-mono text-xs">{r.posto}</span> },
+    { key: "posto", header: "POSTO", sortColumn: 1, render: (r) => <span className="font-mono text-xs">{r.posto}</span> },
     { key: "tanggalPOSTO", header: "Tgl POSTO", render: (r) => <span className="text-xs">{r.tanggalPOSTO}</span> },
-    { key: "bookingno", header: "Booking No", render: (r) => <span className="font-mono text-xs">{r.bookingno}</span> },
+    { key: "bookingno", header: "Booking No", sortColumn: 3, render: (r) => <span className="font-mono text-xs">{r.bookingno}</span> },
     { key: "qty", header: "Qty (ton)", render: (r) => <span className="text-right block">{r.qty?.toLocaleString("id-ID")}</span> },
     { key: "tanggalString", header: "Tgl Booking", render: (r) => <span className="text-xs">{r.tanggalString}</span> },
     { key: "shift", header: "Shift", render: (r) => <span>{r.shift}</span> },

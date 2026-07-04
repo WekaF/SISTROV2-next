@@ -133,6 +133,7 @@ export default function LaporanTiketPage() {
         start: params.start,
         length: params.length,
         search: params.search || "",
+        order: params.order?.length ? params.order : [{ column: 0, dir: "desc" }],
         SD: filters.SD,
         ED: filters.ED,
         tiketstatus: filters.tiketstatus,
@@ -168,20 +169,20 @@ export default function LaporanTiketPage() {
 
   const columns: DataTableColumn<TiketRow>[] = [
     { key: "number", header: "No", render: (r) => <span>{r.number}</span> },
-    { key: "posto", header: "POSTO", render: (r) => <span className="font-mono text-xs">{r.posto}</span> },
-    { key: "tanggalPOSTO", header: "Tgl POSTO", render: (r) => <span className="text-xs">{r.tanggalPOSTO}</span> },
-    { key: "bookingno", header: "Booking No", render: (r) => <span className="font-mono text-xs">{r.bookingno}</span> },
-    { key: "qty", header: "Qty (ton)", render: (r) => <span className="text-right block">{r.qty?.toLocaleString("id-ID")}</span> },
-    { key: "tanggalString", header: "Tgl Booking", render: (r) => <span className="text-xs">{r.tanggalString}</span> },
+    { key: "posto", header: "POSTO", sortColumn: 1, render: (r) => <span className="font-mono text-xs">{r.posto}</span> },
+    { key: "tanggalPOSTO", header: "Tgl POSTO", sortColumn: 2, render: (r) => <span className="text-xs">{r.tanggalPOSTO}</span> },
+    { key: "bookingno", header: "Booking No", sortColumn: 3, render: (r) => <span className="font-mono text-xs">{r.bookingno}</span> },
+    { key: "qty", header: "Qty (ton)", sortColumn: 4, render: (r) => <span className="text-right block">{r.qty?.toLocaleString("id-ID")}</span> },
+    { key: "tanggalString", header: "Tgl Booking", sortColumn: 5, render: (r) => <span className="text-xs">{r.tanggalString}</span> },
     { key: "shift", header: "Shift", render: (r) => <span>{r.shift}</span> },
-    { key: "produkString", header: "Produk", render: (r) => <span>{r.produkString}</span> },
+    { key: "produkString", header: "Produk", sortColumn: 7, render: (r) => <span>{r.produkString}</span> },
     { key: "transportString", header: "Transportir", render: (r) => <span>{r.transportString}</span> },
-    { key: "nopol", header: "Nopol", render: (r) => <span className="font-mono text-xs">{r.nopol}</span> },
-    { key: "driver", header: "Driver", render: (r) => <span>{r.driver}</span> },
+    { key: "nopol", header: "Nopol", sortColumn: 9, render: (r) => <span className="font-mono text-xs">{r.nopol}</span> },
+    { key: "driver", header: "Driver", sortColumn: 10, render: (r) => <span>{r.driver}</span> },
     { key: "asal", header: "Asal", render: (r) => <span className="text-xs">{r.asal}</span> },
     { key: "tujuan", header: "Tujuan", render: (r) => <span className="text-xs">{r.tujuan}</span> },
     { key: "statuspemuatan", header: "Status Muat", render: (r) => <span className="text-xs">{r.statuspemuatan}</span> },
-    { key: "positionString", header: "Posisi", render: (r) => <span className="text-xs">{r.positionString}</span> },
+    { key: "positionString", header: "Posisi", sortColumn: 14, render: (r) => <span className="text-xs">{r.positionString}</span> },
   ];
 
   return (

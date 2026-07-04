@@ -122,6 +122,7 @@ export default function ResumeBookingPage() {
         start: params.start,
         length: params.length,
         search: params.search || "",
+        order: params.order?.length ? params.order : [{ column: 0, dir: "desc" }],
         SD: filters.SD,
         ED: filters.ED,
         company: activeCompanyCode || "",
@@ -152,16 +153,16 @@ export default function ResumeBookingPage() {
 
   const columns: DataTableColumn<ResumeRow>[] = [
     { key: "number", header: "No", render: (r) => <span>{r.number}</span> },
-    { key: "bookingno", header: "Booking No", render: (r) => <span className="font-mono text-xs">{r.bookingno}</span> },
-    { key: "posto", header: "POSTO", render: (r) => <span className="font-mono text-xs">{r.posto}</span> },
-    { key: "tanggalString", header: "Tgl Booking", render: (r) => <span className="text-xs">{r.tanggalString}</span> },
-    { key: "nopol", header: "Nopol", render: (r) => <span className="font-mono text-xs">{r.nopol}</span> },
-    { key: "driver", header: "Driver", render: (r) => <span>{r.driver}</span> },
+    { key: "bookingno", header: "Booking No", sortColumn: 1, render: (r) => <span className="font-mono text-xs">{r.bookingno}</span> },
+    { key: "posto", header: "POSTO", sortColumn: 2, render: (r) => <span className="font-mono text-xs">{r.posto}</span> },
+    { key: "tanggalString", header: "Tgl Booking", sortColumn: 3, render: (r) => <span className="text-xs">{r.tanggalString}</span> },
+    { key: "nopol", header: "Nopol", sortColumn: 4, render: (r) => <span className="font-mono text-xs">{r.nopol}</span> },
+    { key: "driver", header: "Driver", sortColumn: 5, render: (r) => <span>{r.driver}</span> },
     { key: "produkString", header: "Produk", render: (r) => <span>{r.produkString}</span> },
-    { key: "qty", header: "Qty (ton)", render: (r) => <span className="text-right block">{r.qty?.toLocaleString("id-ID")}</span> },
+    { key: "qty", header: "Qty (ton)", sortColumn: 7, render: (r) => <span className="text-right block">{r.qty?.toLocaleString("id-ID")}</span> },
     { key: "asal", header: "Asal", render: (r) => <span className="text-xs">{r.asal}</span> },
     { key: "tujuan", header: "Tujuan", render: (r) => <span className="text-xs">{r.tujuan}</span> },
-    { key: "positionString", header: "Status", render: (r) => <span className="text-xs">{r.positionString}</span> },
+    { key: "positionString", header: "Status", sortColumn: 10, render: (r) => <span className="text-xs">{r.positionString}</span> },
   ];
 
   return (
