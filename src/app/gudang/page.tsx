@@ -102,6 +102,16 @@ export default function GudangListPage() {
   const fetchGudang = useCallback(async (params: any) => {
     const res = await apiTable("/api/Gudang/DataMapping", {
       ...params,
+      order: params.order?.length ? params.order : [{ column: 0, dir: "desc" }],
+      columns: [
+        { data: "id", name: "id", orderable: true },
+        { data: "namagudang", name: "Gudang_SPPT.deskripsi", orderable: true },
+        { data: "namaproduk", name: "Produk1.Nama", orderable: true },
+        { data: "antrianproduk", name: "antrian", orderable: true },
+        { data: "antriangudang", name: "Gudang_SPPT.antrian", orderable: true },
+        { data: "stok", name: "stock", orderable: true },
+        { data: "Aktif", name: "aktif", orderable: true },
+      ],
       cmd: "refresh",
       companyCode: activeCompanyCode
     });
@@ -222,34 +232,40 @@ export default function GudangListPage() {
     {
       key: "namagudang",
       header: "Gudang",
+      sortColumn: 1,
       render: (row) => <span className="font-black text-slate-800 dark:text-white uppercase tracking-tight">{row.namagudang}</span>
     },
     {
       key: "namaproduk",
       header: "Produk",
+      sortColumn: 2,
       render: (row) => <span className="font-bold text-slate-500">{row.namaproduk}</span>
     },
     {
       key: "antrianproduk",
       header: "Antrian Produk",
       className: "text-center",
+      sortColumn: 3,
       render: (row) => <span className="font-bold">{row.antrianproduk} <span className="text-[10px] text-gray-400 font-bold">TRUK</span></span>
     },
     {
       key: "antriangudang",
       header: "Antrian Total",
       className: "text-center",
+      sortColumn: 4,
       render: (row) => <span className="font-bold">{row.antriangudang} <span className="text-[10px] text-gray-400 font-bold">TRUK</span></span>
     },
     {
       key: "stok",
       header: "Stok Tonase",
       className: "text-right",
+      sortColumn: 5,
       render: (row) => <span className="font-black text-brand-600 text-lg">{row.stok.toLocaleString()} <span className="text-[10px] uppercase">Ton</span></span>
     },
     {
       key: "Aktif",
       header: "Status",
+      sortColumn: 6,
       render: (row) => {
         // Detect active status from HTML badge string or standard boolean/string
         const aktifStr = String(row.Aktif || "").toLowerCase();

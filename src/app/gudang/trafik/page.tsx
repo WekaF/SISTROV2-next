@@ -23,6 +23,17 @@ export default function GudangTrafficPage() {
     async (params: any) => {
       const res = await apiTable("/api/Gudang/TrafficGudang", {
         ...params,
+        // Preserve the prior implicit default (apiTable's own fallback: column 0 / "id" / desc)
+        // now that an explicit columns array is provided below.
+        order: params.order?.length ? params.order : [{ column: 0, dir: "desc" }],
+        columns: [
+          { data: "id", name: "id", orderable: true },
+          { data: "tujuan", name: "Posto1.Gudang1.Deskripsi", orderable: true },
+          // qty is a per-ticket field on the pre-GroupBy query; the backend applies OrderBy
+          // before summing into totals, so sorting by it would order raw rows, not the
+          // aggregated "Total Tonase" shown here. Not wired to sortColumn — don't "fix" this.
+          { data: "qty", name: "qty", orderable: false },
+        ],
         cmd: "refresh",
         companyCode: activeCompanyCode,
       });
@@ -49,6 +60,7 @@ export default function GudangTrafficPage() {
     {
       key: "tujuan",
       header: "Tujuan Pengiriman",
+      sortColumn: 1,
       render: (row) => (
         <div className="flex items-center gap-3">
           <div className="w-2 h-2 rounded-full bg-brand-500 shadow-sm shadow-brand-500/50" />

@@ -35,15 +35,20 @@ export default function UnitQueuePage() {
   const roles: string[] = (session?.user as any)?.roles ?? [];
   const isGudangFull = hasGudangAccess(role, roles);
 
+  // Index into this array is what visual columns' sortColumn refers to; the local
+  // fetcher below (all data is already in memory, not server-paginated) sorts by it.
+  const sortKeys: (keyof GudangQueueItem)[] = ["namagudang", "namaproduk", "antrianproduk", "antriangudang", "stok", "Aktif"];
+
   const columns: DataTableColumn<GudangQueueItem>[] = [
     { key: "no", header: "No", className: "text-center", headerClassName: "text-center", render: (_, i) => <span className="text-xs text-slate-400 font-bold">{i + 1}</span> },
-    { key: "namagudang", header: "Gudang", render: (row) => <span className="font-black text-slate-800 dark:text-white uppercase text-xs">{row.namagudang}</span> },
-    { key: "namaproduk", header: "Produk", render: (row) => <span className="text-slate-600 dark:text-slate-400 text-xs font-bold">{row.namaproduk}</span> },
-    { 
-      key: "antrianproduk", 
-      header: "Antrian Produk", 
-      className: "text-center", 
+    { key: "namagudang", header: "Gudang", sortColumn: 0, render: (row) => <span className="font-black text-slate-800 dark:text-white uppercase text-xs">{row.namagudang}</span> },
+    { key: "namaproduk", header: "Produk", sortColumn: 1, render: (row) => <span className="text-slate-600 dark:text-slate-400 text-xs font-bold">{row.namaproduk}</span> },
+    {
+      key: "antrianproduk",
+      header: "Antrian Produk",
+      className: "text-center",
       headerClassName: "text-center",
+      sortColumn: 2,
       render: (row) => (
         <div className="flex flex-col items-center">
           <span className="font-bold text-slate-900 dark:text-white">{row.antrianproduk}</span>
@@ -51,11 +56,12 @@ export default function UnitQueuePage() {
         </div>
       )
     },
-    { 
-      key: "antriangudang", 
-      header: "Antrian Total", 
-      className: "text-center", 
+    {
+      key: "antriangudang",
+      header: "Antrian Total",
+      className: "text-center",
       headerClassName: "text-center",
+      sortColumn: 3,
       render: (row) => (
         <div className="flex flex-col items-center">
           <span className={cn(
@@ -69,11 +75,12 @@ export default function UnitQueuePage() {
         </div>
       )
     },
-    { 
-      key: "stok", 
-      header: "Stok", 
-      className: "text-right", 
+    {
+      key: "stok",
+      header: "Stok",
+      className: "text-right",
       headerClassName: "text-right",
+      sortColumn: 4,
       render: (row) => (
         <div className="text-right">
           <span className="font-black text-brand-600">{row.stok.toLocaleString()}</span>
@@ -81,11 +88,12 @@ export default function UnitQueuePage() {
         </div>
       )
     },
-    { 
-      key: "Aktif", 
-      header: "Status", 
-      className: "text-center", 
+    {
+      key: "Aktif",
+      header: "Status",
+      className: "text-center",
       headerClassName: "text-center",
+      sortColumn: 5,
       render: (row) => {
         const isAktif = row.Aktif === "1" || row.Aktif === "True" || row.Aktif === true;
         return (
@@ -365,11 +373,26 @@ export default function UnitQueuePage() {
             <DataTable
               columns={columns}
               queryKey={["gudang-unit-queue-local", activeCompanyCode]}
-              fetcher={async () => ({
-                data: items,
-                recordsTotal: items.length,
-                recordsFiltered: items.length
-              })}
+              fetcher={async (params) => {
+                let data = items;
+                const order = params.order?.[0];
+                const sortKey = order ? sortKeys[order.column] : undefined;
+                if (sortKey) {
+                  data = [...items].sort((a, b) => {
+                    const av = a[sortKey];
+                    const bv = b[sortKey];
+                    const cmp = typeof av === "number" && typeof bv === "number"
+                      ? av - bv
+                      : String(av).localeCompare(String(bv));
+                    return order!.dir === "asc" ? cmp : -cmp;
+                  });
+                }
+                return {
+                  data,
+                  recordsTotal: items.length,
+                  recordsFiltered: items.length
+                };
+              }}
               rowKey={(r) => `${r.idgudang}-${r.idproduk}`}
               striped
               compact

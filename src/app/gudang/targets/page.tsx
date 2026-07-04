@@ -63,6 +63,16 @@ export default function GudangTargetsPage() {
     (params: any) =>
       apiTable("/api/Gudang/DataMapping", {
         ...params,
+        order: params.order?.length ? params.order : [{ column: 0, dir: "desc" }],
+        columns: [
+          { data: "id", name: "id", orderable: true },
+          { data: "namagudang", name: "Gudang_SPPT.deskripsi", orderable: true },
+          { data: "namaproduk", name: "Produk1.Nama", orderable: true },
+          { data: "antriangudang", name: "Gudang_SPPT.antrian", orderable: true },
+          { data: "antrianproduk", name: "antrian", orderable: true },
+          { data: "stok", name: "stock", orderable: true },
+          { data: "Aktif", name: "aktif", orderable: true },
+        ],
         cmd: "refresh",
         companyCode: activeCompanyCode,
       }),
@@ -92,6 +102,7 @@ export default function GudangTargetsPage() {
     {
       key: "namagudang",
       header: "Gudang Tujuan",
+      sortColumn: 1,
       render: (row) => (
         <div className="flex items-center gap-2">
           <MapPin className="h-4 w-4 text-brand-500 shrink-0" />
@@ -102,6 +113,7 @@ export default function GudangTargetsPage() {
     {
       key: "namaproduk",
       header: "Produk",
+      sortColumn: 2,
       render: (row) => (
         <div className="flex items-center gap-1.5">
           <Package className="h-3.5 w-3.5 text-slate-400" />
@@ -114,6 +126,7 @@ export default function GudangTargetsPage() {
       header: "Antrian Total",
       className: "text-center",
       headerClassName: "text-center",
+      sortColumn: 3,
       render: (row) => (
         <div className="flex flex-col items-center">
           <span className="font-black text-lg text-slate-900 dark:text-white">{row.antriangudang}</span>
@@ -126,6 +139,7 @@ export default function GudangTargetsPage() {
       header: "Antrian Produk",
       className: "text-center",
       headerClassName: "text-center",
+      sortColumn: 4,
       render: (row) => (
         <div className="flex flex-col items-center">
           <span className="font-bold text-slate-700 dark:text-slate-300">{row.antrianproduk}</span>
@@ -138,6 +152,7 @@ export default function GudangTargetsPage() {
       header: "Stok Tersedia",
       className: "text-right",
       headerClassName: "text-right",
+      sortColumn: 5,
       render: (row) => (
         <div className="text-right">
           <span className="font-black text-xl text-brand-600">{row.stok.toLocaleString()}</span>
@@ -150,6 +165,7 @@ export default function GudangTargetsPage() {
       header: "Status",
       className: "text-center",
       headerClassName: "text-center",
+      sortColumn: 6,
       render: (row) => {
         const isAktif = row.Aktif === "1" || row.Aktif === "True" || row.Aktif === true;
         return (
