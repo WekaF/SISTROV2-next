@@ -8,63 +8,135 @@ import {
   ArrowUpRight, ArrowDownLeft, Clock, Info, CheckCircle2 
 } from "lucide-react";
 import Badge from "@/components/ui/badge/Badge";
+import { useApi } from "@/hooks/use-api";
+import { DataTable, type DataTableColumn, type DataTableParams } from "@/components/ui/DataTable";
 
-interface MockScan {
-  id: string;
-  time: string;
+interface TicketData {
+  bookingno: string;
+  tiketno?: string;
   nopol: string;
   driver: string;
-  status: "check-in" | "check-out";
-  verification: "valid" | "flagged";
-  type: string;
+  produkString: string;
+  transportString: string;
+  qty?: number;
+  position: string;
+  positionString?: string;
+  tanggalString: string;
 }
 
 export default function SecurityDashboard() {
   const { activeCompanyCode } = useCompany();
   const { data: streamData, status: streamStatus } = useStaffAreaStream(activeCompanyCode);
   const [mounted, setMounted] = useState(false);
-  const [scans, setScans] = useState<MockScan[]>([]);
+  const [activeTab, setActiveTab] = useState<"checkin" | "checkout" | "completed">("checkin");
+
+  const { apiTable, token } = useApi();
 
   useEffect(() => {
     setMounted(true);
-    // Generate realistic live scans
-    const initialScans: MockScan[] = [
-      { id: "TKT-550982", time: "10 min ago", nopol: "BG 8192 UA", driver: "Ahmad Fauzi", status: "check-in", verification: "valid", type: "Urea Bagged" },
-      { id: "TKT-550711", time: "15 min ago", nopol: "BG 8042 UR", driver: "Budi Santoso", status: "check-out", verification: "valid", type: "NPK Phonska" },
-      { id: "TKT-550804", time: "22 min ago", nopol: "L 9104 CR", driver: "Hendra Wijaya", status: "check-in", verification: "valid", type: "Urea Bulk" },
-      { id: "TKT-550119", time: "30 min ago", nopol: "B 9382 TQ", driver: "Supriyanto", status: "check-out", verification: "valid", type: "Organik" },
-      { id: "TKT-550412", time: "45 min ago", nopol: "DK 8820 PL", driver: "Made Yasa", status: "check-in", verification: "valid", type: "Urea Bagged" },
-    ];
-    setScans(initialScans);
-
-    // Periodically add new mock scans to make the dashboard feel "alive"
-    const interval = setInterval(() => {
-      const prefixes = ["BG", "L", "B", "DK", "D", "K"];
-      const randPrefix = prefixes[Math.floor(Math.random() * prefixes.length)];
-      const randNum = Math.floor(1000 + Math.random() * 9000);
-      const randSuf = String.fromCharCode(65 + Math.floor(Math.random() * 26)) + String.fromCharCode(65 + Math.floor(Math.random() * 26));
-      const drivers = ["Rudi Hermawan", "Eko Prasetyo", "Slamet Riadi", "Dedi Kurniawan", "Aris Munandar"];
-      const products = ["Urea Bagged", "Urea Bulk", "NPK Phonska", "Organik"];
-      const randomId = "TKT-" + Math.floor(550000 + Math.random() * 999);
-      
-      const newScan: MockScan = {
-        id: randomId,
-        time: "Just now",
-        nopol: `${randPrefix} ${randNum} ${randSuf}`,
-        driver: drivers[Math.floor(Math.random() * drivers.length)],
-        status: Math.random() > 0.5 ? "check-in" : "check-out",
-        verification: Math.random() > 0.95 ? "flagged" : "valid",
-        type: products[Math.floor(Math.random() * products.length)],
-      };
-
-      setScans(prev => [newScan, ...prev.slice(0, 4)].map((s, idx) => ({
-        ...s,
-        time: idx === 0 ? "Just now" : idx === 1 ? "2 min ago" : `${idx * 8} min ago`
-      })));
-    }, 20000);
-
-    return () => clearInterval(interval);
   }, []);
+
+  const fetcher = async (params: DataTableParams) => {
+    if (!token) return { data: [], recordsTotal: 0, recordsFiltered: 0 };
+    // Map tab to ticket position
+    const position = activeTab === "checkin" ? "00" : activeTab === "checkout" ? "06" : "07";
+    
+    try {
+      const result = await apiTable("/api/Tiket/DataTableFilterLegacy", {
+        draw: params.draw,
+        start: params.start,
+        length: params.length,
+        search: { value: params.search },
+        companyCode: activeCompanyCode ?? undefined,
+        position,
+        order: [{ column: 0, dir: "desc" }],
+        columns: [
+          { data: "tanggal", name: "tanggal", searchable: false, orderable: true },
+          { data: "bookingno", name: "bookingno", searchable: true, orderable: true },
+          { data: "nopol", name: "nopol", searchable: true, orderable: true },
+          { data: "driver", name: "driver", searchable: true, orderable: true },
+          { data: "produkString", name: "idproduk", searchable: true, orderable: true },
+        ]
+      });
+
+      return {
+        data: result?.data ?? [],
+        recordsTotal: result?.recordsTotal ?? 0,
+        recordsFiltered: result?.recordsFiltered ?? result?.recordsTotal ?? 0,
+      };
+    } catch (error) {
+      console.error("Security Tickets Fetch Error:", error);
+      return { data: [], recordsTotal: 0, recordsFiltered: 0 };
+    }
+  };
+
+  const columns: DataTableColumn<TicketData>[] = [
+    {
+      key: "bookingno",
+      header: "No Booking / Tiket",
+      render: (t) => (
+        <div className="flex flex-col font-mono text-xs">
+          <span className="font-bold text-gray-900 dark:text-white">{t.bookingno}</span>
+          {t.tiketno && <span className="text-[10px] text-gray-400">{t.tiketno}</span>}
+        </div>
+      ),
+    },
+    {
+      key: "nopol",
+      header: "Plat Nomor",
+      render: (t) => <span className="font-bold font-mono text-gray-800 dark:text-gray-200 text-xs">{t.nopol}</span>,
+    },
+    {
+      key: "driver",
+      header: "Driver",
+      render: (t) => <span className="text-gray-600 dark:text-gray-400 text-xs">{t.driver}</span>,
+    },
+    {
+      key: "produkString",
+      header: "Produk",
+      render: (t) => <span className="font-semibold text-slate-700 dark:text-slate-300 text-xs">{t.produkString}</span>,
+    },
+    {
+      key: "transportString",
+      header: "Transportir",
+      render: (t) => <span className="text-gray-500 text-[11px] truncate block max-w-[120px]">{t.transportString}</span>,
+    },
+    {
+      key: "position",
+      header: "Aksi Gate",
+      render: (t) => {
+        const isCheckIn = t.position === "00";
+        const isCheckOut = t.position === "06";
+        return (
+          <div className="inline-flex items-center gap-1">
+            {isCheckIn ? (
+              <span className="flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 rounded border border-amber-200/30 uppercase tracking-wider">
+                <ArrowUpRight className="h-3 w-3" /> Check In
+              </span>
+            ) : isCheckOut ? (
+              <span className="flex items-center gap-1 text-[10px] font-bold text-blue-600 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded border border-blue-200/30 uppercase tracking-wider">
+                <ArrowDownLeft className="h-3 w-3" /> Check Out
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded border border-emerald-200/30 uppercase tracking-wider">
+                <CheckCircle2 className="h-3 w-3" /> Selesai
+              </span>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      key: "positionString",
+      header: "Status Verifikasi",
+      render: (t) => (
+        <div className="flex items-center gap-1 text-xs">
+          <ShieldCheck className="h-4 w-4 text-emerald-600 shrink-0" />
+          <span className="font-semibold text-emerald-600">{t.positionString || "Valid"}</span>
+        </div>
+      ),
+    },
+  ];
 
   if (!mounted) return null;
 
@@ -167,67 +239,57 @@ export default function SecurityDashboard() {
         {/* Live Scans table */}
         <Card className="lg:col-span-2 border-gray-200 dark:border-gray-800">
           <CardHeader className="border-b border-gray-100 dark:border-gray-800 py-4 px-5">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <CardTitle className="text-base font-bold text-gray-900 dark:text-white">Live Gate Scan Activity</CardTitle>
                 <CardDescription className="text-xs text-gray-400">Log verifikasi tiket gerbang masuk & keluar</CardDescription>
               </div>
-              <Badge color="info" size="sm">Real-time Feed</Badge>
+              
+              {/* Tab Switcher */}
+              <div className="flex items-center gap-1 bg-gray-100 dark:bg-white/[0.04] p-1 rounded-lg self-start">
+                <button
+                  onClick={() => setActiveTab("checkin")}
+                  className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${
+                    activeTab === "checkin" 
+                      ? "bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm" 
+                      : "text-gray-500 hover:text-gray-800 dark:hover:text-gray-300"
+                  }`}
+                >
+                  Check In
+                </button>
+                <button
+                  onClick={() => setActiveTab("checkout")}
+                  className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${
+                    activeTab === "checkout" 
+                      ? "bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm" 
+                      : "text-gray-500 hover:text-gray-800 dark:hover:text-gray-300"
+                  }`}
+                >
+                  Check Out
+                </button>
+                <button
+                  onClick={() => setActiveTab("completed")}
+                  className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${
+                    activeTab === "completed" 
+                      ? "bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm" 
+                      : "text-gray-500 hover:text-gray-800 dark:hover:text-gray-300"
+                  }`}
+                >
+                  Selesai
+                </button>
+              </div>
             </div>
           </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-gray-50/50 dark:bg-white/[0.02] border-b border-gray-100 dark:border-gray-800 text-[10px] uppercase font-bold text-gray-500 tracking-wider">
-                    <th className="py-3 px-5">Time</th>
-                    <th className="py-3 px-5">Ticket ID</th>
-                    <th className="py-3 px-5">Plat Nomor</th>
-                    <th className="py-3 px-5">Driver</th>
-                    <th className="py-3 px-5">Product</th>
-                    <th className="py-3 px-5 text-center">Action</th>
-                    <th className="py-3 px-5 text-right">Verification</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-800 text-xs">
-                  {scans.map((scan) => (
-                    <tr key={scan.id} className="hover:bg-gray-50/40 dark:hover:bg-white/[0.01] transition-colors">
-                      <td className="py-3 px-5 font-mono text-gray-400">{scan.time}</td>
-                      <td className="py-3 px-5 font-mono font-bold text-gray-700 dark:text-gray-300">{scan.id}</td>
-                      <td className="py-3 px-5 font-bold font-mono text-gray-900 dark:text-white">{scan.nopol}</td>
-                      <td className="py-3 px-5 text-gray-600 dark:text-gray-400">{scan.driver}</td>
-                      <td className="py-3 px-5 text-gray-500">{scan.type}</td>
-                      <td className="py-3 px-5 text-center">
-                        <div className="inline-flex items-center gap-1">
-                          {scan.status === "check-in" ? (
-                            <span className="flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 rounded uppercase tracking-wider">
-                              <ArrowUpRight className="h-3 w-3" /> Check In
-                            </span>
-                          ) : (
-                            <span className="flex items-center gap-1 text-[10px] font-bold text-blue-600 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded uppercase tracking-wider">
-                              <ArrowDownLeft className="h-3 w-3" /> Check Out
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="py-3 px-5 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          {scan.verification === "valid" ? (
-                            <span className="flex items-center gap-1 text-emerald-600 font-semibold text-xs">
-                              <ShieldCheck className="h-4 w-4 shrink-0" /> Valid
-                            </span>
-                          ) : (
-                            <span className="flex items-center gap-1 text-red-600 font-semibold text-xs animate-pulse">
-                              <ShieldAlert className="h-4 w-4 shrink-0" /> Flagged
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+          <CardContent className="p-4">
+            <DataTable
+              key={activeTab} // Forces table re-render when changing tabs
+              columns={columns}
+              queryKey={["security-tickets", activeCompanyCode, activeTab]}
+              fetcher={fetcher}
+              defaultPageSize={5}
+              rowKey={(t) => t.bookingno}
+              searchPlaceholder="Cari Plat No, Driver, atau Booking No..."
+            />
           </CardContent>
         </Card>
 

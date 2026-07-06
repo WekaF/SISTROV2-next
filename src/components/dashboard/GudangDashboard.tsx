@@ -79,6 +79,7 @@ export default function GudangDashboard() {
         position,
         order: params.order?.length ? params.order : [{ column: 0, dir: "desc" }],
         columns: [
+          { data: "tanggal", name: "tanggal", searchable: false, orderable: true },
           { data: "bookingno", name: "bookingno", searchable: true, orderable: true },
           { data: "nopol", name: "nopol", searchable: true, orderable: true },
           { data: "driver", name: "driver", searchable: true, orderable: true },

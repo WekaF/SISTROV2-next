@@ -8,83 +8,124 @@ import {
   Clock, CheckCircle2, FileText, ArrowRightLeft 
 } from "lucide-react";
 import Badge from "@/components/ui/badge/Badge";
+import { useApi } from "@/hooks/use-api";
+import { DataTable, type DataTableColumn, type DataTableParams } from "@/components/ui/DataTable";
 
-interface MockWeighing {
-  id: string;
+interface TicketData {
+  bookingno: string;
+  tiketno?: string;
   nopol: string;
   driver: string;
-  produk: string;
-  bruto: number;
-  tara: number;
-  netto: number;
-  status: "kosong" | "isi" | "selesai";
-  time: string;
+  produkString: string;
+  transportString: string;
+  qty?: number;
+  position: string;
+  positionString?: string;
+  tanggalString: string;
 }
 
 export default function JBTDashboard() {
   const { activeCompanyCode } = useCompany();
   const { data: streamData, status: streamStatus } = useStaffAreaStream(activeCompanyCode);
   const [mounted, setMounted] = useState(false);
-  const [weighings, setWeighings] = useState<MockWeighing[]>([]);
+  const [activeTab, setActiveTab] = useState<"tara" | "bruto" | "completed">("tara");
+
+  const { apiTable, token } = useApi();
 
   useEffect(() => {
     setMounted(true);
-    const initialWeighings: MockWeighing[] = [
-      { id: "TKT-550982", nopol: "BG 8192 UA", driver: "Ahmad Fauzi", produk: "Urea Bagged", bruto: 18450, tara: 8450, netto: 10000, status: "selesai", time: "5 min ago" },
-      { id: "TKT-550711", nopol: "BG 8042 UR", driver: "Budi Santoso", produk: "NPK Phonska", bruto: 23200, tara: 8200, netto: 15000, status: "selesai", time: "12 min ago" },
-      { id: "TKT-550804", nopol: "L 9104 CR", driver: "Hendra Wijaya", produk: "Urea Bulk", bruto: 0, tara: 8500, netto: 0, status: "kosong", time: "20 min ago" },
-      { id: "TKT-550119", nopol: "B 9382 TQ", driver: "Supriyanto", produk: "Organik", bruto: 20120, tara: 8120, netto: 12000, status: "selesai", time: "28 min ago" },
-    ];
-    setWeighings(initialWeighings);
-
-    // Periodically simulate weighing transitions
-    const interval = setInterval(() => {
-      setWeighings(prev => {
-        // Find the one that is 'kosong' and make it loaded ('selesai')
-        const updated = prev.map(w => {
-          if (w.status === "kosong") {
-            return {
-              ...w,
-              bruto: w.tara + 12000,
-              netto: 12000,
-              status: "selesai" as const,
-              time: "Just now"
-            };
-          }
-          return w;
-        });
-
-        // Add a brand new truck waiting to weigh empty (tara)
-        const prefixes = ["BG", "L", "B", "DK"];
-        const randPrefix = prefixes[Math.floor(Math.random() * prefixes.length)];
-        const randNum = Math.floor(1000 + Math.random() * 9000);
-        const randSuf = String.fromCharCode(65 + Math.floor(Math.random() * 26)) + String.fromCharCode(65 + Math.floor(Math.random() * 26));
-        const drivers = ["Danang Prasetyo", "Arif Budiman", "Joko Susilo", "Harianto"];
-        const products = ["Urea Bagged", "Urea Bulk", "NPK Phonska"];
-        const randomId = "TKT-" + Math.floor(550000 + Math.random() * 999);
-        const taraWeight = Math.floor(7800 + Math.random() * 900);
-
-        const newWeigh: MockWeighing = {
-          id: randomId,
-          nopol: `${randPrefix} ${randNum} ${randSuf}`,
-          driver: drivers[Math.floor(Math.random() * drivers.length)],
-          produk: products[Math.floor(Math.random() * products.length)],
-          tara: taraWeight,
-          bruto: 0,
-          netto: 0,
-          status: "kosong",
-          time: "Just now"
-        };
-
-        return [newWeigh, ...updated.slice(0, 3)].map((w, idx) => ({
-          ...w,
-          time: idx === 0 ? "Just now" : idx === 1 ? "4 min ago" : `${idx * 7} min ago`
-        }));
-      });
-    }, 25000);
-
-    return () => clearInterval(interval);
   }, []);
+
+  const fetcher = async (params: DataTableParams) => {
+    if (!token) return { data: [], recordsTotal: 0, recordsFiltered: 0 };
+    // Map tab to ticket position
+    const position = activeTab === "tara" ? "01" : activeTab === "bruto" ? "05" : "07";
+    
+    try {
+      const result = await apiTable("/api/Tiket/DataTableFilterLegacy", {
+        draw: params.draw,
+        start: params.start,
+        length: params.length,
+        search: { value: params.search },
+        companyCode: activeCompanyCode ?? undefined,
+        position,
+        order: [{ column: 0, dir: "desc" }],
+        columns: [
+          { data: "tanggal", name: "tanggal", searchable: false, orderable: true },
+          { data: "bookingno", name: "bookingno", searchable: true, orderable: true },
+          { data: "nopol", name: "nopol", searchable: true, orderable: true },
+          { data: "driver", name: "driver", searchable: true, orderable: true },
+          { data: "produkString", name: "idproduk", searchable: true, orderable: true },
+        ]
+      });
+
+      return {
+        data: result?.data ?? [],
+        recordsTotal: result?.recordsTotal ?? 0,
+        recordsFiltered: result?.recordsFiltered ?? result?.recordsTotal ?? 0,
+      };
+    } catch (error) {
+      console.error("JBT Tickets Fetch Error:", error);
+      return { data: [], recordsTotal: 0, recordsFiltered: 0 };
+    }
+  };
+
+  const columns: DataTableColumn<TicketData>[] = [
+    {
+      key: "bookingno",
+      header: "No Booking / Tiket",
+      render: (t) => (
+        <div className="flex flex-col font-mono text-xs">
+          <span className="font-bold text-gray-900 dark:text-white">{t.bookingno}</span>
+          {t.tiketno && <span className="text-[10px] text-gray-400">{t.tiketno}</span>}
+        </div>
+      ),
+    },
+    {
+      key: "nopol",
+      header: "Plat Nomor",
+      render: (t) => <span className="font-bold font-mono text-gray-900 dark:text-white text-xs">{t.nopol}</span>,
+    },
+    {
+      key: "driver",
+      header: "Driver",
+      render: (t) => <span className="text-gray-600 dark:text-gray-400 text-xs">{t.driver}</span>,
+    },
+    {
+      key: "produkString",
+      header: "Produk",
+      render: (t) => <span className="text-gray-500 text-xs">{t.produkString}</span>,
+    },
+    {
+      key: "transportString",
+      header: "Transportir",
+      render: (t) => <span className="text-gray-500 text-[11px] truncate block max-w-[120px]">{t.transportString}</span>,
+    },
+    {
+      key: "qty",
+      header: "Qty (Ton)",
+      render: (t) => <span className="font-mono font-bold text-xs">{(t.qty ?? 0).toLocaleString("id-ID")} T</span>,
+    },
+    {
+      key: "position",
+      header: "Status Timbang",
+      render: (t) => {
+        const isTara = t.position === "01";
+        const isBruto = t.position === "05";
+        return (
+          <div className="flex justify-end gap-1.5 items-center">
+            {isTara ? (
+              <Badge color="warning" size="sm">Timbang Tara</Badge>
+            ) : isBruto ? (
+              <Badge color="info" size="sm">Timbang Bruto</Badge>
+            ) : (
+              <Badge color="success" size="sm">Selesai</Badge>
+            )}
+          </div>
+        );
+      },
+    },
+  ];
 
   if (!mounted) return null;
 
@@ -199,63 +240,56 @@ export default function JBTDashboard() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Weighing Activity */}
         <Card className="lg:col-span-2 border-gray-200 dark:border-gray-800">
-          <CardHeader className="py-4 px-5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+          <CardHeader className="py-4 px-5 border-b border-gray-100 dark:border-gray-800 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <CardTitle className="text-base font-bold text-gray-900 dark:text-white">Recent Penimbangan Logs</CardTitle>
               <CardDescription className="text-xs text-gray-400">Catatan penimbangan bruto, tara, dan netto teraktual</CardDescription>
             </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-gray-50/50 dark:bg-white/[0.02] border-b border-gray-100 dark:border-gray-800 text-[10px] uppercase font-bold text-gray-500 tracking-wider">
-                    <th className="py-3 px-5">Time</th>
-                    <th className="py-3 px-5">Plat Nomor</th>
-                    <th className="py-3 px-5">Driver</th>
-                    <th className="py-3 px-5">Product</th>
-                    <th className="py-3 px-5">Tara (Kg)</th>
-                    <th className="py-3 px-5">Bruto (Kg)</th>
-                    <th className="py-3 px-5">Netto (Kg)</th>
-                    <th className="py-3 px-5 text-right">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-800 text-xs">
-                  {weighings.map((item) => (
-                    <tr key={item.id} className="hover:bg-gray-50/40 dark:hover:bg-white/[0.01] transition-colors">
-                      <td className="py-3 px-5 font-mono text-gray-400">{item.time}</td>
-                      <td className="py-3 px-5 font-bold font-mono text-gray-900 dark:text-white">{item.nopol}</td>
-                      <td className="py-3 px-5 text-gray-600 dark:text-gray-400">{item.driver}</td>
-                      <td className="py-3 px-5 text-gray-500">{item.produk}</td>
-                      <td className="py-3 px-5 font-mono">{item.tara.toLocaleString("id-ID")}</td>
-                      <td className="py-3 px-5 font-mono">{item.bruto > 0 ? item.bruto.toLocaleString("id-ID") : "-"}</td>
-                      <td className="py-3 px-5 font-bold font-mono text-brand-600 dark:text-brand-400">
-                        {item.netto > 0 ? item.netto.toLocaleString("id-ID") : "-"}
-                      </td>
-                      <td className="py-3 px-5 text-right">
-                        <div className="flex justify-end gap-1.5 items-center">
-                          {item.status === "selesai" ? (
-                            <>
-                              <Badge color="success" size="sm">Selesai</Badge>
-                              <button 
-                                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 text-gray-500 hover:text-gray-700 transition-colors"
-                                title="Print Weigh Slip"
-                              >
-                                <Printer className="h-3.5 w-3.5" />
-                              </button>
-                            </>
-                          ) : item.status === "kosong" ? (
-                            <Badge color="warning" size="sm">Timbang Tara</Badge>
-                          ) : (
-                            <Badge color="info" size="sm">Timbang Bruto</Badge>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            
+            {/* Tab Switcher */}
+            <div className="flex items-center gap-1 bg-gray-100 dark:bg-white/[0.04] p-1 rounded-lg self-start">
+              <button
+                onClick={() => setActiveTab("tara")}
+                className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${
+                  activeTab === "tara" 
+                    ? "bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm" 
+                    : "text-gray-500 hover:text-gray-800 dark:hover:text-gray-300"
+                }`}
+              >
+                Timbang Tara
+              </button>
+              <button
+                onClick={() => setActiveTab("bruto")}
+                className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${
+                  activeTab === "bruto" 
+                    ? "bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm" 
+                    : "text-gray-500 hover:text-gray-800 dark:hover:text-gray-300"
+                }`}
+              >
+                Timbang Bruto
+              </button>
+              <button
+                onClick={() => setActiveTab("completed")}
+                className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${
+                  activeTab === "completed" 
+                    ? "bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm" 
+                    : "text-gray-500 hover:text-gray-800 dark:hover:text-gray-300"
+                }`}
+              >
+                Selesai
+              </button>
             </div>
+          </CardHeader>
+          <CardContent className="p-4">
+            <DataTable
+              key={activeTab} // Forces table re-render when changing tabs
+              columns={columns}
+              queryKey={["jbt-tickets", activeCompanyCode, activeTab]}
+              fetcher={fetcher}
+              defaultPageSize={5}
+              rowKey={(t) => t.bookingno}
+              searchPlaceholder="Cari Plat No, Driver, atau Booking No..."
+            />
           </CardContent>
         </Card>
 

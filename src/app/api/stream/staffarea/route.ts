@@ -5,7 +5,7 @@ import { aspnetFetchServer } from "@/lib/api-client";
 import { normalizeRole } from "@/lib/role-utils";
 import { cookies } from "next/headers";
 
-const ALLOWED = new Set(["staffarea", "gudang", "pod", "superadmin", "ti", "admin"]);
+const ALLOWED = new Set(["staffarea", "gudang", "pod", "superadmin", "ti", "admin", "security", "jembatan_timbang"]);
 
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
