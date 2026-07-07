@@ -215,7 +215,7 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
         icon: <FileText className="h-5 w-5" />,
         name: "Laporan",
         subItems: [
-          { name: "laporan tiket", path: "/reports/tiket-pi" },
+          { name: "Laporan tiket", path: "/reports/tiket-pi" },
           { name: "Report Pemesanan Tiket", path: "/reports/booking" },
           { name: "Report Realisasi Pemuatan", path: "/reports/loading" },
           { name: "Report Pembatalan Tiket", path: "/reports/cancelation" },
@@ -416,7 +416,7 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
       {
         icon: <Ticket className="h-5 w-5" />,
         name: "Tiket",
-        subItems: [{ name: "Datatable Tiket", path: "/admin/tickets" }],
+        subItems: [{ name: "Data Tiket", path: "/admin/tickets" }],
       },
       { icon: <CalendarClock className="h-5 w-5" />, name: "Pengaturan Shift", path: "/shift" },
       {
@@ -466,7 +466,7 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
         icon: <FileText className="h-5 w-5" />,
         name: "Laporan",
         subItems: [
-          { name: "laporan tiket", path: "/reports/tiket-pi" },
+          { name: "Laporan tiket", path: "/reports/tiket-pi" },
         ],
       },
     ],
@@ -488,7 +488,7 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
         icon: <ClipboardList className="h-5 w-5" />,
         name: "Tiket",
         subItems: [
-          { name: "Datatable Tiket", path: "/tiket" },
+          { name: "Data Tiket", path: "/tiket" },
           { name: "Booking Tiket", path: "/tiket/booking" },
         ],
       },
@@ -524,7 +524,7 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
         icon: <ClipboardList className="h-5 w-5" />,
         name: "Tiket",
         subItems: [
-          { name: "Datatable Tiket", path: "/tiket" },
+          { name: "Data Tiket", path: "/tiket" },
           { name: "Booking Tiket", path: "/tiket/booking" },
         ],
       },
@@ -672,7 +672,7 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
       {
         icon: <Ticket className="h-5 w-5" />,
         name: "Tiket",
-        subItems: [{ name: "Datatable Tiket", path: "/admin/tickets" }],
+        subItems: [{ name: "Data Tiket", path: "/admin/tickets" }],
       },
       {
         icon: <CalendarCheck className="h-5 w-5" />,

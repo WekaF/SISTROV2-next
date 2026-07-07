@@ -335,7 +335,7 @@ export default function ManagerTiketPage() {
 
       <Card className="bg-white dark:bg-gray-800 border-gray-150 dark:border-gray-700 shadow-sm transition-all duration-300">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base text-gray-900 dark:text-white">Datatable Tiket</CardTitle>
+          <CardTitle className="text-base text-gray-900 dark:text-white">Data Tiket</CardTitle>
         </CardHeader>
         <CardContent>
           {token ? <TiketTable token={token} /> : (

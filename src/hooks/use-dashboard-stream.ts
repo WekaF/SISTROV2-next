@@ -24,7 +24,11 @@ interface UseDashboardStreamResult {
 
 const POLL_INTERVAL_MS = 30_000;
 
-export function useDashboardStream(): UseDashboardStreamResult {
+export function useDashboardStream(
+  period: string = "today",
+  month?: number,
+  year?: number
+): UseDashboardStreamResult {
   const [data, setData] = useState<DashboardStreamData | null>(null);
   const [status, setStatus] = useState<StreamStatus>("connecting");
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -33,7 +37,12 @@ export function useDashboardStream(): UseDashboardStreamResult {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch("/api/stream/dashboard");
+        const queryParams = new URLSearchParams();
+        queryParams.set("period", period);
+        if (month !== undefined) queryParams.set("month", String(month));
+        if (year !== undefined) queryParams.set("year", String(year));
+
+        const res = await fetch(`/api/stream/dashboard?${queryParams.toString()}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const parsed: DashboardStreamData = await res.json();
         setData(parsed);
@@ -45,12 +54,13 @@ export function useDashboardStream(): UseDashboardStreamResult {
     };
 
     fetchData();
+    if (intervalRef.current) clearInterval(intervalRef.current);
     intervalRef.current = setInterval(fetchData, POLL_INTERVAL_MS);
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, []);
+  }, [period, month, year]);
 
   return { data, status, lastUpdated };
 }

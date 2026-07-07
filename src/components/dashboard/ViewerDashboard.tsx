@@ -104,7 +104,12 @@ const getQueueForPlant = (plantCode: string) => {
 export default function ViewerDashboard() {
   const { activeCompanyCode, switchCompany } = useCompany();
   const { apiJson, token } = useApi();
-  const { data: streamData, status: streamStatus, lastUpdated: streamLastUpdated } = useDashboardStream();
+
+  const [period, setPeriod] = useState<string>("today");
+  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+
+  const { data: streamData, status: streamStatus, lastUpdated: streamLastUpdated } = useDashboardStream(period, selectedMonth, selectedYear);
   const [isSimulated, setIsSimulated] = useState(false);
   const [mapPlants, setMapPlants] = useState<any[]>([]);
   const [mounted, setMounted] = useState(false);
@@ -275,6 +280,7 @@ export default function ViewerDashboard() {
     let finalStats = {
       total_antrian: 1205, total_tonase: 48900, avg_tiket_minutes: 42,
       durasi_terlama: 145, durasi_tercepat: 12, total_selesai: 980,
+      total_tiket: 2185,
       tiket_cancelled: [
         { Alasan: "Armada Tidak Layak", Jumlah: 14 },
         { Alasan: "Overload Berat Muat", Jumlah: 9 },
@@ -285,7 +291,7 @@ export default function ViewerDashboard() {
 
     // ── MonitorStats ──────────────────────────────────────────────────────────
     let realDataFetched = false;
-    if (statsRes?.Success && statsRes.totalTiket > 0) {
+    if (statsRes?.Success) {
       finalStats = {
         total_antrian: statsRes.totalAntrian ?? 0,
         total_selesai: statsRes.totalSelesai ?? 0,
@@ -293,6 +299,7 @@ export default function ViewerDashboard() {
         avg_tiket_minutes: statsRes.avgDurasiMenit ?? 0,
         durasi_terlama: statsRes.durasiTerlama ?? 0,
         durasi_tercepat: statsRes.durasiTercepat ?? 0,
+        total_tiket: statsRes.totalTiket ?? 0,
         tiket_cancelled: statsRes.totalCancel > 0
           ? [{ Alasan: "Dibatalkan / Kadaluwarsa", Jumlah: statsRes.totalCancel }]
           : []
@@ -526,10 +533,10 @@ export default function ViewerDashboard() {
         enableShades: false,
         colorScale: {
           ranges: [
-            { from: 0,  to: 0,   name: "Tidak Ada",    color: "#F1F5F9" },
-            { from: 1,  to: 10,  name: "Rendah",        color: "#A7F3D0" },
-            { from: 11, to: 30,  name: "Sedang",        color: "#34D399" },
-            { from: 31, to: 60,  name: "Tinggi",        color: "#059669" },
+            { from: 0, to: 0, name: "Tidak Ada", color: "#F1F5F9" },
+            { from: 1, to: 10, name: "Rendah", color: "#A7F3D0" },
+            { from: 11, to: 30, name: "Sedang", color: "#34D399" },
+            { from: 31, to: 60, name: "Tinggi", color: "#059669" },
             { from: 61, to: 9999, name: "Sangat Tinggi", color: "#065F46" }
           ]
         }
@@ -541,8 +548,8 @@ export default function ViewerDashboard() {
       custom: ({ seriesIndex, dataPointIndex, w }: any) => {
         const plant = w.globals.seriesNames[seriesIndex];
         const point = w.globals.initialSeries[seriesIndex]?.data?.[dataPointIndex];
-        const date  = point?.x ?? "";
-        const val   = point?.y ?? 0;
+        const date = point?.x ?? "";
+        const val = point?.y ?? 0;
         return `<div style="padding:8px 12px;font-size:12px;font-family:Outfit,sans-serif;border-radius:8px">
           <b style="color:#111">${plant}</b><br/>
           <span style="color:#6B7280;font-size:11px">${date}</span><br/>
@@ -905,6 +912,19 @@ export default function ViewerDashboard() {
 
   const globalSla = getGlobalSlaValue();
 
+  const getFilterLabel = () => {
+    if (period === "today") return "Hari Ini";
+    if (period === "month") {
+      const monthNames = [
+        "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+        "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+      ];
+      return `${monthNames[selectedMonth - 1]} ${selectedYear}`;
+    }
+    if (period === "year") return `Tahun ${selectedYear}`;
+    return "Semua Waktu";
+  };
+
   // 5.5. Paginated Leaderboard Dataset (Top 10 vs Bottom 10)
   const rankingList = plantRanking ? (rankingTab === "top" ? plantRanking.slice(0, 10) : plantRanking.slice(-10).reverse()) : [];
   const rankingItemsPerPage = 5;
@@ -1040,7 +1060,7 @@ export default function ViewerDashboard() {
             </h1>
           </div>
           <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
-            {"Global Viewer & API Monitoring Dashboard untuk Semua Plant Pupuk Indonesia Group"}
+            {"Monitoring Dashboard Pupuk Indonesia Group"}
           </p>
           <div className="flex items-center gap-2 mt-2">
             <span
@@ -1070,25 +1090,70 @@ export default function ViewerDashboard() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
+          {/* Period Selector */}
+          <div className="flex items-center gap-1 bg-gray-150/50 dark:bg-white/[0.03] p-1 rounded-xl border border-gray-200/50 dark:border-gray-800">
+            <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 px-2 uppercase">Periode</span>
+            <select
+              value={period}
+              onChange={(e) => setPeriod(e.target.value)}
+              className="text-xs font-semibold bg-transparent border-none text-gray-700 dark:text-gray-300 focus:ring-0 cursor-pointer pr-8"
+            >
+              <option value="today" className="dark:bg-gray-900">Hari Ini</option>
+              <option value="month" className="dark:bg-gray-900">Bulanan</option>
+              <option value="year" className="dark:bg-gray-900">Tahunan</option>
+              <option value="all" className="dark:bg-gray-900">Semua</option>
+            </select>
+          </div>
+
+          {/* Month Selector (only if period is month) */}
+          {period === "month" && (
+            <div className="flex items-center gap-1 bg-gray-150/50 dark:bg-white/[0.03] p-1 rounded-xl border border-gray-200/50 dark:border-gray-800">
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                className="text-xs font-semibold bg-transparent border-none text-gray-700 dark:text-gray-300 focus:ring-0 cursor-pointer pr-8"
+              >
+                {[
+                  { val: 1, label: "Januari" },
+                  { val: 2, label: "Februari" },
+                  { val: 3, label: "Maret" },
+                  { val: 4, label: "April" },
+                  { val: 5, label: "Mei" },
+                  { val: 6, label: "Juni" },
+                  { val: 7, label: "Juli" },
+                  { val: 8, label: "Agustus" },
+                  { val: 9, label: "September" },
+                  { val: 10, label: "Oktober" },
+                  { val: 11, label: "November" },
+                  { val: 12, label: "Desember" }
+                ].map((m) => (
+                  <option key={m.val} value={m.val} className="dark:bg-gray-900">{m.label}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Year Selector (if period is month or year) */}
+          {(period === "month" || period === "year") && (
+            <div className="flex items-center gap-1 bg-gray-150/50 dark:bg-white/[0.03] p-1 rounded-xl border border-gray-200/50 dark:border-gray-800">
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                className="text-xs font-semibold bg-transparent border-none text-gray-700 dark:text-gray-300 focus:ring-0 cursor-pointer pr-8"
+              >
+                {[2026, 2025, 2024, 2023].map((y) => (
+                  <option key={y} value={y} className="dark:bg-gray-900">{y}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <button
             disabled
             className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-gray-700 bg-white border border-gray-200 dark:bg-gray-900 dark:border-gray-800 dark:text-gray-300 rounded-xl shadow-sm opacity-60 cursor-default"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${streamStatus === "connecting" ? "animate-spin text-brand-500" : ""}`} />
             Perbarui {mounted && streamLastUpdated && `(${streamLastUpdated.toLocaleTimeString("id-ID")})`}
-          </button>
-
-          <button
-            onClick={handleExport}
-            disabled={isExporting || !stats}
-            className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-brand-500 hover:bg-brand-600 disabled:opacity-60 disabled:cursor-not-allowed rounded-xl transition-all shadow-sm hover:shadow active:scale-95 cursor-pointer"
-          >
-            {isExporting ? (
-              <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Download className="h-3.5 w-3.5" />
-            )}
-            {isExporting ? "Mengekspor..." : "Ekspor Laporan"}
           </button>
         </div>
       </div>
@@ -1098,20 +1163,20 @@ export default function ViewerDashboard() {
         <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-gray-150 dark:border-gray-800">
           <div>
             <CardTitle className="text-sm font-black flex items-center gap-2 tracking-tight text-gray-900 dark:text-white uppercase">
-              <Globe className="h-5 w-5 text-brand-500 animate-pulse" />
-              PETA OPERASIONAL LOGISTIK NASIONAL - COMMAND CENTRE PUPUK INDONESIA
+              {/* <Globe className="h-5 w-5 text-brand-500 animate-pulse" /> */}
+              COMMAND CENTRE PUPUK INDONESIA
             </CardTitle>
             <CardDescription className="text-xs font-bold text-gray-400">
               Visualisasi real-time status distribusi pupuk, implementasi rollout SISTRO, & monitoring performa logistik di seluruh wilayah Indonesia
             </CardDescription>
           </div>
-          <div className="flex items-center gap-3 bg-emerald-50 dark:bg-emerald-950/20 px-3.5 py-1.5 rounded-xl border border-emerald-100/50 dark:border-emerald-900/30">
+          {/* <div className="flex items-center gap-3 bg-emerald-50 dark:bg-emerald-950/20 px-3.5 py-1.5 rounded-xl border border-emerald-100/50 dark:border-emerald-900/30">
             <span className="flex h-2 w-2 relative">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-            <span className="text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400 tracking-wider uppercase">MONITORING AKTIF</span>
-          </div>
+            </span> */}
+          {/* <span className="text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400 tracking-wider uppercase">MONITORING AKTIF</span> */}
+          {/* </div> */}
         </CardHeader>
         <CardContent className="p-0">
           <div className="grid grid-cols-1 xl:grid-cols-12">
@@ -1194,16 +1259,16 @@ export default function ViewerDashboard() {
       </Card>
 
       {/* 2. Premium MoM Month-over-Month Overview Panel (Optimized with Cascading Animations) */}
-      {monthlyComp && (
+      {stats && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-slide-up-fade">
           {/* Card 1: Ticket MoM */}
           <Card className="shadow-theme-xs border-l-4 border-l-brand-500 dark:border-gray-800 dashboard-card-hover border border-gray-100 dark:border-gray-850 animate-slide-up-fade" style={{ animationDelay: "50ms" }}>
             <CardContent className="p-5">
               <div className="flex justify-between items-start">
                 <div>
-                  <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Tiket Bulanan ({monthlyComp.BulanIniLabel})</span>
+                  <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Tiket ({getFilterLabel()})</span>
                   <h3 className="text-2xl font-black text-gray-900 dark:text-white mt-1.5 tracking-tight">
-                    {fmt(monthlyComp.BulanIni.TotalTiket)}
+                    {fmt(stats.total_tiket ?? 0)}
                   </h3>
                 </div>
                 <div className="p-2.5 bg-brand-50 text-brand-500 rounded-xl dark:bg-brand-950/20">
@@ -1211,11 +1276,17 @@ export default function ViewerDashboard() {
                 </div>
               </div>
               <div className="flex items-center gap-2 mt-4 text-xs font-semibold text-gray-500">
-                <span className="text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 px-2 py-0.5 rounded-full flex items-center gap-0.5">
-                  <TrendingUp className="h-3 w-3" />
-                  +{monthlyComp.TiketChange}%
-                </span>
-                <span>vs {fmt(monthlyComp.BulanLalu.TotalTiket)} ({monthlyComp.BulanLaluLabel})</span>
+                {period === "month" && selectedMonth === (new Date().getMonth() + 1) && selectedYear === new Date().getFullYear() && monthlyComp ? (
+                  <>
+                    <span className="text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 px-2 py-0.5 rounded-full flex items-center gap-0.5">
+                      <TrendingUp className="h-3 w-3" />
+                      +{monthlyComp.TiketChange}%
+                    </span>
+                    <span>vs {fmt(monthlyComp.BulanLalu.TotalTiket)} ({monthlyComp.BulanLaluLabel})</span>
+                  </>
+                ) : (
+                  <span className="text-gray-400 font-normal">Total akumulasi periode</span>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -1225,9 +1296,9 @@ export default function ViewerDashboard() {
             <CardContent className="p-5">
               <div className="flex justify-between items-start">
                 <div>
-                  <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Tonase Bulanan ({monthlyComp.BulanIniLabel})</span>
+                  <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Tonase ({getFilterLabel()})</span>
                   <h3 className="text-2xl font-black text-gray-900 dark:text-white mt-1.5 tracking-tight">
-                    {fmt(Math.round(monthlyComp.BulanIni.TotalTonase / 1000))}k Ton
+                    {stats.total_tonase >= 1000 ? `${fmt(Math.round(stats.total_tonase / 1000))}k Ton` : `${fmt(stats.total_tonase)} Ton`}
                   </h3>
                 </div>
                 <div className="p-2.5 bg-emerald-50 text-emerald-500 rounded-xl dark:bg-emerald-950/20">
@@ -1235,11 +1306,17 @@ export default function ViewerDashboard() {
                 </div>
               </div>
               <div className="flex items-center gap-2 mt-4 text-xs font-semibold text-gray-500">
-                <span className="text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 px-2 py-0.5 rounded-full flex items-center gap-0.5">
-                  <TrendingUp className="h-3 w-3" />
-                  +{monthlyComp.TonaseChange}%
-                </span>
-                <span>vs {fmt(Math.round(monthlyComp.BulanLalu.TotalTonase / 1000))}k Ton ({monthlyComp.BulanLaluLabel})</span>
+                {period === "month" && selectedMonth === (new Date().getMonth() + 1) && selectedYear === new Date().getFullYear() && monthlyComp ? (
+                  <>
+                    <span className="text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 px-2 py-0.5 rounded-full flex items-center gap-0.5">
+                      <TrendingUp className="h-3 w-3" />
+                      +{monthlyComp.TonaseChange}%
+                    </span>
+                    <span>vs {fmt(Math.round(monthlyComp.BulanLalu.TotalTonase / 1000))}k Ton ({monthlyComp.BulanLaluLabel})</span>
+                  </>
+                ) : (
+                  <span className="text-gray-400 font-normal">Total akumulasi periode</span>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -1273,11 +1350,13 @@ export default function ViewerDashboard() {
             <CardContent className="p-5">
               <div className="flex justify-between items-start">
                 <div>
-                  <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Cancel Rate (Mei 2026)</span>
+                  <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Cancel Rate ({getFilterLabel()})</span>
                   <h3 className="text-2xl font-black text-gray-900 dark:text-white mt-1.5 tracking-tight">
-                    {stats?.total_antrian && stats?.total_selesai ?
-                      ((stats.tiket_cancelled?.reduce((s: number, x: any) => s + x.Jumlah, 0) || 0) /
-                        (stats.total_antrian + stats.total_selesai) * 100).toFixed(1) : "2.0"}%
+                    {(() => {
+                      const cancelCount = stats.tiket_cancelled?.reduce((s: number, x: any) => s + x.Jumlah, 0) || 0;
+                      const totalTickets = stats.total_tiket || 0;
+                      return totalTickets > 0 ? ((cancelCount / totalTickets) * 100).toFixed(1) : "0.0";
+                    })()}%
                   </h3>
                 </div>
                 <div className="p-2.5 bg-rose-50 text-rose-500 rounded-xl dark:bg-rose-950/20">
@@ -1285,10 +1364,16 @@ export default function ViewerDashboard() {
                 </div>
               </div>
               <div className="flex items-center gap-2 mt-4 text-xs font-semibold text-gray-500">
-                <span className="text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 px-2 py-0.5 rounded-full flex items-center gap-0.5">
-                  -9.8% MoM
-                </span>
-                <span>vs {fmt(monthlyComp.BulanLalu.TotalCancel)} Pembatalan (Bulan Lalu)</span>
+                {period === "month" && selectedMonth === (new Date().getMonth() + 1) && selectedYear === new Date().getFullYear() && monthlyComp ? (
+                  <>
+                    <span className="text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 px-2 py-0.5 rounded-full flex items-center gap-0.5">
+                      -9.8% MoM
+                    </span>
+                    <span>vs {fmt(monthlyComp.BulanLalu.TotalCancel)} Pembatalan ({monthlyComp.BulanLaluLabel})</span>
+                  </>
+                ) : (
+                  <span className="text-gray-400 font-normal">Total akumulasi periode</span>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -1428,38 +1513,35 @@ export default function ViewerDashboard() {
                     {activeView === "heatmap"
                       ? "Setiap sel menampilkan jumlah tiket muat — warna lebih gelap berarti aktivitas lebih tinggi pada hari tersebut."
                       : activeView === "line"
-                      ? "Tren volume tiket harian per plant selama 7 hari terakhir."
-                      : "Komparasi total volume tiket per plant dalam 7 hari terakhir."}
+                        ? "Tren volume tiket harian per plant selama 7 hari terakhir."
+                        : "Komparasi total volume tiket per plant dalam 7 hari terakhir."}
                   </CardDescription>
                 </div>
                 <div className="flex bg-gray-100 dark:bg-gray-850 p-0.5 rounded-lg border border-gray-200/50 dark:border-gray-700/50 self-start sm:self-auto shrink-0">
                   <button
                     onClick={() => setActiveView("heatmap")}
-                    className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-all cursor-pointer ${
-                      activeView === "heatmap"
-                        ? "bg-white text-brand-500 shadow-sm dark:bg-gray-800 dark:text-white"
-                        : "text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"
-                    }`}
+                    className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-all cursor-pointer ${activeView === "heatmap"
+                      ? "bg-white text-brand-500 shadow-sm dark:bg-gray-800 dark:text-white"
+                      : "text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"
+                      }`}
                   >
                     Heatmap
                   </button>
                   <button
                     onClick={() => setActiveView("line")}
-                    className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-all cursor-pointer ${
-                      activeView === "line"
-                        ? "bg-white text-brand-500 shadow-sm dark:bg-gray-800 dark:text-white"
-                        : "text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"
-                    }`}
+                    className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-all cursor-pointer ${activeView === "line"
+                      ? "bg-white text-brand-500 shadow-sm dark:bg-gray-800 dark:text-white"
+                      : "text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"
+                      }`}
                   >
                     Line
                   </button>
                   <button
                     onClick={() => setActiveView("bar")}
-                    className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-all cursor-pointer ${
-                      activeView === "bar"
-                        ? "bg-white text-brand-500 shadow-sm dark:bg-gray-800 dark:text-white"
-                        : "text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"
-                    }`}
+                    className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-all cursor-pointer ${activeView === "bar"
+                      ? "bg-white text-brand-500 shadow-sm dark:bg-gray-800 dark:text-white"
+                      : "text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"
+                      }`}
                   >
                     Bar
                   </button>
@@ -1503,9 +1585,9 @@ export default function ViewerDashboard() {
                     <div className="flex items-center gap-1.5 flex-wrap justify-end">
                       {[
                         { label: "Tidak Ada", color: "#F1F5F9", text: "text-gray-400" },
-                        { label: "Rendah",    color: "#A7F3D0", text: "text-emerald-600" },
-                        { label: "Sedang",    color: "#34D399", text: "text-emerald-600" },
-                        { label: "Tinggi",    color: "#059669", text: "text-emerald-700" },
+                        { label: "Rendah", color: "#A7F3D0", text: "text-emerald-600" },
+                        { label: "Sedang", color: "#34D399", text: "text-emerald-600" },
+                        { label: "Tinggi", color: "#059669", text: "text-emerald-700" },
                         { label: "Sangat Tinggi", color: "#065F46", text: "text-emerald-900" },
                       ].map(({ label, color, text }) => (
                         <div key={label} className="flex items-center gap-1">
@@ -1837,8 +1919,8 @@ export default function ViewerDashboard() {
               <button
                 onClick={() => { setRankingTab("top"); setRankingPage(0); }}
                 className={`flex-1 sm:flex-none px-4 py-2 text-xs font-bold rounded-lg transition-all duration-300 ${rankingTab === "top"
-                    ? "bg-white dark:bg-gray-900 text-emerald-600 dark:text-emerald-400 shadow-sm"
-                    : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                  ? "bg-white dark:bg-gray-900 text-emerald-600 dark:text-emerald-400 shadow-sm"
+                  : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
                   }`}
               >
                 Top 10 (Tertib)
@@ -1846,8 +1928,8 @@ export default function ViewerDashboard() {
               <button
                 onClick={() => { setRankingTab("bottom"); setRankingPage(0); }}
                 className={`flex-1 sm:flex-none px-4 py-2 text-xs font-bold rounded-lg transition-all duration-300 ${rankingTab === "bottom"
-                    ? "bg-white dark:bg-gray-900 text-rose-600 dark:text-rose-400 shadow-sm"
-                    : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                  ? "bg-white dark:bg-gray-900 text-rose-600 dark:text-rose-400 shadow-sm"
+                  : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
                   }`}
               >
                 Bottom 10 (Kurang Tertib)
