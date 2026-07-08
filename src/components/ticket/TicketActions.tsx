@@ -66,8 +66,8 @@ export function TicketActions({
   // Permission: Edit allowed if role is authorized AND status is '00'
   const canEdit = (isSuperAdmin || isStaffArea || isTransport) && currentStatus === "00";
   
-  // Permission: Reschedule allowed ONLY for superadmin and staffarea
-  const canReschedule = isSuperAdmin || isStaffArea;
+  // Permission: Reschedule allowed ONLY for superadmin/staffarea AND ticket not yet at any checkpoint (status "00")
+  const canReschedule = (isSuperAdmin || isStaffArea) && currentStatus === "00";
 
   // Permission: View/Print allowed for these roles
   const canInteract = isSuperAdmin || isStaffArea || isTransport || isMonitoringRole;
