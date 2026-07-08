@@ -2,8 +2,8 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { signIn } from "next-auth/react";
-import { Eye, EyeOff } from "lucide-react";
+import { signIn, useSession } from "next-auth/react";
+import { Eye, EyeOff, AlertTriangle } from "lucide-react";
 
 export default function SignInForm() {
   const [showPassword, setShowPassword] = useState(false);
@@ -15,6 +15,30 @@ export default function SignInForm() {
   const router       = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl  = searchParams?.get("callbackUrl") || "/";
+  const sessionExpired = searchParams?.get("session_expired") === "true";
+  const [reloginLoading, setReloginLoading] = useState(false);
+  const { update } = useSession();
+
+  const handleAutoRelogin = async () => {
+    setReloginLoading(true);
+    setError("");
+    try {
+      const res = await fetch("/api/auth/relogin", { method: "POST" });
+      const json = await res.json();
+      if (json.success && json.aspnetToken) {
+        // Update the NextAuth session client-side with the new token
+        await update({ aspnetToken: json.aspnetToken });
+        // Redirect back
+        router.push(callbackUrl);
+      } else {
+        setError(json.error || "Gagal login otomatis, silakan login manual.");
+      }
+    } catch (err) {
+      setError("Terjadi kesalahan sistem, silakan login manual.");
+    } finally {
+      setReloginLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,6 +105,40 @@ export default function SignInForm() {
             Masuk ke akun Anda untuk melanjutkan
           </p>
         </div>
+
+        {sessionExpired && (
+          <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700/50 rounded-lg">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-500 mt-0.5 flex-shrink-0" />
+              <div>
+                <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-400">
+                  Sesi Berakhir
+                </h3>
+                <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                  Akun anda digunakan oleh user lain, apakah ingin login lagi?
+                </p>
+                <div className="mt-3 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleAutoRelogin}
+                    disabled={reloginLoading}
+                    className="px-3 py-1.5 text-xs font-medium bg-amber-600 hover:bg-amber-700 text-white rounded transition-colors disabled:opacity-50"
+                  >
+                    {reloginLoading ? "Memproses..." : "Ya, Login Lagi"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => router.push("/login")}
+                    disabled={reloginLoading}
+                    className="px-3 py-1.5 text-xs font-medium bg-white dark:bg-transparent border border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/50 rounded transition-colors disabled:opacity-50"
+                  >
+                    Batal
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-5">
           {error && (

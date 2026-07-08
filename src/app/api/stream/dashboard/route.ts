@@ -12,7 +12,7 @@ function isAuthorized(session: any): boolean {
   );
 }
 
-async function fetchAllDashboardData(token: string) {
+async function fetchAllDashboardData(token: string, period?: string, month?: string, year?: string) {
   const safe = async (path: string) => {
     try {
       const res = await aspnetFetchServer(path, token);
@@ -24,9 +24,16 @@ async function fetchAllDashboardData(token: string) {
     }
   };
 
+  const queryParams = new URLSearchParams();
+  if (period) queryParams.set("period", period);
+  if (month) queryParams.set("month", month);
+  if (year) queryParams.set("year", year);
+
+  const statsPath = `/api/Home/MonitorStats?${queryParams.toString()}`;
+
   const [stats, trendPlant, trendHour, durasi, monthly, leaderboard, durasiTickets, topProduk, mapData] =
     await Promise.all([
-      safe("/api/Home/MonitorStats"),
+      safe(statsPath),
       safe("/api/Home/GetTiketTrendPerPlant"),
       safe("/api/Home/GetTiketTrendPerHour"),
       safe("/api/Home/GetDurasiProsesMuat"),
@@ -40,7 +47,7 @@ async function fetchAllDashboardData(token: string) {
   return { stats, trendPlant, trendHour, durasi, monthly, leaderboard, durasiTickets, topProduk, mapData };
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
   if (!isAuthorized(session)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -51,6 +58,11 @@ export async function GET() {
     return NextResponse.json({ error: "Missing auth token" }, { status: 401 });
   }
 
-  const data = await fetchAllDashboardData(token);
+  const { searchParams } = new URL(req.url);
+  const period = searchParams.get("period") || undefined;
+  const month = searchParams.get("month") || undefined;
+  const year = searchParams.get("year") || undefined;
+
+  const data = await fetchAllDashboardData(token, period, month, year);
   return NextResponse.json(data);
 }

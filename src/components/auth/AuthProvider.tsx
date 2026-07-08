@@ -92,7 +92,7 @@ if (typeof window !== "undefined" && !(window as any).__fetchIntercepted) {
               // Beri jeda kecil agar request selesai, lalu arahkan ke login
               setTimeout(() => {
                 sessionStorage.removeItem("__force_logout");
-                window.location.href = "/login";
+                window.location.href = "/login?session_expired=true";
               }, 400);
             }
           }
