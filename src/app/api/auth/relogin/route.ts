@@ -18,7 +18,12 @@ export const POST = async function(request: NextRequest) {
     const rawToken = await getToken({ req: request, secret: NEXTAUTH_SECRET });
     const rawUsername = rawToken?.username as string | undefined;
     const encodedPw = rawToken?._pw as string | undefined;
-    const companyCode = rawToken?.companyCode as string | undefined;
+    
+    // Fallback companyCode from cookie if missing from token
+    let companyCode = rawToken?.companyCode as string | undefined;
+    if (!companyCode) {
+      companyCode = request.cookies.get("sistro_active_company")?.value;
+    }
 
     // rawToken.username = full DB username as stored by ASP.NET e.g. "wahyu_pkg"
     // (ASP.NET /Token always stores <bare_login>_<COMPANYCODE> as the DB UserName)
@@ -35,16 +40,21 @@ export const POST = async function(request: NextRequest) {
       });
     }
 
+    if (!companyCode) {
+      return NextResponse.json({
+        success: false,
+        error: "Company code hilang dari session, silakan login manual.",
+      });
+    }
+
     // Re-auth to ASP.NET with current companyCode to get fresh token
     const password = Buffer.from(encodedPw, "base64").toString("utf-8");
     const params = new URLSearchParams({
       grant_type: "password",
       username,
       password,
+      companycode: companyCode,
     });
-    if (companyCode) {
-      params.append("companycode", companyCode);
-    }
 
     const tokenRes = await fetch(`${ASPNET_API_URL}/Token`, {
       method: "POST",
