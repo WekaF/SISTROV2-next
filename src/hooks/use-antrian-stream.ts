@@ -6,6 +6,9 @@ export type AntrianStreamStatus = "connecting" | "live" | "error";
 
 export interface AntrianStreamData {
   total: number;
+  securityIn: number;
+  sedangMuat: number;
+  selesaiMuat: number;
   timestamp: number;
 }
 

@@ -378,16 +378,16 @@ function AntrianContent() {
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: "Total Antrian", value: "...", icon: Truck, color: "blue" },
-          { label: "Security In", value: "...", icon: ShieldCheck, color: "orange" },
-          { label: "Sedang Muat", value: "...", icon: Package, color: "indigo" },
-          { label: "Selesai Muat", value: "...", icon: CheckCircle2, color: "emerald" },
+          { label: "Total Antrian", value: streamData?.total ?? "--", icon: Truck, color: "blue" },
+          { label: "Security In", value: streamData?.securityIn ?? "--", icon: ShieldCheck, color: "orange" },
+          { label: "Sedang Muat", value: streamData?.sedangMuat ?? "--", icon: Package, color: "indigo" },
+          { label: "Selesai Muat", value: streamData?.selesaiMuat ?? "--", icon: CheckCircle2, color: "emerald" },
         ].map((stat, i) => (
           <Card key={i} className="border-none ring-0 shadow-sm overflow-visible bg-white dark:bg-slate-900">
             <CardContent className="p-5 flex items-center justify-between">
               <div>
                 <p className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] mb-1">{stat.label}</p>
-                <p className="text-2xl font-black text-slate-900 dark:text-white">--</p>
+                <p className="text-2xl font-black text-slate-900 dark:text-white">{stat.value}</p>
               </div>
               <div className={cn("p-3 rounded-2xl", 
                 stat.color === "blue" ? "bg-blue-50 text-blue-600" :
@@ -489,7 +489,7 @@ function AntrianContent() {
                 {gudangOptions.map(opt => <option key={opt.idgudang} value={opt.idgudang}>{opt.namagudang}</option>)}
               </select>
             </div>
-            <Button className="h-10 gap-2 bg-slate-900 dark:bg-brand-600">
+            <Button className="h-10 gap-2 bg-brand-600 hover:bg-brand-700 text-white dark:bg-brand-600 dark:hover:bg-brand-700 dark:text-white">
               <Filter className="h-4 w-4" />
               Filter
             </Button>
@@ -604,7 +604,7 @@ function AntrianContent() {
 
             <div className="flex gap-3 pt-2">
               <Button variant="outline" className="flex-1 h-12 font-bold rounded-xl" onClick={() => setIsPindahOpen(false)} disabled={isSaving}>Batal</Button>
-              <Button className="flex-2 h-12 font-black bg-slate-900 hover:bg-slate-800 rounded-xl" onClick={handleSavePindah} disabled={isSaving || !selectedGudang}>PINDAH GUDANG</Button>
+              <Button className="flex-2 h-12 font-black bg-brand-600 hover:bg-brand-700 text-white dark:bg-brand-600 dark:hover:bg-brand-700 dark:text-white rounded-xl" onClick={handleSavePindah} disabled={isSaving || !selectedGudang}>PINDAH GUDANG</Button>
             </div>
           </div>
         </DialogContent>
