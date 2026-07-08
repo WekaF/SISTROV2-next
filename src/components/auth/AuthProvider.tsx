@@ -66,7 +66,43 @@ if (typeof window !== "undefined" && !(window as any).__fetchIntercepted) {
       }
     }
 
-    return originalFetch(input, init);
+    // --- Global 401 guard untuk backend ASP.NET ---
+    // Intercept semua response 401 dengan body "Authorization has been denied"
+    // dan paksa logout otomatis. Ini berlaku untuk SEMUA fetch di seluruh app.
+    const response = await originalFetch(input, init);
+
+    if (response.status === 401) {
+      // Clone dulu karena body hanya bisa dibaca sekali
+      const cloned = response.clone();
+      try {
+        const text = await cloned.text();
+        if (text.includes("Authorization has been denied")) {
+          console.warn("[Auth Guard] Backend menolak token (401). Memaksa logout...", url);
+
+          // Hindari loop jika sudah di halaman login
+          const isAuthPage =
+            window.location.pathname === "/login" ||
+            window.location.pathname === "/register";
+
+          if (!isAuthPage) {
+            // Tandai agar tidak trigger berkali-kali
+            const already = sessionStorage.getItem("__force_logout");
+            if (!already) {
+              sessionStorage.setItem("__force_logout", "1");
+              // Beri jeda kecil agar request selesai, lalu arahkan ke login
+              setTimeout(() => {
+                sessionStorage.removeItem("__force_logout");
+                window.location.href = "/login";
+              }, 400);
+            }
+          }
+        }
+      } catch (_) {
+        // Gagal baca body — biarkan response lanjut normal
+      }
+    }
+
+    return response;
   };
 }
 
