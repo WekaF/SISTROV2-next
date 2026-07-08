@@ -50,7 +50,7 @@ const AppHeader: React.FC = () => {
               height={24}
               src="/images/logo/logo-text.png"
               alt="Logo"
-              className="object-contain brightness-0 dark:invert"
+              className="object-contain dark:brightness-0 dark:invert"
             />
             <div className="h-4 w-px bg-gray-200 dark:bg-gray-800" />
             <Image
@@ -58,7 +58,7 @@ const AppHeader: React.FC = () => {
               height={24}
               src="/images/logo/logopihd.png"
               alt="Logo"
-              className="object-contain brightness-0 dark:invert"
+              className="object-contain dark:brightness-0 dark:invert"
             />
           </Link>
 

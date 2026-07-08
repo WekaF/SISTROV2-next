@@ -410,9 +410,9 @@ export default function ScanTiketPage() {
               {/* Logo & Header */}
               <div className="bg-white dark:bg-gray-800 px-6 py-4 flex items-center justify-between border-b dark:border-gray-700">
                 <div className="flex items-center gap-3">
-                  <Image src="/images/logo/logosistro.png" alt="Sistro Logo" width={80} height={36} className="object-contain dark:invert" />
+                  <Image src="/images/logo/logosistro.png" alt="Sistro Logo" width={80} height={36} className="object-contain dark:brightness-0 dark:invert" />
                   <div className="h-8 w-px bg-slate-200 dark:bg-gray-700" />
-                  <Image src="/images/logo/logocompany.png" alt="Pupuk Indonesia Logo" width={90} height={36} className="object-contain dark:invert" />
+                  <Image src="/images/logo/logocompany.png" alt="Pupuk Indonesia Logo" width={90} height={36} className="object-contain dark:brightness-0 dark:invert" />
                 </div>
                 <div className="text-right">
                   <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Digital Logistics</div>
