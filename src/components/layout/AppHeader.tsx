@@ -46,16 +46,16 @@ const AppHeader: React.FC = () => {
 
           <Link href="/" className="lg:hidden flex items-center gap-2">
             <Image
-              width={75}
+              width={60}
               height={24}
-              src="/images/logo/logo.svg"
+              src="/images/logo/logo-text-black.png"
               alt="Logo"
               className="object-contain dark:hidden"
             />
             <Image
-              width={75}
+              width={60}
               height={24}
-              src="/images/logo/logo-dark.svg"
+              src="/images/logo/logo-text.png"
               alt="Logo"
               className="object-contain hidden dark:block"
             />
