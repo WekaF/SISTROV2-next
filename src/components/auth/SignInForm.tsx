@@ -4,6 +4,14 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn, useSession } from "next-auth/react";
 import { Eye, EyeOff, AlertTriangle } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+} from "@/components/ui/alert-dialog";
 
 export default function SignInForm() {
   const [showPassword, setShowPassword] = useState(false);
@@ -106,39 +114,39 @@ export default function SignInForm() {
           </p>
         </div>
 
-        {sessionExpired && (
-          <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700/50 rounded-lg">
-            <div className="flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-500 mt-0.5 flex-shrink-0" />
-              <div>
-                <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-400">
-                  Sesi Berakhir
-                </h3>
-                <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
-                  Akun anda digunakan oleh user lain, apakah ingin login lagi?
-                </p>
-                <div className="mt-3 flex gap-2">
-                  <button
-                    type="button"
-                    onClick={handleAutoRelogin}
-                    disabled={reloginLoading}
-                    className="px-3 py-1.5 text-xs font-medium bg-amber-600 hover:bg-amber-700 text-white rounded transition-colors disabled:opacity-50"
-                  >
-                    {reloginLoading ? "Memproses..." : "Ya, Login Lagi"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => router.push("/login")}
-                    disabled={reloginLoading}
-                    className="px-3 py-1.5 text-xs font-medium bg-white dark:bg-transparent border border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/50 rounded transition-colors disabled:opacity-50"
-                  >
-                    Batal
-                  </button>
+        <AlertDialog open={sessionExpired}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-6 h-6 text-amber-600 dark:text-amber-500 mt-0.5 flex-shrink-0" />
+                <div>
+                  <AlertDialogTitle>Sesi Berakhir</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Akun anda digunakan oleh user lain, apakah ingin login lagi?
+                  </AlertDialogDescription>
                 </div>
               </div>
-            </div>
-          </div>
-        )}
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <button
+                type="button"
+                onClick={() => router.push("/login")}
+                disabled={reloginLoading}
+                className="px-3 py-1.5 text-xs font-medium bg-white dark:bg-transparent border border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/50 rounded transition-colors disabled:opacity-50"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleAutoRelogin}
+                disabled={reloginLoading}
+                className="px-3 py-1.5 text-xs font-medium bg-amber-600 hover:bg-amber-700 text-white rounded transition-colors disabled:opacity-50"
+              >
+                {reloginLoading ? "Memproses..." : "Ya, Login Lagi"}
+              </button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           {error && (
