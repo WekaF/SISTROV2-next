@@ -60,14 +60,16 @@ export function TicketActions({
     return <div className="h-8 w-20 bg-gray-100 dark:bg-gray-800 animate-pulse rounded-none" />;
   }
 
-  // Normalize status to string for comparison
-  const currentStatus = String(status || "").padStart(2, '0');
+  // Normalize status to string for comparison, but if undefined/null, do not default to "00"
+  // as this will bypass the checkpoint restriction for incomplete API responses.
+  const currentStatus = status != null && status !== "" ? String(status).padStart(2, '0') : null;
 
   // Permission: Edit allowed if role is authorized AND status is '00'
   const canEdit = (isSuperAdmin || isStaffArea || isTransport) && currentStatus === "00";
   
-  // Permission: Reschedule allowed ONLY for superadmin/staffarea AND ticket not yet at any checkpoint (status "00")
-  const canReschedule = (isSuperAdmin || isStaffArea) && currentStatus === "00";
+  // Permission: Reschedule allowed ONLY for superadmin/staffarea AND ticket not yet at any checkpoint 
+  // (status "00" = Booking, "01" = Siap Dicetak)
+  const canReschedule = (isSuperAdmin || isStaffArea) && (currentStatus === "00" || currentStatus === "01");
 
   // Permission: View/Print allowed for these roles
   const canInteract = isSuperAdmin || isStaffArea || isTransport || isMonitoringRole;

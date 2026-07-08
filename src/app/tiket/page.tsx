@@ -68,7 +68,8 @@ function RekananTicketContent() {
         { data: "driver", name: "driver", searchable: true, orderable: true },
         { data: "transportString", name: "idtransport", searchable: true, orderable: true },
         { data: "tujuan", name: "tujuan", searchable: true, orderable: true },
-        { data: "positionString", name: "position", searchable: true, orderable: true },
+        { data: "positionString", name: "positionString", searchable: true, orderable: true },
+        { data: "position", name: "position", searchable: true, orderable: true },
         { data: "status", name: "statuspemuatan", searchable: true, orderable: true },
         { data: "createdat", name: "tanggal", searchable: true, orderable: true }
       ]
