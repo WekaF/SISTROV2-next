@@ -34,7 +34,8 @@ import {
   ChevronRight,
   ExternalLink,
   ShieldCheck,
-  Zap
+  Zap,
+  ArrowLeftRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
@@ -95,6 +96,7 @@ interface TicketData {
   deletereason: string | null;
   pic: string | null;
   gudangtujuan: string;
+  pindahgudangdesc: string | null;
   postowilayah: string;
   postobagian: string;
   nomorantrian: string;
@@ -557,6 +559,18 @@ function TrackingContent() {
                           <div>
                             <div className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-0.5">Gudang Muat Aktif</div>
                             <div className="font-black text-primary text-lg">{ticketData.gudangtujuan}</div>
+                          </div>
+                        </div>
+                      )}
+
+                      {ticketData.pindahgudangdesc && (
+                        <div className="p-4 bg-amber-50 dark:bg-amber-500/10 border-2 border-amber-200 dark:border-amber-500/20 rounded-2xl flex items-center gap-4 animate-in zoom-in-95 duration-500">
+                          <div className="p-3 bg-amber-500 text-white rounded-xl shadow-lg">
+                            <ArrowLeftRight className="h-6 w-6" />
+                          </div>
+                          <div>
+                            <div className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-[0.2em] mb-0.5">Riwayat Pindah Gudang</div>
+                            <div className="font-black text-amber-700 dark:text-amber-400 text-sm leading-tight">{ticketData.pindahgudangdesc}</div>
                           </div>
                         </div>
                       )}
