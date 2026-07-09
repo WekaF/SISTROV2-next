@@ -31,7 +31,7 @@ function AdminTicketsContent() {
       render: (row: any) => (
         <TicketActions
           bookingNo={row.bookingno}
-          status={row.position || row.status}
+          statuspemuatan={row.statuspemuatan}
           currentNopol={row.nopol}
           currentDriver={row.driver}
           posto={row.posto}
