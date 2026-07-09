@@ -40,21 +40,22 @@ export const POST = async function(request: NextRequest) {
       });
     }
 
-    if (!companyCode) {
-      return NextResponse.json({
-        success: false,
-        error: "Company code hilang dari session, silakan login manual.",
-      });
-    }
-
-    // Re-auth to ASP.NET with current companyCode to get fresh token
+    // companyCode is optional here, not required. Accounts without a fixed plant (e.g.
+    // Transport/rekanan, whose AspNetUsers.company_code is legitimately null in the backend)
+    // authenticate at ASP.NET's /Token with no companycode field at all -- see
+    // ApplicationOAuthProvider.GrantResourceOwnerCredentials's Transport-table fallback branch.
+    // This mirrors exactly what src/lib/auth.ts's authorize() already does on the original
+    // login (only appends companycode when one was actually supplied), so re-login behaves
+    // the same way the first login did instead of hard-failing accounts that never had one.
     const password = Buffer.from(encodedPw, "base64").toString("utf-8");
     const params = new URLSearchParams({
       grant_type: "password",
       username,
       password,
-      companycode: companyCode,
     });
+    if (companyCode) {
+      params.append("companycode", companyCode);
+    }
 
     const tokenRes = await fetch(`${ASPNET_API_URL}/Token`, {
       method: "POST",
