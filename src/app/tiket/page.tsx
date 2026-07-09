@@ -86,12 +86,13 @@ function RekananTicketContent() {
       key: "action",
       header: "Aksi",
       render: (t) => (
-        <TicketActions 
-          bookingNo={t.bookingno} 
-          status={t.position} 
+        <TicketActions
+          bookingNo={t.bookingno}
+          statuspemuatan={t.statuspemuatan}
           currentNopol={t.Nopol || t.nopol}
           currentDriver={t.DriverName || t.driver}
-          postoGuid={t.posto}
+          posto={t.posto}
+          showDelete={true}
         />
       ),
     },
