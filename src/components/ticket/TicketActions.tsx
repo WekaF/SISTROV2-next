@@ -44,12 +44,18 @@ export function TicketActions({
   className = "",
 }: TicketActionsProps) {
   const { data: session, status: sessionStatus } = useSession();
-  const userRole = normalizeRole((session?.user as any)?.roleName || (session?.user as any)?.role);
+  const user = session?.user as any;
+  const rawRole = user?.roleName || user?.role;
+  const rolesArr: string[] = user?.roles || [];
   
-  const isSuperAdmin = userRole === "superadmin" || userRole === "ti";
-  const isStaffArea = userRole === "staffarea";
-  const isTransport = userRole === "transport" || userRole === "rekanan";
-  const isMonitoringRole = isReadOnlyRole(userRole) || userRole === "gudang";
+  const primaryRole = normalizeRole(rawRole);
+  const hasRole = (target: string) => 
+    primaryRole === target || rolesArr.some(r => normalizeRole(r) === target);
+
+  const isSuperAdmin = hasRole("superadmin") || hasRole("ti");
+  const isStaffArea = hasRole("staffarea");
+  const isTransport = hasRole("transport") || hasRole("rekanan");
+  const isMonitoringRole = isReadOnlyRole(rawRole, rolesArr) || hasRole("gudang");
 
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isRescheduleOpen, setIsRescheduleOpen] = useState(false);

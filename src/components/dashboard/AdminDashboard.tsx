@@ -21,7 +21,7 @@ const InteractiveLeafletMap = dynamic(() => import("./InteractiveLeafletMap"), {
 
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
-const COLORS = ["#3C50E0","#10B981","#F59E0B","#EF4444","#8B5CF6","#EC4899","#36B9CC","#858796"];
+const COLORS = ["#3C50E0", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899", "#36B9CC", "#858796"];
 const PLANT_CHART_LIMIT = 8;
 const fmt = (n: number) => n?.toLocaleString("id-ID") ?? "0";
 
@@ -217,8 +217,8 @@ export const AdminDashboard = () => {
       }
       if (Array.isArray(plantRanking) && plantRanking.length > 0) {
         XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
-          ["Rank","Plant","Total Tiket","Total Tonase","Avg Durasi (mnt)","SLA %","Cancel Rate %","Score"],
-          ...plantRanking.map((r: any) => [r.Rank,r.CompanyName,r.TotalTiket,r.TotalTonase,r.AvgDurasi,r.SlaPercent,r.CancelRate,r.Score]),
+          ["Rank", "Plant", "Total Tiket", "Total Tonase", "Avg Durasi (mnt)", "SLA %", "Cancel Rate %", "Score"],
+          ...plantRanking.map((r: any) => [r.Rank, r.CompanyName, r.TotalTiket, r.TotalTonase, r.AvgDurasi, r.SlaPercent, r.CancelRate, r.Score]),
         ]), "Plant Ranking");
       }
       XLSX.writeFile(wb, `admin-dashboard-${new Date().toISOString().slice(0, 10)}.xlsx`);
@@ -325,7 +325,7 @@ export const AdminDashboard = () => {
         <div className="h-10 w-64 bg-slate-200 dark:bg-slate-800 rounded-lg" />
         <div className="w-full h-[500px] bg-slate-200 dark:bg-slate-800 rounded-2xl" />
         <div className="grid grid-cols-4 gap-4">
-          {[1,2,3,4].map(i => <div key={i} className="h-28 bg-slate-200 dark:bg-slate-800 rounded-2xl" />)}
+          {[1, 2, 3, 4].map(i => <div key={i} className="h-28 bg-slate-200 dark:bg-slate-800 rounded-2xl" />)}
         </div>
         <div className="grid grid-cols-12 gap-6">
           <div className="col-span-8 h-80 bg-slate-200 dark:bg-slate-800 rounded-2xl" />
@@ -342,21 +342,19 @@ export const AdminDashboard = () => {
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b border-gray-150 pb-5 dark:border-gray-800">
         <div>
           <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
-            Command Center — Superadmin
+            Dashboard Superadmin
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 font-medium mt-1">
             Monitoring global seluruh plant, antrian, kinerja logistik, dan log sistem.
           </p>
           <div className="flex items-center gap-2 mt-2">
-            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${
-              streamStatus === "live" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400"
+            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${streamStatus === "live" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400"
               : streamStatus === "error" ? "bg-red-100 text-red-600 dark:bg-red-500/10 dark:text-red-400"
-              : "bg-gray-100 text-gray-500 dark:bg-white/5 dark:text-gray-400"
-            }`}>
-              <span className={`h-1.5 w-1.5 rounded-full ${
-                streamStatus === "live" ? "bg-emerald-500 animate-pulse"
+                : "bg-gray-100 text-gray-500 dark:bg-white/5 dark:text-gray-400"
+              }`}>
+              <span className={`h-1.5 w-1.5 rounded-full ${streamStatus === "live" ? "bg-emerald-500 animate-pulse"
                 : streamStatus === "error" ? "bg-red-500" : "bg-gray-400 animate-pulse"
-              }`} />
+                }`} />
               {streamStatus === "live" ? "Live" : streamStatus === "error" ? "Offline" : "Connecting..."}
             </span>
             {mounted && lastUpdated && (
@@ -364,14 +362,14 @@ export const AdminDashboard = () => {
             )}
           </div>
         </div>
-        <button
+        {/* <button
           onClick={handleExport}
           disabled={isExporting || !stats}
           className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-brand-500 hover:bg-brand-600 disabled:opacity-60 disabled:cursor-not-allowed rounded-xl transition-all shadow-sm cursor-pointer"
         >
           {isExporting ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
           {isExporting ? "Mengekspor..." : "Ekspor Laporan"}
-        </button>
+        </button> */}
       </div>
 
       {/* Map */}
@@ -379,20 +377,20 @@ export const AdminDashboard = () => {
         <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-gray-150 dark:border-gray-800">
           <div>
             <CardTitle className="text-sm font-black flex items-center gap-2 tracking-tight uppercase">
-              <Globe className="h-5 w-5 text-brand-500 animate-pulse" />
+              {/* <Globe className="h-5 w-5 text-brand-500 animate-pulse" /> */}
               PETA OPERASIONAL LOGISTIK NASIONAL
             </CardTitle>
             <CardDescription className="text-xs font-bold text-gray-400">
               Status distribusi &amp; monitoring performa logistik di seluruh wilayah Indonesia
             </CardDescription>
           </div>
-          <div className="flex items-center gap-3 bg-emerald-50 dark:bg-emerald-950/20 px-3.5 py-1.5 rounded-xl border border-emerald-100/50 dark:border-emerald-900/30">
+          {/* <div className="flex items-center gap-3 bg-emerald-50 dark:bg-emerald-950/20 px-3.5 py-1.5 rounded-xl border border-emerald-100/50 dark:border-emerald-900/30">
             <span className="flex h-2 w-2 relative">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
             </span>
             <span className="text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400 tracking-wider uppercase">MONITORING AKTIF</span>
-          </div>
+          </div> */}
         </CardHeader>
         <CardContent className="p-0">
           <div className="grid grid-cols-1 xl:grid-cols-12">
@@ -632,7 +630,7 @@ export const AdminDashboard = () => {
             <table className="w-full text-xs">
               <thead>
                 <tr className="bg-gray-50 dark:bg-white/[0.02] border-b border-gray-100 dark:border-gray-800">
-                  {["#","Plant","Tiket","Tonase","Avg Durasi","SLA %","Cancel %","Score"].map(h => (
+                  {["#", "Plant", "Tiket", "Tonase", "Avg Durasi", "SLA %", "Cancel %", "Score"].map(h => (
                     <th key={h} className="text-left px-3 py-2.5 font-semibold text-gray-600 dark:text-gray-400">{h}</th>
                   ))}
                 </tr>
@@ -697,7 +695,7 @@ export const AdminDashboard = () => {
               <table className="w-full text-xs">
                 <thead>
                   <tr className="bg-gray-50 dark:bg-white/[0.02] border-b border-gray-100 dark:border-gray-800">
-                    {["No Tiket","Nopol","Driver","Qty","Check In","Check Out","Plant","Durasi"].map(h => (
+                    {["No Tiket", "Nopol", "Driver", "Qty", "Check In", "Check Out", "Plant", "Durasi"].map(h => (
                       <th key={h} className="text-left px-3 py-2.5 font-semibold text-gray-600 dark:text-gray-400">{h}</th>
                     ))}
                   </tr>

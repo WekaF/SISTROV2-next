@@ -93,9 +93,11 @@ function AntrianContent() {
   // Role detection
   const userRole = normalizeRole((session?.user as any)?.roleName || (session?.user as any)?.role);
   const roles: string[] = (session?.user as any)?.roles ?? [];
-  const isSuperAdmin = userRole === "superadmin" || userRole === "ti";
-  const isStaffArea = userRole === "staffarea";
-  const isGudang = userRole === "gudang";
+  const hasRole = (target: string) => userRole === target || roles.some(r => normalizeRole(r) === target);
+
+  const isSuperAdmin = hasRole("superadmin") || hasRole("ti");
+  const isStaffArea = hasRole("staffarea");
+  const isGudang = hasRole("gudang");
   
   const isGudangFull = isSuperAdmin || isStaffArea || isGudang || hasGudangAccess(userRole, roles);
   const isReadOnly = isReadOnlyRole(userRole, roles) && !isSuperAdmin && !isStaffArea;
