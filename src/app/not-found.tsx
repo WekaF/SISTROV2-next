@@ -1,6 +1,7 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Halaman Tidak Ditemukan | SISTRO",
   description: "Halaman yang Anda cari tidak tersedia di Sistem SISTRO.",
 };
