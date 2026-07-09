@@ -112,6 +112,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
           await updateSession({
             aspnetToken: json.aspnetToken,
             companyCode: json.companyCode,
+            ...(json.username !== undefined && { username: json.username }),
             ...(json.menuGroup !== undefined && { menuGroup: json.menuGroup }),
             ...(json.menuItems !== undefined && { menuItems: json.menuItems }),
           }).catch((err) =>

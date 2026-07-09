@@ -114,6 +114,7 @@ export const POST = withAudit(async function(request: NextRequest) {
       activeCompany: companyCode,
       aspnetToken: data.access_token,
       companyCode: data.companycode ?? companyCode,
+      username: data.username,
       menuGroup: resolvedMenuGroup,
       menuItems: resolvedMenuItems,
     });

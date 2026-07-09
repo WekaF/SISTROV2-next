@@ -238,6 +238,12 @@ export const authOptions: NextAuthOptions = {
       if (trigger === "update" && updateData) {
         if (updateData.aspnetToken) token.aspnetToken = updateData.aspnetToken;
         if (updateData.companyCode) token.companyCode = updateData.companyCode;
+        // Keep username in sync with companyCode on every update -- ASP.NET stores usernames
+        // as "<bare_login>_<COMPANYCODE>" for accounts with a fixed company, so username and
+        // companyCode must change together (e.g. on a company switch) or a later re-auth
+        // (relogin, or switching again) reconstructs a stale, mismatched combination that
+        // ASP.NET rejects with "Anda tidak terdaftar di plant / company code ini."
+        if (updateData.username) token.username = updateData.username;
         if (updateData.menuGroup !== undefined) token.menuGroup = updateData.menuGroup;
         if (updateData.menuGroups !== undefined) token.menuGroups = updateData.menuGroups;
         if (updateData.menuItems !== undefined) token.menuItems = updateData.menuItems;
