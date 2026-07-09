@@ -20,7 +20,7 @@ import { normalizeRole, isReadOnlyRole } from "@/lib/role-utils";
 interface TicketActionsProps {
   bookingNo: string;
   id?: string;
-  status?: string;
+  statuspemuatan?: string;
   currentNopol?: string;
   currentDriver?: string;
   postoGuid?: string;
@@ -34,7 +34,7 @@ interface TicketActionsProps {
 export function TicketActions({
   bookingNo,
   id,
-  status,
+  statuspemuatan,
   currentNopol,
   currentDriver,
   posto,
@@ -60,16 +60,22 @@ export function TicketActions({
     return <div className="h-8 w-20 bg-gray-100 dark:bg-gray-800 animate-pulse rounded-none" />;
   }
 
-  // Normalize status to string for comparison, but if undefined/null, do not default to "00"
-  // as this will bypass the checkpoint restriction for incomplete API responses.
-  const currentStatus = status != null && status !== "" ? String(status).padStart(2, '0') : null;
+  // Normalize statuspemuatan for comparison, but if undefined/null/empty, do not default to a
+  // permissive value ("booking") -- that would bypass the checkpoint restriction whenever an API
+  // response is missing this field. Missing data must fail closed (buttons hidden), not open.
+  const normalizedStatus = statuspemuatan != null && statuspemuatan !== ""
+    ? String(statuspemuatan).toLowerCase()
+    : null;
 
-  // Permission: Edit allowed if role is authorized AND status is '00'
-  const canEdit = (isSuperAdmin || isStaffArea || isTransport) && currentStatus === "00";
-  
-  // Permission: Reschedule allowed ONLY for superadmin/staffarea AND ticket not yet at any checkpoint 
-  // (status "00" = Booking, "01" = Siap Dicetak)
-  const canReschedule = (isSuperAdmin || isStaffArea) && (currentStatus === "00" || currentStatus === "01");
+  // Permission: Edit allowed if role is authorized AND ticket is still in "booking" stage
+  // (backend position "00" -- not yet checked in at Security).
+  const canEdit = (isSuperAdmin || isStaffArea || isTransport) && normalizedStatus === "booking";
+
+  // Permission: Reschedule allowed ONLY for superadmin/staffarea AND ticket is still in "booking"
+  // stage. Once Security scans the ticket in, statuspemuatan moves to "waiting"/"progress"/"release"
+  // (backend position "01" and beyond) -- the ticket has entered the checkpoint flow and its shift
+  // can no longer change.
+  const canReschedule = (isSuperAdmin || isStaffArea) && normalizedStatus === "booking";
 
   // Permission: View/Print allowed for these roles
   const canInteract = isSuperAdmin || isStaffArea || isTransport || isMonitoringRole;
@@ -78,9 +84,14 @@ export function TicketActions({
   // already used in TicketEditModal below to pick GP vs kontainer input mode).
   const isSOPosto = !!posto && posto.charAt(0) !== "5";
 
-  // Permission: Delete allowed for SuperAdmin/TI and StaffArea always;
-  // Transport only when the ticket's posto is SO-type.
-  const canDelete = isSuperAdmin || isStaffArea || (isTransport && isSOPosto);
+  // Permission: Delete allowed for SuperAdmin/TI and StaffArea always; Transport only when the
+  // ticket's posto is SO-type -- AND only while the ticket hasn't been released yet. "release" means
+  // the ticket already checked out through Security (or finished an equivalent flow) -- matches the
+  // backend's own delete gating in TiketController.cs (DataTablePeriodeTiket's legacy Action column),
+  // which whitelists statuspemuatan booking/progress/waiting and excludes release.
+  const canDelete = (isSuperAdmin || isStaffArea || (isTransport && isSOPosto))
+    && normalizedStatus != null
+    && ["booking", "progress", "waiting"].includes(normalizedStatus);
 
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
