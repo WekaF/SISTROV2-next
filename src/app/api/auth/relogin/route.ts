@@ -25,13 +25,20 @@ export const POST = async function(request: NextRequest) {
       companyCode = request.cookies.get("sistro_active_company")?.value;
     }
 
-    // rawToken.username = full DB username as stored by ASP.NET e.g. "wahyu_pkg"
-    // (ASP.NET /Token always stores <bare_login>_<COMPANYCODE> as the DB UserName)
-    // Strip last _COMPANY suffix so re-auth sends bare username to /Token
-    const lastUnderscore = rawUsername ? rawUsername.lastIndexOf("_") : -1;
-    const username = (rawUsername && lastUnderscore > 0 && lastUnderscore < rawUsername.length - 1)
-      ? rawUsername.slice(0, lastUnderscore)
-      : rawUsername;
+    // rawToken.username = full DB username as stored by ASP.NET. For accounts that logged in
+    // WITH a companyCode, this is "<bare_login>_<COMPANYCODE>" (e.g. "wahyu_pkg"). For accounts
+    // that logged in WITHOUT one (e.g. Transport/rekanan), it's just the bare login as-is, with
+    // NO suffix -- and that bare login can itself legitimately contain underscores (e.g.
+    // "budi_transport1"). Blindly stripping "everything after the last underscore" mangles those
+    // bare logins into a wrong username. Only strip the suffix when we can verify it's actually
+    // "_<our known companyCode>" -- never guess.
+    let username = rawUsername;
+    if (rawUsername && companyCode) {
+      const suffix = "_" + companyCode;
+      if (rawUsername.toLowerCase().endsWith(suffix.toLowerCase())) {
+        username = rawUsername.slice(0, rawUsername.length - suffix.length);
+      }
+    }
 
     if (!username || !encodedPw) {
       return NextResponse.json({
