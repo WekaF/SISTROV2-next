@@ -229,7 +229,7 @@ export default function PlantConfigPage() {
                   <th className="px-6 py-4 text-[10px] font-black uppercase text-gray-500 tracking-widest">Nama Plant</th>
                   <th className="px-6 py-4 text-[10px] font-black uppercase text-gray-500 tracking-widest">Grup Company</th>
                   <th className="px-6 py-4 text-[10px] font-black uppercase text-gray-500 tracking-widest text-center">Urutan</th>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase text-gray-500 tracking-widest text-center">Status</th>
+                  <th className="px-6 py-4 text-[10px] font-black uppercase text-gray-500 tracking-widest text-center">Status Perusahaan</th>
                   <th className="px-6 py-4 text-[10px] font-black uppercase text-gray-500 tracking-widest text-right">Aksi</th>
                 </tr>
               </thead>

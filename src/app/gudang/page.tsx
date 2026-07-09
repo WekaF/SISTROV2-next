@@ -62,7 +62,7 @@ interface StokLog {
 
 export default function GudangListPage() {
   const { data: session } = useSession();
-  const { apiJson, apiTable } = useApi();
+  const { apiFetch, apiJson, apiTable } = useApi();
   const { activeCompanyCode } = useCompany();
   const { addToast } = useToast();
   const queryClient = useQueryClient();
@@ -117,7 +117,7 @@ export default function GudangListPage() {
     });
 
     const data = res.data || [];
-    
+
     // Calculate Stats
     const uniqueGudang = new Set(data.map((item: any) => item.idgudang));
     const gudangQueues: Record<string, number> = {};
@@ -144,12 +144,17 @@ export default function GudangListPage() {
     setIsLoadingDetail(true);
     setIsDetailOpen(true);
     try {
-      const res = await apiJson("/api/Gudang/DetailData", {
-        method: "POST",
-        body: JSON.stringify({ id: realId })
-      });
+      const fd = new URLSearchParams();
+      fd.append("id", realId);
+      if (activeCompanyCode) fd.append("companyCode", activeCompanyCode);
       
-      const detail = res.response || res;
+      const res = await apiFetch("/api/Gudang/DetailData", {
+        method: "POST",
+        body: fd.toString(),
+        headers: { "Content-Type": "application/x-www-form-urlencoded" }
+      });
+      const data = await res.json();
+      const detail = data.response || data;
       setGudangDetail(detail);
 
       const logsRes = await apiTable("/api/Gudang/LogStok", {
@@ -175,11 +180,17 @@ export default function GudangListPage() {
     setIsTambahStokOpen(true);
     setTambahanStok(0);
     try {
-      const res = await apiJson("/api/Gudang/DetailData", {
+      const fd = new URLSearchParams();
+      fd.append("id", realId);
+      if (activeCompanyCode) fd.append("companyCode", activeCompanyCode);
+
+      const res = await apiFetch("/api/Gudang/DetailData", {
         method: "POST",
-        body: JSON.stringify({ id: realId })
+        body: fd.toString(),
+        headers: { "Content-Type": "application/x-www-form-urlencoded" }
       });
-      setGudangDetail(res.response || res);
+      const data = await res.json();
+      setGudangDetail(data.response || data);
     } catch (err) {
       addToast({ title: "Error", description: "Gagal mengambil detail gudang", variant: "destructive" });
     } finally {
@@ -191,9 +202,15 @@ export default function GudangListPage() {
     if (!gudangDetail || tambahanStok < 0) return;
     setIsSaving(true);
     try {
-      await apiJson("/api/Gudang/UpdateData", {
+      const fd = new URLSearchParams();
+      fd.append("id", String(gudangDetail.id));
+      fd.append("value", String(tambahanStok));
+      if (activeCompanyCode) fd.append("companyCode", activeCompanyCode);
+
+      await apiFetch("/api/Gudang/UpdateData", {
         method: "POST",
-        body: JSON.stringify({ id: gudangDetail.id, value: tambahanStok })
+        body: fd.toString(),
+        headers: { "Content-Type": "application/x-www-form-urlencoded" }
       });
       addToast({ title: "Sukses", description: "Stok gudang berhasil ditambahkan", variant: "success" });
       setIsTambahStokOpen(false);
@@ -215,9 +232,15 @@ export default function GudangListPage() {
     if (!toggleTarget) return;
     const { row, nextStatus } = toggleTarget;
     try {
-      await apiJson("/api/Gudang/GudangMuatSetting", {
+      const fd = new URLSearchParams();
+      fd.append("id", String(row.id));
+      fd.append("aktif", nextStatus ? "true" : "false");
+      if (activeCompanyCode) fd.append("companyCode", activeCompanyCode);
+
+      await apiFetch("/api/Gudang/GudangMuatSetting", {
         method: "POST",
-        body: JSON.stringify({ id: row.id, aktif: nextStatus ? "true" : "false" })
+        body: fd.toString(),
+        headers: { "Content-Type": "application/x-www-form-urlencoded" }
       });
       addToast({ title: "Sukses", description: `Gudang ${nextStatus ? 'diaktifkan' : 'dinonaktifkan'}`, variant: "success" });
       queryClient.invalidateQueries({ queryKey: ["gudang-list"] });
@@ -264,16 +287,16 @@ export default function GudangListPage() {
     },
     {
       key: "Aktif",
-      header: "Status",
+      header: "Status Gudang",
       sortColumn: 6,
       render: (row) => {
         // Detect active status from HTML badge string or standard boolean/string
         const aktifStr = String(row.Aktif || "").toLowerCase();
-        const isAktif = 
-          aktifStr.includes("badge-success") || 
-          aktifStr.includes(">aktif<") || 
-          row.Aktif === "1" || 
-          row.Aktif === "True" || 
+        const isAktif =
+          aktifStr.includes("badge-success") ||
+          aktifStr.includes(">aktif<") ||
+          row.Aktif === "1" ||
+          row.Aktif === "True" ||
           row.Aktif === true;
 
         if (!isGudangFull) {
@@ -336,7 +359,7 @@ export default function GudangListPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">Daftar Gudang Gresik</h1>
+            <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">Daftar Gudang</h1>
             <Badge color={isGudangFull ? "success" : "info"} variant="solid" size="sm">
               {isGudangFull ? "Management Mode" : "Monitoring Mode"}
             </Badge>
@@ -565,7 +588,7 @@ export default function GudangListPage() {
               </label>
               <div className="relative">
                 <div className="absolute left-6 top-1/2 -translate-y-1/2 flex items-center gap-2 pr-4 border-r-2 border-slate-100 dark:border-slate-800">
-                   <Plus className="h-5 w-5 text-brand-600 dark:text-brand-400" />
+                  <Plus className="h-5 w-5 text-brand-600 dark:text-brand-400" />
                 </div>
                 <Input
                   type="number"
@@ -590,17 +613,17 @@ export default function GudangListPage() {
             </div>
 
             <div className="flex gap-4 pt-2">
-              <Button 
-                variant="outline" 
-                className="flex-1 h-14 font-bold rounded-2xl border-2 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all dark:border-slate-700 dark:text-slate-200" 
-                onClick={() => setIsTambahStokOpen(false)} 
+              <Button
+                variant="outline"
+                className="flex-1 h-14 font-bold rounded-2xl border-2 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all dark:border-slate-700 dark:text-slate-200"
+                onClick={() => setIsTambahStokOpen(false)}
                 disabled={isSaving}
               >
                 Batal
               </Button>
-              <Button 
-                className="flex-2 h-14 font-black bg-brand-600 hover:bg-brand-700 text-white shadow-lg shadow-brand-500/20 rounded-2xl px-12 transition-all active:scale-95 disabled:opacity-50" 
-                onClick={handleSaveStok} 
+              <Button
+                className="flex-2 h-14 font-black bg-brand-600 hover:bg-brand-700 text-white shadow-lg shadow-brand-500/20 rounded-2xl px-12 transition-all active:scale-95 disabled:opacity-50"
+                onClick={handleSaveStok}
                 disabled={isSaving || tambahanStok <= 0}
               >
                 {isSaving ? (
