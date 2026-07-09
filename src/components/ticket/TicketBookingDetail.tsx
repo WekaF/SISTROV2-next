@@ -458,10 +458,10 @@ export function TicketBookingDetail({ guid }: TicketBookingDetailProps) {
                       <div className="flex justify-center gap-3 py-2">
                         <TicketActions
                           bookingNo={row.bookingno}
-                          status={row.position || "00"}
+                          statuspemuatan={row.statuspemuatan}
                           currentNopol={row.nopol}
                           currentDriver={row.driver}
-                          postoGuid={row.posto || guid}
+                          posto={row.posto || guid}
                         />
                         {row.Action && row.Action !== "-" && (
                           <div
