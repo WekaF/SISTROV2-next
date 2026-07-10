@@ -431,7 +431,7 @@ export default function WarehouseMasterPage() {
                        <select
                           className="h-7 text-[10px] font-bold border-gray-200 dark:border-gray-800 rounded bg-white dark:bg-gray-900 px-1 outline-none focus:ring-1 focus:ring-brand-500"
                           value={limit}
-                          onChange={(e) => { setLimit(e.target.value === "" ? "" : e.target.value === "" ? "" : Number(e.target.value)); setPage(1); }}
+                          onChange={(e) => { setLimit(Number(e.target.value)); setPage(1); }}
                        >
                           {[10, 20, 50, 100].map(v => <option key={v} value={v}>{v}</option>)}
                        </select>

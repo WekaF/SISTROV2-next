@@ -637,7 +637,7 @@ export default function PostoPage() {
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-gray-500 dark:text-gray-400">Kuantitas (Ton)</label>
-                  <Input type="number" value={editForm.qty} onChange={(e) => setEditForm({ ...editForm, qty: e.target.value === "" ? "" : e.target.value === "" ? "" : Number(e.target.value) })} required />
+                  <Input type="number" value={editForm.qty} onChange={(e) => setEditForm({ ...editForm, qty: e.target.value === "" ? 0 : Number(e.target.value) })} required />
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-gray-500 dark:text-gray-400">Tanggal Jatuh Tempo</label>

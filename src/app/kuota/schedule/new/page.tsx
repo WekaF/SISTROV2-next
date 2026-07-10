@@ -270,7 +270,7 @@ export default function NewQuotaWizard() {
                       type="number" 
                       placeholder="Masukkan Tonase..." 
                       value={formData.header.totalQuota || ""}
-                      onChange={(e) => setFormData({...formData, header: {...formData.header, totalQuota: e.target.value === "" ? "" : e.target.value === "" ? "" : Number(e.target.value)}})}
+                      onChange={(e) => setFormData({...formData, header: {...formData.header, totalQuota: e.target.value === "" ? 0 : Number(e.target.value)}})}
                     />
                   </div>
                   <div className="space-y-2">
@@ -318,7 +318,7 @@ export default function NewQuotaWizard() {
                              value={formData.wilayah[w.id] || ""}
                              onChange={(e) => setFormData({
                                ...formData, 
-                               wilayah: {...formData.wilayah, [w.id]: e.target.value === "" ? "" : e.target.value === "" ? "" : Number(e.target.value)}
+                               wilayah: {...formData.wilayah, [w.id]: e.target.value === "" ? 0 : Number(e.target.value)}
                              })}
                           />
                        </div>
@@ -355,7 +355,7 @@ export default function NewQuotaWizard() {
                                  value={formData.areas[a.id] || ""}
                                  onChange={(e) => setFormData({
                                    ...formData, 
-                                   areas: {...formData.areas, [a.id]: e.target.value === "" ? "" : e.target.value === "" ? "" : Number(e.target.value)}
+                                   areas: {...formData.areas, [a.id]: e.target.value === "" ? 0 : Number(e.target.value)}
                                  })}
                                />
                             </div>
@@ -411,7 +411,7 @@ export default function NewQuotaWizard() {
                                   placeholder="0"
                                   value={formData.shifts[a.id]?.[sNum] || ""}
                                   onChange={(e) => {
-                                    const val = e.target.value === "" ? "" : e.target.value === "" ? "" : Number(e.target.value);
+                                    const val = e.target.value === "" ? 0 : Number(e.target.value);
                                     setFormData({
                                       ...formData,
                                       shifts: {

@@ -511,7 +511,7 @@ export default function TrackDoPage() {
                     <select 
                       value={pageSize}
                       onChange={(e) => {
-                        setPageSize(e.target.value === "" ? "" : e.target.value === "" ? "" : Number(e.target.value));
+                        setPageSize(Number(e.target.value));
                         setCurrentPage(1);
                       }}
                       className="bg-slate-100 dark:bg-slate-800 border-none outline-none font-bold text-xs px-2 py-1 rounded-lg text-slate-700 dark:text-slate-300 cursor-pointer"
