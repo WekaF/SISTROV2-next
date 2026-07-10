@@ -494,15 +494,25 @@ export default function PlantInstallPage() {
         <div className="rounded border border-yellow-400 bg-yellow-50 p-3 flex gap-2">
           <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-semibold text-yellow-800">
-              Perhatian — Operasi Destruktif
-            </p>
+            <div className="flex items-center gap-1.5">
+              <p className="text-sm font-semibold text-yellow-800">
+                Perhatian — Data Lama Akan Dihapus
+              </p>
+              <Tooltip>
+                <TooltipTrigger aria-label="Detail teknis penghapusan data">
+                  <HelpCircle className="w-3.5 h-3.5 text-yellow-700" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  Proses ini menjalankan fungsi backend <code>installationPlant_deleteData</code>.
+                </TooltipContent>
+              </Tooltip>
+            </div>
             <p className="text-xs text-yellow-700 mt-1">
-              Klik Install akan menjalankan{" "}
-              <code className="font-mono">installationPlant_deleteData</code> yang{" "}
-              <strong>MENGHAPUS</strong> semua data plant{" "}
-              <strong>{form.company_code || "…"}</strong> sebelum re-seed. Pastikan
-              ini memang intended.
+              Klik Install akan <strong>MENGHAPUS</strong> semua data plant{" "}
+              <strong>{form.company_code || "…"}</strong> yang sudah ada sebelum
+              data baru dibuat ulang (re-seed). Tindakan ini{" "}
+              <strong>tidak bisa dibatalkan</strong>. Pastikan Anda memang bermaksud
+              menghapus dan membuat ulang plant ini.
             </p>
             <label className="flex items-center gap-2 mt-2 text-xs font-medium text-yellow-800 cursor-pointer">
               <input
