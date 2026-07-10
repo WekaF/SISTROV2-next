@@ -33,6 +33,11 @@ interface MappingItem {
   kuota: string;
 }
 
+interface ShiftItem {
+  start: string;
+  end: string;
+}
+
 interface FormState {
   mode: "1" | "2" | "3";
   company_code: string;
@@ -41,8 +46,7 @@ interface FormState {
   gudangs: string[];
   gudangSPPT: GudangSPPTItem[];
   produks: string[];
-  shift_start: string;
-  shift_end: string;
+  shifts: ShiftItem[];
   mapping: MappingItem[];
 }
 
@@ -54,8 +58,7 @@ const initialForm: FormState = {
   gudangs: [""],
   gudangSPPT: [{ code: "", nama: "" }],
   produks: [""],
-  shift_start: "06:00",
-  shift_end: "14:00",
+  shifts: [{ start: "06:00", end: "14:00" }],
   mapping: [{ produk: "", gudang: "", kapasitas: "100", kaptruk: "10", kuota: "5" }],
 };
 
@@ -70,7 +73,10 @@ function toPayload(f: FormState) {
       .map((g) => `${g.code},${g.nama}`)
       .join("|"),
     set_produk: f.produks.filter(Boolean).join("|"),
-    set_shift: `${f.shift_start},${f.shift_end}`,
+    set_shift: f.shifts
+      .filter((s) => s.start && s.end)
+      .map((s) => `${s.start},${s.end}`)
+      .join("|"),
     set_mappingproduk: f.mapping
       .filter((m) => m.produk && m.gudang)
       .map((m) => `${m.produk},${m.gudang},${m.kapasitas},${m.kaptruk},${m.kuota}`)
@@ -113,7 +119,7 @@ export default function PlantInstallPage() {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
-  function removeItem(key: "gudangs" | "gudangSPPT" | "produks" | "mapping", idx: number) {
+  function removeItem(key: "gudangs" | "gudangSPPT" | "produks" | "mapping" | "shifts", idx: number) {
     setForm((prev) => {
       const arr = [...(prev[key] as any[])];
       arr.splice(idx, 1);
@@ -147,7 +153,7 @@ export default function PlantInstallPage() {
     if (step === 3) return form.produks.some(Boolean);
     if (step === 4)
       return (
-        !!(form.shift_start && form.shift_end) &&
+        form.shifts.some((s) => s.start && s.end) &&
         form.mapping.some((m) => m.produk && m.gudang)
       );
     return false;
@@ -339,37 +345,61 @@ export default function PlantInstallPage() {
     return (
       <div className="space-y-6">
         <div>
-          <div className="flex items-center gap-1.5 mb-2">
-            <label className="text-sm font-medium">
-              Shift 1 (jam mulai – jam selesai)
-            </label>
-            <Tooltip>
-              <TooltipTrigger aria-label="Bantuan Shift">
-                <HelpCircle className="w-3.5 h-3.5 text-muted-foreground" />
-              </TooltipTrigger>
-              <TooltipContent>
-                Jam operasional shift. Tambahkan lebih dari satu shift jika plant beroperasi 24 jam.
-              </TooltipContent>
-            </Tooltip>
-          </div>
-          <div className="flex gap-4">
-            <div>
-              <label className="text-xs text-muted-foreground">Mulai</label>
-              <Input
-                type="time"
-                value={form.shift_start}
-                onChange={(e) => setField("shift_start", e.target.value)}
-              />
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-1.5">
+              <label className="text-sm font-medium">Shift Operasional</label>
+              <Tooltip>
+                <TooltipTrigger aria-label="Bantuan Shift">
+                  <HelpCircle className="w-3.5 h-3.5 text-muted-foreground" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  Jam operasional shift. Tambahkan lebih dari satu shift jika plant beroperasi 24 jam.
+                </TooltipContent>
+              </Tooltip>
             </div>
-            <div>
-              <label className="text-xs text-muted-foreground">Selesai</label>
-              <Input
-                type="time"
-                value={form.shift_end}
-                onChange={(e) => setField("shift_end", e.target.value)}
-              />
-            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() =>
+                setField("shifts", [...form.shifts, { start: "06:00", end: "14:00" }])
+              }
+            >
+              <Plus className="w-3 h-3 mr-1" /> Tambah Shift
+            </Button>
           </div>
+          {form.shifts.map((s, i) => (
+            <div key={i} className="flex gap-4 items-end mb-2">
+              <div>
+                <label className="text-xs text-muted-foreground">Shift {i + 1} Mulai</label>
+                <Input
+                  type="time"
+                  value={s.start}
+                  onChange={(e) => {
+                    const arr = [...form.shifts];
+                    arr[i] = { ...arr[i], start: e.target.value };
+                    setField("shifts", arr);
+                  }}
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground">Selesai</label>
+                <Input
+                  type="time"
+                  value={s.end}
+                  onChange={(e) => {
+                    const arr = [...form.shifts];
+                    arr[i] = { ...arr[i], end: e.target.value };
+                    setField("shifts", arr);
+                  }}
+                />
+              </div>
+              {form.shifts.length > 1 && (
+                <Button size="sm" variant="ghost" onClick={() => removeItem("shifts", i)}>
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              )}
+            </div>
+          ))}
         </div>
 
         <div>
