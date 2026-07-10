@@ -126,7 +126,7 @@ function mapAspnetRole(rawRole: string | undefined | null): Role {
 // ─── Shared menu fragments ────────────────────────────────────────────────────
 
 const MENU_POSTO_FULL = {
-  title: "POSTO",
+  title: "POSTO / SO",
   url: "#",
   icon: ClipboardList,
   items: [
@@ -134,7 +134,7 @@ const MENU_POSTO_FULL = {
     { title: "Data SO", url: "/posto/so", icon: FileText },
     { title: "Cut Off POSTO", url: "/posto/cut-off", icon: Scissors },
     { title: "Prioritas Tujuan Muat", url: "/posto/priority", icon: SortAsc },
-    { title: "Upload POSTO / SO / SO", url: "/posto/upload", icon: Upload },
+    { title: "Upload POSTO / SO", url: "/posto/upload", icon: Upload },
     { title: "Pengajuan Jatuh Tempo", url: "/pengajuan/jatuh-tempo", icon: AlertCircle },
   ],
 }

@@ -165,7 +165,17 @@ export default function PostoUploadPage() {
         if (Array.isArray(data) && data.length === 0) {
           data = await apiJson('/api/Wilayah/DataForMapping');
         }
-        if (Array.isArray(data)) setWilayahOptions(data);
+        if (Array.isArray(data) && data.length > 0) {
+          setWilayahOptions(data);
+          
+          // Try to find GP or PKG, otherwise fallback to the first one
+          const defaultOpt = data.find((w: any) => 
+            w.abbrev?.trim().toUpperCase() === "GP" || 
+            w.abbrev?.trim().toUpperCase() === "PKG"
+          ) || data[0];
+          
+          setSelectedWilayah(defaultOpt.abbrev);
+        }
       } catch (err) {
         console.error("Failed to load wilayah options", err);
       }

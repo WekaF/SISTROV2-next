@@ -480,7 +480,7 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
         icon: <Package className="h-5 w-5" />,
         name: "Posto",
         subItems: [
-          { name: "Data Posto / SO", path: "/posto" },
+          { name: "Data Posto", path: "/posto" },
           { name: "Data So", path: "/so" },
           { name: "Pengajuan Jatuh Tempo", path: "/pengajuan/jatuh-tempo" },
         ],
@@ -517,7 +517,7 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
         icon: <Package className="h-5 w-5" />,
         name: "Posto",
         subItems: [
-          { name: "Data Posto / SO", path: "/posto" },
+          { name: "Data Posto", path: "/posto" },
           { name: "Data So", path: "/so" },
           { name: "Pengajuan Jatuh Tempo", path: "/pengajuan/jatuh-tempo" },
         ],
