@@ -90,6 +90,9 @@ export default function SignInForm() {
       } else if (result?.ok) {
         setShowFullPageLoading(true);
         router.push(callbackUrl);
+      } else {
+        setError("Terjadi kesalahan. Silakan coba lagi.");
+        setIsLoading(false);
       }
     } catch {
       setError("Terjadi kesalahan. Silakan coba lagi.");
