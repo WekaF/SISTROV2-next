@@ -12,15 +12,36 @@ import {
   BarChart3,
   Clock,
   ChevronRight,
+  Loader2,
 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import Badge from "@/components/ui/badge/Badge"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { DataTable, type DataTableColumn, type DataTableParams } from "@/components/ui/DataTable"
 import { normalizeRole } from "@/lib/role-utils"
 import { useCompany } from "@/context/CompanyContext"
+import { useToast } from "@/components/ui/toast"
+import { startOfMonth, endOfMonth, startOfYear, endOfYear, format } from "date-fns"
+
+type QuotaFilterMode = "harian" | "bulanan" | "tahunan"
+
+function getQuotaDateRange(mode: QuotaFilterMode, value: string): { startDate: string; endDate: string } {
+  if (!value) return { startDate: "", endDate: "" }
+  if (mode === "harian") return { startDate: value, endDate: value }
+  if (mode === "bulanan") {
+    const [y, m] = value.split("-").map(Number)
+    if (!y || !m) return { startDate: "", endDate: "" }
+    const ref = new Date(y, m - 1, 1)
+    return { startDate: format(startOfMonth(ref), "yyyy-MM-dd"), endDate: format(endOfMonth(ref), "yyyy-MM-dd") }
+  }
+  const y = Number(value)
+  if (!y || value.length !== 4) return { startDate: "", endDate: "" }
+  const ref = new Date(y, 0, 1)
+  return { startDate: format(startOfYear(ref), "yyyy-MM-dd"), endDate: format(endOfYear(ref), "yyyy-MM-dd") }
+}
 
 interface QuotaRow {
   id: number
@@ -46,6 +67,12 @@ export default function QuotaSchedulePage() {
   const activeRole = normalizeRole((session?.user as any)?.role)
   const canEdit = ["candal", "superadmin", "admin", "pod"].includes(activeRole)
 
+  const { addToast } = useToast()
+  const [isExporting, setIsExporting] = useState(false)
+  const [filterMode, setFilterMode] = useState<QuotaFilterMode>("bulanan")
+  const [filterValue, setFilterValue] = useState("")
+  const { startDate, endDate } = getQuotaDateRange(filterMode, filterValue)
+
   const [metrics, setMetrics] = useState({ totalDailyQuota: 0, totalBooked: 0, totalIn: 0, totalOut: 0 })
 
   // Re-fetch metrics setiap kali company berubah
@@ -54,18 +81,58 @@ export default function QuotaSchedulePage() {
     fetch(`/api/kuota/schedule${qs}`)
       .then(r => r.json())
       .then(d => { if (d.metrics) setMetrics(d.metrics) })
-      .catch(() => {})
+      .catch(() => { })
   }, [activeCompanyCode])
+
+  const handleExport = async () => {
+    try {
+      setIsExporting(true)
+      const qs = new URLSearchParams({
+        draw: "1", start: "0", length: "10000",
+        search: "",
+      })
+      if (activeCompanyCode) qs.set("companyCode", activeCompanyCode)
+      const res = await fetch(`/api/kuota/schedule?${qs}`)
+      const result = await res.json()
+
+      if (!result.success) throw new Error(result.error || "Gagal load data")
+      const data = result.data || []
+
+      const headers = ["Tanggal", "Produk", "Kuota", "Terpesan", "Masuk", "Keluar", "Status", "Last Update", "By"]
+      const rows = data.map((item: any) => [
+        item.tanggalString || item.tanggal,
+        item.namaproduk,
+        item.kuota,
+        item.kuota_terpesan,
+        item.kuota_in,
+        item.kuota_out,
+        item.status,
+        item.updatedonString,
+        item.updatedbyString
+      ])
+
+      const XLSX = await import("xlsx")
+      const ws = XLSX.utils.aoa_to_sheet([headers, ...rows])
+      const wb = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(wb, ws, "Jadwal_Kuota")
+      XLSX.writeFile(wb, `Jadwal_Kuota_${new Date().toISOString().split('T')[0]}.xlsx`)
+    } catch (err: any) {
+      addToast({ title: "Error", description: "Gagal Export: " + err.message, variant: "destructive" })
+    } finally {
+      setIsExporting(false)
+    }
+  }
 
   const fetcher = useCallback(async (params: DataTableParams) => {
     const qs = new URLSearchParams({
-      draw:   String(params.draw),
-      start:  String(params.start),
+      draw: String(params.draw),
+      start: String(params.start),
       length: String(params.length),
       search: params.search || "",
-      tanggal: params.columnFilters?.tanggal || "",
-      produk:  params.columnFilters?.produk  || "",
-      status:  params.columnFilters?.status  || "",
+      produk: params.columnFilters?.produk || "",
+      status: params.columnFilters?.status || "",
+      startDate,
+      endDate,
     })
     if (activeCompanyCode) qs.set("companyCode", activeCompanyCode)
     const res = await fetch(`/api/kuota/schedule?${qs}`)
@@ -73,10 +140,10 @@ export default function QuotaSchedulePage() {
     if (!data.success) throw new Error(data.error || "Gagal memuat data")
     return {
       data: data.data ?? [],
-      recordsTotal:    data.recordsTotal    ?? 0,
+      recordsTotal: data.recordsTotal ?? 0,
       recordsFiltered: data.recordsFiltered ?? 0,
     }
-  }, [activeCompanyCode])
+  }, [activeCompanyCode, startDate, endDate])
 
   const columns: DataTableColumn<QuotaRow>[] = [
     {
@@ -221,8 +288,8 @@ export default function QuotaSchedulePage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-700">
-            <Download className="h-4 w-4 mr-2" />
+          <Button variant="outline" size="sm" className="dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-700" onClick={handleExport} disabled={isExporting}>
+            {isExporting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
             Export
           </Button>
           {canEdit && (
@@ -242,7 +309,7 @@ export default function QuotaSchedulePage() {
               <TrendingUp className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Total Kuota</p>
+              <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Total Kuota (Keseluruhan)</p>
               <p className="text-xl font-bold">{metrics.totalDailyQuota.toLocaleString("id-ID")}<span className="text-xs font-normal"> Ton</span></p>
             </div>
           </div>
@@ -253,7 +320,7 @@ export default function QuotaSchedulePage() {
               <Package className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Terpesan</p>
+              <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Terpesan (Keseluruhan)</p>
               <p className="text-xl font-bold text-blue-600">{metrics.totalBooked.toLocaleString("id-ID")}<span className="text-xs font-normal"> Ton</span></p>
             </div>
           </div>
@@ -264,7 +331,7 @@ export default function QuotaSchedulePage() {
               <Clock className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Proses Muat</p>
+              <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Proses Muat (Keseluruhan)</p>
               <p className="text-xl font-bold text-orange-600">{metrics.totalIn.toLocaleString("id-ID")}<span className="text-xs font-normal"> Ton</span></p>
             </div>
           </div>
@@ -275,7 +342,7 @@ export default function QuotaSchedulePage() {
               <BarChart3 className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Realisasi</p>
+              <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Realisasi (Keseluruhan)</p>
               <p className="text-xl font-bold text-green-600">{metrics.totalOut.toLocaleString("id-ID")}<span className="text-xs font-normal"> Ton</span></p>
             </div>
           </div>
@@ -290,7 +357,7 @@ export default function QuotaSchedulePage() {
             <span className="font-bold text-gray-900 dark:text-white">Daftar Kuota</span>
           </div>
           <DataTable<QuotaRow>
-            queryKey={["kuota-schedule", activeCompanyCode ?? "all"]}
+            queryKey={["kuota-schedule", activeCompanyCode ?? "all", filterMode, filterValue]}
             fetcher={fetcher}
             columns={columns}
             rowKey={(r) => r.guid || r.id}
@@ -298,6 +365,62 @@ export default function QuotaSchedulePage() {
             defaultPageSize={25}
             pageSizeOptions={[10, 25, 50, 100]}
             emptyText="Belum ada jadwal kuota."
+            toolbar={
+              <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                <Calendar className="h-4 w-4 shrink-0" />
+                <div className="flex rounded-md border border-gray-200 dark:border-gray-700 overflow-hidden shrink-0">
+                  {(["harian", "bulanan", "tahunan"] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => {
+                        setFilterMode(mode)
+                        setFilterValue("")
+                      }}
+                      className={`px-2.5 h-8 text-xs font-semibold capitalize transition-colors ${
+                        filterMode === mode
+                          ? "bg-brand-500 text-white"
+                          : "bg-white dark:bg-gray-800 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700"
+                      }`}
+                    >
+                      {mode}
+                    </button>
+                  ))}
+                </div>
+                {filterMode === "harian" && (
+                  <Input
+                    type="date"
+                    className="h-8 w-36 text-xs bg-white dark:bg-gray-800"
+                    value={filterValue}
+                    onChange={(e) => setFilterValue(e.target.value)}
+                  />
+                )}
+                {filterMode === "bulanan" && (
+                  <Input
+                    type="month"
+                    className="h-8 w-36 text-xs bg-white dark:bg-gray-800"
+                    value={filterValue}
+                    onChange={(e) => setFilterValue(e.target.value)}
+                  />
+                )}
+                {filterMode === "tahunan" && (
+                  <Input
+                    type="number"
+                    placeholder="Tahun"
+                    min={2015}
+                    max={2100}
+                    className="h-8 w-24 text-xs bg-white dark:bg-gray-800"
+                    value={filterValue}
+                    onChange={(e) => setFilterValue(e.target.value)}
+                  />
+                )}
+                {filterValue && (
+                  <Button variant="ghost" size="sm" className="h-8 px-2 text-red-500" onClick={() => setFilterValue("")}>
+                    ✕
+                  </Button>
+                )}
+              </div>
+            }
           />
         </CardContent>
       </Card>
