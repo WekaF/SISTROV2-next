@@ -120,7 +120,7 @@ export default function ArmadaPage() {
       a.click();
       window.URL.revokeObjectURL(url);
     } catch (err: any) {
-      addToast("Gagal Export", err.message || "Terjadi kesalahan sistem", "error");
+      addToast({ title: "Gagal Export", description: err.message || "Terjadi kesalahan sistem", variant: "destructive" });
     } finally {
       setIsExporting(false);
     }

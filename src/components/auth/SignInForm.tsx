@@ -109,7 +109,7 @@ export default function SignInForm() {
         >
           <div className="flex flex-col items-center transform transition-transform duration-500 scale-100">
             <img
-              src="/images/logo/logo-text-black.png"
+              src="/images/logo/logo-text1.png"
               alt="SISTRO"
               className="h-12 md:h-14 object-contain mb-8 animate-fade-in dark:hidden"
             />
