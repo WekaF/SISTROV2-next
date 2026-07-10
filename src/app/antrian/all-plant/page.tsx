@@ -2,6 +2,7 @@
 import React, { Suspense, useState, useEffect, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useApi } from "@/hooks/use-api";
+import { SearchableSelect } from "@/components/ui/SearchableSelect";
 
 interface Company {
   company: string;
@@ -171,18 +172,17 @@ function AntrianAllPlantContent() {
         <p className="text-sm text-gray-500 dark:text-gray-400">Monitor antrian real-time per perusahaan</p>
       </div>
 
-      <div className="flex items-center gap-3 bg-white dark:bg-gray-800 p-4 rounded-lg border">
-        <label className="text-sm font-medium whitespace-nowrap">Pilih Plant:</label>
-        <select
-          className="flex-1 max-w-xs border rounded-md px-3 py-2 text-sm bg-white dark:bg-gray-700 dark:border-gray-600"
-          value={selectedCompany}
-          onChange={e => handleCompanyChange(e.target.value)}
-        >
-          <option value="">-- Pilih Perusahaan --</option>
-          {companies.map(c => (
-            <option key={c.company_code} value={c.company_code}>{c.company}</option>
-          ))}
-        </select>
+      <div className="flex items-center gap-3 bg-white dark:bg-gray-800 p-4 rounded-lg border dark:border-gray-700">
+        <label className="text-sm font-medium whitespace-nowrap text-gray-700 dark:text-gray-300">Pilih Plant:</label>
+        <div className="flex-1 max-w-xs">
+          <SearchableSelect
+            options={companies.map(c => ({ value: c.company_code, label: c.company }))}
+            value={selectedCompany}
+            onChange={(val) => handleCompanyChange(val)}
+            placeholder="-- Pilih Perusahaan --"
+            searchPlaceholder="Cari perusahaan..."
+          />
+        </div>
         {report && (
           <span className="text-xs text-gray-400">Data: {report.date}</span>
         )}

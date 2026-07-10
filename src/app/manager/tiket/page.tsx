@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Ticket, Loader2, Search, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { useSession } from "next-auth/react";
+import { API_BASE } from "@/lib/api-client";
 import { useTheme } from "@/context/ThemeContext";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -123,7 +124,7 @@ function TiketTable({ token }: { token: string }) {
       "columns[0][name]": "tanggal",
     });
     try {
-      const res = await fetch("/aspnet-proxy/api/Tiket/DataTableFilterLegacy", {
+      const res = await fetch(`${API_BASE}/api/Tiket/DataTableFilterLegacy`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/x-www-form-urlencoded" },
         body: body.toString(),
@@ -234,7 +235,7 @@ function KuotaTable({ token }: { token: string }) {
       "columns[0][name]": "tanggal",
     });
     try {
-      const res = await fetch("/aspnet-proxy/api/KuotaLevel4/DataTable", {
+      const res = await fetch(`${API_BASE}/api/KuotaLevel4/DataTable`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/x-www-form-urlencoded" },
         body: body.toString(),

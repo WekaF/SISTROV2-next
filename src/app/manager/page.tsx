@@ -6,6 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import { useTheme } from "@/context/ThemeContext";
+import { API_BASE } from "@/lib/api-client";
 
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
@@ -69,7 +70,7 @@ export default function ManagerDashboardPage() {
   const { data: liveStats, isLoading: liveLoading } = useQuery<GetStatsResult>({
     queryKey: ["manager-live-stats"],
     queryFn: async () => {
-      const res = await fetch("/aspnet-proxy/api/CompanyDashboard/GetStats", {
+      const res = await fetch(`${API_BASE}/api/CompanyDashboard/GetStats`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error("Gagal memuat data antrian");

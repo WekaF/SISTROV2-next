@@ -309,32 +309,32 @@ export function TicketBookingDetail({ guid }: TicketBookingDetailProps) {
                   {
                     key: "tanggalString",
                     header: "Tanggal",
-                    headerClassName: "text-center bg-gray-50/50 dark:bg-white/[0.02] py-6",
+                    headerClassName: "text-center bg-gray-50/50 dark:bg-white/[0.02] py-3 text-sm",
                     render: (row: any) => (
-                      <div className="flex flex-col items-center py-4">
-                        <div className="font-black text-gray-900 dark:text-white font-mono text-base tracking-tighter">{row.tanggalString}</div>
-                        {row.hari && <div className="text-[10px] font-black text-brand-500 uppercase tracking-[0.25em] mt-1">{row.hari}</div>}
+                      <div className="flex flex-col items-center py-2">
+                        <div className="font-black text-gray-900 dark:text-white font-mono text-sm tracking-tighter">{row.tanggalString}</div>
+                        {row.hari && <div className="text-[9px] font-black text-brand-500 uppercase tracking-[0.25em] mt-0.5">{row.hari}</div>}
                       </div>
                     )
                   },
                   {
                     key: "action1",
                     header: "Shift 1",
-                    headerClassName: "text-center bg-gray-50/50 dark:bg-white/[0.02] py-6",
+                    headerClassName: "text-center bg-gray-50/50 dark:bg-white/[0.02] py-3 text-sm",
                     render: (row: any) => {
                       const match = row.action1?.match(/pilihItemProcess\('([^']+)'\)/);
                       const id = match ? match[1] : null;
                       const kuota = row.kuota1 ?? 0;
                       return (
-                        <div className="flex flex-col items-center gap-3 py-4">
-                          <div className="px-4 py-1.5 rounded-xl bg-brand-50 dark:bg-brand-500/10">
-                            <span className="text-[11px] font-black text-brand-600">{kuota.toLocaleString()} TON</span>
+                        <div className="flex flex-col items-center gap-2 py-2">
+                          <div className="px-3 py-1 rounded-lg bg-brand-50 dark:bg-brand-500/10">
+                            <span className="text-[10px] font-black text-brand-600">{kuota.toLocaleString()} TON</span>
                           </div>
                           <Button
                             size="sm"
                             variant={kuota > 0 ? "default" : "outline"}
                             disabled={!id || kuota <= 0 || loadingShiftDetail}
-                            className={`h-10 text-[10px] font-black uppercase tracking-widest px-8 rounded-xl shadow-xl transition-all ${kuota > 0 ? 'bg-[#003473] hover:bg-[#002855] text-white hover:scale-105 active:scale-95' : 'opacity-50'}`}
+                            className={`h-8 text-[9px] font-black uppercase tracking-widest px-4 rounded-lg shadow-md transition-all ${kuota > 0 ? 'bg-[#003473] hover:bg-[#002855] text-white hover:scale-105 active:scale-95' : 'opacity-50'}`}
                             onClick={() => id && fetchShiftDetail(id, row.tanggalString, "1")}
                           >
                             {loadingShiftDetail && selectedSlot?.tanggal === row.tanggalString && selectedSlot?.shift === "1" ? (
@@ -348,21 +348,21 @@ export function TicketBookingDetail({ guid }: TicketBookingDetailProps) {
                   {
                     key: "action2",
                     header: "Shift 2",
-                    headerClassName: "text-center bg-gray-50/50 dark:bg-white/[0.02] py-6",
+                    headerClassName: "text-center bg-gray-50/50 dark:bg-white/[0.02] py-3 text-sm",
                     render: (row: any) => {
                       const match = row.action2?.match(/pilihItemProcess\('([^']+)'\)/);
                       const id = match ? match[1] : null;
                       const kuota = row.kuota2 ?? 0;
                       return (
-                        <div className="flex flex-col items-center gap-3 py-4">
-                          <div className="px-4 py-1.5 rounded-xl bg-brand-50 dark:bg-brand-500/10">
-                            <span className="text-[11px] font-black text-brand-600">{kuota.toLocaleString()} TON</span>
+                        <div className="flex flex-col items-center gap-2 py-2">
+                          <div className="px-3 py-1 rounded-lg bg-brand-50 dark:bg-brand-500/10">
+                            <span className="text-[10px] font-black text-brand-600">{kuota.toLocaleString()} TON</span>
                           </div>
                           <Button
                             size="sm"
                             variant={kuota > 0 ? "default" : "outline"}
                             disabled={!id || kuota <= 0 || loadingShiftDetail}
-                            className={`h-10 text-[10px] font-black uppercase tracking-widest px-8 rounded-xl shadow-xl transition-all ${kuota > 0 ? 'bg-[#003473] hover:bg-[#002855] text-white hover:scale-105 active:scale-95' : 'opacity-50'}`}
+                            className={`h-8 text-[9px] font-black uppercase tracking-widest px-4 rounded-lg shadow-md transition-all ${kuota > 0 ? 'bg-[#003473] hover:bg-[#002855] text-white hover:scale-105 active:scale-95' : 'opacity-50'}`}
                             onClick={() => id && fetchShiftDetail(id, row.tanggalString, "2")}
                           >
                             {loadingShiftDetail && selectedSlot?.tanggal === row.tanggalString && selectedSlot?.shift === "2" ? (
@@ -376,21 +376,21 @@ export function TicketBookingDetail({ guid }: TicketBookingDetailProps) {
                   {
                     key: "action3",
                     header: "Shift 3",
-                    headerClassName: "text-center bg-gray-50/50 dark:bg-white/[0.02] py-6",
+                    headerClassName: "text-center bg-gray-50/50 dark:bg-white/[0.02] py-3 text-sm",
                     render: (row: any) => {
                       const match = row.action3?.match(/pilihItemProcess\('([^']+)'\)/);
                       const id = match ? match[1] : null;
                       const kuota = row.kuota3 ?? 0;
                       return (
-                        <div className="flex flex-col items-center gap-3 py-4">
-                          <div className="px-4 py-1.5 rounded-xl bg-brand-50 dark:bg-brand-500/10">
-                            <span className="text-[11px] font-black text-brand-600">{kuota.toLocaleString()} TON</span>
+                        <div className="flex flex-col items-center gap-2 py-2">
+                          <div className="px-3 py-1 rounded-lg bg-brand-50 dark:bg-brand-500/10">
+                            <span className="text-[10px] font-black text-brand-600">{kuota.toLocaleString()} TON</span>
                           </div>
                           <Button
                             size="sm"
                             variant={kuota > 0 ? "default" : "outline"}
                             disabled={!id || kuota <= 0 || loadingShiftDetail}
-                            className={`h-10 text-[10px] font-black uppercase tracking-widest px-8 rounded-xl shadow-xl transition-all ${kuota > 0 ? 'bg-[#003473] hover:bg-[#002855] text-white hover:scale-105 active:scale-95' : 'opacity-50'}`}
+                            className={`h-8 text-[9px] font-black uppercase tracking-widest px-4 rounded-lg shadow-md transition-all ${kuota > 0 ? 'bg-[#003473] hover:bg-[#002855] text-white hover:scale-105 active:scale-95' : 'opacity-50'}`}
                             onClick={() => id && fetchShiftDetail(id, row.tanggalString, "3")}
                           >
                             {loadingShiftDetail && selectedSlot?.tanggal === row.tanggalString && selectedSlot?.shift === "3" ? (
@@ -440,7 +440,10 @@ export function TicketBookingDetail({ guid }: TicketBookingDetailProps) {
                       { data: "nopol", name: "nopol", searchable: true, orderable: true },
                       { data: "driver", name: "driver", searchable: true, orderable: true },
                       { data: "qty", name: "qty", searchable: true, orderable: true },
-                      { data: "updatedonString", name: "updatedon", searchable: true, orderable: true }
+                      { data: "updatedonString", name: "updatedon", searchable: true, orderable: true },
+                      { data: "statuspemuatan", name: "statuspemuatan", searchable: false, orderable: false },
+                      { data: "position", name: "position", searchable: false, orderable: false },
+                      { data: "posto", name: "posto", searchable: false, orderable: false }
                     ]
                   };
                   return apiTable(`/api/Tiket/DataTablePeriodeTiket`, payload);
@@ -456,12 +459,13 @@ export function TicketBookingDetail({ guid }: TicketBookingDetailProps) {
                     headerClassName: "bg-gray-50/50 dark:bg-white/[0.02] py-6 text-center",
                     render: (row: any) => (
                       <div className="flex justify-center gap-3 py-2">
-                        <TicketActions
+                      <TicketActions
                           bookingNo={row.bookingno}
                           statuspemuatan={row.statuspemuatan}
                           currentNopol={row.nopol}
                           currentDriver={row.driver}
                           posto={row.posto || guid}
+                          showDelete={true}
                         />
                         {row.Action && row.Action !== "-" && (
                           <div

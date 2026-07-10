@@ -189,7 +189,7 @@ function ModalPengajuan({ item, onClose, onSuccess }: ModalPengajuanProps) {
       formData.append("data", JSON.stringify(payload));
       formData.append("file", file);
 
-      const res = await apiFetch("/aspnet-proxy/api/Apg/SavePengajuanJapoEks", {
+      const res = await apiFetch("/api/Apg/SavePengajuanJapoEks", {
         method: "POST",
         body: formData,
       });
@@ -368,7 +368,7 @@ function ModalDetailDO({ noPosto, onClose }: ModalDetailDOProps) {
     const loadDO = async () => {
       setIsLoading(true);
       try {
-        const res = await apiFetch("/aspnet-proxy/api/Apg/DatatableDoPengajuanJapo", {
+        const res = await apiFetch("/api/Apg/DatatableDoPengajuanJapo", {
           method: "POST",
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
           body: `noposto=${encodeURIComponent(noPosto)}`,
@@ -389,7 +389,7 @@ function ModalDetailDO({ noPosto, onClose }: ModalDetailDOProps) {
   const handlePrint = async () => {
     setIsPrinting(true);
     try {
-      const res = await apiFetch("/aspnet-proxy/api/Apg/PrintInvoiceDoPosto", {
+      const res = await apiFetch("/api/Apg/PrintInvoiceDoPosto", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: `noposto=${encodeURIComponent(JSON.stringify(noPosto))}`,
@@ -532,7 +532,7 @@ export default function PengajuanJatuhTempoPage() {
     async (params: DataTableParams) => {
       const body = new URLSearchParams({ draw: String(params.draw), start: String(params.start), length: String(params.length), cmd: "refresh" });
       try {
-        const res = await apiFetch("/aspnet-proxy/api/Apg/DatatablePengajuanJapo", {
+        const res = await apiFetch("/api/Apg/DatatablePengajuanJapo", {
           method: "POST",
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
           body: body.toString(),
@@ -552,7 +552,7 @@ export default function PengajuanJatuhTempoPage() {
     async (params: DataTableParams) => {
       const body = new URLSearchParams({ draw: String(params.draw), start: String(params.start), length: String(params.length), cmd: "refresh" });
       try {
-        const res = await apiFetch("/aspnet-proxy/api/Apg/DatatableRiwayatPengajuanJapo", {
+        const res = await apiFetch("/api/Apg/DatatableRiwayatPengajuanJapo", {
           method: "POST",
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
           body: body.toString(),

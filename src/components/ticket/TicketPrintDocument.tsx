@@ -14,17 +14,17 @@ interface TicketPrintDocumentProps {
 }
 
 export function TicketPrintDocument({ id }: TicketPrintDocumentProps) {
-  const { apiJson } = useApi();
+  const { apiJson, token } = useApi();
   const barcodeRef = useRef<SVGSVGElement>(null);
   const ticketRef = useRef<HTMLDivElement>(null);
 
   const { data: ticket, isLoading, error } = useQuery({
-    queryKey: ["ticket-print", id],
+    queryKey: ["ticket-print", id, token],
     queryFn: () => apiJson(`/api/Tiket/DetailData`, {
       method: "POST",
       body: JSON.stringify({ bookingno: id })
     }),
-    enabled: !!id,
+    enabled: !!id && !!token,
   });
 
   const handlePrint = async () => {
@@ -123,7 +123,7 @@ export function TicketPrintDocument({ id }: TicketPrintDocumentProps) {
     }
   }, [ticket, isLoading]);
 
-  if (isLoading) {
+  if (!token || isLoading || (!ticket && !error)) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
         <Loader2 className="h-12 w-12 animate-spin text-brand-500 mb-4" />

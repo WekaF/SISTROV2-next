@@ -66,29 +66,29 @@ export default function PostoPage() {
       order: params.order?.length ? params.order : [{ column: 3, dir: "desc" }],
       SD: dateFilter || "",
       columns: [
-        { data: "numberString",            name: "",              searchable: false, orderable: false },
-        { data: "action",                  name: "",              searchable: false, orderable: false },
-        { data: "wilayah",                 name: "wilayah",       searchable: true,  orderable: true, search: cs("wilayah") },
-        { data: "tanggalString",           name: "tglposto",      searchable: true,  orderable: true, search: cs("tanggalString") },
-        { data: "noposto",                 name: "noposto",       searchable: true,  orderable: true, search: cs("noposto") },
-        { data: "tglakhirString",          name: "tglakhir",      searchable: true,  orderable: true, search: cs("tglakhirString") },
-        { data: "asalString",              name: "asal",          searchable: true,  orderable: true, search: cs("asalString") },
-        { data: "tujuanString",            name: "tujuan",        searchable: true,  orderable: true, search: cs("tujuanString") },
-        { data: "bagian",                  name: "bagian",        searchable: true,  orderable: true, search: cs("bagian") },
-        { data: "transportString",         name: "transport",     searchable: true,  orderable: true, search: cs("transportString") },
-        { data: "produkString",            name: "produk",        searchable: true,  orderable: true, search: cs("produkString") },
-        { data: "qty",                     name: "qty",           searchable: true,  orderable: true, search: cs("qty") },
-        { data: "qtyrencana",              name: "qtyrencana",    searchable: true,  orderable: true, search: cs("qtyrencana") },
-        { data: "qtysisaBooking",          name: "qtysisaBooking",searchable: true,  orderable: true, search: cs("qtysisaBooking") },
-        { data: "qtyrealisasi",            name: "qtyrealisasi",  searchable: true,  orderable: true, search: cs("qtyrealisasi") },
-        { data: "qtysisaRealisasi",        name: "qtysisaRealisasi", searchable: true, orderable: true, search: cs("qtysisaRealisasi") },
-        { data: "cutoff",                  name: "cutoff",        searchable: true,  orderable: true, search: cs("cutoff") },
-        { data: "kapal",                   name: "kapal",         searchable: true,  orderable: true, search: cs("kapal") },
-        { data: "kotatujuan",              name: "kotatujuan",    searchable: true,  orderable: true, search: cs("kotatujuan") },
-        { data: "updatedby",               name: "updatedby",     searchable: true,  orderable: true, search: cs("updatedby") },
-        { data: "tanggaljatuhtempoString", name: "tgljatuhtempo", searchable: true,  orderable: true, search: cs("tanggaljatuhtempoString") },
-        { data: "percepatan",              name: "percepatan",    searchable: false, orderable: true },
-        { data: "gruptruk",                name: "gruptruk",      searchable: false, orderable: true },
+        { data: "numberString", name: "", searchable: false, orderable: false },
+        { data: "action", name: "", searchable: false, orderable: false },
+        { data: "wilayah", name: "wilayah", searchable: true, orderable: true, search: cs("wilayah") },
+        { data: "tanggalString", name: "tglposto", searchable: true, orderable: true, search: cs("tanggalString") },
+        { data: "noposto", name: "noposto", searchable: true, orderable: true, search: cs("noposto") },
+        { data: "tglakhirString", name: "tglakhir", searchable: true, orderable: true, search: cs("tglakhirString") },
+        { data: "asalString", name: "asal", searchable: true, orderable: true, search: cs("asalString") },
+        { data: "tujuanString", name: "tujuan", searchable: true, orderable: true, search: cs("tujuanString") },
+        { data: "bagian", name: "bagian", searchable: true, orderable: true, search: cs("bagian") },
+        { data: "transportString", name: "transport", searchable: true, orderable: true, search: cs("transportString") },
+        { data: "produkString", name: "produk", searchable: true, orderable: true, search: cs("produkString") },
+        { data: "qty", name: "qty", searchable: true, orderable: true, search: cs("qty") },
+        { data: "qtyrencana", name: "qtyrencana", searchable: true, orderable: true, search: cs("qtyrencana") },
+        { data: "qtysisaBooking", name: "qtysisaBooking", searchable: true, orderable: true, search: cs("qtysisaBooking") },
+        { data: "qtyrealisasi", name: "qtyrealisasi", searchable: true, orderable: true, search: cs("qtyrealisasi") },
+        { data: "qtysisaRealisasi", name: "qtysisaRealisasi", searchable: true, orderable: true, search: cs("qtysisaRealisasi") },
+        { data: "cutoff", name: "cutoff", searchable: true, orderable: true, search: cs("cutoff") },
+        { data: "kapal", name: "kapal", searchable: true, orderable: true, search: cs("kapal") },
+        { data: "kotatujuan", name: "kotatujuan", searchable: true, orderable: true, search: cs("kotatujuan") },
+        { data: "updatedby", name: "updatedby", searchable: true, orderable: true, search: cs("updatedby") },
+        { data: "tanggaljatuhtempoString", name: "tgljatuhtempo", searchable: true, orderable: true, search: cs("tanggaljatuhtempoString") },
+        { data: "percepatan", name: "percepatan", searchable: false, orderable: true },
+        { data: "gruptruk", name: "gruptruk", searchable: false, orderable: true },
       ]
     };
 
@@ -439,10 +439,10 @@ export default function PostoPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">POSTO Management</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Monitor and manage all Distribution Orders (POSTO) from Database.
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Daftar POSTO dan SO</h1>
+          {/* <p className="text-sm text-gray-500 dark:text-gray-400">
+            .
+          </p> */}
         </div>
       </div>
 

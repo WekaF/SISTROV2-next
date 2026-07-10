@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { Plus, FileEdit, Trash2, ExternalLink, Eye, FileText, Download, AlertCircle, X } from "lucide-react";
+import { Plus, FileEdit, Trash2, ExternalLink, Eye, FileText, Download, AlertCircle, X, Loader2 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Badge from "@/components/ui/badge/Badge";
@@ -9,6 +9,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useApi } from "@/hooks/use-api";
 import { useToast } from "@/components/ui/toast";
 import { useCompany } from "@/context/CompanyContext";
+import { API_BASE } from "@/lib/api-client";
 import {
   Dialog,
   DialogContent,
@@ -89,9 +90,41 @@ export default function ArmadaPage() {
 
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteReason, setDeleteReason] = useState<string>("33");
+  const [isExporting, setIsExporting] = useState(false);
 
   const [editId, setEditId] = useState<string | null>(null);
   const [editFormData, setEditFormData] = useState<any>({});
+
+  const handleExport = async () => {
+    try {
+      setIsExporting(true);
+      const res = await apiFetch("/Armada/ExportArmada");
+      if (!res.ok) throw new Error("Gagal mengunduh file export armada");
+      const blob = await res.blob();
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+
+      // Attempt to get filename from Content-Disposition header
+      const contentDisposition = res.headers.get("Content-Disposition");
+      let filename = "Export_Armada.xlsx";
+      if (contentDisposition && contentDisposition.includes("filename=")) {
+        const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(contentDisposition);
+        if (matches != null && matches[1]) {
+          filename = matches[1].replace(/['"]/g, '');
+        }
+      }
+
+      a.download = filename;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (err: any) {
+      addToast("Gagal Export", err.message || "Terjadi kesalahan sistem", "error");
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const { data: sumbuResult } = useQuery({
     queryKey: ["sumbu-list"],
@@ -570,7 +603,7 @@ export default function ArmadaPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white uppercase tracking-tight">
-            {isRekanan ? "Data Armada Saya" : "Manajemen Armada"}
+            {isRekanan ? "Data Armada" : "Manajemen Armada"}
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
             {isRekanan
@@ -590,13 +623,15 @@ export default function ArmadaPage() {
             searchPlaceholder={isRekanan ? "Cari Nopol..." : "Cari Nopol atau Transporter..."}
             toolbar={
               <div className="flex items-center gap-2">
-                <a
-                  href="/aspnet-proxy/Armada/ExportArmada"
-                  className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-white shadow-sm hover:bg-accent hover:text-accent-foreground h-8 px-3 py-1 text-green-600 border-green-200 hover:bg-green-50"
+                <Button
+                  onClick={handleExport}
+                  disabled={isExporting}
+                  variant="outline"
+                  className="h-8 px-3 py-1 text-green-600 border-green-200 hover:bg-green-50 shadow-sm"
                 >
-                  <Download className="h-4 w-4 mr-2" />
+                  {isExporting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
                   Export Excel
-                </a>
+                </Button>
                 {isRekanan ? (
                   <Button size="sm" onClick={() => setIsSubmitOpen(true)} className="bg-brand-500 shadow-lg shadow-brand-500/20 h-8">
                     <Plus className="h-4 w-4 mr-2" />

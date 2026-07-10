@@ -8,7 +8,7 @@ function isAuthorized(session: any): boolean {
   return !!session?.user && roles.some((r: string) => ["superadmin", "ti"].includes(r.toLowerCase()));
 }
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     if (!isAuthorized(session)) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
@@ -19,10 +19,11 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     }
 
     const token = (session?.user as any)?.aspnetToken as string;
+    const resolvedParams = await params;
     const res = await aspnetFetchServer('/api/SuperadminProduk/UpdateProduct', token, {
       method: 'POST',
       body: JSON.stringify({
-        Id: params.id,
+        Id: resolvedParams.id,
         Nama: body.name,
         Kode: body.code,
         Tipe: body.isSubsidi ? 'subsidi' : null,
@@ -40,16 +41,17 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   }
 }
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     if (!isAuthorized(session)) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
 
     const token = (session?.user as any)?.aspnetToken as string;
+    const resolvedParams = await params;
     const res = await aspnetFetchServer('/api/SuperadminProduk/DeleteProduct', token, {
       method: 'POST',
       body: JSON.stringify({
-        Id: params.id,
+        Id: resolvedParams.id,
       }),
     });
 

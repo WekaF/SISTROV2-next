@@ -1,7 +1,8 @@
 "use client";
 import React, { useState } from "react";
 import { Dropdown } from "../ui/dropdown/Dropdown";
-import { ChevronDown, Building2, Factory, Loader2, CheckCircle2 } from "lucide-react";
+import { ChevronDown, Building2, Factory, Loader2, CheckCircle2, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { useCompany } from "@/context/CompanyContext";
 import { useToast } from "@/components/ui/toast";
 import { useSession } from "next-auth/react";
@@ -12,11 +13,12 @@ export default function CompanySwitcher() {
   const { addToast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [isSwitching, setIsSwitching] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const role = (session?.user as any)?.role as string | undefined;
   const isTransport = role?.toLowerCase().startsWith("transport") || role?.toLowerCase() === "rekanan";
 
-  const canSwitch = companies.length > 1 && !isTransport;
+  const canSwitch = companies.length > 0 && !isTransport;
 
   // Don't show the switcher at all for transport/rekanan users
   if (isTransport) return null;
@@ -51,7 +53,13 @@ export default function CompanySwitcher() {
 
   function closeDropdown() {
     setIsOpen(false);
+    setTimeout(() => setSearchQuery(""), 200); // Clear search after transition
   }
+
+  const filteredCompanies = companies.filter((c) => 
+    c.company.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    c.company_code.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   // Loading skeleton
   if (isLoading) {
@@ -111,13 +119,27 @@ export default function CompanySwitcher() {
           onClose={closeDropdown}
           className="absolute left-0 lg:left-auto lg:right-0 mt-2 flex w-[280px] flex-col rounded-xl border border-gray-200 bg-white p-2 shadow-xl dark:border-gray-800 dark:bg-gray-900"
         >
-          <div className="px-3 py-2 mb-1 border-b border-gray-100 dark:border-gray-800">
-            <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">
+          <div className="px-3 py-2 border-b border-gray-100 dark:border-gray-800">
+            <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest block mb-2">
               Switch Plant
             </span>
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-gray-400" />
+              <Input
+                placeholder="Cari plant atau kode..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-8 h-8 text-xs bg-gray-50 dark:bg-gray-800/50"
+              />
+            </div>
           </div>
-          <div className="max-h-[320px] overflow-y-auto custom-scrollbar">
-            {companies.map((company) => {
+          <div className="max-h-[320px] overflow-y-auto custom-scrollbar p-1">
+            {filteredCompanies.length === 0 ? (
+              <div className="text-center py-6 text-xs text-gray-500">
+                Plant tidak ditemukan.
+              </div>
+            ) : (
+              filteredCompanies.map((company) => {
               const isActive = activeCompanyCode === company.company_code;
               return (
                 <button
@@ -146,7 +168,8 @@ export default function CompanySwitcher() {
                   )}
                 </button>
               );
-            })}
+            })
+          )}
           </div>
         </Dropdown>
       )}

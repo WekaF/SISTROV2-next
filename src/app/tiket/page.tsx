@@ -47,7 +47,7 @@ function RekananTicketContent() {
   const fetcher = async (params: DataTableParams) => {
     // Use DataTablePeriodeTiket if filtering by POSTO, otherwise use Legacy
     const endpoint = postoFilter ? "/api/Tiket/DataTablePeriodeTiket" : "/api/Tiket/DataTableFilterLegacy";
-    
+
     const result = await apiTable(endpoint, {
       draw: params.draw,
       start: params.start,
@@ -108,7 +108,7 @@ function RekananTicketContent() {
     },
     {
       key: "posto",
-      header: "POSTO",
+      header: "POSTO / SO",
       sortColumn: 1,
       render: (t) => (
         <div className="font-bold text-gray-900 dark:text-white font-mono text-sm tracking-tight">
@@ -205,7 +205,7 @@ function RekananTicketContent() {
             {t.updatedonString || new Date(t.createdat).toLocaleDateString()}
           </div>
           {!t.updatedonString && (
-             <div className="flex items-center gap-1.5 text-[10px] text-gray-400 font-bold uppercase tracking-tight">
+            <div className="flex items-center gap-1.5 text-[10px] text-gray-400 font-bold uppercase tracking-tight">
               <Clock className="h-3 w-3" />
               {new Date(t.createdat).toLocaleTimeString()}
             </div>
@@ -217,7 +217,7 @@ function RekananTicketContent() {
 
   const role = (session?.user as any)?.role;
   const roles = (session?.user as any)?.roles || [];
-  const isTransport = ["transport", "rekanan"].includes(normalizeRole(role)) || 
+  const isTransport = ["transport", "rekanan"].includes(normalizeRole(role)) ||
     roles.some((r: string) => ["transport", "rekanan"].includes(normalizeRole(r)));
 
   return (
@@ -229,7 +229,7 @@ function RekananTicketContent() {
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
             {postoFilter
-              ? `Menampilkan data tiket lengkap untuk POSTO: ${postoFilter}`
+              ? `Menampilkan data tiket lengkap untuk POSTO`
               : "Monitoring status tiket dan kedatangan armada Anda."}
           </p>
         </div>

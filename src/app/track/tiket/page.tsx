@@ -800,22 +800,7 @@ function TrackingContent() {
                 </CardContent>
               </Card>
 
-              {/* Help/Contact Info */}
-              <div className="relative group cursor-pointer overflow-hidden p-8 rounded-[2rem] bg-gradient-to-br from-primary/10 to-transparent border border-primary/20 dark:border-primary/20 transition-all hover:border-primary/40 active:scale-95 shadow-xl shadow-primary/5">
-                <div className="absolute -top-10 -right-10 w-40 h-40 bg-primary/10 rounded-full blur-3xl opacity-50 group-hover:bg-primary/20 transition-all" />
-                <h4 className="font-black text-primary mb-3 flex items-center gap-3">
-                  <div className="p-2 bg-primary text-white rounded-xl shadow-lg">
-                    <AlertCircle className="h-5 w-5" />
-                  </div>
-                  Pusat Bantuan
-                </h4>
-                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-bold">
-                  Mengalami kendala pelacakan? Hubungi operasional atau kunjungi pos security terdekat untuk validasi manual tiket Anda.
-                </p>
-                <div className="mt-6 flex items-center gap-2 text-[10px] font-black text-primary uppercase tracking-widest group-hover:gap-4 transition-all">
-                  Hubungi Helpdesk <ChevronRight className="h-4 w-4" />
-                </div>
-              </div>
+
 
               {/* Security Banner */}
               <div className="flex items-center justify-center gap-4 py-4 opacity-40 grayscale hover:grayscale-0 hover:opacity-100 transition-all duration-700">

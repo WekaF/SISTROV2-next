@@ -159,7 +159,7 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
           { name: "Data So", path: "/so" },
           { name: "Cut Off Posto", path: "/posto/cut-off" },
           { name: "Prioritas Tujuan Muat", path: "/posto/priority" },
-          { name: "Upload Posto / So", path: "/posto/upload" },
+          { name: "Upload POSTO / SO / So", path: "/posto/upload" },
         ],
       },
       {
@@ -266,7 +266,7 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
           { name: "Data So", path: "/so" },
           { name: "Cut Off Posto", path: "/posto/cut-off" },
           { name: "Prioritas Tujuan Muat", path: "/posto/priority" },
-          { name: "Upload Posto / So", path: "/posto/upload" },
+          { name: "Upload POSTO / SO / So", path: "/posto/upload" },
         ],
       },
       {
@@ -410,7 +410,7 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
         name: "Posto",
         subItems: [
           { name: "Data Posto", path: "/posto" },
-          { name: "Upload Posto", path: "/posto/upload" },
+          { name: "Upload POSTO / SO", path: "/posto/upload" },
         ],
       },
       {
@@ -480,7 +480,7 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
         icon: <Package className="h-5 w-5" />,
         name: "Posto",
         subItems: [
-          { name: "Datatable Posto", path: "/posto" },
+          { name: "Data Posto / SO", path: "/posto" },
           { name: "Pengajuan Jatuh Tempo", path: "/pengajuan/jatuh-tempo" },
         ],
       },
@@ -516,7 +516,7 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
         icon: <Package className="h-5 w-5" />,
         name: "Posto",
         subItems: [
-          { name: "Datatable Posto", path: "/posto" },
+          { name: "Data Posto / SO", path: "/posto" },
           { name: "Pengajuan Jatuh Tempo", path: "/pengajuan/jatuh-tempo" },
         ],
       },
@@ -663,7 +663,7 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
         icon: <Package className="h-5 w-5" />,
         name: "Posto",
         subItems: [
-          { name: "Upload Posto", path: "/posto/upload" },
+          { name: "Upload POSTO / SO", path: "/posto/upload" },
           { name: "Data Posto", path: "/posto" },
           { name: "Cut Off Posto", path: "/posto/cut-off" },
           { name: "Prioritas Tujuan", path: "/posto/priority" },

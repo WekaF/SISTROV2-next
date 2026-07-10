@@ -70,50 +70,50 @@ import { useSession, signOut } from "next-auth/react"
 // Backend returns roles like "CandalKuota", lowercased in auth.ts to "candalkuota"
 const ASPNET_ROLE_MAP: Record<string, Role> = {
   // TI / IT Admin
-  ti:                    "superadmin",
+  ti: "superadmin",
   // Candal (quota operators)
-  candalkuota:           "candal",
-  candaltruk:            "candal",
-  candaltruck:           "candal",
-  candalcontainer:       "candal",
-  candalgudangposto:     "candal",
+  candalkuota: "candal",
+  candaltruk: "candal",
+  candaltruck: "candal",
+  candalcontainer: "candal",
+  candalgudangposto: "candal",
   // Staff Area
-  staffarea:             "staffarea",
-  staffarealayah1:       "staffarea",
-  staffarealayah2:       "staffarea",
-  staffarewilayah1:      "staffarea",
-  staffarewilayah2:      "staffarea",
-  staffareajatim:        "staffarea",
+  staffarea: "staffarea",
+  staffarealayah1: "staffarea",
+  staffarealayah2: "staffarea",
+  staffarewilayah1: "staffarea",
+  staffarewilayah2: "staffarea",
+  staffareajatim: "staffarea",
   // Viewer (multi-plant read-only) — including PKG plant-specific viewer
-  viewer:                "viewer",
-  pkg:                   "viewer",
-  viewerposto:           "viewer",
-  viewerarmada:          "viewer",
+  viewer: "viewer",
+  pkg: "viewer",
+  viewerposto: "viewer",
+  viewerarmada: "viewer",
   // Transport / Rekanan
-  transport:             "transport",
-  transportsuraljalan:   "transport",
-  rekanan:               "rekanan",
+  transport: "transport",
+  transportsuraljalan: "transport",
+  rekanan: "rekanan",
   // Security / Gerbang
-  security:              "security",
-  securitylini3:         "security",
+  security: "security",
+  securitylini3: "security",
   // Gudang
-  gudang:                "gudang",
-  candalgudang:          "gudang",
-  gudanglini3:           "gudang",
-  checkerlini3:          "gudang",
+  gudang: "gudang",
+  candalgudang: "gudang",
+  gudanglini3: "gudang",
+  checkerlini3: "gudang",
   // Jembatan Timbang
-  timbangan:             "jembatan_timbang",
+  timbangan: "jembatan_timbang",
   // POD (AdminArmada + Approver)
-  adminarmada:           "pod",
+  adminarmada: "pod",
   // Pelabuhan / Terminal
-  pelabuhanapp:          "pkd",
-  pelabuhanuppp:         "pkd",
-  terminal1:             "pkd",
-  terminal2:             "pkd",
+  pelabuhanapp: "pkd",
+  pelabuhanuppp: "pkd",
+  terminal1: "pkd",
+  terminal2: "pkd",
   // Superadmin fallbacks
-  admin:                 "admin",
-  superadmin:            "superadmin",
-  admingudang:           "gudang",
+  admin: "admin",
+  superadmin: "superadmin",
+  admingudang: "gudang",
   admingudangcandalgudang: "gudang",
 }
 
@@ -134,7 +134,7 @@ const MENU_POSTO_FULL = {
     { title: "Data SO", url: "/posto/so", icon: FileText },
     { title: "Cut Off POSTO", url: "/posto/cut-off", icon: Scissors },
     { title: "Prioritas Tujuan Muat", url: "/posto/priority", icon: SortAsc },
-    { title: "Upload POSTO / SO", url: "/posto/upload", icon: Upload },
+    { title: "Upload POSTO / SO / SO", url: "/posto/upload", icon: Upload },
     { title: "Pengajuan Jatuh Tempo", url: "/pengajuan/jatuh-tempo", icon: AlertCircle },
   ],
 }
@@ -194,6 +194,7 @@ const MENU_REPORTS = {
   icon: BarChart3,
   items: [
     { title: "Summary Laporan", url: "/reports", icon: BarChart3 },
+    { title: "Laporan Tiket PI", url: "/reports/tiket-pi", icon: FileText },
     { title: "Laporan Booking", url: "/reports/booking", icon: ClipboardList },
     { title: "Laporan Loading", url: "/reports/loading", icon: Truck },
     { title: "Laporan Pembatalan", url: "/reports/cancelation", icon: XCircle },
@@ -421,13 +422,28 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" className="hover:bg-transparent">
-              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                <Ticket className="size-4" />
-              </div>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold text-[#005FA4]">SISTRO</span>
-                <span className="truncate text-xs text-muted-foreground">Digital Logistics Platform</span>
+            <SidebarMenuButton size="lg" className="hover:bg-transparent h-auto py-2">
+              <div className="flex items-center gap-2">
+                <div className="flex-shrink-0">
+                  <img
+                    src="/images/logo/logo-text1.png"
+                    alt="SISTRO"
+                    className="h-7 w-auto object-contain dark:hidden"
+                  />
+                  <img
+                    src="/images/logo/logo-text.png"
+                    alt="SISTRO"
+                    className="h-7 w-auto object-contain hidden dark:block"
+                  />
+                </div>
+                <div className="h-6 w-px bg-gray-300 dark:bg-gray-700 flex-shrink-0" />
+                <div className="flex-shrink-0">
+                  <img
+                    src="/images/logo/logopihd.png"
+                    alt="Pupuk Indonesia"
+                    className="h-7 w-auto object-contain dark:brightness-0 dark:invert"
+                  />
+                </div>
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>

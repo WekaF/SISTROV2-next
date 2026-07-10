@@ -24,7 +24,7 @@ export const MENU_CATALOG: CatalogGroup[] = [
       { path: "/so", label: "Data So" },
       { path: "/posto/cut-off", label: "Cut Off Posto" },
       { path: "/posto/priority", label: "Prioritas Tujuan Muat" },
-      { path: "/posto/upload", label: "Upload Posto / So" },
+      { path: "/posto/upload", label: "Upload POSTO / SO / So" },
       { path: "/pengajuan/jatuh-tempo", label: "Pengajuan Jatuh Tempo" },
     ],
   },

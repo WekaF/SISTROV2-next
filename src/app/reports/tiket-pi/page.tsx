@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FileText, Search } from "lucide-react";
+import { SearchableSelect } from "@/components/ui/SearchableSelect";
 
 interface TiketPiRow {
   number: number;
@@ -230,7 +231,7 @@ export default function LaporanTiketPiPage() {
         </div>
       </div>
 
-      <Card>
+      <Card className="overflow-visible">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-medium">Filter</CardTitle>
         </CardHeader>
@@ -238,22 +239,22 @@ export default function LaporanTiketPiPage() {
           <div className="flex flex-wrap gap-4 items-end">
             <div className="space-y-1">
               <Label className="text-xs">Perusahaan</Label>
-              <select
-                className="flex h-9 w-48 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
-                value={draft.company}
-                onChange={(e) => setDraft((p) => ({ ...p, company: e.target.value }))}
-              >
-                <option value="">Semua Perusahaan</option>
-                {companies.map((c) => (
-                  <option key={c.code} value={c.code}>{c.name}</option>
-                ))}
-              </select>
+              <div className="w-64">
+                <SearchableSelect
+                  options={companies.map(c => ({ value: c.code, label: c.name }))}
+                  value={draft.company}
+                  onChange={(val) => setDraft((p) => ({ ...p, company: val }))}
+                  placeholder="Semua Perusahaan"
+                  searchPlaceholder="Cari perusahaan..."
+                  className="h-9"
+                />
+              </div>
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Tanggal Mulai</Label>
               <Input
                 type="date"
-                className="w-36"
+                className="h-9 w-36"
                 value={draft.SD}
                 onChange={(e) => setDraft((p) => ({ ...p, SD: e.target.value }))}
               />
@@ -262,7 +263,7 @@ export default function LaporanTiketPiPage() {
               <Label className="text-xs">Tanggal Akhir</Label>
               <Input
                 type="date"
-                className="w-36"
+                className="h-9 w-36"
                 value={draft.ED}
                 onChange={(e) => setDraft((p) => ({ ...p, ED: e.target.value }))}
               />
@@ -271,7 +272,7 @@ export default function LaporanTiketPiPage() {
               <Label className="text-xs">Tgl Muat Mulai</Label>
               <Input
                 type="date"
-                className="w-36"
+                className="h-9 w-36"
                 value={draft.SDMuat}
                 onChange={(e) => setDraft((p) => ({ ...p, SDMuat: e.target.value }))}
               />
@@ -280,7 +281,7 @@ export default function LaporanTiketPiPage() {
               <Label className="text-xs">Tgl Muat Akhir</Label>
               <Input
                 type="date"
-                className="w-36"
+                className="h-9 w-36"
                 value={draft.EDMuat}
                 onChange={(e) => setDraft((p) => ({ ...p, EDMuat: e.target.value }))}
               />
@@ -309,7 +310,7 @@ export default function LaporanTiketPiPage() {
                 <option value="01">Selesai</option>
               </select>
             </div>
-            <Button onClick={handleTampilkan} className="gap-2">
+            <Button onClick={handleTampilkan} className="h-9 gap-2">
               <Search className="h-4 w-4" />
               Tampilkan
             </Button>
@@ -317,7 +318,7 @@ export default function LaporanTiketPiPage() {
               variant="outline"
               onClick={handleExportExcel}
               disabled={exporting}
-              className="gap-2 text-emerald-600 border-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:border-emerald-400 dark:hover:bg-emerald-950"
+              className="h-9 gap-2 text-emerald-600 border-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:border-emerald-400 dark:hover:bg-emerald-950"
             >
               {exporting ? "Memproses..." : "Export Excel"}
             </Button>
@@ -325,7 +326,7 @@ export default function LaporanTiketPiPage() {
               variant="outline"
               onClick={handleExportPdf}
               disabled={exporting}
-              className="gap-2 text-rose-600 border-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:border-rose-400 dark:hover:bg-rose-950"
+              className="h-9 gap-2 text-rose-600 border-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:border-rose-400 dark:hover:bg-rose-950"
             >
               {exporting ? "Memproses..." : "Export PDF"}
             </Button>

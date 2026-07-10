@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { BarChart3, Loader2, RefreshCw } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useTheme } from "@/context/ThemeContext";
+import { API_BASE } from "@/lib/api-client";
 
 interface Truck {
   nopol: string;
@@ -134,7 +135,7 @@ export default function ManagerAntrianPage() {
     setError(null);
     try {
       const res = await fetch(
-        `/aspnet-proxy/api/Antrian/ReportHorizontalQ2?company=${companyCode}`,
+        `${API_BASE}/api/Antrian/ReportHorizontalQ2?company=${companyCode}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (!res.ok) throw new Error("Gagal mengambil data antrian");

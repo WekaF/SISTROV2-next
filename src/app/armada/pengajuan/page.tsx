@@ -155,10 +155,10 @@ const getStatusBadge = (status: string) => {
   if (s.includes("menunggu")) return { label: "Menunggu", color: "warning" as const };
   if (s.includes("sudah approve") || s === "approve") return { label: "Disetujui", color: "success" as const };
   if (s.includes("tolak") || s.includes("ditolak") || s.includes("revisi")) return { label: "Ditolak/Revisi", color: "error" as const };
-  
+
   // Fallback for general success strings if needed
   if (s.includes("approve")) return { label: "Disetujui", color: "success" as const };
-  
+
   return { label: "Menunggu", color: "warning" as const };
 };
 
@@ -247,10 +247,10 @@ export default function ArmadaPengajuanPage() {
     if (!role) return false;
     const r = role.toLowerCase().replace(/\s+/g, "");
     return (
-      r.includes("adminarmada") || 
-      r.includes("staffare") || 
-      r.includes("candal") || 
-      r.includes("pod") || 
+      r.includes("adminarmada") ||
+      r.includes("staffare") ||
+      r.includes("candal") ||
+      r.includes("pod") ||
       r.includes("dataareabagian") ||
       r === "admin"
     );
@@ -314,7 +314,7 @@ export default function ArmadaPengajuanPage() {
     enabled: !!session,
     staleTime: 60_000,
   });
-  
+
   const { data: transportList = [] } = useQuery<TransportItem[]>({
     queryKey: ["transportir-list"],
     queryFn: async () => {
@@ -326,7 +326,7 @@ export default function ArmadaPengajuanPage() {
     staleTime: 60_000,
   });
 
-  const companyOptions: MultiSelectOption[] = useMemo(() => 
+  const companyOptions: MultiSelectOption[] = useMemo(() =>
     companyList.map(c => ({ value: c.company_code, label: c.company })),
     [companyList]
   );
@@ -346,7 +346,7 @@ export default function ArmadaPengajuanPage() {
         else if (col.key === "sumbu") name = "sumbu";
         else if (col.key === "masa_berlaku_kir_string") name = "masa_berlaku_kir";
         else if (col.key === "createdSubmission") name = "ID"; // Fallback to ID for sorting
-        
+
         return {
           data: col.key,
           name: name,
@@ -432,10 +432,10 @@ export default function ArmadaPengajuanPage() {
     fd.append("no_rangka_kir", f.no_rangka_kir);
     fd.append("no_mesin_kir", f.no_mesin_kir);
     fd.append("charterString", f.charter ? "1" : "0");
-    
+
     const finalApprovers = isAdminArmada ? [activeCompanyCode || transportCode || ""] : f.approvers;
     finalApprovers.filter(Boolean).forEach((a) => fd.append("approver", a));
-    
+
     if (f.file1) fd.append("file1", f.file1);
     if (f.file2) fd.append("file2", f.file2);
     if (extra) Object.entries(extra).forEach(([k, v]) => fd.append(k, v));
@@ -669,20 +669,20 @@ export default function ArmadaPengajuanPage() {
       render: (row) => (
         <div className="flex items-center gap-1.5">
           {row.file1String && (
-            <button 
-              type="button" 
-              onClick={() => handleViewFile(row.file1String!)} 
-              className="p-1.5 rounded-lg bg-brand-50 text-brand-600 border border-brand-100 hover:bg-brand-100 transition-all" 
+            <button
+              type="button"
+              onClick={() => handleViewFile(row.file1String!)}
+              className="p-1.5 rounded-lg bg-brand-50 text-brand-600 border border-brand-100 hover:bg-brand-100 transition-all"
               title="KIR & STNK"
             >
               <FileText className="h-3.5 w-3.5" />
             </button>
           )}
           {row.file2String && (
-            <button 
-              type="button" 
-              onClick={() => handleViewFile(row.file2String!)} 
-              className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-100 transition-all" 
+            <button
+              type="button"
+              onClick={() => handleViewFile(row.file2String!)}
+              className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-100 transition-all"
               title="Lainnya"
             >
               <FileText className="h-3.5 w-3.5" />
@@ -702,10 +702,10 @@ export default function ArmadaPengajuanPage() {
         return (
           <div className="flex items-center justify-end gap-1">
             {isMenunggu && canTolak && tId && (
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-8 w-8 text-red-500 hover:bg-red-50" 
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-red-500 hover:bg-red-50"
                 onClick={() => setTolakId(tId)}
                 title="Tolak/Revisi"
               >
@@ -713,9 +713,9 @@ export default function ArmadaPengajuanPage() {
               </Button>
             )}
             {isMenunggu && canApprove && aId && (
-              <Button 
-                variant="ghost" 
-                size="icon" 
+              <Button
+                variant="ghost"
+                size="icon"
                 className="h-8 w-8 text-emerald-600 hover:bg-emerald-50"
                 onClick={() => setApproveId(aId)}
                 title="Setujui"
@@ -768,7 +768,7 @@ export default function ArmadaPengajuanPage() {
               {isAdminArmada ? "Admin Plant" : "Transportir"}
             </label>
             <div className="h-10 px-4 flex items-center bg-gray-50/50 dark:bg-white/[0.02] border border-gray-200 dark:border-gray-800 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-300">
-              {isAdminArmada 
+              {isAdminArmada
                 ? (target === "edit" ? f.approvers[0] : (activeCompanyCode || transportCode))
                 : (target === "edit" ? transportCode : (userName || transportCode))
               }
@@ -779,7 +779,7 @@ export default function ArmadaPengajuanPage() {
             {isAdminArmada ? (
               <>
                 <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest px-1">Transportir <span className="text-red-500">*</span></label>
-                <select 
+                <select
                   className="h-10 w-full px-4 bg-white dark:bg-white/[0.02] border border-gray-200 dark:border-gray-800 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-300 outline-none focus:ring-2 focus:ring-brand-500 transition-all"
                   value={f.transportCode}
                   onChange={(e) => set({ transportCode: e.target.value })}
@@ -797,7 +797,7 @@ export default function ArmadaPengajuanPage() {
                   options={companyOptions}
                   selected={f.approvers}
                   onChange={(vals) => set({ approvers: vals })}
-                  placeholder="Pilih plant/rekanan..."
+                  placeholder="Pilih Approver..."
                 />
               </>
             )}
@@ -866,7 +866,7 @@ export default function ArmadaPengajuanPage() {
               <Input type="number" placeholder="0" value={f.beratpenumpang} onChange={(e) => set({ beratpenumpang: e.target.value })} className="h-10 rounded-xl text-xs" />
             </div>
           </div>
-          
+
           <label className="flex items-center gap-3 px-4 py-2.5 bg-brand-25 dark:bg-brand-500/5 rounded-xl border border-brand-100 dark:border-brand-500/10 cursor-pointer group transition-all">
             <input type="checkbox" checked={f.charter} onChange={(e) => set({ charter: e.target.checked })} className="w-4 h-4 accent-brand-600 rounded" />
             <div className="flex flex-col">
@@ -986,7 +986,7 @@ export default function ArmadaPengajuanPage() {
             </CardHeader>
             <CardContent className="p-8">
               {renderFormFields(form, setF, "main")}
-              
+
               <div className="mt-10 pt-8 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
                 <div className="hidden md:flex items-center gap-2 text-xs text-gray-400">
                   <ShieldCheck className="h-4 w-4 text-emerald-500" />
@@ -1045,9 +1045,9 @@ export default function ArmadaPengajuanPage() {
               toolbar={
                 <div className="flex items-center gap-2">
                   <label className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-white/[0.02] border border-gray-200 dark:border-gray-800 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
-                    <input 
-                      type="checkbox" 
-                      checked={isCharterFilter} 
+                    <input
+                      type="checkbox"
+                      checked={isCharterFilter}
                       onChange={(e) => setIsCharterFilter(e.target.checked)}
                       className="w-4 h-4 accent-brand-600 rounded"
                     />
@@ -1201,8 +1201,8 @@ export default function ArmadaPengajuanPage() {
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setTolakId(null)}>Batal</Button>
-            <Button 
-              variant="destructive" 
+            <Button
+              variant="destructive"
               onClick={() => tolakId && tolakMutation.mutate({ id: tolakId, alasan: tolakAlasan })}
               disabled={tolakMutation.isPending || !tolakAlasan.trim()}
             >

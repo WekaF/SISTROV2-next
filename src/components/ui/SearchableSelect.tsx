@@ -63,7 +63,7 @@ export function SearchableSelect({
         type="button"
         disabled={disabled}
         onClick={() => !disabled && setOpen(!open)}
-        className="h-10 w-full flex items-center justify-between px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-left disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+        className="h-full min-h-[36px] w-full flex items-center justify-between px-3 py-1.5 rounded-md border border-input bg-background dark:bg-gray-800 text-sm hover:border-blue-500 focus:outline-none focus:ring-1 focus:ring-ring focus:ring-blue-500/20 text-left disabled:opacity-50 disabled:cursor-not-allowed transition-all"
       >
         <span className={`truncate ${selectedOption ? "text-gray-900 dark:text-gray-100" : "text-gray-400"}`}>
           {selectedOption ? selectedOption.label : placeholder}

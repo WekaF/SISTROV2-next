@@ -574,7 +574,7 @@ export default function PostoUploadPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="text-xs space-y-3 text-muted-foreground">
-                <p className="font-semibold text-gray-900 dark:text-gray-100">Data Upload POSTO akan terupload jika memenuhi ketentuan berikut:</p>
+                <p className="font-semibold text-gray-900 dark:text-gray-100">Data Upload POSTO / SO akan terupload jika memenuhi ketentuan berikut:</p>
                 <ul className="list-disc pl-4 space-y-2">
                   <li>Tanggal Akhir POSTO melebihi Tanggal saat ini</li>
                   <li>Data Gudang Asal, Gudang Tujuan, dan Kode Transportir telah terdaftar pada sistem SISTRO</li>
