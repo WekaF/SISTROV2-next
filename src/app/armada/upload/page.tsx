@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { useToast } from "@/components/ui/toast";
 import { normalizeRole } from "@/lib/role-utils";
+import { useApi } from "@/hooks/use-api";
 
 const ALLOWED_ROLES = ["pod", "superadmin", "admin"];
 
@@ -174,6 +175,7 @@ export default function ArmadaUploadPage() {
   const { data: session } = useSession();
   const router = useRouter();
   const { addToast } = useToast();
+  const { apiJson } = useApi();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [isDragging, setIsDragging] = useState(false);
@@ -249,19 +251,17 @@ export default function ArmadaUploadPage() {
         no_mesin_kir: r.no_mesin_kir,
       }));
 
-      const res = await fetch("/api/armada/upload", {
+      const json = await apiJson("/api/Armada/UploadBulk", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ records }),
+        body: JSON.stringify(records),
       });
-      const json = await res.json();
 
-      if (!res.ok || !json.success) {
+      if (json.success === false) {
         addToast({ variant: "destructive", title: "Gagal upload", description: json.error || "Terjadi kesalahan." });
         return;
       }
 
-      const { inserted, failed, errors } = json.data ?? {};
+      const { inserted, failed, errors } = json;
       setSubmitDone(true);
       addToast({
         variant: inserted > 0 ? "success" : "warning",

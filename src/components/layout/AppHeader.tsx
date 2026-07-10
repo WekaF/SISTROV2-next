@@ -48,7 +48,7 @@ const AppHeader: React.FC = () => {
             <Image
               width={60}
               height={24}
-              src="/images/logo/logo-text-black.png"
+              src="/images/logo/logo-text1.png"
               alt="Logo"
               className="object-contain dark:hidden"
             />

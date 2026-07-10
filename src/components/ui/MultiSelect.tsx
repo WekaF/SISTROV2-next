@@ -22,6 +22,7 @@ interface MultiSelectProps {
   onChange: (selected: string[]) => void;
   placeholder?: string;
   className?: string;
+  disabled?: boolean;
 }
 
 export function MultiSelect({
@@ -30,6 +31,7 @@ export function MultiSelect({
   onChange,
   placeholder = "Pilih...",
   className,
+  disabled,
 }: MultiSelectProps) {
   const [open, setOpen] = React.useState(false);
   const [search, setSearch] = React.useState("");
@@ -40,6 +42,7 @@ export function MultiSelect({
   );
 
   const toggleOption = (value: string) => {
+    if (disabled) return;
     if (selected.includes(value)) {
       onChange(selected.filter((v) => v !== value));
     } else {
@@ -49,14 +52,15 @@ export function MultiSelect({
 
   const removeOption = (value: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    if (disabled) return;
     onChange(selected.filter((v) => v !== value));
   };
 
   return (
     <div className={className}>
       <div
-        className="min-h-10 w-full flex flex-wrap items-center gap-1.5 p-1.5 rounded-none border border-gray-200 dark:border-gray-800 bg-white dark:bg-white/[0.02] cursor-pointer hover:border-brand-400 transition-all"
-        onClick={() => setOpen(true)}
+        className={`min-h-10 w-full flex flex-wrap items-center gap-1.5 p-1.5 rounded-none border border-gray-200 dark:border-gray-800 bg-white dark:bg-white/[0.02] ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:border-brand-400"} transition-all`}
+        onClick={() => !disabled && setOpen(true)}
       >
         {selectedOptions.length === 0 && (
           <span className="text-sm text-gray-400 px-2">{placeholder}</span>
@@ -69,8 +73,8 @@ export function MultiSelect({
           >
             {option.label}
             <X
-              className="h-3 w-3 cursor-pointer hover:text-brand-900"
-              onClick={(e) => removeOption(option.value, e)}
+              className={`h-3 w-3 ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:text-brand-900"}`}
+              onClick={(e) => !disabled && removeOption(option.value, e)}
             />
           </Badge>
         ))}

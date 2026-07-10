@@ -173,6 +173,7 @@ function FileUploadZone({
   onClearExisting,
   id,
   handleViewFile,
+  disabled,
 }: {
   label: string;
   required?: boolean;
@@ -182,6 +183,7 @@ function FileUploadZone({
   onClearExisting?: () => void;
   id: string;
   handleViewFile: (url: string) => void;
+  disabled?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   return (
@@ -199,7 +201,7 @@ function FileUploadZone({
             >
               <Eye className="h-3 w-3" /> Lihat
             </button>
-            {onClearExisting && (
+            {onClearExisting && !disabled && (
               <button type="button" onClick={onClearExisting} className="text-red-500 hover:text-red-600 transition-colors">
                 <X className="h-3.5 w-3.5" />
               </button>
@@ -208,8 +210,7 @@ function FileUploadZone({
         )}
       </div>
       <div
-        className="group relative h-12 border border-dashed border-gray-200 dark:border-gray-800 rounded-xl bg-gray-50/50 dark:bg-white/[0.02] hover:bg-brand-50/50 dark:hover:bg-brand-500/5 hover:border-brand-300 transition-all cursor-pointer flex items-center px-4 gap-3 overflow-hidden"
-        onClick={() => inputRef.current?.click()}
+        className={`group relative h-12 border border-dashed border-gray-200 dark:border-gray-800 rounded-xl bg-gray-50/50 dark:bg-white/[0.02] ${disabled ? "opacity-50 cursor-not-allowed" : "hover:bg-brand-50/50 dark:hover:bg-brand-500/5 hover:border-brand-300 transition-all cursor-pointer"} flex items-center px-4 gap-3 overflow-hidden`}
       >
         <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-white dark:bg-gray-800 shadow-sm group-hover:scale-110 transition-transform">
           <Upload className="h-4 w-4 text-gray-400 group-hover:text-brand-500" />
@@ -217,14 +218,16 @@ function FileUploadZone({
         <span className="text-xs text-gray-500 dark:text-gray-400 font-medium truncate max-w-[150px]">
           {value ? value.name : existingUrl ? "Ganti file lampiran..." : "Pilih file atau drag here"}
         </span>
-        <input
-          ref={inputRef}
-          id={id}
-          type="file"
-          accept="application/pdf,image/*"
-          className="absolute inset-0 opacity-0 cursor-pointer"
-          onChange={(e) => onChange(e.target.files?.[0] ?? null)}
-        />
+        {!disabled && (
+          <input
+            ref={inputRef}
+            id={id}
+            type="file"
+            accept="application/pdf,image/*"
+            className="absolute inset-0 opacity-0 cursor-pointer"
+            onChange={(e) => onChange(e.target.files?.[0] ?? null)}
+          />
+        )}
       </div>
     </div>
   );
@@ -241,7 +244,7 @@ export default function ArmadaPengajuanPage() {
   const role = (session?.user as any)?.role as string | undefined;
   const userName = session?.user?.name ?? "";
   const { activeCompanyCode } = useCompany();
-  const transportCode = activeCompanyCode ?? ((session?.user as any)?.companyCode as string | undefined);
+  const transportCode = (session?.user as any)?.companyCode as string | undefined;
   const isTransport = role === "transport" || role === "rekanan";
   const isAdminArmada = useMemo(() => {
     if (!role) return false;
@@ -267,6 +270,7 @@ export default function ArmadaPengajuanPage() {
 
   // ── edit modal ──
   const [editId, setEditId] = useState<number | null>(null);
+  const [isViewMode, setIsViewMode] = useState(false);
   const [editForm, setEditForm] = useState(emptyForm());
   const setEF = (patch: Partial<ReturnType<typeof emptyForm>>) => setEditForm((p) => ({ ...p, ...patch }));
   const [editExistingFile1, setEditExistingFile1] = useState("");
@@ -322,7 +326,7 @@ export default function ArmadaPengajuanPage() {
       if (!res.ok) return [];
       return res.json();
     },
-    enabled: !!session && isAdminArmada,
+    enabled: !!session,
     staleTime: 60_000,
   });
 
@@ -585,7 +589,7 @@ export default function ArmadaPengajuanPage() {
     const approveMatch = html.match(/approveItemProcess\('(\d+)'\)/);
     return {
       canDelete: !!deleteMatch,
-      canEdit: !!editMatch,
+      canEdit: !!editMatch && !isAdminArmada,
       canView: !!viewMatch,
       canTolak: !!tolakMatch,
       canApprove: !!approveMatch,
@@ -725,12 +729,12 @@ export default function ArmadaPengajuanPage() {
               </Button>
             )}
             {canView && vId && (
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-brand-600 hover:bg-brand-50" onClick={() => setEditId(vId)}>
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-brand-600 hover:bg-brand-50" onClick={() => { setIsViewMode(true); setEditId(vId); }}>
                 <Eye className="h-4 w-4" />
               </Button>
             )}
             {canEdit && eId && (
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-500 hover:bg-amber-50" onClick={() => { prevEditIdRef.current = null; setEditId(eId); }}>
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-500 hover:bg-amber-50" onClick={() => { setIsViewMode(false); prevEditIdRef.current = null; setEditId(eId); }}>
                 <Pencil className="h-4 w-4" />
               </Button>
             )}
@@ -747,471 +751,483 @@ export default function ArmadaPengajuanPage() {
 
   // ─── Form Section Renderer ───────────────────────────────────────────────────
 
-  const renderFormFields = (f: ReturnType<typeof emptyForm>, set: (p: Partial<ReturnType<typeof emptyForm>>) => void, target: "main" | "edit") => (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+  const renderFormFields = (f: ReturnType<typeof emptyForm>, set: (p: Partial<ReturnType<typeof emptyForm>>) => void, target: "main" | "edit" | "view") => {
+    const disabled = target === "view";
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
-      {/* Section 1: Data Identitas */}
-      <div className="space-y-6">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-10 h-10 rounded-2xl bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400">
-            <User className="h-5 w-5" />
+        {/* Section 1: Data Identitas */}
+        <div className="space-y-6">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center w-10 h-10 rounded-2xl bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400">
+              <User className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-tight">Data Identitas</h3>
+              <p className="text-[10px] text-gray-400 font-medium">Informasi kepemilikan unit</p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-tight">Data Identitas</h3>
-            <p className="text-[10px] text-gray-400 font-medium">Informasi kepemilikan unit</p>
+
+          <div className="space-y-4 p-5 rounded-2xl border border-gray-100 dark:border-gray-800 bg-white/50 dark:bg-white/[0.01]">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest px-1">
+                {isAdminArmada ? "Admin Plant" : "Transportir"}
+              </label>
+              <div className="h-10 px-4 flex items-center bg-gray-50/50 dark:bg-white/[0.02] border border-gray-200 dark:border-gray-800 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-300">
+                {isAdminArmada
+                  ? (target === "edit" || target === "view" ? f.approvers[0] : (activeCompanyCode || transportCode))
+                  : (transportList.find(t => t.kode === (f.transportCode || transportCode))?.nama || userName || f.transportCode || transportCode || "—")
+                }
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              {isAdminArmada ? (
+                <>
+                  <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest px-1">Transportir <span className="text-red-500">*</span></label>
+                  <select
+                    disabled={disabled}
+                    className="h-10 w-full px-4 bg-white dark:bg-white/[0.02] border border-gray-200 dark:border-gray-800 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-300 outline-none focus:ring-2 focus:ring-brand-500 transition-all"
+                    value={f.transportCode}
+                    onChange={(e) => set({ transportCode: e.target.value })}
+                  >
+                    <option value="">Pilih Transportir...</option>
+                    {transportList.map(t => (
+                      <option key={t.kode} value={t.kode}>{t.nama} ({t.kode})</option>
+                    ))}
+                  </select>
+                </>
+              ) : (
+                <>
+                  <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest px-1">Approver <span className="text-red-500">*</span></label>
+                  <MultiSelect
+                    disabled={disabled}
+                    options={companyOptions}
+                    selected={f.approvers}
+                    onChange={(vals) => set({ approvers: vals })}
+                    placeholder="Pilih Approver..."
+                  />
+                </>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest px-1">Nomor Polisi <span className="text-red-500">*</span></label>
+              <Input
+                disabled={disabled}
+                placeholder="B 1234 ABC"
+                value={f.nopol}
+                onChange={(e) => set({ nopol: e.target.value.toUpperCase() })}
+                onBlur={(e) => set({ nopol: formatNopol(e.target.value) })}
+                className="h-10 rounded-xl font-bold uppercase"
+              />
+            </div>
           </div>
         </div>
 
-        <div className="space-y-4 p-5 rounded-2xl border border-gray-100 dark:border-gray-800 bg-white/50 dark:bg-white/[0.01]">
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest px-1">
-              {isAdminArmada ? "Admin Plant" : "Transportir"}
+        {/* Section 2: Spesifikasi Teknis */}
+        <div className="space-y-6">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400">
+              <Settings className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-tight">Spesifikasi Unit</h3>
+              <p className="text-[10px] text-gray-400 font-medium">Data teknis dan kapasitas</p>
+            </div>
+          </div>
+
+          <div className="space-y-4 p-5 rounded-2xl border border-gray-100 dark:border-gray-800 bg-white/50 dark:bg-white/[0.01]">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest px-1">Sumbu</label>
+                <div className="relative group">
+                  <Input readOnly disabled={disabled} value={f.sumbu} placeholder="Klik cari" className={`cursor-pointer pr-10 h-10 rounded-xl ${disabled ? 'opacity-50' : ''}`} onClick={() => { if (!disabled) { setSumbuTarget(target === "main" ? "main" : "edit"); setSumbuOpen(true); } }} />
+                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest px-1">Tahun Unit</label>
+                <Input disabled={disabled} type="number" placeholder="2020" value={f.tahun_pembuatan} onChange={(e) => set({ tahun_pembuatan: e.target.value })} className="h-10 rounded-xl" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest px-1">JBI (Kg)</label>
+                <Input disabled={disabled} type="number" placeholder="0" value={f.jbi} onChange={(e) => set({ jbi: e.target.value })} className="h-10 rounded-xl" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest px-1">Tonase Max</label>
+                <div className="h-10 px-4 flex items-center bg-gray-50/50 dark:bg-white/[0.02] border border-gray-200 dark:border-gray-800 rounded-xl text-xs font-bold text-brand-600">
+                  {f.qtymax || "0"} TON
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest px-1">Berat Kosong</label>
+                <Input disabled={disabled} type="number" placeholder="0" value={f.beratkendaraan} onChange={(e) => set({ beratkendaraan: e.target.value })} className="h-10 rounded-xl text-xs" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest px-1">Berat Kru</label>
+                <Input disabled={disabled} type="number" placeholder="0" value={f.beratpenumpang} onChange={(e) => set({ beratpenumpang: e.target.value })} className="h-10 rounded-xl text-xs" />
+              </div>
+            </div>
+
+            <label className={`flex items-center gap-3 px-4 py-2.5 bg-brand-25 dark:bg-brand-500/5 rounded-xl border border-brand-100 dark:border-brand-500/10 ${disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:border-brand-300'} group transition-all`}>
+              <input disabled={disabled} type="checkbox" checked={f.charter} onChange={(e) => set({ charter: e.target.checked })} className="w-4 h-4 accent-brand-600 rounded" />
+              <div className="flex flex-col">
+                <span className="text-[10px] font-black uppercase tracking-widest text-brand-800 dark:text-brand-300">Unit Charter</span>
+                <span className="text-[9px] text-brand-600/60 font-medium">Set sebagai armada prioritas</span>
+              </div>
             </label>
-            <div className="h-10 px-4 flex items-center bg-gray-50/50 dark:bg-white/[0.02] border border-gray-200 dark:border-gray-800 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-300">
-              {isAdminArmada
-                ? (target === "edit" ? f.approvers[0] : (activeCompanyCode || transportCode))
-                : (target === "edit" ? transportCode : (userName || transportCode))
-              }
+          </div>
+        </div>
+
+        {/* Section 3: Legalitas & Berkas */}
+        <div className="space-y-6">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400">
+              <ShieldCheck className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-tight">Legalitas & Berkas</h3>
+              <p className="text-[10px] text-gray-400 font-medium">Dokumen dan validasi KIR</p>
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            {isAdminArmada ? (
-              <>
-                <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest px-1">Transportir <span className="text-red-500">*</span></label>
-                <select
-                  className="h-10 w-full px-4 bg-white dark:bg-white/[0.02] border border-gray-200 dark:border-gray-800 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-300 outline-none focus:ring-2 focus:ring-brand-500 transition-all"
-                  value={f.transportCode}
-                  onChange={(e) => set({ transportCode: e.target.value })}
-                >
-                  <option value="">Pilih Transportir...</option>
-                  {transportList.map(t => (
-                    <option key={t.kode} value={t.kode}>{t.nama} ({t.kode})</option>
-                  ))}
-                </select>
-              </>
-            ) : (
-              <>
-                <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest px-1">Approver <span className="text-red-500">*</span></label>
-                <MultiSelect
-                  options={companyOptions}
-                  selected={f.approvers}
-                  onChange={(vals) => set({ approvers: vals })}
-                  placeholder="Pilih Approver..."
-                />
-              </>
-            )}
-          </div>
+          <div className="space-y-4 p-5 rounded-2xl border border-gray-100 dark:border-gray-800 bg-white/50 dark:bg-white/[0.01]">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest px-1">Masa Berlaku KIR <span className="text-red-500">*</span></label>
+              <Input disabled={disabled} type="date" value={f.masa_berlaku_kir} onChange={(e) => set({ masa_berlaku_kir: e.target.value })} className="h-10 rounded-xl" />
+            </div>
 
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest px-1">Nomor Polisi <span className="text-red-500">*</span></label>
-            <Input
-              placeholder="B 1234 ABC"
-              value={f.nopol}
-              onChange={(e) => set({ nopol: e.target.value.toUpperCase() })}
-              onBlur={(e) => set({ nopol: formatNopol(e.target.value) })}
-              className="h-10 rounded-xl font-bold uppercase"
-            />
+            <div className="grid grid-cols-2 gap-3">
+              <FileUploadZone
+                id={target === "main" ? "f1-main" : "f1-edit"}
+                disabled={disabled}
+                label="Lampiran KIR/STNK"
+                required={target === "main" || !editExistingFile1}
+                value={f.file1}
+                onChange={(file) => set({ file1: file })}
+                handleViewFile={handleViewFile}
+                existingUrl={target !== "main" ? editExistingFile1 : undefined}
+                onClearExisting={target === "edit" ? () => setEditExistingFile1("") : undefined}
+              />
+              <FileUploadZone
+                id={target === "main" ? "f2-main" : "f2-edit"}
+                disabled={disabled}
+                label="Lampiran Lainnya"
+                value={f.file2}
+                onChange={(file) => set({ file2: file })}
+                handleViewFile={handleViewFile}
+                existingUrl={target !== "main" ? editExistingFile2 : undefined}
+                onClearExisting={target === "edit" ? () => setEditExistingFile2("") : undefined}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 mt-2">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest px-1">No Rangka STNK <span className="text-red-500">*</span></label>
+                <Input disabled={disabled} value={f.no_rangka_stnk} onChange={(e) => set({ no_rangka_stnk: e.target.value })} className="h-9 rounded-xl text-[10px] uppercase font-mono" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest px-1">No Mesin STNK <span className="text-red-500">*</span></label>
+                <Input disabled={disabled} value={f.no_mesin_stnk} onChange={(e) => set({ no_mesin_stnk: e.target.value })} className="h-9 rounded-xl text-[10px] uppercase font-mono" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3 mt-2">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest px-1">No Rangka KIR</label>
+                <Input disabled={disabled} value={f.no_rangka_kir} onChange={(e) => set({ no_rangka_kir: e.target.value })} className="h-9 rounded-xl text-[10px] uppercase font-mono" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest px-1">No Mesin KIR</label>
+                <Input disabled={disabled} value={f.no_mesin_kir} onChange={(e) => set({ no_mesin_kir: e.target.value })} className="h-9 rounded-xl text-[10px] uppercase font-mono" />
+              </div>
+            </div>
           </div>
         </div>
       </div>
+    );
+  };
 
-      {/* Section 2: Spesifikasi Teknis */}
-      <div className="space-y-6">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400">
-            <Settings className="h-5 w-5" />
-          </div>
+    // ─── Render ──────────────────────────────────────────────────────────────────
+
+    return (
+      <div className="space-y-8 animate-in fade-in duration-500">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-tight">Spesifikasi Unit</h3>
-            <p className="text-[10px] text-gray-400 font-medium">Data teknis dan kapasitas</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">
+              Armada Management
+            </h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Daftarkan unit kendaraan baru dan monitor status persetujuan rekanan secara real-time.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" className="h-9 rounded-xl border-gray-200 dark:border-gray-800">
+              <Filter className="h-4 w-4 mr-2" />
+              Filter Data
+            </Button>
+            <Button size="sm" className="h-9 rounded-xl shadow-theme-sm" onClick={() => {
+              const el = document.getElementById("form-section");
+              el?.scrollIntoView({ behavior: 'smooth' });
+            }}>
+              <Plus className="h-4 w-4 mr-2" />
+              Pengajuan Baru
+            </Button>
           </div>
         </div>
 
-        <div className="space-y-4 p-5 rounded-2xl border border-gray-100 dark:border-gray-800 bg-white/50 dark:bg-white/[0.01]">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest px-1">Sumbu</label>
-              <div className="relative group">
-                <Input readOnly value={f.sumbu} placeholder="Klik cari" className="cursor-pointer pr-10 h-10 rounded-xl" onClick={() => { setSumbuTarget(target); setSumbuOpen(true); }} />
-                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest px-1">Tahun Unit</label>
-              <Input type="number" placeholder="2020" value={f.tahun_pembuatan} onChange={(e) => set({ tahun_pembuatan: e.target.value })} className="h-10 rounded-xl" />
-            </div>
-          </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest px-1">JBI (Kg)</label>
-              <Input type="number" placeholder="0" value={f.jbi} onChange={(e) => set({ jbi: e.target.value })} className="h-10 rounded-xl" />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest px-1">Tonase Max</label>
-              <div className="h-10 px-4 flex items-center bg-gray-50/50 dark:bg-white/[0.02] border border-gray-200 dark:border-gray-800 rounded-xl text-xs font-bold text-brand-600">
-                {f.qtymax || "0"} TON
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest px-1">Berat Kosong</label>
-              <Input type="number" placeholder="0" value={f.beratkendaraan} onChange={(e) => set({ beratkendaraan: e.target.value })} className="h-10 rounded-xl text-xs" />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest px-1">Berat Kru</label>
-              <Input type="number" placeholder="0" value={f.beratpenumpang} onChange={(e) => set({ beratpenumpang: e.target.value })} className="h-10 rounded-xl text-xs" />
-            </div>
-          </div>
-
-          <label className="flex items-center gap-3 px-4 py-2.5 bg-brand-25 dark:bg-brand-500/5 rounded-xl border border-brand-100 dark:border-brand-500/10 cursor-pointer group transition-all">
-            <input type="checkbox" checked={f.charter} onChange={(e) => set({ charter: e.target.checked })} className="w-4 h-4 accent-brand-600 rounded" />
-            <div className="flex flex-col">
-              <span className="text-[10px] font-black uppercase tracking-widest text-brand-800 dark:text-brand-300">Unit Charter</span>
-              <span className="text-[9px] text-brand-600/60 font-medium">Set sebagai armada prioritas</span>
-            </div>
-          </label>
-        </div>
-      </div>
-
-      {/* Section 3: Legalitas & Berkas */}
-      <div className="space-y-6">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400">
-            <ShieldCheck className="h-5 w-5" />
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-tight">Legalitas & Berkas</h3>
-            <p className="text-[10px] text-gray-400 font-medium">Dokumen dan validasi KIR</p>
-          </div>
-        </div>
-
-        <div className="space-y-4 p-5 rounded-2xl border border-gray-100 dark:border-gray-800 bg-white/50 dark:bg-white/[0.01]">
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest px-1">Masa Berlaku KIR <span className="text-red-500">*</span></label>
-            <Input type="date" value={f.masa_berlaku_kir} onChange={(e) => set({ masa_berlaku_kir: e.target.value })} className="h-10 rounded-xl" />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <FileUploadZone
-              id={target === "main" ? "f1-main" : "f1-edit"}
-              label="Lampiran KIR/STNK"
-              required={target === "main" || !editExistingFile1}
-              value={f.file1}
-              onChange={(file) => set({ file1: file })}
-              handleViewFile={handleViewFile}
-              existingUrl={target === "edit" ? editExistingFile1 : undefined}
-              onClearExisting={target === "edit" ? () => setEditExistingFile1("") : undefined}
-            />
-            <FileUploadZone
-              id={target === "main" ? "f2-main" : "f2-edit"}
-              label="Lampiran Lainnya"
-              value={f.file2}
-              onChange={(file) => set({ file2: file })}
-              handleViewFile={handleViewFile}
-              existingUrl={target === "edit" ? editExistingFile2 : undefined}
-              onClearExisting={target === "edit" ? () => setEditExistingFile2("") : undefined}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 mt-2">
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest px-1">No Rangka STNK <span className="text-red-500">*</span></label>
-              <Input value={f.no_rangka_stnk} onChange={(e) => set({ no_rangka_stnk: e.target.value })} className="h-9 rounded-xl text-[10px] uppercase font-mono" />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest px-1">No Mesin STNK <span className="text-red-500">*</span></label>
-              <Input value={f.no_mesin_stnk} onChange={(e) => set({ no_mesin_stnk: e.target.value })} className="h-9 rounded-xl text-[10px] uppercase font-mono" />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3 mt-2">
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest px-1">No Rangka KIR</label>
-              <Input value={f.no_rangka_kir} onChange={(e) => set({ no_rangka_kir: e.target.value })} className="h-9 rounded-xl text-[10px] uppercase font-mono" />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest px-1">No Mesin KIR</label>
-              <Input value={f.no_mesin_kir} onChange={(e) => set({ no_mesin_kir: e.target.value })} className="h-9 rounded-xl text-[10px] uppercase font-mono" />
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  // ─── Render ──────────────────────────────────────────────────────────────────
-
-  return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">
-            Armada Management
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Daftarkan unit kendaraan baru dan monitor status persetujuan rekanan secara real-time.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="h-9 rounded-xl border-gray-200 dark:border-gray-800">
-            <Filter className="h-4 w-4 mr-2" />
-            Filter Data
-          </Button>
-          <Button size="sm" className="h-9 rounded-xl shadow-theme-sm" onClick={() => {
-            const el = document.getElementById("form-section");
-            el?.scrollIntoView({ behavior: 'smooth' });
-          }}>
-            <Plus className="h-4 w-4 mr-2" />
-            Pengajuan Baru
-          </Button>
-        </div>
-      </div>
-
-
-      {/* Form Section */}
-      <div id="form-section">
-        {(isTransport || isAdminArmada) ? (
-          <Card className="border-none shadow-theme-lg overflow-hidden bg-white dark:bg-white/[0.02]">
-            <CardHeader className="px-8 py-6 border-b border-gray-100 dark:border-gray-800">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-lg font-black uppercase tracking-tight text-gray-900 dark:text-white">Formulir Pengajuan Armada</CardTitle>
-                  <CardDescription className="text-xs text-gray-500 mt-1">Silakan lengkapi data teknis dan lampiran dokumen unit kendaraan Anda.</CardDescription>
+        {/* Form Section */}
+        <div id="form-section">
+          {(isTransport || isAdminArmada) ? (
+            <Card className="border-none shadow-theme-lg overflow-hidden bg-white dark:bg-white/[0.02]">
+              <CardHeader className="px-8 py-6 border-b border-gray-100 dark:border-gray-800">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg font-black uppercase tracking-tight text-gray-900 dark:text-white">Formulir Pengajuan Armada</CardTitle>
+                    <CardDescription className="text-xs text-gray-500 mt-1">Silakan lengkapi data teknis dan lampiran dokumen unit kendaraan Anda.</CardDescription>
+                  </div>
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent className="p-8">
-              {renderFormFields(form, setF, "main")}
+              </CardHeader>
+              <CardContent className="p-8">
+                {renderFormFields(form, setF, "main")}
 
-              <div className="mt-10 pt-8 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                <div className="hidden md:flex items-center gap-2 text-xs text-gray-400">
-                  <ShieldCheck className="h-4 w-4 text-emerald-500" />
-                  Data Anda aman dan terenkripsi oleh sistem SISTRO.
+                <div className="mt-10 pt-8 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                  <div className="hidden md:flex items-center gap-2 text-xs text-gray-400">
+                    <ShieldCheck className="h-4 w-4 text-emerald-500" />
+                    Data Anda aman dan terenkripsi oleh sistem SISTRO.
+                  </div>
+                  <div className="flex items-center gap-3 w-full md:w-auto">
+                    <Button
+                      variant="ghost"
+                      className="flex-1 md:flex-none h-11 rounded-xl font-bold text-gray-400 hover:text-red-500 transition-colors"
+                      onClick={() => setForm(emptyForm())}
+                    >
+                      Reset Form
+                    </Button>
+                    <Button
+                      className="flex-1 md:flex-none h-11 px-10 rounded-xl bg-brand-600 hover:bg-brand-700 shadow-theme-md font-bold tracking-tight"
+                      disabled={submitMutation.isPending}
+                      onClick={() => submitMutation.mutate()}
+                    >
+                      {submitMutation.isPending ? (
+                        <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Memproses...</>
+                      ) : (
+                        "Kirim Pengajuan Sekarang"
+                      )}
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3 w-full md:w-auto">
-                  <Button
-                    variant="ghost"
-                    className="flex-1 md:flex-none h-11 rounded-xl font-bold text-gray-400 hover:text-red-500 transition-colors"
-                    onClick={() => setForm(emptyForm())}
-                  >
-                    Reset Form
-                  </Button>
-                  <Button
-                    className="flex-1 md:flex-none h-11 px-10 rounded-xl bg-brand-600 hover:bg-brand-700 shadow-theme-md font-bold tracking-tight"
-                    disabled={submitMutation.isPending}
-                    onClick={() => submitMutation.mutate()}
-                  >
-                    {submitMutation.isPending ? (
-                      <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Memproses...</>
-                    ) : (
-                      "Kirim Pengajuan Sekarang"
-                    )}
-                  </Button>
-                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="p-8 rounded-2xl bg-amber-50/50 border border-amber-200 flex flex-col items-center text-center gap-3">
+              <Clock className="h-10 w-10 text-amber-500" />
+              <div className="max-w-md">
+                <h4 className="text-sm font-bold text-amber-800 uppercase tracking-tight">Fitur Pengajuan Terbatas</h4>
+                <p className="text-xs text-amber-700/70 mt-1">Hanya pengguna dengan role Transportir atau Rekanan yang dapat melakukan pengajuan unit armada baru.</p>
               </div>
+            </div>
+          )}
+        </div>
+
+        {/* Table Section */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-black uppercase tracking-tight text-gray-900 dark:text-white">Riwayat Pengajuan Unit</h2>
+            <div className="h-px flex-1 bg-gray-100 dark:bg-gray-800 mx-4" />
+          </div>
+
+          <Card className="border-none shadow-theme-xs bg-white dark:bg-white/[0.02]">
+            <CardContent className="p-6">
+              <DataTable
+                columns={columns}
+                queryKey={["armada-review-baru", String(isCharterFilter), transportCode]}
+                fetcher={fetchHistory}
+                rowKey={(row) => row.ID || Math.random()}
+                searchPlaceholder="Cari Nopol, Rekanan, atau Status..."
+                defaultPageSize={10}
+                toolbar={
+                  <div className="flex items-center gap-2">
+                    <label className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-white/[0.02] border border-gray-200 dark:border-gray-800 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={isCharterFilter}
+                        onChange={(e) => setIsCharterFilter(e.target.checked)}
+                        className="w-4 h-4 accent-brand-600 rounded"
+                      />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-300">Hanya Charter</span>
+                    </label>
+                    <Button variant="ghost" size="sm" className="h-8 text-xs font-bold text-gray-400 hover:text-brand-600" onClick={() => queryClient.invalidateQueries({ queryKey: ["armada-review-baru"] })}>
+                      <RefreshCw className="h-3 w-3 mr-2" />
+                      Refresh
+                    </Button>
+                  </div>
+                }
+              />
             </CardContent>
           </Card>
-        ) : (
-          <div className="p-8 rounded-2xl bg-amber-50/50 border border-amber-200 flex flex-col items-center text-center gap-3">
-            <Clock className="h-10 w-10 text-amber-500" />
-            <div className="max-w-md">
-              <h4 className="text-sm font-bold text-amber-800 uppercase tracking-tight">Fitur Pengajuan Terbatas</h4>
-              <p className="text-xs text-amber-700/70 mt-1">Hanya pengguna dengan role Transportir atau Rekanan yang dapat melakukan pengajuan unit armada baru.</p>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Table Section */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <h2 className="text-lg font-black uppercase tracking-tight text-gray-900 dark:text-white">Riwayat Pengajuan Unit</h2>
-          <div className="h-px flex-1 bg-gray-100 dark:bg-gray-800 mx-4" />
         </div>
 
-        <Card className="border-none shadow-theme-xs bg-white dark:bg-white/[0.02]">
-          <CardContent className="p-6">
-            <DataTable
-              columns={columns}
-              queryKey={["armada-review-baru", String(isCharterFilter), transportCode]}
-              fetcher={fetchHistory}
-              rowKey={(row) => row.ID || Math.random()}
-              searchPlaceholder="Cari Nopol, Rekanan, atau Status..."
-              defaultPageSize={10}
-              toolbar={
-                <div className="flex items-center gap-2">
-                  <label className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-white/[0.02] border border-gray-200 dark:border-gray-800 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
-                    <input
-                      type="checkbox"
-                      checked={isCharterFilter}
-                      onChange={(e) => setIsCharterFilter(e.target.checked)}
-                      className="w-4 h-4 accent-brand-600 rounded"
-                    />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-300">Hanya Charter</span>
-                  </label>
-                  <Button variant="ghost" size="sm" className="h-8 text-xs font-bold text-gray-400 hover:text-brand-600" onClick={() => queryClient.invalidateQueries({ queryKey: ["armada-review-baru"] })}>
-                    <RefreshCw className="h-3 w-3 mr-2" />
-                    Refresh
-                  </Button>
-                </div>
-              }
-            />
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Dialogs */}
-      {/* Sumbu Picker */}
-      <Dialog open={sumbuOpen} onOpenChange={(o) => { setSumbuOpen(o); if (!o) setSumbuSearch(""); }}>
-        <DialogContent className="max-w-md p-0 overflow-hidden border-none shadow-theme-lg">
-          <DialogHeader className="p-6 border-b border-gray-100">
-            <DialogTitle className="text-base font-bold uppercase tracking-tight">Pilih Konfigurasi Sumbu</DialogTitle>
-            <DialogDescription className="text-xs">Konfigurasi menentukan Tonase Max armada.</DialogDescription>
-          </DialogHeader>
-          <div className="p-6 space-y-4">
-            <div className="relative">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input className="pl-10 h-10 rounded-xl bg-gray-50 border-gray-100" placeholder="Cari nama sumbu..." value={sumbuSearch} onChange={(e) => setSumbuSearch(e.target.value)} autoFocus />
-            </div>
-            <div className="max-h-[300px] overflow-y-auto space-y-2 pr-1 no-scrollbar">
-              {filteredSumbu.map((s) => (
-                <button
-                  key={s.Id}
-                  className="w-full text-left p-4 rounded-xl border border-gray-100 hover:border-brand-200 hover:bg-brand-50/30 transition-all flex items-center justify-between group"
-                  onClick={() => selectSumbu(s)}
-                >
-                  <div>
-                    <p className="text-sm font-bold text-gray-900 group-hover:text-brand-600 transition-colors">{s.nama}</p>
-                    <p className="text-[10px] text-gray-400 font-medium uppercase tracking-widest">{s.jenistruk}</p>
-                  </div>
-                  <Badge color="primary" variant="light">{s.muatan} TON</Badge>
-                </button>
-              ))}
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit/Detail Modal */}
-      <Dialog open={!!editId} onOpenChange={(o) => { if (!o) { setEditId(null); prevEditIdRef.current = null; } }}>
-        <DialogContent className="max-w-6xl max-h-[92vh] overflow-y-auto p-0 border-none shadow-theme-lg bg-gray-50 dark:bg-gray-900">
-          <DialogHeader className="p-6 border-b border-gray-100 bg-white dark:bg-gray-800 dark:border-gray-700 sticky top-0 z-10">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-brand-50 rounded-xl text-brand-600">
-                  <Pencil className="h-5 w-5" />
-                </div>
-                <div>
-                  <DialogTitle className="text-lg font-black uppercase tracking-tight">Review {"&"} Edit Pengajuan</DialogTitle>
-                  <DialogDescription className="text-xs">ID Pengajuan: #{editId}</DialogDescription>
-                </div>
+        {/* Dialogs */}
+        {/* Sumbu Picker */}
+        <Dialog open={sumbuOpen} onOpenChange={(o) => { setSumbuOpen(o); if (!o) setSumbuSearch(""); }}>
+          <DialogContent className="max-w-md p-0 overflow-hidden border-none shadow-theme-lg">
+            <DialogHeader className="p-6 border-b border-gray-100">
+              <DialogTitle className="text-base font-bold uppercase tracking-tight">Pilih Konfigurasi Sumbu</DialogTitle>
+              <DialogDescription className="text-xs">Konfigurasi menentukan Tonase Max armada.</DialogDescription>
+            </DialogHeader>
+            <div className="p-6 space-y-4">
+              <div className="relative">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input className="pl-10 h-10 rounded-xl bg-gray-50 border-gray-100" placeholder="Cari nama sumbu..." value={sumbuSearch} onChange={(e) => setSumbuSearch(e.target.value)} autoFocus />
               </div>
-              <Button variant="ghost" size="icon" onClick={() => setEditId(null)} className="rounded-full">
-                <X className="h-5 w-5 text-gray-400" />
+              <div className="max-h-[300px] overflow-y-auto space-y-2 pr-1 no-scrollbar">
+                {filteredSumbu.map((s) => (
+                  <button
+                    key={s.Id}
+                    className="w-full text-left p-4 rounded-xl border border-gray-100 hover:border-brand-200 hover:bg-brand-50/30 transition-all flex items-center justify-between group"
+                    onClick={() => selectSumbu(s)}
+                  >
+                    <div>
+                      <p className="text-sm font-bold text-gray-900 group-hover:text-brand-600 transition-colors">{s.nama}</p>
+                      <p className="text-[10px] text-gray-400 font-medium uppercase tracking-widest">{s.jenistruk}</p>
+                    </div>
+                    <Badge color="primary" variant="light">{s.muatan} TON</Badge>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit/Detail Modal */}
+        <Dialog open={!!editId} onOpenChange={(o) => { if (!o) { setEditId(null); prevEditIdRef.current = null; } }}>
+          <DialogContent className="max-w-6xl max-h-[92vh] overflow-y-auto p-0 border-none shadow-theme-lg bg-gray-50 dark:bg-gray-900">
+            <DialogHeader className="p-6 border-b border-gray-100 bg-white dark:bg-gray-800 dark:border-gray-700 sticky top-0 z-10">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-brand-50 rounded-xl text-brand-600">
+                    <Pencil className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <DialogTitle className="text-lg font-black uppercase tracking-tight">
+                      {isViewMode ? "Review Pengajuan" : "Review & Edit Pengajuan"}
+                    </DialogTitle>
+                    <DialogDescription className="text-xs">ID Pengajuan: #{editId}</DialogDescription>
+                  </div>
+                </div>
+                <Button variant="ghost" size="icon" onClick={() => setEditId(null)} className="rounded-full">
+                  <X className="h-5 w-5 text-gray-400" />
+                </Button>
+              </div>
+            </DialogHeader>
+
+            <div className="p-8">
+              {!detailData ? (
+                <div className="py-20 flex flex-col items-center justify-center gap-3">
+                  <Loader2 className="h-8 w-8 animate-spin text-brand-500" />
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Sinkronisasi Data...</p>
+                </div>
+              ) : (
+                renderFormFields(editForm, setEF, isViewMode ? "view" : "edit")
+              )}
+            </div>
+
+            <div className="p-6 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 flex items-center justify-end gap-3 sticky bottom-0 z-10">
+              <Button variant="outline" className="h-10 px-6 rounded-xl font-bold text-xs" onClick={() => setEditId(null)}>Batal</Button>
+              {!isViewMode && (
+                <Button
+                  className="h-10 px-8 rounded-xl bg-brand-600 hover:bg-brand-700 shadow-theme-sm font-bold text-xs"
+                  disabled={updateMutation.isPending || !detailData}
+                  onClick={() => updateMutation.mutate()}
+                >
+                  {updateMutation.isPending ? "Menyimpan..." : "Simpan Perubahan"}
+                </Button>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirmation */}
+        <Dialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
+          <DialogContent className="max-w-sm p-6 text-center border-none shadow-theme-lg">
+            <div className="w-16 h-16 rounded-full bg-red-50 text-red-500 flex items-center justify-center mx-auto mb-4">
+              <Trash2 className="h-8 w-8" />
+            </div>
+            <DialogTitle className="text-lg font-black uppercase tracking-tight mb-2">Hapus Pengajuan?</DialogTitle>
+            <DialogDescription className="text-sm text-gray-500 mb-6">
+              Apakah Anda yakin ingin menghapus data pengajuan armada ini? Tindakan ini tidak dapat dibatalkan.
+            </DialogDescription>
+            <div className="grid grid-cols-2 gap-3">
+              <Button variant="outline" className="rounded-xl font-bold h-10" onClick={() => setDeleteId(null)}>Batal</Button>
+              <Button variant="destructive" className="rounded-xl font-bold h-10 shadow-theme-sm" onClick={() => deleteId && deleteMutation.mutate(deleteId)}>
+                {deleteMutation.isPending ? "Menghapus..." : "Ya, Hapus Data"}
               </Button>
             </div>
-          </DialogHeader>
+          </DialogContent>
+        </Dialog>
 
-          <div className="p-8">
-            {!detailData ? (
-              <div className="py-20 flex flex-col items-center justify-center gap-3">
-                <Loader2 className="h-8 w-8 animate-spin text-brand-500" />
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Sinkronisasi Data...</p>
-              </div>
-            ) : (
-              renderFormFields(editForm, setEF, "edit")
-            )}
-          </div>
-
-          <div className="p-6 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 flex items-center justify-end gap-3 sticky bottom-0 z-10">
-            <Button variant="outline" className="h-10 px-6 rounded-xl font-bold text-xs" onClick={() => setEditId(null)}>Batal</Button>
-            <Button
-              className="h-10 px-8 rounded-xl bg-brand-600 hover:bg-brand-700 shadow-theme-sm font-bold text-xs"
-              disabled={updateMutation.isPending || !detailData}
-              onClick={() => updateMutation.mutate()}
-            >
-              {updateMutation.isPending ? "Menyimpan..." : "Simpan Perubahan"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Confirmation */}
-      <Dialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
-        <DialogContent className="max-w-sm p-6 text-center border-none shadow-theme-lg">
-          <div className="w-16 h-16 rounded-full bg-red-50 text-red-500 flex items-center justify-center mx-auto mb-4">
-            <Trash2 className="h-8 w-8" />
-          </div>
-          <DialogTitle className="text-lg font-black uppercase tracking-tight mb-2">Hapus Pengajuan?</DialogTitle>
-          <DialogDescription className="text-sm text-gray-500 mb-6">
-            Apakah Anda yakin ingin menghapus data pengajuan armada ini? Tindakan ini tidak dapat dibatalkan.
-          </DialogDescription>
-          <div className="grid grid-cols-2 gap-3">
-            <Button variant="outline" className="rounded-xl font-bold h-10" onClick={() => setDeleteId(null)}>Batal</Button>
-            <Button variant="destructive" className="rounded-xl font-bold h-10 shadow-theme-sm" onClick={() => deleteId && deleteMutation.mutate(deleteId)}>
-              {deleteMutation.isPending ? "Menghapus..." : "Ya, Hapus Data"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Approve Confirmation */}
-      <Dialog open={!!approveId} onOpenChange={(o) => !o && setApproveId(null)}>
-        <DialogContent className="max-w-sm p-6 text-center border-none shadow-theme-lg">
-          <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-4">
-            <CheckCircle2 className="h-8 w-8" />
-          </div>
-          <DialogTitle className="text-lg font-black uppercase tracking-tight mb-2">Setujui Armada?</DialogTitle>
-          <DialogDescription className="text-sm text-gray-500 mb-6">
-            Apakah Anda yakin ingin menyetujui pengajuan armada ini?
-          </DialogDescription>
-          <div className="grid grid-cols-2 gap-3">
-            <Button variant="outline" className="rounded-xl font-bold h-10" onClick={() => setApproveId(null)}>Batal</Button>
-            <Button
-              className="rounded-xl font-bold h-10 shadow-theme-sm bg-emerald-600 hover:bg-emerald-700 text-white"
-              disabled={approveMutation.isPending}
-              onClick={() => approveId && approveMutation.mutate(approveId)}
-            >
-              {approveMutation.isPending ? "Menyetujui..." : "Ya, Setujui"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Tolak Dialog */}
-      <Dialog open={!!tolakId} onOpenChange={(o) => !o && setTolakId(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Tolak / Revisi Armada</DialogTitle>
-            <DialogDescription>
-              Berikan alasan mengapa armada ini ditolak atau memerlukan revisi.
+        {/* Approve Confirmation */}
+        <Dialog open={!!approveId} onOpenChange={(o) => !o && setApproveId(null)}>
+          <DialogContent className="max-w-sm p-6 text-center border-none shadow-theme-lg">
+            <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-4">
+              <CheckCircle2 className="h-8 w-8" />
+            </div>
+            <DialogTitle className="text-lg font-black uppercase tracking-tight mb-2">Setujui Armada?</DialogTitle>
+            <DialogDescription className="text-sm text-gray-500 mb-6">
+              Apakah Anda yakin ingin menyetujui pengajuan armada ini?
             </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <textarea
-              className="w-full h-32 p-3 text-sm border border-gray-200 dark:border-gray-800 rounded-xl outline-none focus:ring-2 focus:ring-red-500 transition-all dark:bg-white/5"
-              placeholder="Contoh: Lampiran KIR tidak terbaca, mohon upload ulang."
-              value={tolakAlasan}
-              onChange={(e) => setTolakAlasan(e.target.value)}
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setTolakId(null)}>Batal</Button>
-            <Button
-              variant="destructive"
-              onClick={() => tolakId && tolakMutation.mutate({ id: tolakId, alasan: tolakAlasan })}
-              disabled={tolakMutation.isPending || !tolakAlasan.trim()}
-            >
-              {tolakMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <X className="h-4 w-4 mr-2" />}
-              Tolak Sekarang
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
+            <div className="grid grid-cols-2 gap-3">
+              <Button variant="outline" className="rounded-xl font-bold h-10" onClick={() => setApproveId(null)}>Batal</Button>
+              <Button
+                className="rounded-xl font-bold h-10 shadow-theme-sm bg-emerald-600 hover:bg-emerald-700 text-white"
+                disabled={approveMutation.isPending}
+                onClick={() => approveId && approveMutation.mutate(approveId)}
+              >
+                {approveMutation.isPending ? "Menyetujui..." : "Ya, Setujui"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Tolak Dialog */}
+        <Dialog open={!!tolakId} onOpenChange={(o) => !o && setTolakId(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Tolak / Revisi Armada</DialogTitle>
+              <DialogDescription>
+                Berikan alasan mengapa armada ini ditolak atau memerlukan revisi.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              <textarea
+                className="w-full h-32 p-3 text-sm border border-gray-200 dark:border-gray-800 rounded-xl outline-none focus:ring-2 focus:ring-red-500 transition-all dark:bg-white/5"
+                placeholder="Contoh: Lampiran KIR tidak terbaca, mohon upload ulang."
+                value={tolakAlasan}
+                onChange={(e) => setTolakAlasan(e.target.value)}
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setTolakId(null)}>Batal</Button>
+              <Button
+                variant="destructive"
+                onClick={() => tolakId && tolakMutation.mutate({ id: tolakId, alasan: tolakAlasan })}
+                disabled={tolakMutation.isPending || !tolakAlasan.trim()}
+              >
+                {tolakMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <X className="h-4 w-4 mr-2" />}
+                Tolak Sekarang
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    );
+  }
