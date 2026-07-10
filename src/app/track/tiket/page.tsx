@@ -3,25 +3,25 @@
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useApi } from "@/hooks/use-api";
-import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
-  CardTitle, 
-  CardDescription 
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { 
-  Search, 
-  RefreshCw, 
-  Share2, 
-  Printer, 
-  Clock, 
-  CheckCircle2, 
-  AlertTriangle, 
+import {
+  Search,
+  RefreshCw,
+  Share2,
+  Printer,
+  Clock,
+  CheckCircle2,
+  AlertTriangle,
   AlertCircle,
   Truck,
   MapPin,
@@ -132,9 +132,9 @@ const getPositionInfo = (code: string) => {
 
 const formatDT = (iso: string | null) => {
   if (!iso) return "--";
-  return new Date(iso).toLocaleString('id-ID', { 
-    day: '2-digit', 
-    month: 'short', 
+  return new Date(iso).toLocaleString('id-ID', {
+    day: '2-digit',
+    month: 'short',
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit'
@@ -233,7 +233,7 @@ function TrackingContent() {
 
   const currentPosInt = parseFloat(ticketData?.position || "00");
   const isCharter = ticketData?.position === "12" || ticketData?.position === "21";
-  
+
   // Custom check for "done" status based on timestamps
   const isStepDone = (code: string) => {
     if (!ticketData) return false;
@@ -247,7 +247,7 @@ function TrackingContent() {
     if (code === "04") return ticketData.timeisi !== null || pos >= 4;
     if (code === "05") return ticketData.timeisi !== null || pos >= 5;
     if (code === "07") return pos >= 7;
-    
+
     return pos >= codeVal;
   };
 
@@ -255,12 +255,12 @@ function TrackingContent() {
     if (!ticketData) return false;
     const pos = ticketData.position || "00";
     if (pos === code) return true;
-    
+
     // Mapping for intermediate steps
     if (code === "01.5" && pos === "01" && ticketData.timesec && !ticketData.timekosong) return true;
     if (code === "04" && pos === "03") return true;
     if (code === "05" && pos === "04" && ticketData.timeisi === null) return true;
-    
+
     return false;
   };
 
@@ -271,7 +271,7 @@ function TrackingContent() {
         {/* Abstract Background Decoration */}
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-[120px] -z-10 animate-pulse" />
         <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-brand-500/5 rounded-full blur-[100px] -z-10" />
-        
+
         <div className="max-w-6xl mx-auto px-4 py-4 sm:py-6">
           <div className="flex flex-col items-center text-center mb-6 relative">
             <h1 className="text-2xl sm:text-3xl font-black tracking-[0.2em] text-slate-900 dark:text-white uppercase">
@@ -294,8 +294,8 @@ function TrackingContent() {
                   autoFocus
                 />
               </div>
-              <Button 
-                onClick={() => handleSearch()} 
+              <Button
+                onClick={() => handleSearch()}
                 className="h-14 px-8 text-sm font-black rounded-xl bg-slate-900 dark:bg-primary text-white hover:bg-slate-800 dark:hover:bg-primary/90 shadow-sm active:scale-[0.98] transition-all duration-200 uppercase tracking-widest gap-2"
                 disabled={isLoading}
               >
@@ -350,7 +350,7 @@ function TrackingContent() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             {/* Left Column */}
             <div className="lg:col-span-8 space-y-8">
-              
+
               {/* Card 1: Hero Status Bar */}
               <Card className="overflow-hidden border-none shadow-xl bg-white dark:bg-gray-dark rounded-3xl">
                 <div className="bg-white dark:bg-slate-800 p-1">
@@ -373,14 +373,14 @@ function TrackingContent() {
                     </div>
                   )}
                 </div>
-                
+
                 <CardContent className="p-8">
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-10">
                     <div className="space-y-2">
                       <div className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Status Saat Ini</div>
                       <div className="flex flex-wrap items-center gap-3">
                         <div className={cn(
-                          "flex items-center gap-2 text-xl font-black px-5 py-2 rounded-2xl border-2 shadow-sm transition-all", 
+                          "flex items-center gap-2 text-xl font-black px-5 py-2 rounded-2xl border-2 shadow-sm transition-all",
                           getPositionInfo(ticketData.position).color,
                           "bg-opacity-10 dark:bg-opacity-20",
                           getPositionInfo(ticketData.position).text,
@@ -407,20 +407,20 @@ function TrackingContent() {
                     <div className="relative pt-6 pb-2">
                       {/* Line Background */}
                       <div className="absolute top-10 left-[4%] w-[92%] h-1 bg-slate-100 dark:bg-slate-800 -z-10 rounded-full" />
-                      
+
                       <div className="flex justify-between items-start">
                         {steps.map((step, idx) => {
                           const isActive = isStepActive(step.code);
                           const isDone = isStepDone(step.code);
-                          
+
                           return (
                             <div key={step.code} className="flex flex-col items-center flex-1 group">
-                              <div 
+                              <div
                                 className={cn(
                                   "w-10 h-10 rounded-full flex items-center justify-center border-[3px] transition-all duration-500 relative shadow-sm",
-                                  isDone ? "bg-green-600 border-green-100 dark:border-green-900 text-white scale-110" : 
-                                  isActive ? "bg-white dark:bg-slate-900 border-primary text-primary scale-125 shadow-xl shadow-primary/20 ring-4 ring-primary/10" : 
-                                  "bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-slate-300 group-hover:border-slate-300 dark:group-hover:border-slate-600"
+                                  isDone ? "bg-green-600 border-green-100 dark:border-green-900 text-white scale-110" :
+                                    isActive ? "bg-white dark:bg-slate-900 border-primary text-primary scale-125 shadow-xl shadow-primary/20 ring-4 ring-primary/10" :
+                                      "bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-slate-300 group-hover:border-slate-300 dark:group-hover:border-slate-600"
                                 )}
                               >
                                 {isDone ? (
@@ -530,7 +530,7 @@ function TrackingContent() {
                           </Badge>
                         </div>
                       </div>
-                      
+
                       <div className="p-5 rounded-2xl bg-gradient-to-br from-slate-50 to-white dark:from-slate-800/30 dark:to-slate-900/10 border dark:border-slate-800">
                         <div className="flex items-center gap-4">
                           <div className="flex flex-col items-center gap-1">
@@ -623,8 +623,8 @@ function TrackingContent() {
                       { label: "Timbang Isi", value: ticketData.timeisi, icon: Weight },
                       { label: "Update Terakhir", value: ticketData.updatedon, isHighlight: true, icon: RefreshCw },
                     ].map((item, idx) => (
-                      <div 
-                        key={idx} 
+                      <div
+                        key={idx}
                         className={cn(
                           "p-4 rounded-2xl border-2 transition-all group hover:scale-[1.02] cursor-default",
                           item.value ? "bg-white dark:bg-slate-900 border-green-200 dark:border-green-900/50" : "bg-slate-50 dark:bg-slate-900/20 border-slate-100 dark:border-slate-800 border-dashed opacity-60",
@@ -704,9 +704,9 @@ function TrackingContent() {
                     </div>
                     {logChanges.length > 3 && (
                       <div className="p-4 bg-slate-50 dark:bg-slate-800/50 text-center border-t dark:border-slate-800">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           className="text-primary font-black hover:bg-white dark:hover:bg-slate-800 tracking-widest text-[10px] uppercase gap-2"
                           onClick={() => setShowAllLogs(!showAllLogs)}
                         >
@@ -756,7 +756,7 @@ function TrackingContent() {
                   <div className="relative pt-2">
                     {/* Line */}
                     <div className="absolute left-[1.125rem] top-6 bottom-6 w-1 bg-slate-100 dark:bg-slate-800 rounded-full" />
-                    
+
                     <div className="space-y-10">
                       {[...logs]
                         .sort((a, b) => new Date(b.updatedon).getTime() - new Date(a.updatedon).getTime())
@@ -803,11 +803,11 @@ function TrackingContent() {
 
 
               {/* Security Banner */}
-              <div className="flex items-center justify-center gap-4 py-4 opacity-40 grayscale hover:grayscale-0 hover:opacity-100 transition-all duration-700">
+              {/* <div className="flex items-center justify-center gap-4 py-4 opacity-40 grayscale hover:grayscale-0 hover:opacity-100 transition-all duration-700">
                 <ShieldCheck className="h-5 w-5 text-slate-400" />
                 <div className="h-1 w-1 bg-slate-300 rounded-full" />
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Secure Data Transfer</span>
-              </div>
+              </div> */}
             </div>
           </div>
         )}

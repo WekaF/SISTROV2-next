@@ -21,6 +21,7 @@ interface TicketActionsProps {
   bookingNo: string;
   id?: string;
   statuspemuatan?: string;
+  position?: string;
   currentNopol?: string;
   currentDriver?: string;
   postoGuid?: string;
@@ -35,6 +36,7 @@ export function TicketActions({
   bookingNo,
   id,
   statuspemuatan,
+  position,
   currentNopol,
   currentDriver,
   posto,
@@ -73,9 +75,9 @@ export function TicketActions({
     ? String(statuspemuatan).toLowerCase()
     : null;
 
-  // Permission: Edit allowed if role is authorized AND ticket is still in "booking" stage
-  // (backend position "00" -- not yet checked in at Security).
-  const canEdit = (isSuperAdmin || isStaffArea || isTransport) && normalizedStatus === "booking";
+  // Permission: Edit allowed if role is authorized AND ticket is still at position "00"
+  // (booking stage -- not yet checked in at Security).
+  const canEdit = (isSuperAdmin || isStaffArea || isTransport) && position === "00";
 
   // Permission: Reschedule allowed ONLY for superadmin/staffarea AND ticket is still in "booking"
   // stage. Once Security scans the ticket in, statuspemuatan moves to "waiting"/"progress"/"release"

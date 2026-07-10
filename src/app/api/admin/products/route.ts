@@ -3,6 +3,10 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { aspnetFetchServer } from "@/lib/api-client";
 
+// List endpoint pulls the entire produk table from the backend (no server-side
+// pagination) and can take longer than Vercel's default function timeout.
+export const maxDuration = 60;
+
 function isAuthorized(session: any): boolean {
   const roles = (session?.user as any)?.roles || [];
   return !!session?.user && roles.some((r: string) => ["superadmin", "ti"].includes(r.toLowerCase()));

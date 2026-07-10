@@ -89,6 +89,7 @@ function RekananTicketContent() {
         <TicketActions
           bookingNo={t.bookingno}
           statuspemuatan={t.statuspemuatan}
+          position={t.position}
           currentNopol={t.Nopol || t.nopol}
           currentDriver={t.DriverName || t.driver}
           posto={t.posto}

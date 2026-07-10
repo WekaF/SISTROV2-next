@@ -22,14 +22,23 @@ export async function aspnetFetchServer(
   options: FetchOptions = {}
 ): Promise<Response> {
   const { headers = {}, ...rest } = options;
-  return fetch(`${BASE_URL}${path}`, {
-    ...rest,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-      ...headers,
-    },
-  });
+  try {
+    return await fetch(`${BASE_URL}${path}`, {
+      ...rest,
+      signal: rest.signal ?? AbortSignal.timeout(45_000),
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+        ...headers,
+      },
+    });
+  } catch (err: any) {
+    // Node's fetch (undici) throws a generic "fetch failed" and hides the
+    // real reason (ECONNRESET, timeout, DNS) in err.cause — surface it so
+    // failures are diagnosable instead of showing up as just "fetch failed".
+    const cause = err?.cause?.message || err?.cause?.code;
+    throw new Error(cause ? `${err.message}: ${cause}` : err.message, { cause: err });
+  }
 }
 
 export async function aspnetJson<T = any>(

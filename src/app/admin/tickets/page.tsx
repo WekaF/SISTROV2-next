@@ -32,6 +32,7 @@ function AdminTicketsContent() {
         <TicketActions
           bookingNo={row.bookingno}
           statuspemuatan={row.statuspemuatan}
+          position={row.position}
           currentNopol={row.nopol}
           currentDriver={row.driver}
           posto={row.posto}
