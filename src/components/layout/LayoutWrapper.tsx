@@ -59,7 +59,7 @@ export default function LayoutWrapper({
     userRole === "ti";
 
   const showAccessDenied =
-    isAdminRoute && status !== "loading" && !isSuperAdmin;
+    isAdminRoute && !isSuperAdmin;
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950">
