@@ -212,15 +212,6 @@ export default function PostoPage() {
         const noposto = p.noposto;
         return (
           <div className="flex items-center justify-start gap-1.5">
-            {isRekanan && (
-              <Button
-                size="sm"
-                className="bg-[#003473] hover:bg-[#002855] text-white rounded-none shadow-lg shadow-blue-900/20 px-3 h-7 font-black uppercase text-[10px] tracking-widest transition-all hover:scale-105 active:scale-95 border-none"
-                onClick={() => window.location.href = `/tiket/booking?guid=${id}`}
-              >
-                <Ticket className="h-3 w-3 mr-1" /> Booking
-              </Button>
-            )}
             <Button
               variant="outline"
               size="sm"
