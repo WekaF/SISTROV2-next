@@ -15,7 +15,8 @@ export async function GET(req: NextRequest) {
     const start  = searchParams.get("start")  || "0"
     const length = searchParams.get("length") || "25"
     const search = searchParams.get("search") || ""
-    const tanggalFilter  = searchParams.get("tanggal")     || ""
+    const startDate       = searchParams.get("startDate")   || ""
+    const endDate         = searchParams.get("endDate")     || ""
     const produkFilter   = searchParams.get("produk")      || ""
     const statusFilter   = searchParams.get("status")      || ""
     const companyCode    = searchParams.get("companyCode") || ""
@@ -38,7 +39,8 @@ export async function GET(req: NextRequest) {
       "order[0][dir]": "desc",
     })
 
-    if (tanggalFilter) body.append("columns[2][search][value]", tanggalFilter)
+    if (startDate) body.append("SD", startDate)
+    if (endDate)   body.append("ED", endDate)
     if (produkFilter)  body.append("columns[3][search][value]", produkFilter)
     if (statusFilter)  body.append("columns[8][search][value]", statusFilter)
     if (companyCode)   body.append("companyCode", companyCode)
@@ -50,7 +52,7 @@ export async function GET(req: NextRequest) {
         body: body.toString(),
       }),
       // Fetch all data for metrics (unfiltered, limit 10000)
-      start === "0" && !search && !tanggalFilter && !produkFilter && !statusFilter
+      start === "0" && !search && !startDate && !endDate && !produkFilter && !statusFilter
         ? fetch(`${ASPNET}/api/KuotaLevel1/DataTableFilter`, {
             method: "POST",
             headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/x-www-form-urlencoded" },
