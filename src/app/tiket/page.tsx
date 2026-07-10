@@ -57,7 +57,7 @@ function RekananTicketContent() {
       posto: postoFilter || undefined,
       SD: postoFilter ? "2020-01-01" : undefined,
       cmd: 'refresh',
-      order: params.order?.length ? params.order : [{ column: 0, dir: "desc" }],
+      order: params.order?.length ? params.order : [{ column: 2, dir: "desc" }], // 2 = "tanggal"
       columns: [
         { data: "bookingno", name: "bookingno", searchable: true, orderable: true },
         { data: "posto", name: "posto", searchable: true, orderable: true },

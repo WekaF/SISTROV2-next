@@ -175,7 +175,7 @@ function AdminTicketsContent() {
                 search: { value: searchTerm },
                 companyCode: activeCompanyCode,
                 cmd: 'refresh',
-                order: p.order?.length ? p.order : [{ column: 11, dir: "desc" }], // 11 = "id" column below; keep in sync if columns[] changes
+                order: p.order?.length ? p.order : [{ column: 2, dir: "desc" }], // 2 = "tanggal" column below
                 columns: [
                   { data: "bookingno", name: "bookingno", searchable: true, orderable: true, search: { value: p.columnFilters?.bookingno || "" } },
                   { data: "posto", name: "posto", searchable: true, orderable: true, search: { value: p.columnFilters?.posto || "" } },
