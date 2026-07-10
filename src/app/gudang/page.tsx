@@ -267,13 +267,14 @@ export default function GudangListPage() {
       header: "Status Gudang",
       sortColumn: 6,
       render: (row) => {
-        // Detect active status from HTML badge string or standard boolean/string
+        // Detect active status from HTML badge string, HTML switch string (checked attr), or standard boolean/string
         const aktifStr = String(row.Aktif || "").toLowerCase();
         const isAktif =
           aktifStr.includes("badge-success") ||
           aktifStr.includes(">aktif<") ||
-          row.Aktif === "1" ||
-          row.Aktif === "True" ||
+          aktifStr.includes("checked") ||
+          aktifStr === "1" ||
+          aktifStr === "true" ||
           row.Aktif === true;
 
         if (!isGudangFull) {
