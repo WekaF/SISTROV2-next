@@ -217,7 +217,7 @@ export default function GudangListPage() {
     try {
       await apiJson("/api/Gudang/GudangMuatSetting", {
         method: "POST",
-        body: JSON.stringify({ id: row.id, aktif: nextStatus ? "true" : "false" })
+        body: JSON.stringify({ id: row.id, aktif: nextStatus })
       });
       addToast({ title: "Sukses", description: `Gudang ${nextStatus ? 'diaktifkan' : 'dinonaktifkan'}`, variant: "success" });
       queryClient.invalidateQueries({ queryKey: ["gudang-list"] });
