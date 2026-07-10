@@ -62,7 +62,7 @@ interface StokLog {
 
 export default function GudangListPage() {
   const { data: session } = useSession();
-  const { apiFetch, apiJson, apiTable } = useApi();
+  const { apiJson, apiTable } = useApi();
   const { activeCompanyCode } = useCompany();
   const { addToast } = useToast();
   const queryClient = useQueryClient();
@@ -144,17 +144,12 @@ export default function GudangListPage() {
     setIsLoadingDetail(true);
     setIsDetailOpen(true);
     try {
-      const fd = new URLSearchParams();
-      fd.append("id", realId);
-      if (activeCompanyCode) fd.append("companyCode", activeCompanyCode);
-      
-      const res = await apiFetch("/api/Gudang/DetailData", {
+      const res = await apiJson("/api/Gudang/DetailData", {
         method: "POST",
-        body: fd.toString(),
-        headers: { "Content-Type": "application/x-www-form-urlencoded" }
+        body: JSON.stringify({ id: realId })
       });
-      const data = await res.json();
-      const detail = data.response || data;
+
+      const detail = res.response || res;
       setGudangDetail(detail);
 
       const logsRes = await apiTable("/api/Gudang/LogStok", {
@@ -180,17 +175,11 @@ export default function GudangListPage() {
     setIsTambahStokOpen(true);
     setTambahanStok(0);
     try {
-      const fd = new URLSearchParams();
-      fd.append("id", realId);
-      if (activeCompanyCode) fd.append("companyCode", activeCompanyCode);
-
-      const res = await apiFetch("/api/Gudang/DetailData", {
+      const res = await apiJson("/api/Gudang/DetailData", {
         method: "POST",
-        body: fd.toString(),
-        headers: { "Content-Type": "application/x-www-form-urlencoded" }
+        body: JSON.stringify({ id: realId })
       });
-      const data = await res.json();
-      setGudangDetail(data.response || data);
+      setGudangDetail(res.response || res);
     } catch (err) {
       addToast({ title: "Error", description: "Gagal mengambil detail gudang", variant: "destructive" });
     } finally {
@@ -202,15 +191,9 @@ export default function GudangListPage() {
     if (!gudangDetail || tambahanStok < 0) return;
     setIsSaving(true);
     try {
-      const fd = new URLSearchParams();
-      fd.append("id", String(gudangDetail.id));
-      fd.append("value", String(tambahanStok));
-      if (activeCompanyCode) fd.append("companyCode", activeCompanyCode);
-
-      await apiFetch("/api/Gudang/UpdateData", {
+      await apiJson("/api/Gudang/UpdateData", {
         method: "POST",
-        body: fd.toString(),
-        headers: { "Content-Type": "application/x-www-form-urlencoded" }
+        body: JSON.stringify({ id: gudangDetail.id, value: tambahanStok })
       });
       addToast({ title: "Sukses", description: "Stok gudang berhasil ditambahkan", variant: "success" });
       setIsTambahStokOpen(false);
@@ -232,15 +215,9 @@ export default function GudangListPage() {
     if (!toggleTarget) return;
     const { row, nextStatus } = toggleTarget;
     try {
-      const fd = new URLSearchParams();
-      fd.append("id", String(row.id));
-      fd.append("aktif", nextStatus ? "true" : "false");
-      if (activeCompanyCode) fd.append("companyCode", activeCompanyCode);
-
-      await apiFetch("/api/Gudang/GudangMuatSetting", {
+      await apiJson("/api/Gudang/GudangMuatSetting", {
         method: "POST",
-        body: fd.toString(),
-        headers: { "Content-Type": "application/x-www-form-urlencoded" }
+        body: JSON.stringify({ id: row.id, aktif: nextStatus ? "true" : "false" })
       });
       addToast({ title: "Sukses", description: `Gudang ${nextStatus ? 'diaktifkan' : 'dinonaktifkan'}`, variant: "success" });
       queryClient.invalidateQueries({ queryKey: ["gudang-list"] });
