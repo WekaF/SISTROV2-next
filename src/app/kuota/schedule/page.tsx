@@ -83,6 +83,8 @@ export default function QuotaSchedulePage() {
       const qs = new URLSearchParams({
         draw: "1", start: "0", length: "10000",
         search: "",
+        startDate,
+        endDate,
       })
       if (activeCompanyCode) qs.set("companyCode", activeCompanyCode)
       const res = await fetch(`/api/kuota/schedule?${qs}`)
