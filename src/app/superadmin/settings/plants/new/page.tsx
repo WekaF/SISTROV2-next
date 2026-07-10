@@ -6,6 +6,7 @@ import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -14,6 +15,7 @@ import {
   Trash2,
   ChevronLeft,
   ChevronRight,
+  HelpCircle,
 } from "lucide-react";
 
 type WizardStep = 1 | 2 | 3 | 4 | 5;
@@ -168,7 +170,17 @@ export default function PlantInstallPage() {
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium mb-1">Kode Company</label>
+            <div className="flex items-center gap-1.5 mb-1">
+              <label className="text-sm font-medium">Kode Company</label>
+              <Tooltip>
+                <TooltipTrigger>
+                  <HelpCircle className="w-3.5 h-3.5 text-muted-foreground" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  Kode unik plant, huruf kapital, contoh: PKG, SBI. Tidak bisa diubah setelah plant dibuat.
+                </TooltipContent>
+              </Tooltip>
+            </div>
             <Input
               placeholder="cth: PKB"
               value={form.company_code}
@@ -201,7 +213,17 @@ export default function PlantInstallPage() {
       <div className="space-y-6">
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label className="text-sm font-medium">Gudang Mapping (kode saja)</label>
+            <div className="flex items-center gap-1.5">
+              <label className="text-sm font-medium">Gudang Mapping (kode saja)</label>
+              <Tooltip>
+                <TooltipTrigger>
+                  <HelpCircle className="w-3.5 h-3.5 text-muted-foreground" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  Daftar kode gudang yang terhubung ke plant ini, satu kode per baris.
+                </TooltipContent>
+              </Tooltip>
+            </div>
             <Button
               size="sm"
               variant="outline"
@@ -272,7 +294,17 @@ export default function PlantInstallPage() {
     return (
       <div>
         <div className="flex items-center justify-between mb-2">
-          <label className="text-sm font-medium">Kode Produk</label>
+          <div className="flex items-center gap-1.5">
+            <label className="text-sm font-medium">Kode Produk</label>
+            <Tooltip>
+              <TooltipTrigger>
+                <HelpCircle className="w-3.5 h-3.5 text-muted-foreground" />
+              </TooltipTrigger>
+              <TooltipContent>
+                Daftar produk yang akan di-mapping ke plant ini.
+              </TooltipContent>
+            </Tooltip>
+          </div>
           <Button
             size="sm"
             variant="outline"
@@ -307,9 +339,19 @@ export default function PlantInstallPage() {
     return (
       <div className="space-y-6">
         <div>
-          <label className="block text-sm font-medium mb-2">
-            Shift 1 (jam mulai – jam selesai)
-          </label>
+          <div className="flex items-center gap-1.5 mb-2">
+            <label className="text-sm font-medium">
+              Shift 1 (jam mulai – jam selesai)
+            </label>
+            <Tooltip>
+              <TooltipTrigger>
+                <HelpCircle className="w-3.5 h-3.5 text-muted-foreground" />
+              </TooltipTrigger>
+              <TooltipContent>
+                Jam operasional shift. Tambahkan lebih dari satu shift jika plant beroperasi 24 jam.
+              </TooltipContent>
+            </Tooltip>
+          </div>
           <div className="flex gap-4">
             <div>
               <label className="text-xs text-muted-foreground">Mulai</label>
