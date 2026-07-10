@@ -28,7 +28,7 @@ export default function PostoPage() {
   const fullname = session?.user?.name as string | undefined;
   const isAdminTI = roles.some((r) => ["superadmin", "ti"].includes(r.toLowerCase()));
   const canDeleteThisPosto = (row: any) =>
-    isAdminTI || (!!fullname && row.updatedby === fullname);
+    !isRekanan && (isAdminTI || (!!fullname && row.updatedby === fullname));
 
   // Edit POSTO: SuperAdmin/TI, Admin, Candal, dan StaffArea
   // Gudang, Security, Timbangan TIDAK boleh edit
