@@ -403,24 +403,16 @@ export default function PostoUploadPage() {
   };
 
   const handleDownloadTemplate = (type: 'POSTO' | 'SO') => {
-    let headers = [];
-    let sample = [];
-    let filename = "";
-
-    if (type === 'POSTO') {
-      headers = ["NoPOSTO", "TglPOSTO", "Asal", "Tujuan", "Trans", "Produk", "Qty", "status", "tglakhir", "tgljatuhtempo", "charter", "percepatan", "idsumbu"];
-      sample = ["5320069457", "2026/04/07", "D205", "D3GO", "1000000859", "1000036", "150", "1", "2026/04/18", "2026/04/18", "0", "0", "0"];
-      filename = "Template_POSTO.xlsx";
-    } else {
-      headers = ["NoSO", "TglSO", "Asal", "Trans", "Produk", "Qty", "status", "tglakhir", "tgljatuhtempo", "charter", "percepatan", "idsumbu"];
-      sample = ["5320069457", "2026/04/07", "D205", "1000000859", "1000036", "150", "1", "2026/04/18", "2026/04/18", "0", "0", "0"];
-      filename = "Template_SO.xlsx";
-    }
-
-    const ws = XLSX.utils.aoa_to_sheet([headers, sample]);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
-    XLSX.writeFile(wb, filename);
+    const fileUrl = type === 'POSTO' 
+      ? '/template/TEMPLATE-POSTO-versi4.xlsx' 
+      : '/template/TEMPLATE-SO-v3.xlsx';
+      
+    const a = document.createElement("a");
+    a.href = fileUrl;
+    a.download = type === 'POSTO' ? 'TEMPLATE-POSTO-versi4.xlsx' : 'TEMPLATE-SO-v3.xlsx';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   return (

@@ -430,7 +430,7 @@ export default function PostoPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Daftar POSTO dan SO</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Daftar POSTO</h1>
           {/* <p className="text-sm text-gray-500 dark:text-gray-400">
             .
           </p> */}
@@ -637,7 +637,7 @@ export default function PostoPage() {
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-gray-500 dark:text-gray-400">Kuantitas (Ton)</label>
-                  <Input type="number" value={editForm.qty} onChange={(e) => setEditForm({ ...editForm, qty: Number(e.target.value) })} required />
+                  <Input type="number" value={editForm.qty} onChange={(e) => setEditForm({ ...editForm, qty: e.target.value === "" ? "" : e.target.value === "" ? "" : Number(e.target.value) })} required />
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-gray-500 dark:text-gray-400">Tanggal Jatuh Tempo</label>
@@ -668,3 +668,5 @@ export default function PostoPage() {
     </div>
   );
 }
+
+

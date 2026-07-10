@@ -284,7 +284,7 @@ export default function EditQuotaWizard() {
                       type="number" 
                       placeholder="Masukkan Tonase..." 
                       value={formData.header.totalQuota || ""}
-                      onChange={(e) => setFormData({...formData, header: {...formData.header, totalQuota: Number(e.target.value)}})}
+                      onChange={(e) => setFormData({...formData, header: {...formData.header, totalQuota: e.target.value === "" ? "" : Number(e.target.value)}})}
                     />
                   </div>
                   <div className="space-y-2">
@@ -332,7 +332,7 @@ export default function EditQuotaWizard() {
                              value={formData.wilayah[w.id] || ""}
                              onChange={(e) => setFormData({
                                ...formData, 
-                               wilayah: {...formData.wilayah, [w.id]: Number(e.target.value)}
+                               wilayah: {...formData.wilayah, [w.id]: e.target.value === "" ? "" : Number(e.target.value)}
                              })}
                           />
                        </div>
@@ -369,7 +369,7 @@ export default function EditQuotaWizard() {
                                  value={formData.areas[a.id] || ""}
                                  onChange={(e) => setFormData({
                                    ...formData, 
-                                   areas: {...formData.areas, [a.id]: Number(e.target.value)}
+                                   areas: {...formData.areas, [a.id]: e.target.value === "" ? "" : Number(e.target.value)}
                                  })}
                                />
                             </div>
@@ -425,7 +425,7 @@ export default function EditQuotaWizard() {
                                   placeholder="0"
                                   value={formData.shifts[a.id]?.[sNum] || ""}
                                   onChange={(e) => {
-                                    const val = Number(e.target.value);
+                                    const val = e.target.value === "" ? "" : Number(e.target.value);
                                     setFormData({
                                       ...formData,
                                       shifts: {
@@ -473,3 +473,4 @@ export default function EditQuotaWizard() {
     </div>
   );
 }
+

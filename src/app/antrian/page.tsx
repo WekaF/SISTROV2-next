@@ -80,7 +80,7 @@ function AntrianContent() {
 
   // SSE: auto-refresh antrian data every 30s
   const companyCodeForStream = (companyFromUrl || activeCompanyCode) ?? undefined;
-  const { status: streamStatus, lastUpdated: streamUpdated, data: streamData } =
+  const { status: streamStatus, lastUpdated: streamUpdated, data: streamData, refresh: refreshStream } =
     useAntrianStream(companyCodeForStream);
 
   useEffect(() => {
@@ -369,7 +369,10 @@ function AntrianContent() {
             variant="outline" 
             size="sm" 
             className="h-10 bg-white dark:bg-slate-900 border-2 font-bold uppercase text-[10px] tracking-widest"
-            onClick={() => queryClient.invalidateQueries({ queryKey: ["antrian"] })}
+            onClick={() => {
+              queryClient.invalidateQueries({ queryKey: ["antrian"] });
+              refreshStream();
+            }}
           >
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh Data
@@ -378,10 +381,11 @@ function AntrianContent() {
       </div>
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
         {[
           { label: "Total Antrian", value: streamData?.total ?? "--", icon: Truck, color: "blue" },
-          { label: "Security In", value: streamData?.securityIn ?? "--", icon: ShieldCheck, color: "orange" },
+          { label: "Security (In/Out)", value: streamData ? `${streamData.securityIn} / ${streamData.securityOut}` : "-- / --", icon: ShieldCheck, color: "orange" },
+          { label: "Jbt. Timbang (Ksg/Isi)", value: streamData ? `${streamData.timbangKosong} / ${streamData.timbangIsi}` : "-- / --", icon: Weight, color: "amber" },
           { label: "Sedang Muat", value: streamData?.sedangMuat ?? "--", icon: Package, color: "indigo" },
           { label: "Selesai Muat", value: streamData?.selesaiMuat ?? "--", icon: CheckCircle2, color: "emerald" },
         ].map((stat, i) => (
@@ -394,6 +398,7 @@ function AntrianContent() {
               <div className={cn("p-3 rounded-2xl", 
                 stat.color === "blue" ? "bg-blue-50 text-blue-600" :
                 stat.color === "orange" ? "bg-orange-50 text-orange-600" :
+                stat.color === "amber" ? "bg-amber-50 text-amber-600" :
                 stat.color === "indigo" ? "bg-indigo-50 text-indigo-600" :
                 "bg-emerald-50 text-emerald-600"
               )}>
@@ -415,7 +420,9 @@ function AntrianContent() {
             <div className="h-px flex-1 bg-slate-100 dark:bg-slate-800" />
           </div>
           <div className="flex gap-4 overflow-x-auto px-1 py-4 custom-scrollbar -mx-1">
-            {gudangOptions.map((g: any) => (
+            {gudangOptions.map((g: any) => {
+              const antrianCount = streamData?.warehouseCounts?.[g.idgudang] ?? streamData?.warehouseCounts?.[g.namagudang] ?? g.antriangudang ?? 0;
+              return (
               <Card key={g.idgudang} className="min-w-[200px] border-none ring-0 shadow-sm flex-shrink-0 bg-white dark:bg-slate-900 border-l-4 border-l-brand-500 overflow-visible">
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between mb-2">
@@ -425,18 +432,18 @@ function AntrianContent() {
                   <div className="flex items-end justify-between">
                     <div>
                       <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Antrian</p>
-                      <p className="text-xl font-black text-brand-600">{g.antriangudang ?? 0}</p>
+                      <p className="text-xl font-black text-brand-600">{antrianCount}</p>
                     </div>
                     <div className="text-right">
                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Status</p>
-                       <Badge color={(g.antriangudang ?? 0) > 10 ? "warning" : "success"} size="sm" variant="light" className="px-1.5 py-0">
-                        {(g.antriangudang ?? 0) > 10 ? "Padat" : "Lancar"}
+                       <Badge color={antrianCount > 10 ? "warning" : "success"} size="sm" variant="light" className="px-1.5 py-0">
+                        {antrianCount > 10 ? "Padat" : "Lancar"}
                        </Badge>
                     </div>
                   </div>
                 </CardContent>
               </Card>
-            ))}
+            )})}
           </div>
         </div>
       )}

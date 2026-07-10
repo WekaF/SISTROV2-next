@@ -95,7 +95,8 @@ export default function UnitQueuePage() {
       headerClassName: "text-center",
       sortColumn: 5,
       render: (row) => {
-        const isAktif = row.Aktif === "1" || row.Aktif === "True" || row.Aktif === true;
+        const aktifStr = String(row.Aktif).toLowerCase();
+        const isAktif = aktifStr === "1" || aktifStr === "true" || row.Aktif === true || aktifStr.includes("checked") || aktifStr.includes("badge-success");
         return (
           <Badge color={isAktif ? "success" : "error"} variant="light" size="sm">
             {isAktif ? "Aktif" : "Nonaktif"}
@@ -112,7 +113,7 @@ export default function UnitQueuePage() {
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await apiTable("/api/Gudang/DataMapping", {
+      const res = await apiTable(`/api/Gudang/DataMapping?companyCode=${activeCompanyCode}`, {
         draw: 1,
         start: 0,
         length: 100,
@@ -121,7 +122,8 @@ export default function UnitQueuePage() {
       });
       setItems(res.data || []);
       setLastUpdated(new Date());
-    } catch {
+    } catch (err) {
+      console.error("[UnitQueue] fetchData error:", err);
       addToast({ title: "Error", description: "Gagal memuat data antrian gudang", variant: "destructive" });
     } finally {
       setIsLoading(false);
@@ -132,10 +134,10 @@ export default function UnitQueuePage() {
     fetchData();
   }, [fetchData]);
 
-  // Group by namagudang to aggregate per-gudang totals
   const gudangMap = new Map<string, { namagudang: string; totalProduk: number; totalGudang: number; totalStok: number; produkList: string[]; aktif: boolean }>();
   for (const item of items) {
-    const isAktif = item.Aktif === "1" || item.Aktif === "True" || item.Aktif === true;
+    const aktifStr = String(item.Aktif).toLowerCase();
+    const isAktif = aktifStr === "1" || aktifStr === "true" || item.Aktif === true || aktifStr.includes("checked") || aktifStr.includes("badge-success");
     if (!gudangMap.has(item.namagudang)) {
       gudangMap.set(item.namagudang, { namagudang: item.namagudang, totalProduk: 0, totalGudang: item.antriangudang, totalStok: 0, produkList: [], aktif: isAktif });
     }

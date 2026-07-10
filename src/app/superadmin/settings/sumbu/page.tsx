@@ -715,7 +715,7 @@ export default function SumbuPage() {
                       type="number"
                       value={formData.muatan}
                       onChange={(e) =>
-                        setFormData({ ...formData, muatan: Number(e.target.value) })
+                        setFormData({ ...formData, muatan: e.target.value === "" ? "" : e.target.value === "" ? "" : Number(e.target.value) })
                       }
                       required
                       className="w-full h-10 px-4 rounded-lg text-sm transition-all outline-none"
@@ -813,3 +813,5 @@ export default function SumbuPage() {
     </div>
   );
 }
+
+

@@ -53,7 +53,7 @@ export default function GudangTujuanBagianPage() {
   const [detail, setDetail] = useState<GudangDetail | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
-  
+
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -88,7 +88,7 @@ export default function GudangTujuanBagianPage() {
       console.log("[DetailDataTujuan] Fetching for storageID:", storageID);
       const res = await apiJson("/api/Gudang/DetailDataTujuan", {
         method: "POST",
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           storageID: storageID,
           StorageID: storageID,
           storageid: storageID,
@@ -163,9 +163,9 @@ export default function GudangTujuanBagianPage() {
     { key: "namagudang", header: "Gudang Tujuan", className: "font-black uppercase text-slate-800 dark:text-white text-sm tracking-tight" },
     { key: "tipe", header: "Tipe", className: "text-center font-bold text-slate-500", render: (row) => row.tipe || row.id },
     { key: "kabupaten", header: "Kabupaten", className: "text-xs font-medium" },
-    { 
-      key: "tonase", 
-      header: "Tonase", 
+    {
+      key: "tonase",
+      header: "Tonase",
       className: "text-right",
       render: (row) => <span className="font-black text-brand-600">{row.qty || row.tonase || row.id} <span className="text-[10px] uppercase">Ton</span></span>
     },
@@ -183,7 +183,7 @@ export default function GudangTujuanBagianPage() {
 
   return (
     <div className="space-y-6">
-       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white uppercase">Gudang Tujuan Bagian</h1>
@@ -191,11 +191,11 @@ export default function GudangTujuanBagianPage() {
           </div>
           <p className="text-sm text-slate-500 font-medium">* Kuota dalam satuan ton. Daftar pemetaan gudang tujuan pemuatan.</p>
         </div>
-        {isCandal && (
+        {/* {isCandal && (
           <Button className="bg-green-600 hover:bg-green-700 text-white font-black px-6 gap-2 h-11 shadow-lg shadow-green-500/20" onClick={() => setIsAddOpen(true)}>
             <Plus className="h-4 w-4" /> TAMBAH GUDANG
           </Button>
-        )}
+        )} */}
       </div>
 
       <Card className="border-none shadow-sm overflow-hidden bg-white dark:bg-slate-900">
@@ -215,62 +215,62 @@ export default function GudangTujuanBagianPage() {
       {/* Modal Detail */}
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
         <DialogContent className="max-w-2xl p-0 overflow-hidden border-none shadow-2xl bg-white dark:bg-slate-950">
-           <div className="bg-slate-900 p-8 text-white relative">
-             <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
-               <MapPin className="h-32 w-32" />
-             </div>
-             <div className="relative z-10 space-y-2">
-               <Badge color="info" variant="solid" className="font-black px-3 py-0.5">DETAIL GUDANG</Badge>
-               <h2 className="text-3xl font-black tracking-tight uppercase leading-none">{detail?.namagudang || "Loading..."}</h2>
-               <p className="text-slate-400 font-bold flex items-center gap-2 text-sm">
-                 <Hash className="h-4 w-4" /> KODE GUDANG: {detail?.idgudang}
-               </p>
-             </div>
-           </div>
+          <div className="bg-slate-900 p-8 text-white relative">
+            <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
+              <MapPin className="h-32 w-32" />
+            </div>
+            <div className="relative z-10 space-y-2">
+              <Badge color="info" variant="solid" className="font-black px-3 py-0.5">DETAIL GUDANG</Badge>
+              <h2 className="text-3xl font-black tracking-tight uppercase leading-none">{detail?.namagudang || "Loading..."}</h2>
+              <p className="text-slate-400 font-bold flex items-center gap-2 text-sm">
+                <Hash className="h-4 w-4" /> KODE GUDANG: {detail?.idgudang}
+              </p>
+            </div>
+          </div>
 
-           <div className="p-8 bg-slate-50 dark:bg-slate-950">
-             {isLoadingDetail ? (
-               <div className="py-20 text-center animate-pulse font-black text-slate-400 uppercase tracking-widest text-xs">Memuat data detail...</div>
-             ) : (
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                 <div className="space-y-4">
-                    <div className="flex items-start gap-4">
-                      <div className="p-3 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800"><Package className="h-5 w-5 text-brand-600" /></div>
-                      <div>
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Gudang Lini</p>
-                        <p className="font-bold text-slate-900 dark:text-white uppercase">{detail?.tipe || "-"} Ton</p>
-                      </div>
+          <div className="p-8 bg-slate-50 dark:bg-slate-950">
+            {isLoadingDetail ? (
+              <div className="py-20 text-center animate-pulse font-black text-slate-400 uppercase tracking-widest text-xs">Memuat data detail...</div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800"><Package className="h-5 w-5 text-brand-600" /></div>
+                    <div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Gudang Lini</p>
+                      <p className="font-bold text-slate-900 dark:text-white uppercase">{detail?.tipe || "-"} Ton</p>
                     </div>
-                    <div className="flex items-start gap-4">
-                      <div className="p-3 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800"><Navigation className="h-5 w-5 text-blue-600" /></div>
-                      <div>
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Alamat</p>
-                        <p className="font-bold text-slate-900 dark:text-white">{detail?.alamat || "-"}</p>
-                      </div>
+                  </div>
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800"><Navigation className="h-5 w-5 text-blue-600" /></div>
+                    <div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Alamat</p>
+                      <p className="font-bold text-slate-900 dark:text-white">{detail?.alamat || "-"}</p>
                     </div>
-                 </div>
-                 <div className="space-y-4">
-                    <div className="flex items-start gap-4">
-                      <div className="p-3 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800"><Map className="h-5 w-5 text-orange-600" /></div>
-                      <div>
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kecamatan / Kabupaten</p>
-                        <p className="font-bold text-slate-900 dark:text-white uppercase">{detail?.kecamatan || "-"} / {detail?.kabupaten || "-"}</p>
-                      </div>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800"><Map className="h-5 w-5 text-orange-600" /></div>
+                    <div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kecamatan / Kabupaten</p>
+                      <p className="font-bold text-slate-900 dark:text-white uppercase">{detail?.kecamatan || "-"} / {detail?.kabupaten || "-"}</p>
                     </div>
-                    <div className="flex items-start gap-4">
-                      <div className="p-3 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800"><Globe className="h-5 w-5 text-green-600" /></div>
-                      <div>
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Provinsi</p>
-                        <p className="font-bold text-slate-900 dark:text-white uppercase">{detail?.provinsi || "-"}</p>
-                      </div>
+                  </div>
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800"><Globe className="h-5 w-5 text-green-600" /></div>
+                    <div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Provinsi</p>
+                      <p className="font-bold text-slate-900 dark:text-white uppercase">{detail?.provinsi || "-"}</p>
                     </div>
-                 </div>
-               </div>
-             )}
-             <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-800 flex justify-end">
-               <Button variant="outline" className="px-8 font-bold rounded-xl" onClick={() => setIsDetailOpen(false)}>Tutup</Button>
-             </div>
-           </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-800 flex justify-end">
+              <Button variant="outline" className="px-8 font-bold rounded-xl" onClick={() => setIsDetailOpen(false)}>Tutup</Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -287,18 +287,18 @@ export default function GudangTujuanBagianPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kode Gudang</label>
-                <Input placeholder="Contoh: G123" value={formData.code} onChange={(e) => setFormData({...formData, code: e.target.value})} className="h-12 font-bold bg-slate-50 dark:bg-slate-900 border-none" />
+                <Input placeholder="Contoh: G123" value={formData.code} onChange={(e) => setFormData({ ...formData, code: e.target.value })} className="h-12 font-bold bg-slate-50 dark:bg-slate-900 border-none" />
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nama Gudang</label>
-                <Input placeholder="Nama lengkap gudang" value={formData.namagudang} onChange={(e) => setFormData({...formData, namagudang: e.target.value})} className="h-12 font-bold bg-slate-50 dark:bg-slate-900 border-none" />
+                <Input placeholder="Nama lengkap gudang" value={formData.namagudang} onChange={(e) => setFormData({ ...formData, namagudang: e.target.value })} className="h-12 font-bold bg-slate-50 dark:bg-slate-900 border-none" />
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Jenis Gudang</label>
-                <select 
+                <select
                   className="w-full h-12 px-4 rounded-lg bg-slate-50 dark:bg-slate-900 font-bold outline-none focus:ring-2 focus:ring-green-500 border-none"
                   value={formData.idwil}
-                  onChange={(e) => setFormData({...formData, idwil: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, idwil: e.target.value })}
                 >
                   <option value="">Pilih Jenis...</option>
                   {getJenisGudangOptions().map(opt => (
@@ -308,7 +308,7 @@ export default function GudangTujuanBagianPage() {
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Gudang Lini</label>
-                <Input type="number" placeholder="Kapasitas Tonase" value={formData.linigudang} onChange={(e) => setFormData({...formData, linigudang: e.target.value})} className="h-12 font-bold bg-slate-50 dark:bg-slate-900 border-none" />
+                <Input type="number" placeholder="Kapasitas Tonase" value={formData.linigudang} onChange={(e) => setFormData({ ...formData, linigudang: e.target.value })} className="h-12 font-bold bg-slate-50 dark:bg-slate-900 border-none" />
               </div>
             </div>
 
@@ -324,19 +324,19 @@ export default function GudangTujuanBagianPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2 col-span-1 md:col-span-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Alamat Lengkap</label>
-                <Input placeholder="Alamat jalan, nomor, dll" value={formData.alamat} onChange={(e) => setFormData({...formData, alamat: e.target.value})} className="h-12 font-bold bg-slate-50 dark:bg-slate-900 border-none" />
+                <Input placeholder="Alamat jalan, nomor, dll" value={formData.alamat} onChange={(e) => setFormData({ ...formData, alamat: e.target.value })} className="h-12 font-bold bg-slate-50 dark:bg-slate-900 border-none" />
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kecamatan</label>
-                <Input placeholder="Nama kecamatan" value={formData.kecamatan} onChange={(e) => setFormData({...formData, kecamatan: e.target.value})} className="h-12 font-bold bg-slate-50 dark:bg-slate-900 border-none" />
+                <Input placeholder="Nama kecamatan" value={formData.kecamatan} onChange={(e) => setFormData({ ...formData, kecamatan: e.target.value })} className="h-12 font-bold bg-slate-50 dark:bg-slate-900 border-none" />
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kabupaten</label>
-                <Input placeholder="Nama kabupaten" value={formData.kabupaten} onChange={(e) => setFormData({...formData, kabupaten: e.target.value})} className="h-12 font-bold bg-slate-50 dark:bg-slate-900 border-none" />
+                <Input placeholder="Nama kabupaten" value={formData.kabupaten} onChange={(e) => setFormData({ ...formData, kabupaten: e.target.value })} className="h-12 font-bold bg-slate-50 dark:bg-slate-900 border-none" />
               </div>
               <div className="space-y-2 col-span-1 md:col-span-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Provinsi</label>
-                <Input placeholder="Nama provinsi" value={formData.provinsi} onChange={(e) => setFormData({...formData, provinsi: e.target.value})} className="h-12 font-bold bg-slate-50 dark:bg-slate-900 border-none" />
+                <Input placeholder="Nama provinsi" value={formData.provinsi} onChange={(e) => setFormData({ ...formData, provinsi: e.target.value })} className="h-12 font-bold bg-slate-50 dark:bg-slate-900 border-none" />
               </div>
             </div>
 

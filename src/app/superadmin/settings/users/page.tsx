@@ -397,12 +397,7 @@ export default function UserConfigPage() {
                   </div>
                 </div>
 
-                {!isEditing && (
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black uppercase text-gray-400">SAP Vendor Code (opsional)</label>
-                    <Input value={formData.sapVendorCode} onChange={e => setFormData({ ...formData, sapVendorCode: e.target.value })} placeholder="V12345" />
-                  </div>
-                )}
+
 
                 <div className="flex items-center gap-2">
                   <input type="checkbox" id="user-active" checked={formData.isActive} onChange={e => setFormData({ ...formData, isActive: e.target.checked })} className="w-4 h-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500" />

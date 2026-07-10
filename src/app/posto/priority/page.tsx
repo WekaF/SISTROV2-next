@@ -213,6 +213,20 @@ export default function PostoPriorityPage() {
         )}
       </div>
 
+      {/* Info banner */}
+      <div className="p-4 bg-blue-50 border border-blue-200 dark:bg-blue-500/10 dark:border-blue-500/20 rounded-xl flex items-start gap-3">
+        <TriangleAlert className="h-5 w-5 text-blue-500 mt-0.5 shrink-0" />
+        <div className="text-sm text-blue-700 dark:text-blue-400">
+          <p className="font-bold mb-1">Cara Penggunaan:</p>
+          <ol className="list-decimal list-inside space-y-1 text-xs">
+            <li>Pilih satu atau lebih gudang tujuan dari panel di bawah.</li>
+            <li>Klik <strong>Tampilkan POSTO</strong> untuk melihat daftar dokumen aktif.</li>
+            <li>Aktifkan/nonaktifkan toggle pada setiap dokumen POSTO.</li>
+            <li>Klik <strong>Simpan Prioritas</strong> untuk menyimpan perubahan.</li>
+          </ol>
+        </div>
+      </div>
+
       {/* Gudang selector */}
       <Card>
         <CardHeader
@@ -433,21 +447,6 @@ export default function PostoPriorityPage() {
         </Card>
       )}
 
-      {/* Info banner */}
-      {postoItems.length === 0 && !loadingPosto && selectedGudang.size === 0 && (
-        <div className="p-4 bg-blue-50 border border-blue-200 dark:bg-blue-500/10 dark:border-blue-500/20 rounded-xl flex items-start gap-3">
-          <TriangleAlert className="h-5 w-5 text-blue-500 mt-0.5 shrink-0" />
-          <div className="text-sm text-blue-700 dark:text-blue-400">
-            <p className="font-bold mb-1">Cara Penggunaan:</p>
-            <ol className="list-decimal list-inside space-y-1 text-xs">
-              <li>Pilih satu atau lebih gudang tujuan dari panel di atas.</li>
-              <li>Klik <strong>Tampilkan POSTO</strong> untuk melihat daftar dokumen aktif.</li>
-              <li>Aktifkan/nonaktifkan toggle pada setiap dokumen POSTO.</li>
-              <li>Klik <strong>Simpan Prioritas</strong> untuk menyimpan perubahan.</li>
-            </ol>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

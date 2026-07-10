@@ -169,7 +169,6 @@ const MENU_ARMADA_ADMIN = {
   items: [
     { title: "List Armada", url: "/armada", icon: Truck },
     { title: "Approval Pengajuan", url: "/armada/approvals", icon: ShieldCheck },
-    { title: "Konfigurasi Sumbu", url: "/armada/axle-setup", icon: Settings },
   ],
 }
 
@@ -181,7 +180,7 @@ const MENU_GUDANG = {
     { title: "List Gudang", url: "/gudang", icon: Package },
     { title: "Antrian Per Unit", url: "/gudang/unit-queue", icon: Layers },
     { title: "Gudang Tujuan Bagian", url: "/gudang/tujuan-bagian", icon: Building2 },
-    { title: "Monitoring Pemuatan", url: "/gudang/targets", icon: MapPin },
+
     { title: "Traffic Antrian", url: "/gudang/trafik", icon: ArrowLeftRight },
     { title: "Bypass Antrian", url: "/gudang/bypass", icon: Zap },
     { title: "Mapping Zero ODOL", url: "/armada/mapping-zero-odol", icon: MapPin },

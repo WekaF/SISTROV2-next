@@ -181,7 +181,7 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
           { name: "List Gudang", path: "/gudang" },
           { name: "Antrian Per Unit", path: "/gudang/unit-queue" },
           { name: "Gudang Tujuan Bagian", path: "/gudang/tujuan-bagian" },
-          { name: "Monitoring Pemuatan", path: "/gudang/targets" },
+
           { name: "Traffic Antrian", path: "/gudang/trafik" },
         ],
       },
@@ -215,7 +215,6 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
         icon: <FileText className="h-5 w-5" />,
         name: "Laporan",
         subItems: [
-          { name: "Laporan tiket", path: "/reports/tiket-pi" },
           { name: "Report Pemesanan Tiket", path: "/reports/booking" },
           { name: "Report Realisasi Pemuatan", path: "/reports/loading" },
           { name: "Report Pembatalan Tiket", path: "/reports/cancelation" },
@@ -245,7 +244,6 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
           { name: "Konfigurasi Rekanan", path: "/superadmin/settings/transport" },
           { name: "Force Delete Tiket", path: "/superadmin/settings/tiket" },
           { name: "Konfigurasi All User", path: "/admin/pengaturan/user" },
-          { name: "Sumbu Kendaraan", path: "/armada/axle-setup" },
           { name: "Area Scope User", path: "/superadmin/settings/area-scope" },
           { name: "Role & Menu Group", path: "/superadmin/settings/role-menu" },
           { name: "Menu Per User", path: "/superadmin/settings/user-menu" },
@@ -287,7 +285,7 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
           { name: "List Gudang", path: "/gudang" },
           { name: "Antrian Per Unit", path: "/gudang/unit-queue" },
           { name: "Gudang Tujuan Bagian", path: "/gudang/tujuan-bagian" },
-          { name: "Monitoring Pemuatan", path: "/gudang/targets" },
+
           { name: "Traffic Antrian", path: "/gudang/trafik" },
         ],
       },
@@ -329,7 +327,6 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
           { name: "Produk & Mapping", path: "/superadmin/settings/products" },
           { name: "Gudang & Mapping", path: "/superadmin/settings/warehouses" },
           { name: "Konfigurasi Rekanan", path: "/superadmin/settings/transport" },
-          { name: "Sumbu Kendaraan", path: "/armada/axle-setup" },
         ],
       },
     ],
@@ -374,7 +371,6 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
         subItems: [
           { name: "Datatable Armada", path: "/armada" },
           { name: "Pengajuan Armada", path: "/armada/pengajuan" },
-          { name: "Sumbu Kendaraan", path: "/armada/axle-setup" },
           { name: "Mapping Zero Odol", path: "/armada/mapping-zero-odol" },
         ],
       },
@@ -691,7 +687,7 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
           { name: "List Gudang", path: "/gudang" },
           { name: "Antrian Per Unit", path: "/gudang/unit-queue" },
           { name: "Gudang Tujuan Bagian", path: "/gudang/tujuan-bagian" },
-          { name: "Monitoring Pemuatan", path: "/gudang/targets" },
+
           { name: "Traffic Antrian", path: "/gudang/trafik" },
         ],
       },
@@ -702,7 +698,6 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
           { name: "Datatable Armada", path: "/armada" },
           { name: "Pengajuan Armada", path: "/armada/pengajuan" },
           { name: "Upload Armada", path: "/armada/upload" },
-          { name: "Sumbu Kendaraan", path: "/armada/axle-setup" },
           { name: "Mapping Zero Odol", path: "/armada/mapping-zero-odol" },
           { name: "Sumbu Percepatan", path: "/armada/percepatan" },
         ],

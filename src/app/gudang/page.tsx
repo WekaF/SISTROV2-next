@@ -100,7 +100,7 @@ export default function GudangListPage() {
   };
 
   const fetchGudang = useCallback(async (params: any) => {
-    const res = await apiTable("/api/Gudang/DataMapping", {
+    const res = await apiTable(`/api/Gudang/DataMapping?companyCode=${activeCompanyCode}`, {
       ...params,
       order: params.order?.length ? params.order : [{ column: 0, dir: "desc" }],
       columns: [

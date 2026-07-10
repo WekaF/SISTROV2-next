@@ -40,7 +40,7 @@ const EXCEL_COLUMNS = [
   "jbi",
   "BeratKendaraan",
   "beratpenumpang",
-  "kir",
+  // "kir",
   "tahun_pembuatan",
   "no_rangka_stnk",
   "no_mesin_stnk",
@@ -58,7 +58,7 @@ interface ArmadaRow {
   jbi: number | null;
   beratkendaraan: number | null;
   beratpenumpang: number | null;
-  kir: string;
+  // kir: string;
   tahun_pembuatan: number | null;
   no_rangka_stnk: string;
   no_mesin_stnk: string;
@@ -150,7 +150,7 @@ function parseExcelRows(data: any[]): ArmadaRow[] {
       jbi: parseNum(raw["jbi"] ?? raw["JBI"]),
       beratkendaraan: parseNum(raw["BeratKendaraan"] ?? raw["beratkendaraan"] ?? raw["Berat Kendaraan"]),
       beratpenumpang: parseNum(raw["beratpenumpang"] ?? raw["BeratPenumpang"] ?? raw["Berat Penumpang"]),
-      kir: String(raw["kir"] ?? raw["KIR"] ?? "").trim(),
+      // kir: String(raw["kir"] ?? raw["KIR"] ?? "").trim(),
       tahun_pembuatan: parseNum(raw["tahun_pembuatan"] ?? raw["TahunPembuatan"] ?? raw["Tahun Pembuatan"] ?? raw["Tahun"]) as number | null,
       no_rangka_stnk: String(raw["no_rangka_stnk"] ?? raw["Rangka STNK"] ?? raw["No Rangka STNK"] ?? raw["NoRangkaSTNK"] ?? "").trim(),
       no_mesin_stnk: String(raw["no_mesin_stnk"] ?? raw["Mesin STNK"] ?? raw["No Mesin STNK"] ?? raw["NoMesinSTNK"] ?? "").trim(),
@@ -241,7 +241,6 @@ export default function ArmadaUploadPage() {
         jbi: r.jbi,
         beratkendaraan: r.beratkendaraan,
         beratpenumpang: r.beratpenumpang,
-        kir: r.kir,
         tahun_pembuatan: r.tahun_pembuatan,
         no_rangka_stnk: r.no_rangka_stnk,
         no_mesin_stnk: r.no_mesin_stnk,
@@ -272,6 +271,15 @@ export default function ArmadaUploadPage() {
 
       if (errors && errors.length > 0) {
         console.warn("Server-side errors:", errors);
+        setRows((prev) =>
+          prev.map((r) => {
+            const errMatch = errors.find((e: any) => e.nopol === r.nopol);
+            if (errMatch) {
+              return { ...r, isValid: false, errors: [...r.errors, errMatch.error] };
+            }
+            return r;
+          })
+        );
       }
     } catch (err: any) {
       addToast({ variant: "destructive", title: "Error", description: err.message });
@@ -328,9 +336,8 @@ export default function ArmadaUploadPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div
-            className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-              isDragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
-            }`}
+            className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${isDragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
+              }`}
             onClick={() => fileInputRef.current?.click()}
             onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
             onDragLeave={() => setIsDragging(false)}
@@ -452,11 +459,10 @@ export default function ArmadaUploadPage() {
                   {rows.map((row, i) => (
                     <tr
                       key={i}
-                      className={`border-b ${
-                        row.isValid
-                          ? "bg-green-50/30 dark:bg-green-950/10"
-                          : "bg-red-50/50 dark:bg-red-950/20"
-                      }`}
+                      className={`border-b ${row.isValid
+                        ? "bg-green-50/30 dark:bg-green-950/10"
+                        : "bg-red-50/50 dark:bg-red-950/20"
+                        }`}
                     >
                       <td className="p-2 text-muted-foreground">{i + 1}</td>
                       <td className="p-2">

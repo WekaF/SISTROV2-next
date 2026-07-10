@@ -75,7 +75,7 @@ function Pagination({
         <select
           className="border border-gray-300 dark:border-gray-650 rounded px-2 py-1 text-sm bg-background text-foreground"
           value={pageSize}
-          onChange={(e) => { onPageSize(Number(e.target.value)); onPage(1); }}
+          onChange={(e) => { onPageSize(e.target.value === "" ? "" : e.target.value === "" ? "" : Number(e.target.value)); onPage(1); }}
         >
           {[10, 25, 50, 100].map((n) => <option key={n} value={n}>{n}</option>)}
         </select>
@@ -362,3 +362,5 @@ export default function ManagerTiketPage() {
     </div>
   );
 }
+
+

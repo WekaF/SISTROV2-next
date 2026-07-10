@@ -47,7 +47,7 @@ export const MENU_CATALOG: CatalogGroup[] = [
       { path: "/gudang", label: "List Gudang" },
       { path: "/gudang/unit-queue", label: "Antrian Per Unit" },
       { path: "/gudang/tujuan-bagian", label: "Gudang Tujuan Bagian" },
-      { path: "/gudang/targets", label: "Monitoring Pemuatan" },
+
       { path: "/gudang/trafik", label: "Traffic Antrian" },
     ],
   },
@@ -59,7 +59,6 @@ export const MENU_CATALOG: CatalogGroup[] = [
       { path: "/armada/upload", label: "Upload Armada" },
       { path: "/armada/mapping-zero-odol", label: "Mapping Zero Odol" },
       { path: "/armada/percepatan", label: "Sumbu Percepatan" },
-      { path: "/armada/axle-setup", label: "Sumbu Kendaraan" },
     ],
   },
   {

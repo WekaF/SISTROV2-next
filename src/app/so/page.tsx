@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import { Eye, FileEdit, Trash2, Package, Ticket, Printer, Calendar } from "lucide-react";
+import { Eye, FileEdit, Trash2, Package, Ticket, Printer, Calendar, Plus } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -426,17 +426,25 @@ export default function SOPage() {
               return "";
             }}
             toolbar={
-              <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-                <Calendar className="h-4 w-4 shrink-0" />
-                <Input
-                  type="date"
-                  className="h-8 w-40 text-xs"
-                  value={dateFilter}
-                  onChange={(e) => setDateFilter(e.target.value)}
-                />
-                {dateFilter && (
-                  <Button variant="ghost" size="sm" className="h-8 px-2 text-red-500" onClick={() => setDateFilter("")}>
-                    ✕
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                  <Calendar className="h-4 w-4 shrink-0" />
+                  <Input
+                    type="date"
+                    className="h-8 w-40 text-xs"
+                    value={dateFilter}
+                    onChange={(e) => setDateFilter(e.target.value)}
+                  />
+                  {dateFilter && (
+                    <Button variant="ghost" size="sm" className="h-8 px-2 text-red-500" onClick={() => setDateFilter("")}>
+                      ✕
+                    </Button>
+                  )}
+                </div>
+                {!isRekanan && (
+                  <Button size="sm" onClick={() => (window.location.href = "/posto/upload")}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    New SO
                   </Button>
                 )}
               </div>

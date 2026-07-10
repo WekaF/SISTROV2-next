@@ -63,7 +63,8 @@ export async function POST(req: Request) {
         FullName: body.fullName,
         Email: body.email,
         IsActive: body.isActive !== false,
-        SAPVendorCode: body.sapVendorCode || null
+        SAPVendorCode: body.sapVendorCode || null,
+        rolename: body.roles && body.roles.length > 0 ? body.roles[0] : "viewer"
       })
     });
 
@@ -132,7 +133,7 @@ export async function DELETE(req: Request) {
 
     const res = await aspnetFetchServer('/api/UserAccount/DeleteData', token, {
       method: 'POST',
-      body: JSON.stringify({ id })
+      body: JSON.stringify({ guid: id })
     });
 
     if (!res.ok) {
