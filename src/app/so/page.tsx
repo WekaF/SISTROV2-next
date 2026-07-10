@@ -1,9 +1,12 @@
 "use client";
 import React, { useState } from "react";
-import { Eye, FileEdit, Trash2, Package, Ticket, History } from "lucide-react";
+import { Eye, FileEdit, Trash2, Package, Ticket, Printer, Calendar } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import Badge from "@/components/ui/badge/Badge";
 import { useSession } from "next-auth/react";
+import { useCompany } from "@/context/CompanyContext";
 import { useApi } from "@/hooks/use-api";
 import { useToast } from "@/components/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -16,7 +19,6 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 // ─────────────── Types ────────────────────────────────────────────────────────
@@ -43,7 +45,24 @@ interface SOItem {
   bagian: string;
   updatedby: string;
   numberString: string;
+  cutoff: string;
+  kapal: string;
+  kotatujuan: string;
+  percepatan: string;
+  gruptruk: string;
+  statusString: string;
+  status: string;
 }
+
+// Edit SO: SuperAdmin/TI, Admin, Candal, dan StaffArea — Gudang/Security/Timbangan/Rekanan/Transport TIDAK boleh edit
+const POSTO_EDIT_ROLES = [
+  "superadmin", "ti",
+  "admin", "adminsumbu",
+  "candalkuota", "candaltruk", "candaltruck", "candalcontainer",
+  "candalgudangposto", "candalgudang", "candaldept", "candalkapal",
+  "staffarea", "staffarewilayah1", "staffarewilayah2",
+  "staffarealayah1", "staffarealayah2", "staffareajatim",
+];
 
 // ─────────────── Page Component ──────────────────────────────────────────────
 
@@ -52,9 +71,19 @@ export default function SOPage() {
   const { apiFetch } = useApi();
   const { addToast } = useToast();
   const queryClient = useQueryClient();
+  const { activeCompanyCode } = useCompany();
+  const companyCode = activeCompanyCode ?? undefined;
 
   const role = (session?.user as any)?.role?.toLowerCase();
+  const roles: string[] = (session?.user as any)?.roles ?? [];
   const isRekanan = role === "rekanan" || role === "transport";
+  const fullname = session?.user?.name as string | undefined;
+  const isAdminTI = roles.some((r) => ["superadmin", "ti"].includes(r.toLowerCase()));
+  const canEditPosto = roles.some((r) => POSTO_EDIT_ROLES.includes(r.toLowerCase()));
+  const canDeleteThisSO = (row: SOItem) =>
+    canEditPosto || isRekanan || (!!fullname && row.updatedby === fullname);
+
+  const [dateFilter, setDateFilter] = useState("");
 
   // ── Modal States ──
   const [selectedSO, setSelectedSO] = useState<SOItem | null>(null);
@@ -75,14 +104,17 @@ export default function SOPage() {
     form.set("search[value]", params.search || "");
     form.set("search[regex]", "false");
     form.set("tipe", "SO");
+    form.set("SD", dateFilter || "");
     form.set("order[0][column]", "3");
     form.set("order[0][dir]", "desc");
+    if (companyCode) form.set("companyCode", companyCode);
 
     const colNames = [
       "charter","action","wilayah","tanggalString","noposto","tglakhirString",
       "asalString","tujuanString","bagian","transportString","produkString",
       "qty","qtyrencana","qtysisaBooking","qtyrealisasi","qtysisaRealisasi",
-      "cutoff","kapal","kotatujuan","updatedby","tanggaljatuhtempoString"
+      "cutoff","kapal","kotatujuan","updatedby","tanggaljatuhtempoString",
+      "percepatan","gruptruk"
     ];
     colNames.forEach((name, i) => {
       form.set(`columns[${i}][name]`, name);
@@ -201,40 +233,57 @@ export default function SOPage() {
     }
   };
 
+  const getStatusBadgeColor = (status: string) => {
+    const s = (status || "").toLowerCase();
+    if (s.includes("active")) return "info";
+    if (s.includes("progress")) return "warning";
+    if (s.includes("complete")) return "success";
+    if (s.includes("cancel")) return "error";
+    return "default";
+  };
+
   // ── Columns — same style as POSTO ──
   const columns: DataTableColumn<SOItem>[] = [
     {
       key: "action",
       header: "Action",
       render: (p) => (
-        <div className="flex items-center justify-start gap-2">
+        <div className="flex items-center justify-start gap-1.5">
           <Button
             variant="outline"
             size="sm"
-            className="bg-brand-50 text-brand-500 border-brand-200 hover:bg-brand-100 rounded-none h-8 font-bold text-[10px] uppercase tracking-wider"
+            className="bg-brand-50 text-brand-500 border-brand-200 hover:bg-brand-100 rounded-none h-7 font-bold text-[10px] uppercase tracking-wider"
             onClick={() => handleView(p.noposto)}
           >
-            <Eye className="h-4 w-4 mr-1" /> View
+            <Eye className="h-3.5 w-3.5 mr-1" /> {isRekanan ? "Riwayat" : "View"}
           </Button>
-          {!isRekanan && (
-            <>
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-amber-500 border-amber-200 hover:bg-amber-50 rounded-none h-8"
-                onClick={() => handleEditInit(p.noposto)}
-              >
-                <FileEdit className="h-4 w-4 mr-1" /> Edit
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-red-500 border-red-200 hover:bg-red-50 rounded-none h-8"
-                onClick={() => { setDeleteTarget(p.noposto); setDeleteReason("34"); setIsDeleteOpen(true); }}
-              >
-                <Trash2 className="h-4 w-4 mr-1" /> Hapus
-              </Button>
-            </>
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-slate-600 border-slate-200 hover:bg-slate-50 rounded-none h-7 text-[10px] uppercase tracking-wider"
+            onClick={() => window.open(`/posto/print/${p.guid || p.noposto}`, "_blank")}
+          >
+            <Printer className="h-3.5 w-3.5 mr-1" /> Print
+          </Button>
+          {canEditPosto && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-amber-500 border-amber-200 hover:bg-amber-50 rounded-none h-7"
+              onClick={() => handleEditInit(p.noposto)}
+            >
+              <FileEdit className="h-3.5 w-3.5 mr-1" /> Edit
+            </Button>
+          )}
+          {canDeleteThisSO(p) && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-red-500 border-red-200 hover:bg-red-50 rounded-none h-7"
+              onClick={() => { setDeleteTarget(p.noposto); setDeleteReason("34"); setIsDeleteOpen(true); }}
+            >
+              <Trash2 className="h-3.5 w-3.5 mr-1" /> Hapus
+            </Button>
           )}
         </div>
       ),
@@ -248,6 +297,11 @@ export default function SOPage() {
       key: "tanggalString",
       header: "Tanggal",
       render: (p) => <span className="text-gray-500 font-mono text-xs">{p.tanggalString}</span>,
+    },
+    {
+      key: "tanggaljatuhtempoString",
+      header: "Jatuh Tempo",
+      render: (p) => <span className="text-gray-500 dark:text-gray-400 font-mono text-xs whitespace-nowrap">{p.tanggaljatuhtempoString || "-"}</span>,
     },
     {
       key: "transportString",
@@ -307,7 +361,39 @@ export default function SOPage() {
     { key: "asalString", header: "Asal", render: (p) => p.asalString || "-" },
     { key: "tujuanString", header: "Tujuan", render: (p) => p.tujuanString || "-" },
     { key: "wilayah", header: "Wilayah", render: (p) => <span className="font-medium">{p.wilayah || "-"}</span> },
+    {
+      key: "cutoff",
+      header: "CutOff",
+      render: (p) => (
+        <span className={`text-xs font-medium ${(p.cutoff || "").includes("Cut Off (") ? "text-red-500" : "text-gray-400"}`}>
+          {p.cutoff || "Belum Cut Off"}
+        </span>
+      ),
+    },
+    { key: "kapal", header: "Kapal", render: (p) => <span className="text-xs">{p.kapal || "-"}</span> },
+    { key: "kotatujuan", header: "Kota Tujuan", render: (p) => <span className="text-xs">{p.kotatujuan || "-"}</span> },
     { key: "updatedby", header: "PIC", render: (p) => <span className="text-[10px] uppercase font-bold text-gray-400">{p.updatedby || "-"}</span> },
+    {
+      key: "percepatan",
+      header: "Mekanisme",
+      render: (p) => (
+        <span className={`text-[10px] font-bold uppercase ${p.percepatan === "PERCEPATAN" ? "text-orange-500" : "text-gray-400"}`}>
+          {p.percepatan || "-"}
+        </span>
+      ),
+    },
+    { key: "gruptruk", header: "Grup Truk", render: (p) => <span className="text-xs">{p.gruptruk || "-"}</span> },
+    {
+      key: "statusString",
+      header: "Status",
+      headerClassName: "text-center",
+      className: "text-center",
+      render: (p) => (
+        <Badge color={getStatusBadgeColor(p.statusString || p.status) as any} size="sm">
+          {p.statusString || p.status || "-"}
+        </Badge>
+      ),
+    },
   ];
 
   return (
@@ -326,8 +412,9 @@ export default function SOPage() {
         <CardContent className="p-4">
           <DataTable
             columns={columns}
-            queryKey={["so-list"]}
+            queryKey={["so-list", companyCode, dateFilter]}
             fetcher={fetcher}
+            defaultPageSize={50}
             rowKey={(p) => p.noposto || String(p.id)}
             searchPlaceholder="Cari No SO, Transportir, Produk..."
             striped
@@ -339,6 +426,22 @@ export default function SOPage() {
               }
               return "";
             }}
+            toolbar={
+              <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                <Calendar className="h-4 w-4 shrink-0" />
+                <Input
+                  type="date"
+                  className="h-8 w-40 text-xs"
+                  value={dateFilter}
+                  onChange={(e) => setDateFilter(e.target.value)}
+                />
+                {dateFilter && (
+                  <Button variant="ghost" size="sm" className="h-8 px-2 text-red-500" onClick={() => setDateFilter("")}>
+                    ✕
+                  </Button>
+                )}
+              </div>
+            }
           />
         </CardContent>
       </Card>
@@ -346,7 +449,7 @@ export default function SOPage() {
       {/* View Modal */}
       {isViewOpen && selectedSO && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <Card className="w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-900 border-none shadow-2xl">
+          <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-900 border-none shadow-2xl">
             <CardHeader className="border-b dark:border-white/10 sticky top-0 bg-white dark:bg-gray-900 z-10">
               <div className="flex items-center justify-between">
                 <CardTitle>Detail SO: {selectedSO.noposto}</CardTitle>
@@ -354,7 +457,7 @@ export default function SOPage() {
               </div>
             </CardHeader>
             <CardContent className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                 <div className="space-y-4">
                   <div>
                     <p className="text-[10px] text-gray-400 uppercase font-black">Info SO</p>
@@ -392,16 +495,99 @@ export default function SOPage() {
                       <div><p className="text-[10px] text-gray-500">Realisasi</p><p className="text-lg font-bold text-emerald-600">{(selectedSO.qtyrealisasi || 0).toLocaleString()} T</p></div>
                     </div>
                   </div>
-                  <div className="mt-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full rounded-none border-brand-200 text-brand-500 hover:bg-brand-50 font-bold uppercase text-[10px]"
-                      onClick={() => window.open(`/track/tiket?filter=posto&param=${selectedSO.noposto}`, "_blank")}
-                    >
-                      <History className="h-4 w-4 mr-2" /> Lihat Riwayat Tiket
-                    </Button>
+                </div>
+              </div>
+
+              {/* Ticket History Section — embedded, same as POSTO page */}
+              <div className="border-t pt-8">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-brand-50 rounded-lg text-brand-500">
+                    <Ticket className="h-5 w-5" />
                   </div>
+                  <div className="flex-1">
+                    <h3 className="text-sm font-black uppercase tracking-widest text-slate-900 dark:text-white">Riwayat Tiket</h3>
+                    <p className="text-[10px] text-slate-400 font-medium">Daftar muatan yang menggunakan SO ini</p>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border dark:border-white/10 overflow-hidden">
+                  <DataTable
+                    queryKey={['so-tickets-history', selectedSO?.guid || selectedSO?.noposto]}
+                    fetcher={async (params) => {
+                      const guidValue = selectedSO?.guid || selectedSO?.noposto;
+                      const payload: any = {
+                        draw: params.draw,
+                        start: params.start,
+                        length: params.length,
+                        search: params.search || "",
+                        order: [{ column: 1, dir: "desc" }],
+                        posto: guidValue,
+                        cmd: 'refresh',
+                        columns: [
+                          { data: "action", name: "", searchable: false, orderable: false },
+                          { data: "bookingno", name: "bookingno", searchable: true, orderable: true },
+                          { data: "tanggalString", name: "tanggal", searchable: true, orderable: true },
+                          { data: "shift", name: "idshift", searchable: true, orderable: true },
+                          { data: "nopol", name: "nopol", searchable: true, orderable: true },
+                          { data: "driver", name: "driver", searchable: true, orderable: true },
+                          { data: "qty", name: "qty", searchable: true, orderable: true },
+                          { data: "updatedonString", name: "updatedon", searchable: true, orderable: true }
+                        ]
+                      };
+                      const form = new URLSearchParams();
+                      const flatten = (obj: any, prefix = '') => {
+                        Object.keys(obj).forEach((key) => {
+                          const k = prefix ? `${prefix}[${key}]` : key;
+                          if (obj[key] === undefined || obj[key] === null) return;
+                          if (typeof obj[key] === 'object') flatten(obj[key], k);
+                          else form.append(k, String(obj[key]));
+                        });
+                      };
+                      flatten(payload);
+                      const res = await apiFetch(`/api/Tiket/DataTablePeriodeTiket`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                        body: form.toString(),
+                      });
+                      if (!res.ok) throw new Error(`[${res.status}]`);
+                      return res.json();
+                    }}
+                    rowKey={(row: any) => row.bookingno}
+                    columns={[
+                      {
+                        key: "bookingno",
+                        header: "Booking No",
+                        render: (row: any) => <span className="font-bold text-gray-900 dark:text-white font-mono">{row.bookingno}</span>
+                      },
+                      {
+                        key: "tanggalString",
+                        header: "Tanggal",
+                        render: (row: any) => <span className="text-gray-500 dark:text-gray-400 font-mono text-xs">{row.tanggalString}</span>
+                      },
+                      {
+                        key: "shift",
+                        header: "Shift",
+                        render: (row: any) => <span className="text-xs">{row.shift}</span>
+                      },
+                      {
+                        key: "nopol",
+                        header: "Nopol",
+                        render: (row: any) => <Badge color="dark" size="sm" className="font-mono">{row.nopol}</Badge>
+                      },
+                      {
+                        key: "driver",
+                        header: "Driver",
+                        render: (row: any) => <span className="text-sm font-medium">{row.driver}</span>
+                      },
+                      {
+                        key: "qty",
+                        header: "Qty",
+                        headerClassName: "text-right",
+                        className: "text-right",
+                        render: (row: any) => <span className="font-bold font-mono text-emerald-600">{row.qty?.toLocaleString()}</span>
+                      }
+                    ]}
+                  />
                 </div>
               </div>
             </CardContent>
