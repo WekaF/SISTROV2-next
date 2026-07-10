@@ -68,7 +68,7 @@ const POSTO_EDIT_ROLES = [
 
 export default function SOPage() {
   const { data: session } = useSession();
-  const { apiFetch } = useApi();
+  const { apiFetch, apiTable } = useApi();
   const { addToast } = useToast();
   const queryClient = useQueryClient();
   const { activeCompanyCode } = useCompany();
@@ -78,7 +78,6 @@ export default function SOPage() {
   const roles: string[] = (session?.user as any)?.roles ?? [];
   const isRekanan = role === "rekanan" || role === "transport";
   const fullname = session?.user?.name as string | undefined;
-  const isAdminTI = roles.some((r) => ["superadmin", "ti"].includes(r.toLowerCase()));
   const canEditPosto = roles.some((r) => POSTO_EDIT_ROLES.includes(r.toLowerCase()));
   const canDeleteThisSO = (row: SOItem) =>
     canEditPosto || isRekanan || (!!fullname && row.updatedby === fullname);
@@ -534,23 +533,7 @@ export default function SOPage() {
                           { data: "updatedonString", name: "updatedon", searchable: true, orderable: true }
                         ]
                       };
-                      const form = new URLSearchParams();
-                      const flatten = (obj: any, prefix = '') => {
-                        Object.keys(obj).forEach((key) => {
-                          const k = prefix ? `${prefix}[${key}]` : key;
-                          if (obj[key] === undefined || obj[key] === null) return;
-                          if (typeof obj[key] === 'object') flatten(obj[key], k);
-                          else form.append(k, String(obj[key]));
-                        });
-                      };
-                      flatten(payload);
-                      const res = await apiFetch(`/api/Tiket/DataTablePeriodeTiket`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                        body: form.toString(),
-                      });
-                      if (!res.ok) throw new Error(`[${res.status}]`);
-                      return res.json();
+                      return apiTable(`/api/Tiket/DataTablePeriodeTiket`, payload);
                     }}
                     rowKey={(row: any) => row.bookingno}
                     columns={[
