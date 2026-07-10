@@ -173,7 +173,7 @@ export default function PlantInstallPage() {
             <div className="flex items-center gap-1.5 mb-1">
               <label className="text-sm font-medium">Kode Company</label>
               <Tooltip>
-                <TooltipTrigger>
+                <TooltipTrigger aria-label="Bantuan Kode Company">
                   <HelpCircle className="w-3.5 h-3.5 text-muted-foreground" />
                 </TooltipTrigger>
                 <TooltipContent>
@@ -216,7 +216,7 @@ export default function PlantInstallPage() {
             <div className="flex items-center gap-1.5">
               <label className="text-sm font-medium">Gudang Mapping (kode saja)</label>
               <Tooltip>
-                <TooltipTrigger>
+                <TooltipTrigger aria-label="Bantuan Gudang">
                   <HelpCircle className="w-3.5 h-3.5 text-muted-foreground" />
                 </TooltipTrigger>
                 <TooltipContent>
@@ -297,7 +297,7 @@ export default function PlantInstallPage() {
           <div className="flex items-center gap-1.5">
             <label className="text-sm font-medium">Kode Produk</label>
             <Tooltip>
-              <TooltipTrigger>
+              <TooltipTrigger aria-label="Bantuan Produk">
                 <HelpCircle className="w-3.5 h-3.5 text-muted-foreground" />
               </TooltipTrigger>
               <TooltipContent>
@@ -344,7 +344,7 @@ export default function PlantInstallPage() {
               Shift 1 (jam mulai – jam selesai)
             </label>
             <Tooltip>
-              <TooltipTrigger>
+              <TooltipTrigger aria-label="Bantuan Shift">
                 <HelpCircle className="w-3.5 h-3.5 text-muted-foreground" />
               </TooltipTrigger>
               <TooltipContent>
