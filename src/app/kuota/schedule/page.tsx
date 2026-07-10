@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect, useCallback } from "react"
+import { useState, useCallback } from "react"
 import {
   CalendarCheck,
   Plus,
@@ -75,14 +75,7 @@ export default function QuotaSchedulePage() {
 
   const [metrics, setMetrics] = useState({ totalDailyQuota: 0, totalBooked: 0, totalIn: 0, totalOut: 0 })
 
-  // Re-fetch metrics setiap kali company berubah
-  useEffect(() => {
-    const qs = activeCompanyCode ? `?companyCode=${encodeURIComponent(activeCompanyCode)}` : ""
-    fetch(`/api/kuota/schedule${qs}`)
-      .then(r => r.json())
-      .then(d => { if (d.metrics) setMetrics(d.metrics) })
-      .catch(() => { })
-  }, [activeCompanyCode])
+  // Metrics akan diupdate otomatis dari fetcher DataTable, mengikuti filter aktif
 
   const handleExport = async () => {
     try {
@@ -138,6 +131,11 @@ export default function QuotaSchedulePage() {
     const res = await fetch(`/api/kuota/schedule?${qs}`)
     const data = await res.json()
     if (!data.success) throw new Error(data.error || "Gagal memuat data")
+
+    if (data.metrics) {
+      setMetrics(data.metrics)
+    }
+
     return {
       data: data.data ?? [],
       recordsTotal: data.recordsTotal ?? 0,
@@ -309,7 +307,7 @@ export default function QuotaSchedulePage() {
               <TrendingUp className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Total Kuota (Keseluruhan)</p>
+              <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Total Kuota (Sesuai Filter)</p>
               <p className="text-xl font-bold">{metrics.totalDailyQuota.toLocaleString("id-ID")}<span className="text-xs font-normal"> Ton</span></p>
             </div>
           </div>
@@ -320,7 +318,7 @@ export default function QuotaSchedulePage() {
               <Package className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Terpesan (Keseluruhan)</p>
+              <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Terpesan (Sesuai Filter)</p>
               <p className="text-xl font-bold text-blue-600">{metrics.totalBooked.toLocaleString("id-ID")}<span className="text-xs font-normal"> Ton</span></p>
             </div>
           </div>
@@ -331,7 +329,7 @@ export default function QuotaSchedulePage() {
               <Clock className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Proses Muat (Keseluruhan)</p>
+              <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Proses Muat (Sesuai Filter)</p>
               <p className="text-xl font-bold text-orange-600">{metrics.totalIn.toLocaleString("id-ID")}<span className="text-xs font-normal"> Ton</span></p>
             </div>
           </div>
@@ -342,7 +340,7 @@ export default function QuotaSchedulePage() {
               <BarChart3 className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Realisasi (Keseluruhan)</p>
+              <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Realisasi (Sesuai Filter)</p>
               <p className="text-xl font-bold text-green-600">{metrics.totalOut.toLocaleString("id-ID")}<span className="text-xs font-normal"> Ton</span></p>
             </div>
           </div>
