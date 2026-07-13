@@ -21,6 +21,7 @@ interface TiketRow {
   positionString: string;
   position: string;
   transportString: string;
+  charter?: string;
 }
 
 interface KuotaRow {
@@ -191,9 +192,16 @@ function TiketTable({ token }: { token: string }) {
                 <td className="px-3 py-2 text-gray-900 dark:text-white">{r.tujuan}</td>
                 <td className="px-3 py-2 text-right text-gray-900 dark:text-white">{r.qty != null ? r.qty.toFixed(2) : "—"}</td>
                 <td className="px-3 py-2">
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${positionColor(r.position)}`}>
-                    {r.positionString}
-                  </span>
+                  <div className="flex flex-col gap-1 items-start">
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${positionColor(r.position)}`}>
+                      {r.positionString}
+                    </span>
+                    {r.charter === "1" && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">
+                        Charter
+                      </span>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
