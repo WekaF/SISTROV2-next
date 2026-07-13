@@ -622,14 +622,13 @@ function TrackingContent() {
                       { label: "Tiba di Gudang", value: ticketData.timegudang, icon: MapPin },
                       { label: "Selesai Muat Checkout Gudang", value: ticketData.timemuat, icon: Package },
                       { label: "Timbangan Isi", value: ticketData.timeisi, icon: Weight },
-                      { label: "Security Out", value: ticketData.timeout || logs.find(l => l.positioncode === "07")?.updatedon, icon: ShieldCheck },
+                      { label: "Security Out", value: ticketData.timeout || logs.find(l => l.positioncode === "07")?.updatedon || null, icon: ShieldCheck },
                     ].map((item, idx) => (
                       <div
                         key={idx}
                         className={cn(
                           "p-4 rounded-2xl border-2 transition-all group hover:scale-[1.02] cursor-default",
                           item.value ? "bg-white dark:bg-slate-900 border-green-200 dark:border-green-900/50" : "bg-slate-50 dark:bg-slate-900/20 border-slate-100 dark:border-slate-800 border-dashed opacity-60",
-                          item.isHighlight && item.value && "border-primary/30 dark:border-primary/30 bg-primary/5 dark:bg-primary/5 opacity-100"
                         )}
                       >
                         <div className="flex items-center justify-between mb-2">
@@ -639,7 +638,7 @@ function TrackingContent() {
                           )}>
                             {item.label}
                           </div>
-                          {item.value && React.createElement(item.icon, { className: cn("h-4 w-4", item.isHighlight ? "text-primary animate-spin-slow" : "text-green-500") })}
+                          {item.value && React.createElement(item.icon, { className: cn("h-4 w-4", "text-green-500") })}
                         </div>
                         <div className={cn(
                           "text-[13px] font-black leading-snug",
