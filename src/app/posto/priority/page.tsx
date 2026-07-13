@@ -61,7 +61,7 @@ export default function PostoPriorityPage() {
       }
     }
     fetchGudang();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeCompanyCode]);
 
   const fetchPrioritas = useCallback(async () => {
@@ -277,11 +277,10 @@ export default function PostoPriorityPage() {
                       <button
                         key={g.idgudang}
                         onClick={() => toggleGudang(g.idgudang)}
-                        className={`text-left px-3 py-2 rounded-lg border text-xs font-medium transition-all ${
-                          active
-                            ? "bg-brand-50 border-brand-400 text-brand-700 dark:bg-brand-900/30 dark:border-brand-600 dark:text-brand-300"
-                            : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-400 dark:hover:border-gray-500"
-                        }`}
+                        className={`text-left px-3 py-2 rounded-lg border text-xs font-medium transition-all ${active
+                          ? "bg-brand-50 border-brand-400 text-brand-700 dark:bg-brand-900/30 dark:border-brand-600 dark:text-brand-300"
+                          : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-400 dark:hover:border-gray-500"
+                          }`}
                       >
                         <div className="font-bold text-[10px] uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-0.5">
                           {g.idgudang}
@@ -376,25 +375,22 @@ export default function PostoPriorityPage() {
                       {group.map((item) => (
                         <div
                           key={item.noposto}
-                          className={`flex items-center gap-4 px-4 py-3 hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors ${
-                            item.enabled ? "" : "opacity-60"
-                          }`}
+                          className={`flex items-center gap-4 px-4 py-3 hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors ${item.enabled ? "" : "opacity-60"
+                            }`}
                         >
                           {/* Toggle */}
                           <button
                             onClick={() => toggleItemStatus(item.noposto)}
-                            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                              item.enabled
-                                ? "bg-brand-500 dark:bg-brand-600"
-                                : "bg-gray-200 dark:bg-gray-700"
-                            }`}
+                            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${item.enabled
+                              ? "bg-brand-500 dark:bg-brand-600"
+                              : "bg-gray-200 dark:bg-gray-700"
+                              }`}
                             role="switch"
                             aria-checked={item.enabled}
                           >
                             <span
-                              className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                                item.enabled ? "translate-x-5" : "translate-x-0"
-                              }`}
+                              className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${item.enabled ? "translate-x-5" : "translate-x-0"
+                                }`}
                             />
                           </button>
 

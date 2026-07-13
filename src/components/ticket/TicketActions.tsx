@@ -93,11 +93,15 @@ export function TicketActions({
   const isSOPosto = !!posto && posto.charAt(0) !== "5";
 
   // Permission: Delete allowed for SuperAdmin/TI and StaffArea always; Transport only when the
-  // ticket's posto is SO-type.
-  // Updated Rule: Tickets can only be deleted if position is "00" or statuspemuatan is "siap dicetak".
-  // This applies to all ticket datatables for staffarea, superadmin, and transport.
+  // ticket's posto is SO-type -- AND only while the ticket hasn't been released yet ("release" means
+  // it already checked out through Security / finished). Matches the backend's own delete gating in
+  // TiketController.cs's legacy Action column, which whitelists booking/progress/waiting statuses.
+  // (Previously checked normalizedStatus === "siap dicetak", a string the backend never actually sets
+  // -- real values are booking/waiting/progress/release -- so that branch was always false and Delete
+  // only ever showed for brand-new bookings still at position "00".)
   const canDelete = (isSuperAdmin || isStaffArea || (isTransport && isSOPosto))
-    && (position === "00" || normalizedStatus === "siap dicetak");
+    && normalizedStatus != null
+    && ["booking", "progress", "waiting"].includes(normalizedStatus);
 
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 

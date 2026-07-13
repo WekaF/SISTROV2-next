@@ -112,11 +112,11 @@ export default function SOPage() {
     if (companyCode) form.set("companyCode", companyCode);
 
     const colNames = [
-      "charter","action","wilayah","tanggalString","noposto","tglakhirString",
-      "asalString","tujuanString","bagian","transportString","produkString",
-      "qty","qtyrencana","qtysisaBooking","qtyrealisasi","qtysisaRealisasi",
-      "cutoff","kapal","kotatujuan","updatedby","tanggaljatuhtempoString",
-      "percepatan","gruptruk"
+      "charter", "action", "wilayah", "tanggalString", "noposto", "tglakhirString",
+      "asalString", "tujuanString", "bagian", "transportString", "produkString",
+      "qty", "qtyrencana", "qtysisaBooking", "qtyrealisasi", "qtysisaRealisasi",
+      "cutoff", "kapal", "kotatujuan", "updatedby", "tanggaljatuhtempoString",
+      "percepatan", "gruptruk"
     ];
     colNames.forEach((name, i) => {
       form.set(`columns[${i}][name]`, name);
@@ -405,7 +405,7 @@ export default function SOPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Sales Order (SO)</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Monitor dan kelola semua Sales Order dari database.
+            Daftar list Sales Order.
           </p>
         </div>
       </div>
