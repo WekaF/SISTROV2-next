@@ -29,6 +29,7 @@ interface TicketData {
   statuspemuatan?: string;
   position: string;
   status: string;
+  charter?: string;
   Status?: string;
   createdat: string;
   TglBooking?: string;
@@ -191,6 +192,11 @@ function RekananTicketContent() {
           {t.statuspemuatan && (
             <Badge color="info" size="sm" variant="light" className="w-fit font-bold italic">
               {t.statuspemuatan}
+            </Badge>
+          )}
+          {t.charter === "1" && (
+            <Badge color="indigo" size="sm" variant="light" className="w-fit font-bold italic">
+              Charter
             </Badge>
           )}
         </div>
