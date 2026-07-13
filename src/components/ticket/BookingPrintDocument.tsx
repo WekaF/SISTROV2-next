@@ -57,6 +57,11 @@ export function BookingPrintDocument({ id }: BookingPrintDocumentProps) {
 
   const qrValue = `${typeof window !== 'undefined' ? window.location.origin : ''}/DocPub/POSTO?noposto=${data.guid}`;
 
+  // POSTO numbers not starting with "5" are SO (Sales Order) transactions — same heuristic
+  // used in src/components/ticket/TicketActions.tsx. For SO, "Tujuan Barang" shows the
+  // ekspeditur (transporter) name instead of the destination warehouse.
+  const isSO = !!data.noposto && data.noposto.charAt(0) !== "5";
+
   const getStampSrc = (filePath?: string) => {
     if (!filePath) return "";
     const filename = filePath.split(/[/\\]/).pop() || "";
@@ -268,7 +273,9 @@ export function BookingPrintDocument({ id }: BookingPrintDocumentProps) {
               <table border={0}>
                 <tbody>
                   <tr><td><b>Tujuan Barang: </b></td></tr>
-                  {data.bagian === "POPELABUHAN" ? (
+                  {isSO ? (
+                    <tr><td>{data.transportString}</td></tr>
+                  ) : data.bagian === "POPELABUHAN" ? (
                     <>
                       <tr><td>{data.tujuanString}</td></tr>
                       {data.tujuanAlamat && <tr><td>{data.tujuanAlamat}</td></tr>}
