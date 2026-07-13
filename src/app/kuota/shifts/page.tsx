@@ -9,6 +9,7 @@ import { DataTable, type DataTableColumn, type DataTableParams } from "@/compone
 import { useSession } from "next-auth/react"
 import { normalizeRole } from "@/lib/role-utils"
 import { useToast } from "@/components/ui/toast"
+import { useCompany } from "@/context/CompanyContext"
 
 interface ShiftRow {
   id: number
@@ -32,6 +33,7 @@ interface LookupItem { id: string; name: string }
 
 export default function KuotaShiftsPage() {
   const { data: session } = useSession()
+  const { activeCompanyCode } = useCompany()
   const { addToast } = useToast()
   const activeRole = normalizeRole((session?.user as any)?.role)
   const canEdit = ["candal", "superadmin", "admin", "pod"].includes(activeRole)
@@ -115,6 +117,7 @@ export default function KuotaShiftsPage() {
       ED:     appliedED,
       produk: appliedProduk,
     })
+    if (activeCompanyCode) qs.set("companyCode", activeCompanyCode)
     const res = await fetch(`/api/kuota/shifts?${qs}`)
     const data = await res.json()
     if (!data.success) throw new Error(data.error || "Gagal memuat data")
@@ -299,7 +302,7 @@ export default function KuotaShiftsPage() {
             <span className="font-bold text-gray-900 dark:text-white">Daftar Kuota Per Shift</span>
           </div>
           <DataTable<ShiftRow>
-            queryKey={["kuota-shifts", appliedSD, appliedED, appliedProduk, refreshKey]}
+            queryKey={["kuota-shifts", activeCompanyCode ?? "all", appliedSD, appliedED, appliedProduk, refreshKey]}
             fetcher={fetcher}
             columns={columns}
             rowKey={(r) => r.guid || r.id}
