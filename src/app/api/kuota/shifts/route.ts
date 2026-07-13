@@ -16,9 +16,10 @@ export async function GET(req: NextRequest) {
     const start  = searchParams.get("start")  || "0"
     const length = searchParams.get("length") || "25"
     const search = searchParams.get("search") || ""
-    const SD     = searchParams.get("SD")     || ""
-    const ED     = searchParams.get("ED")     || ""
-    const produk = searchParams.get("produk") || ""
+    const SD          = searchParams.get("SD")          || ""
+    const ED          = searchParams.get("ED")          || ""
+    const produk      = searchParams.get("produk")      || ""
+    const companyCode = searchParams.get("companyCode") || ""
 
     const body = new URLSearchParams({
       draw, start, length,
@@ -31,9 +32,10 @@ export async function GET(req: NextRequest) {
       "order[0][column]": "2",
       "order[0][dir]": "desc",
     })
-    if (SD)     body.append("SD", SD)
-    if (ED)     body.append("ED", ED)
-    if (produk) body.append("produk", produk)
+    if (SD)          body.append("SD", SD)
+    if (ED)          body.append("ED", ED)
+    if (produk)      body.append("produk", produk)
+    if (companyCode) body.append("companyCode", companyCode)
 
     const res = await fetch(`${ASPNET}/api/KuotaLevel4/DataTable`, {
       method: "POST",
