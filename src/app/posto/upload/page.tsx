@@ -92,8 +92,19 @@ interface PostoImportCheckView {
 // --- Helper Functions ---
 
 function formatTanggal(str: any): string {
-  if (!str) return "";
+  if (str === null || str === undefined || str === "") return "";
   const s = String(str).trim();
+
+  // Handle Excel date serial number
+  if (/^\d+$/.test(s) && Number(s) > 20000) {
+    const date = XLSX.SSF.parse_date_code(Number(s));
+    if (date) {
+      const year = date.y;
+      const month = String(date.m).padStart(2, '0');
+      const day = String(date.d).padStart(2, '0');
+      return `${year}/${month}/${day}`;
+    }
+  }
 
   // Pattern 1: dd/MM/yyyy atau dd-MM-yyyy
   const p1 = /^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/;
@@ -139,12 +150,13 @@ function parseQty(val: any): string {
 
 export default function PostoUploadPage() {
   const { data: session } = useSession();
-  const { apiJson, apiFetch, token } = useApi();
+  const { apiJson, apiFetch, apiTable, token } = useApi();
   const { addToast } = useToast();
 
   const [file, setFile] = useState<File | null>(null);
   const [selectedWilayah, setSelectedWilayah] = useState("");
   const [wilayahOptions, setWilayahOptions] = useState<{ abbrev: string; keterangan: string }[]>([]);
+  const [sumbuOptions, setSumbuOptions] = useState<any[]>([]);
   const [parsedRows, setParsedRows] = useState<any[]>([]);
   const [validationResult, setValidationResult] = useState<{ status: string; uploadcode: string; listposto: PostoImportCheckView[] } | null>(null);
   const [uploadcode, setUploadcode] = useState("");
@@ -165,23 +177,44 @@ export default function PostoUploadPage() {
         if (Array.isArray(data) && data.length === 0) {
           data = await apiJson('/api/Wilayah/DataForMapping');
         }
+
         if (Array.isArray(data) && data.length > 0) {
           setWilayahOptions(data);
-          
+
           // Try to find GP or PKG, otherwise fallback to the first one
-          const defaultOpt = data.find((w: any) => 
-            w.abbrev?.trim().toUpperCase() === "GP" || 
+          const defaultOpt = data.find((w: any) =>
+            w.abbrev?.trim().toUpperCase() === "GP" ||
             w.abbrev?.trim().toUpperCase() === "PKG"
           ) || data[0];
-          
+
           setSelectedWilayah(defaultOpt.abbrev);
         }
       } catch (err) {
         console.error("Failed to load wilayah options", err);
       }
     };
+
+    const fetchSumbu = async () => {
+      try {
+        // /api/admin/sumbu is role-gated (SuperAdmin/TI/AdminSumbu/AdminArmada) and
+        // returns 401 for the Staff/Transport users who actually upload POSTO/STO.
+        // Hit the ASP.NET Sumbu master list directly instead — same auth model
+        // (Bearer token via /aspnet-proxy) as every other lookup on this page.
+        const res = await apiTable('/api/Sumbu/DataTable', {
+          start: 0,
+          length: 200,
+          order: [{ column: 0, dir: "asc" }],
+          columns: [{ data: "Id", name: "Id", searchable: "true", orderable: "true", search: { value: "", regex: "false" } }],
+        });
+        if (Array.isArray(res?.data)) setSumbuOptions(res.data);
+      } catch (err) {
+        console.error("Failed to load sumbu", err);
+      }
+    };
+
     fetchWilayah();
-  }, [apiJson, token]);
+    fetchSumbu();
+  }, [apiJson, apiTable, token]);
 
   // Step 1: Parse Excel
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -200,30 +233,34 @@ export default function PostoUploadPage() {
       const data = XLSX.utils.sheet_to_json(ws);
 
       const rows = data.map((row: any) => {
-        const isSO = !!(row.NoSO || row.TglSO);
-        const mapped: any = { ...row };
+        const mapped: any = {};
+        Object.keys(row).forEach(key => {
+          mapped[key.trim().toLowerCase()] = row[key];
+        });
+
+        const isSO = !!(mapped.noso || mapped.tglso);
 
         if (isSO) {
-          if (!mapped.NoPOSTO) mapped.NoPOSTO = row.NoSO;
-          if (!mapped.TglPOSTO) mapped.TglPOSTO = row.TglSO;
-          if (!mapped.distributor) mapped.distributor = row.Trans;
-          if (!mapped.Tujuan) mapped.Tujuan = row.Asal;
+          if (!mapped.noposto) mapped.noposto = mapped.noso;
+          if (!mapped.tglposto) mapped.tglposto = mapped.tglso;
+          if (!mapped.distributor) mapped.distributor = mapped.trans;
+          if (!mapped.tujuan) mapped.tujuan = mapped.asal;
         }
 
         return {
-          noPOSTO: String(mapped.NoPOSTO || "").trim(),
-          tglPOSTO: formatTanggal(mapped.TglPOSTO),
-          Asal: String(mapped.Asal || "").trim(),
-          Tujuan: String(mapped.Tujuan || "").trim(),
-          Trans: String(mapped.Trans || "").trim(),
-          Produk: String(mapped.Produk || "").trim(),
-          Qty: parseQty(mapped.Qty),
+          noPOSTO: String(mapped.noposto || "").trim(),
+          tglPOSTO: formatTanggal(mapped.tglposto),
+          Asal: String(mapped.asal || "").trim(),
+          Tujuan: String(mapped.tujuan || "").trim(),
+          Trans: String(mapped.trans || "").trim(),
+          Produk: String(mapped.produk || "").trim(),
+          Qty: parseQty(mapped.qty),
           status: String(mapped.status || "1"),
-          tglAkhir: formatTanggal(mapped.tglakhir || mapped.TglPOSTO),
-          tglJatuhTempo: formatTanggal(mapped.tgljatuhtempo || mapped.TglPOSTO),
+          tglAkhir: formatTanggal(mapped.tglakhir || mapped.tglposto),
+          tglJatuhTempo: formatTanggal(mapped.tgljatuhtempo || mapped.tglposto),
           charter: String(mapped.charter || "0"),
-          percepatan: mapped.percepatan ?? 0,
-          gruptruk: String(mapped.idsumbu || mapped.GrupTruk || "0"),
+          percepatan: Number(mapped.percepatan) === 1 ? 1 : 0,
+          gruptruk: String(mapped.idsumbu || mapped.gruptruk || "0"),
           kapal: String(mapped.kapal || ""),
           distributor: String(mapped.distributor || ""),
         };
@@ -304,7 +341,7 @@ export default function PostoUploadPage() {
     }
 
     // Percepatan check
-    if (item.percepatan === 1 && item.validfrom && item.validto) {
+    if (Number(item.percepatan) === 1 && item.validfrom && item.validto) {
       const tgl = new Date(item.tglposto);
       const from = new Date(item.validfrom);
       const to = new Date(item.validto);
@@ -403,10 +440,10 @@ export default function PostoUploadPage() {
   };
 
   const handleDownloadTemplate = (type: 'POSTO' | 'SO') => {
-    const fileUrl = type === 'POSTO' 
-      ? '/template/TEMPLATE-POSTO-versi4.xlsx' 
+    const fileUrl = type === 'POSTO'
+      ? '/template/TEMPLATE-POSTO-versi4.xlsx'
       : '/template/TEMPLATE-SO-v3.xlsx';
-      
+
     const a = document.createElement("a");
     a.href = fileUrl;
     a.download = type === 'POSTO' ? 'TEMPLATE-POSTO-versi4.xlsx' : 'TEMPLATE-SO-v3.xlsx';
@@ -595,21 +632,21 @@ export default function PostoUploadPage() {
               </CardHeader>
               <CardContent className="p-0 overflow-hidden">
                 <div className="grid grid-cols-2 gap-1 p-4 max-h-[200px] overflow-y-auto custom-scrollbar">
-                  {[
-                    { n: "Colt Diesel (CDD)", s: "1.2" },
-                    { n: "Engkel/Fuso", s: "1.2" },
-                    { n: "Trintin", s: "1.1.2" },
-                    { n: "Tronton", s: "1.2.2" },
-                    { n: "Gandengan", s: "1.2+2.2" },
-                    { n: "Trinton", s: "1.1.2.2" },
-                    { n: "Trintin Gandengan", s: "1.1.2+2.2" },
-                    { n: "Trailler 20 Ft", s: "1.2-2.2" },
-                    { n: "Trailler 20 Ft", s: "1.2.2-2.2" },
-                    { n: "Trailler 40 Ft", s: "1.2.2-2.2.2" },
-                    { n: "Trailler 40 Ft", s: "1.2-2.2.2" },
-                  ].map((t, i) => (
+                  {(sumbuOptions.length > 0 ? sumbuOptions.map((t: any) => ({ n: t.jenistruk || t.JenisTruk || t.nama, s: t.nama, id: t.Id || t.id })) : [
+                    { n: "Colt Diesel (CDD)", s: "1.2", id: 1 },
+                    { n: "Engkel/Fuso", s: "1.2", id: 2 },
+                    { n: "Trintin", s: "1.1.2", id: 3 },
+                    { n: "Tronton", s: "1.2.2", id: 4 },
+                    { n: "Gandengan", s: "1.2+2.2", id: 5 },
+                    { n: "Trinton", s: "1.1.2.2", id: 6 },
+                    { n: "Trintin Gandengan", s: "1.1.2+2.2", id: 7 },
+                    { n: "Trailler 20 Ft", s: "1.2-2.2", id: 8 },
+                    { n: "Trailler 20 Ft", s: "1.2.2-2.2", id: 9 },
+                    { n: "Trailler 40 Ft", s: "1.2.2-2.2.2", id: 10 },
+                    { n: "Trailler 40 Ft", s: "1.2-2.2.2", id: 11 },
+                  ]).map((t: any, i: number) => (
                     <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 text-[10px]">
-                      <span className="font-medium truncate pr-1 text-gray-700 dark:text-gray-300" title={t.n}>{i + 1}. {t.n}</span>
+                      <span className="font-medium truncate pr-1 text-gray-700 dark:text-gray-300" title={t.n}>{t.id}. {t.n}</span>
                       <Badge variant="outline" className="h-4 px-1 text-[8px] bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 font-mono shrink-0">{t.s}</Badge>
                     </div>
                   ))}
@@ -705,7 +742,7 @@ export default function PostoUploadPage() {
                                   {item.charter === "1" && (
                                     <Badge variant="outline" className="bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 hover:bg-amber-100 border-none text-[9px] px-1.5 py-0">CHARTER</Badge>
                                   )}
-                                  {item.percepatan === 1 && (
+                                  {Number(item.percepatan) === 1 && (
                                     <Badge variant="outline" className="bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400 hover:bg-blue-100 border-none text-[9px] px-1.5 py-0">PERCEPATAN</Badge>
                                   )}
                                 </div>
@@ -754,7 +791,7 @@ export default function PostoUploadPage() {
                             <td className="px-3 py-3">{item.kapal || "-"}</td>
                             <td className="px-3 py-3">{item.kotatujuan || "-"}</td>
                             <td className="px-3 py-3">
-                              {item.percepatan === 1 ? "PERCEPATAN" : "ZERO ODOL"}
+                              {Number(item.percepatan) === 1 ? "PERCEPATAN" : "ZERO ODOL"}
                             </td>
                             <td className="px-3 py-3 font-mono">{item.gruptruk}</td>
                           </tr>
