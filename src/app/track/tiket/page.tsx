@@ -517,7 +517,7 @@ function TrackingContent() {
                     <div className="space-y-6">
                       <div className="flex justify-between items-start">
                         <div>
-                          <div className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-1">Status POSTO</div>
+                          <div className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-1">Nomor POSTO/SO</div>
                           <div className="font-black text-slate-800 dark:text-slate-200 text-lg leading-tight">{ticketData.posto}</div>
                         </div>
                         <div className="text-right">
@@ -545,7 +545,7 @@ function TrackingContent() {
                             </div>
                             <div>
                               <div className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Destinasi (Tujuan)</div>
-                              <div className="text-sm font-black text-slate-700 dark:text-slate-300">{ticketData.tujuan}</div>
+                              <div className="text-sm font-black text-slate-700 dark:text-slate-300">{ticketData.posto?.startsWith('5') ? ticketData.tujuan : ticketData.transportString}</div>
                             </div>
                           </div>
                         </div>

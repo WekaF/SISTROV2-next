@@ -278,7 +278,7 @@ export function TicketPrintDocument({ id }: TicketPrintDocumentProps) {
                       </span>
                     </td>
                     <td className="py-8 px-3 border-r border-slate-100">{data.asal}</td>
-                    <td className="py-8 px-3 border-r border-slate-100">{data.tujuan}</td>
+                    <td className="py-8 px-3 border-r border-slate-100">{data.posto?.startsWith('5') ? data.tujuan : data.transportString}</td>
                     <td className="py-8 px-3 border-r border-slate-100">{data.produkString}</td>
                     <td className="py-8 px-3 text-right text-4xl tracking-tighter font-black">{data.qty}</td>
                   </tr>
