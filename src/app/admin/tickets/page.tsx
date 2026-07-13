@@ -118,11 +118,18 @@ function AdminTicketsContent() {
         if (pos === "00") variant = "info";
         if (pos === "10" || pos === "20") variant = "warning";
         if (pos === "30" || pos === "40") variant = "success";
-        
+
         return (
-          <Badge color={variant} size="sm" className="rounded-none px-2 py-0.5 text-[9px] font-black uppercase tracking-widest">
-            {row.positionString || "PENDING"}
-          </Badge>
+          <div className="flex flex-col gap-1 items-start">
+            <Badge color={variant} size="sm" className="rounded-none px-2 py-0.5 text-[9px] font-black uppercase tracking-widest">
+              {row.positionString || "PENDING"}
+            </Badge>
+            {row.charter === "1" && (
+              <Badge color="indigo" size="sm" className="rounded-none px-2 py-0.5 text-[9px] font-black uppercase tracking-widest">
+                Charter
+              </Badge>
+            )}
+          </div>
         );
       },
     },
