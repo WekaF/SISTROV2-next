@@ -47,6 +47,7 @@ export const MENU_CATALOG: CatalogGroup[] = [
       { path: "/gudang", label: "List Gudang" },
       { path: "/gudang/unit-queue", label: "Antrian Per Unit" },
       { path: "/gudang/tujuan-bagian", label: "Gudang Tujuan Bagian" },
+      { path: "/antrian/live-monitoring", label: "Live Monitor Pintu Pemuatan" },
 
       { path: "/gudang/trafik", label: "Traffic Antrian" },
     ],

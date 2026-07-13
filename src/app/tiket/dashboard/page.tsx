@@ -210,7 +210,7 @@ export default function TiketDashboardPage() {
       companyCode: appliedCompany,
       produk: appliedProduct === "all" ? "" : appliedProduct,
       position: appliedPosition === "all" ? "" : appliedPosition,
-      order: params.order?.length ? params.order : [{ column: 0, dir: "desc" }],
+      order: params.order?.length ? params.order : [{ column: 10, dir: "desc" }],
       columns: [
         { data: "bookingno", name: "bookingno", searchable: true, orderable: true },
         { data: "posto", name: "posto", searchable: true, orderable: true },
@@ -222,6 +222,7 @@ export default function TiketDashboardPage() {
         { data: "tujuan", name: "tujuan", searchable: true, orderable: true },
         { data: "positionString", name: "positionString", searchable: true, orderable: true },
         { data: "position", name: "position", searchable: true, orderable: true },
+        { data: "updatedon", name: "updatedon", searchable: true, orderable: true },
       ],
     });
 

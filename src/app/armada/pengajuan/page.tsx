@@ -341,6 +341,7 @@ export default function ArmadaPengajuanPage() {
       start: params.start,
       length: params.length,
       search: params.search || "",
+      companyCode: activeCompanyCode || "",
       order: params.order?.length ? params.order : [{ column: 0, dir: "desc" }],
       columns: columns.map((col) => {
         let name = col.key;
@@ -631,6 +632,22 @@ export default function ArmadaPengajuanPage() {
       }
     },
     {
+      key: "alasan",
+      header: "Keterangan",
+      className: "text-xs max-w-[200px] truncate",
+      render: (row) => {
+        const isDitolak = row.aprrovestatus?.toLowerCase().includes("tolak") || row.aprrovestatus?.toLowerCase().includes("revisi");
+        if (isDitolak) {
+          return (
+            <span className="text-red-600 dark:text-red-400 font-medium whitespace-normal break-words" title={row.alasan}>
+              {row.alasan || "-"}
+            </span>
+          );
+        }
+        return <span className="text-gray-400">-</span>;
+      }
+    },
+    {
       key: "approver",
       header: "Approver",
       sortColumn: 2,
@@ -702,6 +719,7 @@ export default function ArmadaPengajuanPage() {
       render: (row) => {
         const { canDelete, canEdit, canView, canTolak, canApprove, deleteId: dId, editId: eId, viewId: vId, tolakId: tId, approveId: aId } = parseActions(row);
         const isMenunggu = row.aprrovestatus?.toLowerCase().includes("menunggu");
+        const isDitolak = row.aprrovestatus?.toLowerCase().includes("tolak") || row.aprrovestatus?.toLowerCase().includes("revisi");
 
         return (
           <div className="flex items-center justify-end gap-1">
@@ -729,12 +747,12 @@ export default function ArmadaPengajuanPage() {
               </Button>
             )}
             {canView && vId && (
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-brand-600 hover:bg-brand-50" onClick={() => { setIsViewMode(true); setEditId(vId); }}>
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-brand-600 hover:bg-brand-50" onClick={() => { setIsViewMode(true); setEditId(vId); }} title="Lihat Detail">
                 <Eye className="h-4 w-4" />
               </Button>
             )}
             {canEdit && eId && (
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-500 hover:bg-amber-50" onClick={() => { setIsViewMode(false); prevEditIdRef.current = null; setEditId(eId); }}>
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-500 hover:bg-amber-50" onClick={() => { setIsViewMode(false); prevEditIdRef.current = null; setEditId(eId); }} title={isDitolak ? "Edit & Ajukan Ulang" : "Edit Pengajuan"}>
                 <Pencil className="h-4 w-4" />
               </Button>
             )}
@@ -954,280 +972,280 @@ export default function ArmadaPengajuanPage() {
     );
   };
 
-    // ─── Render ──────────────────────────────────────────────────────────────────
+  // ─── Render ──────────────────────────────────────────────────────────────────
 
-    return (
-      <div className="space-y-8 animate-in fade-in duration-500">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">
-              Armada Management
-            </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Daftarkan unit kendaraan baru dan monitor status persetujuan rekanan secara real-time.
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" className="h-9 rounded-xl border-gray-200 dark:border-gray-800">
-              <Filter className="h-4 w-4 mr-2" />
-              Filter Data
-            </Button>
-            <Button size="sm" className="h-9 rounded-xl shadow-theme-sm" onClick={() => {
-              const el = document.getElementById("form-section");
-              el?.scrollIntoView({ behavior: 'smooth' });
-            }}>
-              <Plus className="h-4 w-4 mr-2" />
-              Pengajuan Baru
-            </Button>
-          </div>
+  return (
+    <div className="space-y-8 animate-in fade-in duration-500">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">
+            Armada Management
+          </h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Daftarkan unit kendaraan baru dan monitor status persetujuan rekanan secara real-time.
+          </p>
         </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" className="h-9 rounded-xl border-gray-200 dark:border-gray-800">
+            <Filter className="h-4 w-4 mr-2" />
+            Filter Data
+          </Button>
+          <Button size="sm" className="h-9 rounded-xl shadow-theme-sm" onClick={() => {
+            const el = document.getElementById("form-section");
+            el?.scrollIntoView({ behavior: 'smooth' });
+          }}>
+            <Plus className="h-4 w-4 mr-2" />
+            Pengajuan Baru
+          </Button>
+        </div>
+      </div>
 
 
-        {/* Form Section */}
-        <div id="form-section">
-          {(isTransport || isAdminArmada) ? (
-            <Card className="border-none shadow-theme-lg overflow-hidden bg-white dark:bg-white/[0.02]">
-              <CardHeader className="px-8 py-6 border-b border-gray-100 dark:border-gray-800">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-lg font-black uppercase tracking-tight text-gray-900 dark:text-white">Formulir Pengajuan Armada</CardTitle>
-                    <CardDescription className="text-xs text-gray-500 mt-1">Silakan lengkapi data teknis dan lampiran dokumen unit kendaraan Anda.</CardDescription>
-                  </div>
+      {/* Form Section */}
+      <div id="form-section">
+        {(isTransport || isAdminArmada) ? (
+          <Card className="border-none shadow-theme-lg overflow-hidden bg-white dark:bg-white/[0.02]">
+            <CardHeader className="px-8 py-6 border-b border-gray-100 dark:border-gray-800">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg font-black uppercase tracking-tight text-gray-900 dark:text-white">Formulir Pengajuan Armada</CardTitle>
+                  <CardDescription className="text-xs text-gray-500 mt-1">Silakan lengkapi data teknis dan lampiran dokumen unit kendaraan Anda.</CardDescription>
                 </div>
-              </CardHeader>
-              <CardContent className="p-8">
-                {renderFormFields(form, setF, "main")}
-
-                <div className="mt-10 pt-8 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                  <div className="hidden md:flex items-center gap-2 text-xs text-gray-400">
-                    <ShieldCheck className="h-4 w-4 text-emerald-500" />
-                    Data Anda aman dan terenkripsi oleh sistem SISTRO.
-                  </div>
-                  <div className="flex items-center gap-3 w-full md:w-auto">
-                    <Button
-                      variant="ghost"
-                      className="flex-1 md:flex-none h-11 rounded-xl font-bold text-gray-400 hover:text-red-500 transition-colors"
-                      onClick={() => setForm(emptyForm())}
-                    >
-                      Reset Form
-                    </Button>
-                    <Button
-                      className="flex-1 md:flex-none h-11 px-10 rounded-xl bg-brand-600 hover:bg-brand-700 shadow-theme-md font-bold tracking-tight"
-                      disabled={submitMutation.isPending}
-                      onClick={() => submitMutation.mutate()}
-                    >
-                      {submitMutation.isPending ? (
-                        <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Memproses...</>
-                      ) : (
-                        "Kirim Pengajuan Sekarang"
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="p-8 rounded-2xl bg-amber-50/50 border border-amber-200 flex flex-col items-center text-center gap-3">
-              <Clock className="h-10 w-10 text-amber-500" />
-              <div className="max-w-md">
-                <h4 className="text-sm font-bold text-amber-800 uppercase tracking-tight">Fitur Pengajuan Terbatas</h4>
-                <p className="text-xs text-amber-700/70 mt-1">Hanya pengguna dengan role Transportir atau Rekanan yang dapat melakukan pengajuan unit armada baru.</p>
               </div>
-            </div>
-          )}
-        </div>
+            </CardHeader>
+            <CardContent className="p-8">
+              {renderFormFields(form, setF, "main")}
 
-        {/* Table Section */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <h2 className="text-lg font-black uppercase tracking-tight text-gray-900 dark:text-white">Riwayat Pengajuan Unit</h2>
-            <div className="h-px flex-1 bg-gray-100 dark:bg-gray-800 mx-4" />
-          </div>
-
-          <Card className="border-none shadow-theme-xs bg-white dark:bg-white/[0.02]">
-            <CardContent className="p-6">
-              <DataTable
-                columns={columns}
-                queryKey={["armada-review-baru", String(isCharterFilter), transportCode]}
-                fetcher={fetchHistory}
-                rowKey={(row) => row.ID || Math.random()}
-                searchPlaceholder="Cari Nopol, Rekanan, atau Status..."
-                defaultPageSize={10}
-                toolbar={
-                  <div className="flex items-center gap-2">
-                    <label className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-white/[0.02] border border-gray-200 dark:border-gray-800 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
-                      <input
-                        type="checkbox"
-                        checked={isCharterFilter}
-                        onChange={(e) => setIsCharterFilter(e.target.checked)}
-                        className="w-4 h-4 accent-brand-600 rounded"
-                      />
-                      <span className="text-[10px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-300">Hanya Charter</span>
-                    </label>
-                    <Button variant="ghost" size="sm" className="h-8 text-xs font-bold text-gray-400 hover:text-brand-600" onClick={() => queryClient.invalidateQueries({ queryKey: ["armada-review-baru"] })}>
-                      <RefreshCw className="h-3 w-3 mr-2" />
-                      Refresh
-                    </Button>
-                  </div>
-                }
-              />
+              <div className="mt-10 pt-8 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                <div className="hidden md:flex items-center gap-2 text-xs text-gray-400">
+                  <ShieldCheck className="h-4 w-4 text-emerald-500" />
+                  Data Anda aman dan terenkripsi oleh sistem SISTRO.
+                </div>
+                <div className="flex items-center gap-3 w-full md:w-auto">
+                  <Button
+                    variant="ghost"
+                    className="flex-1 md:flex-none h-11 rounded-xl font-bold text-gray-400 hover:text-red-500 transition-colors"
+                    onClick={() => setForm(emptyForm())}
+                  >
+                    Reset Form
+                  </Button>
+                  <Button
+                    className="flex-1 md:flex-none h-11 px-10 rounded-xl bg-brand-600 hover:bg-brand-700 shadow-theme-md font-bold tracking-tight"
+                    disabled={submitMutation.isPending}
+                    onClick={() => submitMutation.mutate()}
+                  >
+                    {submitMutation.isPending ? (
+                      <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Memproses...</>
+                    ) : (
+                      "Kirim Pengajuan Sekarang"
+                    )}
+                  </Button>
+                </div>
+              </div>
             </CardContent>
           </Card>
+        ) : (
+          <div className="p-8 rounded-2xl bg-amber-50/50 border border-amber-200 flex flex-col items-center text-center gap-3">
+            <Clock className="h-10 w-10 text-amber-500" />
+            <div className="max-w-md">
+              <h4 className="text-sm font-bold text-amber-800 uppercase tracking-tight">Fitur Pengajuan Terbatas</h4>
+              <p className="text-xs text-amber-700/70 mt-1">Hanya pengguna dengan role Transportir atau Rekanan yang dapat melakukan pengajuan unit armada baru.</p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Table Section */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-black uppercase tracking-tight text-gray-900 dark:text-white">Riwayat Pengajuan Unit</h2>
+          <div className="h-px flex-1 bg-gray-100 dark:bg-gray-800 mx-4" />
         </div>
 
-        {/* Dialogs */}
-        {/* Sumbu Picker */}
-        <Dialog open={sumbuOpen} onOpenChange={(o) => { setSumbuOpen(o); if (!o) setSumbuSearch(""); }}>
-          <DialogContent className="max-w-md p-0 overflow-hidden border-none shadow-theme-lg">
-            <DialogHeader className="p-6 border-b border-gray-100">
-              <DialogTitle className="text-base font-bold uppercase tracking-tight">Pilih Konfigurasi Sumbu</DialogTitle>
-              <DialogDescription className="text-xs">Konfigurasi menentukan Tonase Max armada.</DialogDescription>
-            </DialogHeader>
-            <div className="p-6 space-y-4">
-              <div className="relative">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input className="pl-10 h-10 rounded-xl bg-gray-50 border-gray-100" placeholder="Cari nama sumbu..." value={sumbuSearch} onChange={(e) => setSumbuSearch(e.target.value)} autoFocus />
-              </div>
-              <div className="max-h-[300px] overflow-y-auto space-y-2 pr-1 no-scrollbar">
-                {filteredSumbu.map((s) => (
-                  <button
-                    key={s.Id}
-                    className="w-full text-left p-4 rounded-xl border border-gray-100 hover:border-brand-200 hover:bg-brand-50/30 transition-all flex items-center justify-between group"
-                    onClick={() => selectSumbu(s)}
-                  >
-                    <div>
-                      <p className="text-sm font-bold text-gray-900 group-hover:text-brand-600 transition-colors">{s.nama}</p>
-                      <p className="text-[10px] text-gray-400 font-medium uppercase tracking-widest">{s.jenistruk}</p>
-                    </div>
-                    <Badge color="primary" variant="light">{s.muatan} TON</Badge>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Edit/Detail Modal */}
-        <Dialog open={!!editId} onOpenChange={(o) => { if (!o) { setEditId(null); prevEditIdRef.current = null; } }}>
-          <DialogContent className="max-w-6xl max-h-[92vh] overflow-y-auto p-0 border-none shadow-theme-lg bg-gray-50 dark:bg-gray-900">
-            <DialogHeader className="p-6 border-b border-gray-100 bg-white dark:bg-gray-800 dark:border-gray-700 sticky top-0 z-10">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-brand-50 rounded-xl text-brand-600">
-                    <Pencil className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <DialogTitle className="text-lg font-black uppercase tracking-tight">
-                      {isViewMode ? "Review Pengajuan" : "Review & Edit Pengajuan"}
-                    </DialogTitle>
-                    <DialogDescription className="text-xs">ID Pengajuan: #{editId}</DialogDescription>
-                  </div>
+        <Card className="border-none shadow-theme-xs bg-white dark:bg-white/[0.02]">
+          <CardContent className="p-6">
+            <DataTable
+              columns={columns}
+              queryKey={["armada-review-baru", String(isCharterFilter), transportCode, activeCompanyCode]}
+              fetcher={fetchHistory}
+              rowKey={(row) => row.ID || Math.random()}
+              searchPlaceholder="Cari Nopol, Rekanan, atau Status..."
+              defaultPageSize={10}
+              toolbar={
+                <div className="flex items-center gap-2">
+                  <label className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-white/[0.02] border border-gray-200 dark:border-gray-800 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={isCharterFilter}
+                      onChange={(e) => setIsCharterFilter(e.target.checked)}
+                      className="w-4 h-4 accent-brand-600 rounded"
+                    />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-300">Hanya Charter</span>
+                  </label>
+                  <Button variant="ghost" size="sm" className="h-8 text-xs font-bold text-gray-400 hover:text-brand-600" onClick={() => queryClient.invalidateQueries({ queryKey: ["armada-review-baru"] })}>
+                    <RefreshCw className="h-3 w-3 mr-2" />
+                    Refresh
+                  </Button>
                 </div>
-                <Button variant="ghost" size="icon" onClick={() => setEditId(null)} className="rounded-full">
-                  <X className="h-5 w-5 text-gray-400" />
-                </Button>
-              </div>
-            </DialogHeader>
-
-            <div className="p-8">
-              {!detailData ? (
-                <div className="py-20 flex flex-col items-center justify-center gap-3">
-                  <Loader2 className="h-8 w-8 animate-spin text-brand-500" />
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Sinkronisasi Data...</p>
-                </div>
-              ) : (
-                renderFormFields(editForm, setEF, isViewMode ? "view" : "edit")
-              )}
-            </div>
-
-            <div className="p-6 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 flex items-center justify-end gap-3 sticky bottom-0 z-10">
-              <Button variant="outline" className="h-10 px-6 rounded-xl font-bold text-xs" onClick={() => setEditId(null)}>Batal</Button>
-              {!isViewMode && (
-                <Button
-                  className="h-10 px-8 rounded-xl bg-brand-600 hover:bg-brand-700 shadow-theme-sm font-bold text-xs"
-                  disabled={updateMutation.isPending || !detailData}
-                  onClick={() => updateMutation.mutate()}
-                >
-                  {updateMutation.isPending ? "Menyimpan..." : "Simpan Perubahan"}
-                </Button>
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Delete Confirmation */}
-        <Dialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
-          <DialogContent className="max-w-sm p-6 text-center border-none shadow-theme-lg">
-            <div className="w-16 h-16 rounded-full bg-red-50 text-red-500 flex items-center justify-center mx-auto mb-4">
-              <Trash2 className="h-8 w-8" />
-            </div>
-            <DialogTitle className="text-lg font-black uppercase tracking-tight mb-2">Hapus Pengajuan?</DialogTitle>
-            <DialogDescription className="text-sm text-gray-500 mb-6">
-              Apakah Anda yakin ingin menghapus data pengajuan armada ini? Tindakan ini tidak dapat dibatalkan.
-            </DialogDescription>
-            <div className="grid grid-cols-2 gap-3">
-              <Button variant="outline" className="rounded-xl font-bold h-10" onClick={() => setDeleteId(null)}>Batal</Button>
-              <Button variant="destructive" className="rounded-xl font-bold h-10 shadow-theme-sm" onClick={() => deleteId && deleteMutation.mutate(deleteId)}>
-                {deleteMutation.isPending ? "Menghapus..." : "Ya, Hapus Data"}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Approve Confirmation */}
-        <Dialog open={!!approveId} onOpenChange={(o) => !o && setApproveId(null)}>
-          <DialogContent className="max-w-sm p-6 text-center border-none shadow-theme-lg">
-            <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-4">
-              <CheckCircle2 className="h-8 w-8" />
-            </div>
-            <DialogTitle className="text-lg font-black uppercase tracking-tight mb-2">Setujui Armada?</DialogTitle>
-            <DialogDescription className="text-sm text-gray-500 mb-6">
-              Apakah Anda yakin ingin menyetujui pengajuan armada ini?
-            </DialogDescription>
-            <div className="grid grid-cols-2 gap-3">
-              <Button variant="outline" className="rounded-xl font-bold h-10" onClick={() => setApproveId(null)}>Batal</Button>
-              <Button
-                className="rounded-xl font-bold h-10 shadow-theme-sm bg-emerald-600 hover:bg-emerald-700 text-white"
-                disabled={approveMutation.isPending}
-                onClick={() => approveId && approveMutation.mutate(approveId)}
-              >
-                {approveMutation.isPending ? "Menyetujui..." : "Ya, Setujui"}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Tolak Dialog */}
-        <Dialog open={!!tolakId} onOpenChange={(o) => !o && setTolakId(null)}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Tolak / Revisi Armada</DialogTitle>
-              <DialogDescription>
-                Berikan alasan mengapa armada ini ditolak atau memerlukan revisi.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="py-4">
-              <textarea
-                className="w-full h-32 p-3 text-sm border border-gray-200 dark:border-gray-800 rounded-xl outline-none focus:ring-2 focus:ring-red-500 transition-all dark:bg-white/5"
-                placeholder="Contoh: Lampiran KIR tidak terbaca, mohon upload ulang."
-                value={tolakAlasan}
-                onChange={(e) => setTolakAlasan(e.target.value)}
-              />
-            </div>
-            <DialogFooter>
-              <Button variant="ghost" onClick={() => setTolakId(null)}>Batal</Button>
-              <Button
-                variant="destructive"
-                onClick={() => tolakId && tolakMutation.mutate({ id: tolakId, alasan: tolakAlasan })}
-                disabled={tolakMutation.isPending || !tolakAlasan.trim()}
-              >
-                {tolakMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <X className="h-4 w-4 mr-2" />}
-                Tolak Sekarang
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+              }
+            />
+          </CardContent>
+        </Card>
       </div>
-    );
-  }
+
+      {/* Dialogs */}
+      {/* Sumbu Picker */}
+      <Dialog open={sumbuOpen} onOpenChange={(o) => { setSumbuOpen(o); if (!o) setSumbuSearch(""); }}>
+        <DialogContent className="max-w-md p-0 overflow-hidden border-none shadow-theme-lg">
+          <DialogHeader className="p-6 border-b border-gray-100">
+            <DialogTitle className="text-base font-bold uppercase tracking-tight">Pilih Konfigurasi Sumbu</DialogTitle>
+            <DialogDescription className="text-xs">Konfigurasi menentukan Tonase Max armada.</DialogDescription>
+          </DialogHeader>
+          <div className="p-6 space-y-4">
+            <div className="relative">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input className="pl-10 h-10 rounded-xl bg-gray-50 border-gray-100" placeholder="Cari nama sumbu..." value={sumbuSearch} onChange={(e) => setSumbuSearch(e.target.value)} autoFocus />
+            </div>
+            <div className="max-h-[300px] overflow-y-auto space-y-2 pr-1 no-scrollbar">
+              {filteredSumbu.map((s) => (
+                <button
+                  key={s.Id}
+                  className="w-full text-left p-4 rounded-xl border border-gray-100 hover:border-brand-200 hover:bg-brand-50/30 transition-all flex items-center justify-between group"
+                  onClick={() => selectSumbu(s)}
+                >
+                  <div>
+                    <p className="text-sm font-bold text-gray-900 group-hover:text-brand-600 transition-colors">{s.nama}</p>
+                    <p className="text-[10px] text-gray-400 font-medium uppercase tracking-widest">{s.jenistruk}</p>
+                  </div>
+                  <Badge color="primary" variant="light">{s.muatan} TON</Badge>
+                </button>
+              ))}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit/Detail Modal */}
+      <Dialog open={!!editId} onOpenChange={(o) => { if (!o) { setEditId(null); prevEditIdRef.current = null; } }}>
+        <DialogContent className="max-w-6xl max-h-[92vh] overflow-y-auto p-0 border-none shadow-theme-lg bg-gray-50 dark:bg-gray-900">
+          <DialogHeader className="p-6 border-b border-gray-100 bg-white dark:bg-gray-800 dark:border-gray-700 sticky top-0 z-10">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-brand-50 rounded-xl text-brand-600">
+                  <Pencil className="h-5 w-5" />
+                </div>
+                <div>
+                  <DialogTitle className="text-lg font-black uppercase tracking-tight">
+                    {isViewMode ? "Review Pengajuan" : "Review & Edit Pengajuan"}
+                  </DialogTitle>
+                  <DialogDescription className="text-xs">ID Pengajuan: #{editId}</DialogDescription>
+                </div>
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => setEditId(null)} className="rounded-full">
+                <X className="h-5 w-5 text-gray-400" />
+              </Button>
+            </div>
+          </DialogHeader>
+
+          <div className="p-8">
+            {!detailData ? (
+              <div className="py-20 flex flex-col items-center justify-center gap-3">
+                <Loader2 className="h-8 w-8 animate-spin text-brand-500" />
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Sinkronisasi Data...</p>
+              </div>
+            ) : (
+              renderFormFields(editForm, setEF, isViewMode ? "view" : "edit")
+            )}
+          </div>
+
+          <div className="p-6 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 flex items-center justify-end gap-3 sticky bottom-0 z-10">
+            <Button variant="outline" className="h-10 px-6 rounded-xl font-bold text-xs" onClick={() => setEditId(null)}>Batal</Button>
+            {!isViewMode && (
+              <Button
+                className="h-10 px-8 rounded-xl bg-brand-600 hover:bg-brand-700 shadow-theme-sm font-bold text-xs"
+                disabled={updateMutation.isPending || !detailData}
+                onClick={() => updateMutation.mutate()}
+              >
+                {updateMutation.isPending ? "Menyimpan..." : "Simpan Perubahan"}
+              </Button>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <Dialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
+        <DialogContent className="max-w-sm p-6 text-center border-none shadow-theme-lg">
+          <div className="w-16 h-16 rounded-full bg-red-50 text-red-500 flex items-center justify-center mx-auto mb-4">
+            <Trash2 className="h-8 w-8" />
+          </div>
+          <DialogTitle className="text-lg font-black uppercase tracking-tight mb-2">Hapus Pengajuan?</DialogTitle>
+          <DialogDescription className="text-sm text-gray-500 mb-6">
+            Apakah Anda yakin ingin menghapus data pengajuan armada ini? Tindakan ini tidak dapat dibatalkan.
+          </DialogDescription>
+          <div className="grid grid-cols-2 gap-3">
+            <Button variant="outline" className="rounded-xl font-bold h-10" onClick={() => setDeleteId(null)}>Batal</Button>
+            <Button variant="destructive" className="rounded-xl font-bold h-10 shadow-theme-sm" onClick={() => deleteId && deleteMutation.mutate(deleteId)}>
+              {deleteMutation.isPending ? "Menghapus..." : "Ya, Hapus Data"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Approve Confirmation */}
+      <Dialog open={!!approveId} onOpenChange={(o) => !o && setApproveId(null)}>
+        <DialogContent className="max-w-sm p-6 text-center border-none shadow-theme-lg">
+          <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-4">
+            <CheckCircle2 className="h-8 w-8" />
+          </div>
+          <DialogTitle className="text-lg font-black uppercase tracking-tight mb-2">Setujui Armada?</DialogTitle>
+          <DialogDescription className="text-sm text-gray-500 mb-6">
+            Apakah Anda yakin ingin menyetujui pengajuan armada ini?
+          </DialogDescription>
+          <div className="grid grid-cols-2 gap-3">
+            <Button variant="outline" className="rounded-xl font-bold h-10" onClick={() => setApproveId(null)}>Batal</Button>
+            <Button
+              className="rounded-xl font-bold h-10 shadow-theme-sm bg-emerald-600 hover:bg-emerald-700 text-white"
+              disabled={approveMutation.isPending}
+              onClick={() => approveId && approveMutation.mutate(approveId)}
+            >
+              {approveMutation.isPending ? "Menyetujui..." : "Ya, Setujui"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Tolak Dialog */}
+      <Dialog open={!!tolakId} onOpenChange={(o) => !o && setTolakId(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Tolak / Revisi Armada</DialogTitle>
+            <DialogDescription>
+              Berikan alasan mengapa armada ini ditolak atau memerlukan revisi.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <textarea
+              className="w-full h-32 p-3 text-sm border border-gray-200 dark:border-gray-800 rounded-xl outline-none focus:ring-2 focus:ring-red-500 transition-all dark:bg-white/5"
+              placeholder="Contoh: Lampiran KIR tidak terbaca, mohon upload ulang."
+              value={tolakAlasan}
+              onChange={(e) => setTolakAlasan(e.target.value)}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setTolakId(null)}>Batal</Button>
+            <Button
+              variant="destructive"
+              onClick={() => tolakId && tolakMutation.mutate({ id: tolakId, alasan: tolakAlasan })}
+              disabled={tolakMutation.isPending || !tolakAlasan.trim()}
+            >
+              {tolakMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <X className="h-4 w-4 mr-2" />}
+              Tolak Sekarang
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

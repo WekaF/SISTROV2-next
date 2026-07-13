@@ -394,8 +394,8 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
     nav: [
       { icon: <LayoutGrid className="h-5 w-5" />, name: "Dashboard", path: "/" },
       {
-        icon: <BarChart3 className="h-5 w-5" />,
-        name: "Antrian",
+        icon: <TableProperties className="h-5 w-5" />,
+        name: "Gudang",
         subItems: [
           { name: "Antrian", path: "/antrian" },
           { name: "Live Monitor Pintu Pemuatan", path: "/antrian/live-monitoring" },
@@ -450,8 +450,8 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
         ],
       },
       {
-        icon: <BarChart3 className="h-5 w-5" />,
-        name: "Antrian",
+        icon: <TableProperties className="h-5 w-5" />,
+        name: "Gudang",
         subItems: [
           { name: "Antrian All Plant", path: "/antrian/all-plant" },
           { name: "Live Monitor Pintu Pemuatan", path: "/antrian/live-monitoring" },
@@ -491,7 +491,7 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
       },
       {
         icon: <Truck className="h-5 w-5" />,
-        name: "Transport",
+        name: "Armada",
         subItems: [
           { name: "List Armada", path: "/armada" },
           { name: "Pengajuan Armada Baru", path: "/armada/pengajuan" },

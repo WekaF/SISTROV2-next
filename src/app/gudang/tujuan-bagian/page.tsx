@@ -79,7 +79,7 @@ export default function GudangTujuanBagianPage() {
   );
 
   const handleOpenDetail = async (row: any) => {
-    const match = row.Action?.match(/ViewGudang\('(\d+)'\)/);
+    const match = row.Action?.match(/ViewGudang\('([^']+)'\)/);
     const storageID = match ? match[1] : (row.id || row.idgudang);
 
     setIsDetailOpen(true);
@@ -96,7 +96,7 @@ export default function GudangTujuanBagianPage() {
         })
       });
       console.log("[DetailDataTujuan] Response:", res);
-      const data = res.response || res;
+      const data = res?.response || res;
       setDetail(data);
     } catch (err) {
       console.error("[DetailDataTujuan] Error:", err);

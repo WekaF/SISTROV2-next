@@ -94,7 +94,7 @@ const buildBody = (params: DataTableParams, f: Filters): string => {
   body.set("search[value]", params.search || "");
   body.set("order[0][column]", "0");
   body.set("order[0][dir]", "desc");
-  body.set("columns[0][name]", "tanggal");
+  body.set("columns[0][name]", "updatedon");
   if (f.company) body.set("company", f.company);
   if (f.SD) body.set("SD", f.SD);
   if (f.ED) body.set("ED", f.ED);
@@ -172,7 +172,8 @@ export default function LaporanTiketPiPage() {
     const data = await fetchFullData();
     if (data.length > 0) {
       const { exportToExcel } = await import("@/lib/export-helper");
-      exportToExcel(data, EXPORT_HEADERS, EXPORT_KEYS as string[], `Laporan_TiketPI_${filters.SD}_${filters.ED}`);
+      const companyCode = filters.company || "SEMUA";
+      exportToExcel(data, EXPORT_HEADERS, EXPORT_KEYS as string[], `laporan-tiket-${companyCode}-${filters.SD}-${filters.ED}`);
     } else {
       addToast({ title: "Tidak ada data", description: "Tidak ada data untuk diexport", variant: "destructive" });
     }
@@ -185,7 +186,8 @@ export default function LaporanTiketPiPage() {
     const data = await fetchFullData();
     if (data.length > 0) {
       const { exportToPdf } = await import("@/lib/export-helper");
-      exportToPdf(data, EXPORT_HEADERS, EXPORT_KEYS as string[], `Laporan Tiket PI (${filters.SD} s.d ${filters.ED})`, printWin);
+      const companyCode = filters.company || "SEMUA";
+      exportToPdf(data, EXPORT_HEADERS, EXPORT_KEYS as string[], `laporan-tiket-${companyCode}-${filters.SD}-${filters.ED}`, printWin);
     } else {
       printWin?.close();
       addToast({ title: "Tidak ada data", description: "Tidak ada data untuk diexport", variant: "destructive" });
@@ -226,7 +228,7 @@ export default function LaporanTiketPiPage() {
       <div className="flex items-center gap-2">
         <FileText className="h-6 w-6" />
         <div>
-          <h1 className="text-xl font-bold">Laporan Tiket PI</h1>
+          <h1 className="text-xl font-bold">Laporan Tiket</h1>
           <p className="text-sm text-muted-foreground">Realisasi Pemuatan (Security In s.d Security Out)</p>
         </div>
       </div>

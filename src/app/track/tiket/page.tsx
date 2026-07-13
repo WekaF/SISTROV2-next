@@ -84,6 +84,7 @@ interface TicketData {
   timegudang: string | null;
   timemuat: string | null;
   timeisi: string | null;
+  timeout: string | null;
   updatedby: string;
   updatedon: string;
   updatedonString: string;
@@ -119,7 +120,7 @@ const getPositionInfo = (code: string) => {
     case "00": return { label: "Belum Masuk", color: "bg-slate-500", text: "text-slate-500", border: "border-slate-200 dark:border-slate-800", icon: Clock };
     case "01": return { label: "Security In", color: "bg-blue-600", text: "text-blue-600 dark:text-blue-400", border: "border-blue-200 dark:border-blue-900", icon: ShieldCheck };
     case "02": return { label: "Tiba di Gudang", color: "bg-blue-500", text: "text-blue-500 dark:text-blue-400", border: "border-blue-200 dark:border-blue-900", icon: MapPin };
-    case "03": return { label: "Mulai Muat", color: "bg-amber-500", text: "text-amber-500 dark:text-amber-400", border: "border-amber-200 dark:border-amber-900", icon: Package };
+    case "03": return { label: "Scan Out Gudang", color: "bg-amber-500", text: "text-amber-500 dark:text-amber-400", border: "border-amber-200 dark:border-amber-900", icon: Package };
     case "04": return { label: "Selesai Muat", color: "bg-amber-600", text: "text-amber-600 dark:text-amber-400", border: "border-amber-200 dark:border-amber-900", icon: CheckCircle2 };
     case "05": return { label: "Timbang Isi", color: "bg-purple-600", text: "text-purple-600 dark:text-purple-400", border: "border-purple-200 dark:border-purple-900", icon: Weight };
     case "06": return { label: "Siap Keluar", color: "bg-orange-500", text: "text-orange-500 dark:text-orange-400", border: "border-orange-200 dark:border-orange-900", icon: Zap };
@@ -617,11 +618,11 @@ function TrackingContent() {
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-5">
                     {[
                       { label: "Security In", value: ticketData.timesec, icon: ShieldCheck },
-                      { label: "Timbang Kosong", value: ticketData.timekosong, icon: Weight },
-                      { label: "Tiba Gudang", value: ticketData.timegudang, icon: MapPin },
-                      { label: "Mulai Muat", value: ticketData.timemuat, icon: Package },
-                      { label: "Timbang Isi", value: ticketData.timeisi, icon: Weight },
-                      { label: "Update Terakhir", value: ticketData.updatedon, isHighlight: true, icon: RefreshCw },
+                      { label: "Timbangan Kosong", value: ticketData.timekosong, icon: Weight },
+                      { label: "Tiba di Gudang", value: ticketData.timegudang, icon: MapPin },
+                      { label: "Selesai Muat Checkout Gudang", value: ticketData.timemuat, icon: Package },
+                      { label: "Timbangan Isi", value: ticketData.timeisi, icon: Weight },
+                      { label: "Security Out", value: ticketData.timeout || logs.find(l => l.positioncode === "07")?.updatedon, icon: ShieldCheck },
                     ].map((item, idx) => (
                       <div
                         key={idx}

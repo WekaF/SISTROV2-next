@@ -29,26 +29,16 @@ if (typeof window !== "undefined" && !(window as any).__fetchIntercepted) {
             window.location.pathname === "/security/print";
 
           if (!isAuthPage) {
-            const cookies = document.cookie;
-            const hasToken =
-              cookies.includes("next-auth.session-token") ||
-              cookies.includes("__Secure-next-auth.session-token");
-
-            if (hasToken) {
-              console.warn("[NextAuth Interceptor] Token exists. Refreshing page...");
-              const lastRefresh = sessionStorage.getItem("last_auth_refresh");
-              const now = Date.now();
-              
-              // Limit to once every 10 seconds to prevent infinite reload loops
-              if (!lastRefresh || now - parseInt(lastRefresh) > 10000) {
-                sessionStorage.setItem("last_auth_refresh", now.toString());
-                window.location.reload();
-              } else {
-                console.error("[NextAuth Interceptor] Avoided infinite reload loop. Redirecting to login...");
-                window.location.href = "/login";
-              }
+            console.warn("[NextAuth Interceptor] Attempting page refresh to recover...");
+            const lastRefresh = sessionStorage.getItem("last_auth_refresh");
+            const now = Date.now();
+            
+            // Limit to once every 10 seconds to prevent infinite reload loops
+            if (!lastRefresh || now - parseInt(lastRefresh) > 10000) {
+              sessionStorage.setItem("last_auth_refresh", now.toString());
+              window.location.reload();
             } else {
-              console.warn("[NextAuth Interceptor] No session token found. Redirecting to login...");
+              console.error("[NextAuth Interceptor] Avoided infinite reload loop. Redirecting to login...");
               window.location.href = "/login";
             }
           }

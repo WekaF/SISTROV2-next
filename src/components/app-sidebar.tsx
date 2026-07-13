@@ -193,7 +193,7 @@ const MENU_REPORTS = {
   icon: BarChart3,
   items: [
     { title: "Summary Laporan", url: "/reports", icon: BarChart3 },
-    { title: "Laporan Tiket PI", url: "/reports/tiket-pi", icon: FileText },
+    { title: "Laporan Tiket", url: "/reports/tiket-pi", icon: FileText },
     { title: "Laporan Booking", url: "/reports/booking", icon: ClipboardList },
     { title: "Laporan Loading", url: "/reports/loading", icon: Truck },
     { title: "Laporan Pembatalan", url: "/reports/cancelation", icon: XCircle },
