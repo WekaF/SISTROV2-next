@@ -47,7 +47,7 @@
     - POD akan mensetup kuota dan shifting di gudang" yang ditugaskan
     - 1 POD bisa memegang 2 atau lebih gudang
     - POD dapat membuat dokumen posto berdasarkan data yang dari apg, atau mengupload dari template yang diupload nantinya
-    - jika sudah diupload POSTO nya maka rekanan dapat memesan posto tersebut berdasarkan kode rekanan yang ada di posto    
+    - jika sudah diUpload POSTO / SO nya maka rekanan dapat memesan posto tersebut berdasarkan kode rekanan yang ada di posto    
     - jika tiket sudah terbit maka dapat menuju gudang untuk proses pemuatan
     - ketika sampai pabrik rekanan harus melakukan checkin dengan scan tiket di user security
     - setelah masuk antrian gudang maka akan dilakukan proses penimbangan checkin dengan scan tiket di user jembatan timbang

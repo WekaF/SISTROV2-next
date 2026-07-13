@@ -1,0 +1,70 @@
+<h2>Arah desain: Security &amp; Timbangan Dashboard</h2>
+<p class="subtitle">Masalah sekarang: tiap dashboard pake pola sama persis (icon chip warna-warni, banner brand-50, card rounded-2xl) — ini pola template TailAdmin yang langsung kebaca "AI/template made". Pilih arah yang beda.</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#0b0f14;color:#d7dee5;padding:16px;border-radius:8px;font-family:monospace;font-size:11px;line-height:1.5">
+        <div style="display:flex;justify-content:space-between;border-bottom:1px solid #1f2a33;padding-bottom:6px;margin-bottom:6px">
+          <span style="color:#5eead4">GATE + WEIGHBRIDGE OPS</span><span style="color:#3a4550">14:32:07</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:8px">
+          <div style="border:1px solid #1f2a33;padding:6px"><div style="color:#5b6b76">GATE IN</div><div style="font-size:18px;color:#e6ecf1">07</div></div>
+          <div style="border:1px solid #1f2a33;padding:6px"><div style="color:#5b6b76">TARA</div><div style="font-size:18px;color:#e6ecf1">03</div></div>
+          <div style="border:1px solid #1f2a33;padding:6px"><div style="color:#5b6b76">BRUTO</div><div style="font-size:18px;color:#e6ecf1">02</div></div>
+          <div style="border:1px solid #1f2a33;padding:6px"><div style="color:#5b6b76">OUT</div><div style="font-size:18px;color:#e6ecf1">11</div></div>
+        </div>
+        <div style="color:#3a4550">BG 8192 UA · check-in · valid&nbsp;&nbsp;&nbsp;10:32</div>
+        <div style="color:#3a4550">L 9104 CR &nbsp;&nbsp;· tara 8.450kg&nbsp;&nbsp;&nbsp;10:31</div>
+        <div style="color:#f59e0b">DK 8820 PL · FLAGGED overweight&nbsp;10:29</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A. Operational Console</h3>
+      <p>Dark, dense, monospace. Mirip NOC/control room. Warna cuma buat status/alert, bukan dekorasi. Cocok buat petugas yang mantengin layar terus.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#fafafa;padding:16px;border-radius:8px;font-family:sans-serif;font-size:11px">
+        <div style="font-weight:700;color:#111;margin-bottom:8px;font-size:13px">Security &amp; Timbangan</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
+          <div style="background:#fff;border:1px solid #e5e5e5;border-left:3px solid #111;padding:8px"><div style="color:#888">Di Gerbang</div><div style="font-size:16px;font-weight:800;color:#111">12</div></div>
+          <div style="background:#fff;border:1px solid #e5e5e5;border-left:3px solid #666;padding:8px"><div style="color:#888">Sedang Timbang</div><div style="font-size:16px;font-weight:800;color:#111">4</div></div>
+          <div style="background:#fff;border:1px solid #e5e5e5;border-left:3px solid #22c55e;padding:8px"><div style="color:#888">Selesai</div><div style="font-size:16px;font-weight:800;color:#111">38</div></div>
+        </div>
+        <div style="background:#fff;border:1px solid #e5e5e5;padding:8px;color:#444">Table gabungan check-in/timbang, satu warna aksen aja, tanpa icon-chip warna-warni</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B. Refined Minimal Grid</h3>
+      <p>Tetep light/card-based kayak sekarang tapi 1 warna aksen aja (bukan rainbow amber/blue/emerald tiap card), border-left indikator status, tipografi jadi hierarki utama.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#fff;border:1px solid #e5e5e5;border-radius:8px;padding:0;font-family:sans-serif;font-size:11px;overflow:hidden">
+        <div style="display:flex">
+          <div style="flex:1;padding:12px;border-right:1px solid #eee">
+            <div style="color:#888;margin-bottom:8px">LIVE FEED</div>
+            <div style="display:flex;gap:8px;margin-bottom:6px;align-items:center"><div style="width:6px;height:6px;background:#f59e0b;border-radius:50%"></div>BG 8192 UA masuk gerbang</div>
+            <div style="display:flex;gap:8px;margin-bottom:6px;align-items:center"><div style="width:6px;height:6px;background:#3b82f6;border-radius:50%"></div>L 9104 CR ditimbang tara</div>
+            <div style="display:flex;gap:8px;align-items:center"><div style="width:6px;height:6px;background:#22c55e;border-radius:50%"></div>B 9382 TQ checkout</div>
+          </div>
+          <div style="width:110px;padding:12px">
+            <div style="color:#888;margin-bottom:4px">Netto Hari Ini</div>
+            <div style="font-size:20px;font-weight:800">142T</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C. Feed-First Layout</h3>
+      <p>Aktivitas real-time (gerbang+timbang jadi satu timeline kronologis) jadi elemen utama, angka statistik jadi sidebar kecil. Natural buat gabungin 2 proses jadi satu narasi.</p>
+    </div>
+  </div>
+</div>
+
+<p class="subtitle">Klik salah satu buat pilih, atau ketik feedback di terminal (bisa gabungan, misal "A tapi light mode").</p>
