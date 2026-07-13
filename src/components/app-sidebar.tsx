@@ -301,6 +301,7 @@ const roleMenus: Record<Role, any[]> = {
       items: [
         { title: "Dashboard Utama", url: "/", icon: LayoutDashboard },
         { title: "Report Plant", url: "/dashboard/report", icon: BarChart3 },
+        { title: "Pengajuan Armada", url: "/dashboard/armada", icon: Truck },
       ],
     },
     {
