@@ -79,8 +79,11 @@ export default function SOPage() {
   const isRekanan = role === "rekanan" || role === "transport";
   const fullname = session?.user?.name as string | undefined;
   const canEditPosto = roles.some((r) => POSTO_EDIT_ROLES.includes(r.toLowerCase()));
+  // Transport/Rekanan may delete their own *tickets* (see TicketActions.tsx) but must never be
+  // able to delete the SO itself — enforced here even if the "own record" fallback below would
+  // otherwise match (e.g. row.updatedby happens to equal their fullname).
   const canDeleteThisSO = (row: SOItem) =>
-    canEditPosto || isRekanan || (!!fullname && row.updatedby === fullname);
+    !isRekanan && (canEditPosto || (!!fullname && row.updatedby === fullname));
 
   const [dateFilter, setDateFilter] = useState("");
 
