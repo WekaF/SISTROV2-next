@@ -40,3 +40,44 @@ model CompanyMenuTemplate {
 
   @@index([companyCode])
 }
+
+model VpRegion {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  createdBy String
+  updatedBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  wilayahs      VpRegionWilayah[]
+  managerScopes ManagerScope[]
+}
+
+model VpRegionWilayah {
+  id          Int      @id @default(autoincrement())
+  vpRegionId  Int
+  wilayahCode String   @unique
+  createdAt   DateTime @default(now())
+
+  vpRegion VpRegion @relation(fields: [vpRegionId], references: [id], onDelete: Cascade)
+
+  @@index([vpRegionId])
+}
+
+model ManagerScope {
+  id          Int      @id @default(autoincrement())
+  userId      String   @unique
+  tier        String   // "avp" | "vp" | "direksi"
+  wilayahCode String?  // set when tier = "avp"
+  vpRegionId  Int?     // set when tier = "vp"
+  companyCode String?  // set when tier = "direksi" (anper code, e.g. "PIM")
+  createdBy   String
+  updatedBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  vpRegion VpRegion? @relation(fields: [vpRegionId], references: [id])
+
+  @@index([tier])
+  @@index([vpRegionId])
+}
