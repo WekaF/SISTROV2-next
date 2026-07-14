@@ -26,6 +26,8 @@ const COMPANY_LABELS: Record<string, string> = {
   BANJARMASIN2: "UPP Banjarmasin",
 };
 
+const SCOPE_TIER_LABELS: Record<string, string> = { avp: "AVP", vp: "VP", direksi: "Direksi" };
+
 interface Stats {
   totalTiket: number;
   totalAntrian: number;
@@ -38,6 +40,7 @@ export default function DashboardViewerClient() {
   const { apiTable } = useApi();
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(false);
+  const [scopeBadge, setScopeBadge] = useState<{ tier: string; label: string } | null>(null);
 
   const username = (session?.user as any)?.username as string | undefined;
   const allRoles: string[] = ((session?.user as any)?.roles as string[] | undefined) ?? [(session?.user as any)?.role ?? ""];
@@ -71,6 +74,14 @@ export default function DashboardViewerClient() {
       .finally(() => setLoading(false));
   }, [company, apiTable]);
 
+  useEffect(() => {
+    if (company) return; // only relevant on the global (!company) dashboard
+    fetch("/api/stream/dashboard?period=today")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => setScopeBadge(json?.scope ?? null))
+      .catch(() => setScopeBadge(null));
+  }, [company]);
+
   if (sessionStatus === "loading") {
     return (
       <div className="space-y-6 p-6 animate-pulse">
@@ -98,6 +109,13 @@ export default function DashboardViewerClient() {
               <FileText className="h-4 w-4" />
               Laporan Tiket
             </a>
+          </div>
+        )}
+        {scopeBadge && (
+          <div className="px-6 pt-6">
+            <div className="inline-flex items-center gap-2 rounded-full border border-blue-600 dark:border-blue-400 px-3 py-1 text-xs font-medium text-blue-600 dark:text-blue-400">
+              Menampilkan data: {SCOPE_TIER_LABELS[scopeBadge.tier] ?? scopeBadge.tier} — {scopeBadge.label}
+            </div>
           </div>
         )}
         <ViewerDashboard />
