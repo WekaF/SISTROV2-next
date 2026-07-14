@@ -1,6 +1,6 @@
 # Manager Hierarchy Mapping (AVP / VP / DIREKSI) Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Add the data tables and SuperAdmin CRUD screens needed to assign each manager user to one of three scope tiers — AVP (single wilayah), VP (a group of wilayah, i.e. Wilayah Barat/Timur), DIREKSI (single anper/company) — and let SuperAdmin dynamically redefine which wilayah belong to which VP region.
 
@@ -44,7 +44,7 @@ Two new SuperAdmin settings pages reuse the existing `area-scope` page's UI patt
 **Files:**
 - Modify: `prisma/schema.prisma`
 
-- [ ] **Step 1: Add the three models**
+- [x] **Step 1: Add the three models**
 
 Append to `prisma/schema.prisma` (after `CompanyMenuTemplate`, which ends at line 42):
 
@@ -91,17 +91,17 @@ model ManagerScope {
 }
 ```
 
-- [ ] **Step 2: Generate and run the migration**
+- [x] **Step 2: Generate and run the migration**
 
 Run: `npx prisma migrate dev --name manager_hierarchy_mapping`
 Expected: migration file created under `prisma/migrations/`, output ends with `Your database is now in sync with your schema.`
 
-- [ ] **Step 3: Regenerate Prisma client and type-check**
+- [x] **Step 3: Regenerate Prisma client and type-check**
 
 Run: `npx prisma generate && npx tsc --noEmit`
 Expected: both commands exit 0, no errors.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add prisma/schema.prisma prisma/migrations
@@ -117,7 +117,7 @@ git commit -m "feat: add VpRegion, VpRegionWilayah, ManagerScope models"
 - Create: `src/app/api/admin/vp-regions/[id]/route.ts`
 - Create: `src/app/api/admin/vp-regions/[id]/wilayah/route.ts`
 
-- [ ] **Step 1: Write the list+create route**
+- [x] **Step 1: Write the list+create route**
 
 `src/app/api/admin/vp-regions/route.ts`:
 
@@ -168,7 +168,7 @@ export async function POST(req: Request) {
 }
 ```
 
-- [ ] **Step 2: Write the rename+delete route**
+- [x] **Step 2: Write the rename+delete route**
 
 `src/app/api/admin/vp-regions/[id]/route.ts`:
 
@@ -229,7 +229,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
 }
 ```
 
-- [ ] **Step 3: Write the wilayah-assignment route**
+- [x] **Step 3: Write the wilayah-assignment route**
 
 `src/app/api/admin/vp-regions/[id]/wilayah/route.ts`:
 
@@ -284,12 +284,12 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
 }
 ```
 
-- [ ] **Step 4: Type-check**
+- [x] **Step 4: Type-check**
 
 Run: `npx tsc --noEmit`
 Expected: exit 0, no errors.
 
-- [ ] **Step 5: Manual verification**
+- [x] **Step 5: Manual verification**
 
 Start dev server (`npm run dev`), sign in as a superadmin user, then from the browser console or a REST client:
 
@@ -301,7 +301,7 @@ GET  /api/admin/vp-regions
 
 Expected: `GET` returns both regions, each with `wilayahs: []`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/app/api/admin/vp-regions
@@ -315,7 +315,7 @@ git commit -m "feat: add VP region CRUD API"
 **Files:**
 - Create: `src/app/api/admin/manager-scope/route.ts`
 
-- [ ] **Step 1: Write the route**
+- [x] **Step 1: Write the route**
 
 ```typescript
 import { NextResponse } from "next/server";
@@ -405,12 +405,12 @@ export async function DELETE(req: Request) {
 }
 ```
 
-- [ ] **Step 2: Type-check**
+- [x] **Step 2: Type-check**
 
 Run: `npx tsc --noEmit`
 Expected: exit 0.
 
-- [ ] **Step 3: Manual verification**
+- [x] **Step 3: Manual verification**
 
 With a real `userId` from `/api/admin/users` and a `vpRegionId` from Task 2:
 
@@ -421,7 +421,7 @@ GET  /api/admin/manager-scope?userId=<id>
 
 Expected: `GET` returns the scope with `tier: "vp"`, `vpRegionId: 1`, `vpRegion: { name: "Wilayah Barat" }`.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/app/api/admin/manager-scope
@@ -435,7 +435,7 @@ git commit -m "feat: add manager scope CRUD API"
 **Files:**
 - Create: `src/lib/manager-scope.ts`
 
-- [ ] **Step 1: Write the helper**
+- [x] **Step 1: Write the helper**
 
 ```typescript
 import { prismaLog } from "@/lib/prisma";
@@ -475,12 +475,12 @@ export async function getManagerScope(userId: string): Promise<ManagerScopeResul
 }
 ```
 
-- [ ] **Step 2: Type-check**
+- [x] **Step 2: Type-check**
 
 Run: `npx tsc --noEmit`
 Expected: exit 0.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/lib/manager-scope.ts
@@ -494,7 +494,7 @@ git commit -m "feat: add getManagerScope helper"
 **Files:**
 - Create: `src/app/superadmin/settings/vp-regions/page.tsx`
 
-- [ ] **Step 1: Write the page**
+- [x] **Step 1: Write the page**
 
 ```typescript
 "use client";
@@ -669,16 +669,16 @@ export default function VpRegionsPage() {
 }
 ```
 
-- [ ] **Step 2: Type-check**
+- [x] **Step 2: Type-check**
 
 Run: `npx tsc --noEmit`
 Expected: exit 0.
 
-- [ ] **Step 3: Manual verification**
+- [x] **Step 3: Manual verification**
 
 Visit `/superadmin/settings/vp-regions` as superadmin. Confirm: both regions render, moving a wilayah from "Belum Dipetakan" into a region via the select works, clicking the `X` on a badge unassigns it and the wilayah reappears under "Belum Dipetakan".
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/app/superadmin/settings/vp-regions
@@ -692,7 +692,7 @@ git commit -m "feat: add VP region mapping admin page"
 **Files:**
 - Create: `src/app/superadmin/settings/manager-scope/page.tsx`
 
-- [ ] **Step 1: Write the page**
+- [x] **Step 1: Write the page**
 
 ```typescript
 "use client";
@@ -1031,16 +1031,16 @@ export default function ManagerScopePage() {
 }
 ```
 
-- [ ] **Step 2: Type-check**
+- [x] **Step 2: Type-check**
 
 Run: `npx tsc --noEmit`
 Expected: exit 0.
 
-- [ ] **Step 3: Manual verification**
+- [x] **Step 3: Manual verification**
 
 Visit `/superadmin/settings/manager-scope`. Search a user, assign tier `vp` + a region created in Task 2, confirm it saves and displays. Delete it (X button), confirm the form reappears for re-assignment. Repeat for `avp` (wilayah select) and `direksi` (company select).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/app/superadmin/settings/manager-scope
@@ -1054,7 +1054,7 @@ git commit -m "feat: add manager scope assignment admin page"
 **Files:**
 - Modify: `src/lib/menu-configs.tsx:247-250`
 
-- [ ] **Step 1: Add nav entries**
+- [x] **Step 1: Add nav entries**
 
 In `src/lib/menu-configs.tsx`, the SuperAdmin settings submenu currently reads (lines 244-251):
 
@@ -1088,16 +1088,16 @@ Replace with:
     ],
 ```
 
-- [ ] **Step 2: Type-check**
+- [x] **Step 2: Type-check**
 
 Run: `npx tsc --noEmit`
 Expected: exit 0.
 
-- [ ] **Step 3: Manual verification**
+- [x] **Step 3: Manual verification**
 
 Log in as superadmin, open the sidebar, confirm both new items appear under Pengaturan and navigate correctly.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/lib/menu-configs.tsx
