@@ -5,11 +5,40 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { useApi } from "@/hooks/use-api";
-import { DataTable } from "@/components/ui/DataTable";
+import { DataTable, type DataTableParams } from "@/components/ui/DataTable";
 
 export default function TicketBookingPage() {
   const { apiTable } = useApi();
   const router = useRouter();
+
+  const fetcher = (params: DataTableParams) => {
+    const cf = params.columnFilters ?? {};
+    const cs = (key: string) => ({ value: cf[key] || "", regex: "false" });
+    return apiTable('/api/POSTO/AvailableBaru', {
+      draw: params.draw,
+      start: params.start,
+      length: params.length,
+      search: params.search || "",
+      order: params.order?.length ? params.order : [{ column: 4, dir: "asc" }],
+      cmd: 'refresh',
+      columns: [
+        { data: "numberString", name: "", searchable: false, orderable: false },
+        { data: "action", name: "", searchable: false, orderable: false },
+        { data: "plant", name: "Company.company1", searchable: true, orderable: true, search: cs("plant") },
+        { data: "wilayah", name: "M_Wilayah.keterangan", searchable: false, orderable: false, search: { value: "", regex: "false" } },
+        { data: "tanggalString", name: "tglposto", searchable: true, orderable: true, search: cs("tanggalString") },
+        { data: "noposto", name: "noposto", searchable: true, orderable: true, search: cs("noposto") },
+        { data: "tglakhirString", name: "tglakhir", searchable: true, orderable: true, search: cs("tglakhirString") },
+        { data: "tujuanString", name: "Gudang1.Deskripsi", searchable: true, orderable: true, search: cs("tujuanString") },
+        { data: "produkString", name: "Produk1.Nama", searchable: true, orderable: true, search: cs("produkString") },
+        { data: "qty", name: "qty", searchable: true, orderable: true, search: cs("qty") },
+        { data: "qtyrencana", name: "qtyrencana", searchable: true, orderable: true, search: cs("qtyrencana") },
+        { data: "qtysisaBooking", name: "", searchable: true, orderable: false, search: cs("qtysisaBooking") },
+        { data: "tanggaljatuhtempoString", name: "tgljatuhtempo", searchable: true, orderable: true, search: cs("tanggaljatuhtempoString") },
+        { data: "companyCode", name: "Company.company_code", searchable: true, orderable: true, search: cs("companyCode") },
+      ],
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -32,7 +61,7 @@ export default function TicketBookingPage() {
         <CardContent className="p-0">
           <DataTable
             queryKey={['available-posto']}
-            fetcher={(params) => apiTable('/api/POSTO/AvailableBaru', { ...params, cmd: 'refresh' })}
+            fetcher={fetcher}
             rowKey={(row: any) => row.id || row.noposto}
             refetchInterval={10000}
             columns={[
@@ -76,6 +105,7 @@ export default function TicketBookingPage() {
               {
                 key: "plant",
                 header: "Plant",
+                sortColumn: 2,
                 render: (row: any) => (
                   <div className="font-bold text-gray-900 dark:text-white font-mono text-sm tracking-tight whitespace-nowrap">
                     {row.plant}
@@ -83,8 +113,20 @@ export default function TicketBookingPage() {
                 )
               },
               {
+                key: "companyCode",
+                header: "Kode Perusahaan",
+                searchable: true,
+                sortColumn: 13,
+                render: (row: any) => (
+                  <div className="font-bold text-gray-500 dark:text-gray-400 font-mono text-xs uppercase whitespace-nowrap">
+                    {row.companyCode || "-"}
+                  </div>
+                )
+              },
+              {
                 key: "tanggalString",
                 header: "Tanggal",
+                sortColumn: 4,
                 render: (row: any) => (
                   <div className="font-bold text-gray-900 dark:text-white font-mono text-sm tracking-tight whitespace-nowrap">
                     {row.tanggalString}
@@ -94,6 +136,7 @@ export default function TicketBookingPage() {
               {
                 key: "noposto",
                 header: "No POSTO",
+                sortColumn: 5,
                 render: (row: any) => (
                   <div className="flex flex-col">
                     <div className="font-bold text-brand-600 dark:text-brand-400 font-mono text-sm tracking-tight">
@@ -110,6 +153,7 @@ export default function TicketBookingPage() {
               {
                 key: "tglakhirString",
                 header: "Exp",
+                sortColumn: 6,
                 render: (row: any) => (
                   <div className="font-bold text-rose-500 font-mono text-xs whitespace-nowrap">
                     {row.tglakhirString}
@@ -119,6 +163,7 @@ export default function TicketBookingPage() {
               {
                 key: "tujuanString",
                 header: "Tujuan",
+                sortColumn: 7,
                 render: (row: any) => (
                   <div className="font-bold text-gray-900 dark:text-white font-mono text-sm tracking-tight uppercase max-w-[200px] truncate" title={row.tujuanString}>
                     {row.tujuanString}
@@ -137,6 +182,7 @@ export default function TicketBookingPage() {
               {
                 key: "produkString",
                 header: "Produk",
+                sortColumn: 8,
                 render: (row: any) => (
                   <div className="font-bold text-gray-900 dark:text-white font-mono text-sm tracking-tight uppercase whitespace-nowrap">
                     {row.produkString}
@@ -148,6 +194,7 @@ export default function TicketBookingPage() {
                 header: "Qty",
                 headerClassName: "text-right",
                 className: "text-right",
+                sortColumn: 9,
                 render: (row: any) => (
                   <div className="font-bold text-gray-900 dark:text-white font-mono text-sm tracking-tight">
                     {row.qty?.toLocaleString()}
@@ -159,6 +206,7 @@ export default function TicketBookingPage() {
                 header: "Qty Pesan",
                 headerClassName: "text-right",
                 className: "text-right",
+                sortColumn: 10,
                 render: (row: any) => (
                   <div className="font-bold text-amber-600 font-mono text-sm tracking-tight">
                     {row.qtyrencana?.toLocaleString()}
@@ -206,6 +254,7 @@ export default function TicketBookingPage() {
               {
                 key: "tanggaljatuhtempoString",
                 header: "Jatuh Tempo",
+                sortColumn: 12,
                 render: (row: any) => (
                   <div className="font-bold text-gray-400 font-mono text-xs whitespace-nowrap">
                     {row.tanggaljatuhtempoString || "-"}
