@@ -42,7 +42,7 @@ interface ManagerScope {
   vpRegion: { id: number; name: string } | null;
 }
 
-const TIER_LABEL: Record<Tier, string> = {
+const TIER_LABELS: Record<Tier, string> = {
   avp: "AVP",
   vp: "VP",
   direksi: "Direksi",
@@ -170,12 +170,9 @@ export default function ManagerScopePage() {
       ).slice(0, 20);
 
   const canSave =
-    !!selectedUser &&
-    (
-      (tier === "avp" && !!wilayahCode) ||
-      (tier === "vp" && !!vpRegionId) ||
-      (tier === "direksi" && !!companyCode)
-    );
+    (tier === "avp" && !!wilayahCode) ||
+    (tier === "vp" && !!vpRegionId) ||
+    (tier === "direksi" && !!companyCode);
 
   const scopeValueLabel = (scope: ManagerScope) => {
     if (scope.tier === "avp") {
@@ -288,7 +285,7 @@ export default function ManagerScopePage() {
             {selectedUser && !scopeLoading && currentScope && (
               <div className="flex items-center justify-between px-3 py-2 border rounded-md">
                 <div className="flex items-center gap-2">
-                  <Badge variant="outline">{TIER_LABEL[currentScope.tier]}</Badge>
+                  <Badge variant="outline">{TIER_LABELS[currentScope.tier]}</Badge>
                   <span className="text-sm">{scopeValueLabel(currentScope)}</span>
                 </div>
                 <Button
