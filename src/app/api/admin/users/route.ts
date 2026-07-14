@@ -18,7 +18,8 @@ export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url);
     const cookieStore = await cookies();
-    const companyCode = searchParams.get("companyCode") || cookieStore.get("sistro_active_company")?.value || "";
+    const allCompanies = searchParams.get("all") === "true";
+    const companyCode = allCompanies ? "" : (searchParams.get("companyCode") || cookieStore.get("sistro_active_company")?.value || "");
 
     const token = (session?.user as any)?.aspnetToken as string;
     const url = companyCode

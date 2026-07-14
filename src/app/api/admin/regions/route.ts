@@ -16,9 +16,9 @@ export async function GET() {
     
     const data: any[] = await res.json();
     return NextResponse.json({ success: true, data: data.map(r => ({
-      id: r.id || r.ID,
-      code: r.code || r.Abbrev,
-      name: r.name || r.Keterangan
+      id: r.id || r.ID || r.abbrev || r.Abbrev,
+      code: r.code || r.abbrev || r.Abbrev,
+      name: r.name || r.keterangan || r.Keterangan
     }))});
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

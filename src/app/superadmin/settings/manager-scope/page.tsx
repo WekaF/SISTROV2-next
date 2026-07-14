@@ -63,7 +63,7 @@ export default function ManagerScopePage() {
   const { data: usersData, isLoading: usersLoading } = useQuery({
     queryKey: ["admin-users"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/users");
+      const res = await fetch("/api/admin/users?all=true");
       if (!res.ok) throw new Error("Failed to fetch users");
       return res.json() as Promise<UserRow[]>;
     },
