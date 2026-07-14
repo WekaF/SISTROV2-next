@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import {
@@ -28,6 +28,7 @@ import {
 import { useToast } from "@/components/ui/toast";
 import { normalizeRole } from "@/lib/role-utils";
 import { useApi } from "@/hooks/use-api";
+import { useCompany } from "@/context/CompanyContext";
 
 const ALLOWED_ROLES = ["pod", "superadmin", "admin"];
 
@@ -53,6 +54,7 @@ const EXCEL_COLUMNS = [
 interface ArmadaRow {
   username: string;
   nopol: string;
+  idsumbu: number | null;
   sumbu: string;
   jeniskendaraan: string;
   qtymax: number | null;
@@ -99,7 +101,12 @@ function excelDateToISO(val: any): string | null {
   return null;
 }
 
-function validateRow(row: Omit<ArmadaRow, "isValid" | "errors">, today: Date): string[] {
+function validateRow(
+  row: Omit<ArmadaRow, "isValid" | "errors">, 
+  today: Date, 
+  sumbuMaster: any[], 
+  tahunPembuatanEnabled: boolean
+): string[] {
   const errs: string[] = [];
   if (!row.username) errs.push("Username wajib diisi");
   if (!row.nopol) errs.push("Nopol wajib diisi");
@@ -130,10 +137,50 @@ function validateRow(row: Omit<ArmadaRow, "isValid" | "errors">, today: Date): s
       errs.push("No Mesin STNK ≠ KIR");
     }
   }
+
+  // Age limit check
+  if (tahunPembuatanEnabled && row.tahun_pembuatan) {
+    const currentYear = today.getFullYear();
+    if ((currentYear - row.tahun_pembuatan) > 20) {
+      errs.push(`Usia armada melebihi 20 tahun (Tahun Buat: ${row.tahun_pembuatan})`);
+    }
+  }
+
+  // Sumbu Master validation
+  if (sumbuMaster.length > 0) {
+    let latestYear = 0;
+    for (const s of sumbuMaster) {
+      const ty = parseInt(s.tahun) || 0;
+      if (ty > latestYear) latestYear = ty;
+    }
+    
+    if (latestYear > 0) {
+      const match = sumbuMaster.find(s => 
+        (parseInt(s.tahun) || 0) === latestYear &&
+        (s.nama || "").toLowerCase() === (row.sumbu || "").toLowerCase() &&
+        (s.jenistruk || "").toLowerCase() === (row.jeniskendaraan || "").toLowerCase()
+      );
+
+      if (match) {
+        row.idsumbu = match.Id || match.id;
+        const masterMuatan = parseFloat(match.muatan) || 0;
+        if (Math.abs(masterMuatan - (row.qtymax || 0)) > 0.01) {
+          errs.push(`Tonase (${row.qtymax}) tidak sesuai Sumbu ${row.sumbu} (${masterMuatan})`);
+        }
+      } else {
+        errs.push(`Kombinasi Sumbu (${row.sumbu}) dan Jenis (${row.jeniskendaraan}) tidak terdaftar`);
+      }
+    } else {
+      errs.push(`Tahun Sumbu tidak dapat divalidasi dari Master Data`);
+    }
+  } else {
+    errs.push(`Data Master Sumbu gagal dimuat atau kosong, harap muat ulang halaman.`);
+  }
+
   return errs;
 }
 
-function parseExcelRows(data: any[]): ArmadaRow[] {
+function parseExcelRows(data: any[], sumbuMaster: any[], tahunPembuatanEnabled: boolean): ArmadaRow[] {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -142,9 +189,10 @@ function parseExcelRows(data: any[]): ArmadaRow[] {
     const masa_berlaku_kir = excelDateToISO(
       raw["masa_berlaku_kir"] ?? raw["Masa Berlaku KIR"] ?? raw["Masa KIR"] ?? raw["MasaBerlakuKIR"]
     );
-    const base = {
+    const base: Omit<ArmadaRow, "isValid" | "errors"> = {
       username: String(raw["Username"] ?? raw["username"] ?? "").trim(),
       nopol: String(raw["Nopol"] ?? raw["nopol"] ?? "").trim().toUpperCase(),
+      idsumbu: null,
       sumbu: String(raw["sumbu"] ?? raw["Sumbu"] ?? "").trim(),
       jeniskendaraan: String(raw["jeniskendaraan"] ?? raw["Jenis Kendaraan"] ?? raw["JenisKendaraan"] ?? "").trim(),
       qtymax: parseNum(raw["TonaseMax"] ?? raw["tonasemax"] ?? raw["Qty Max"] ?? raw["QtyMax"] ?? raw["qtymax"]),
@@ -159,7 +207,7 @@ function parseExcelRows(data: any[]): ArmadaRow[] {
       no_rangka_kir: String(raw["no_rangka_kir"] ?? raw["Rangka KIR"] ?? raw["No Rangka KIR"] ?? raw["NoRangkaKIR"] ?? "").trim(),
       no_mesin_kir: String(raw["no_mesin_kir"] ?? raw["Mesin KIR"] ?? raw["No Mesin KIR"] ?? raw["NoMesinKIR"] ?? "").trim(),
     };
-    const errors = validateRow(base, today);
+    const errors = validateRow(base, today, sumbuMaster, tahunPembuatanEnabled);
     return { ...base, isValid: errors.length === 0, errors };
   });
 }
@@ -175,14 +223,46 @@ export default function ArmadaUploadPage() {
   const { data: session } = useSession();
   const router = useRouter();
   const { addToast } = useToast();
-  const { apiJson } = useApi();
+  const { apiJson, apiTable } = useApi();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { activeCompanyCode } = useCompany();
 
   const [isDragging, setIsDragging] = useState(false);
   const [rows, setRows] = useState<ArmadaRow[]>([]);
   const [fileName, setFileName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitDone, setSubmitDone] = useState(false);
+
+  // Master data for validation
+  const [sumbuMaster, setSumbuMaster] = useState<any[]>([]);
+  const [tahunPembuatanEnabled, setTahunPembuatanEnabled] = useState(false);
+
+  useEffect(() => {
+    const fetchMasterData = async () => {
+      try {
+        const sumbuRes = await apiTable('/api/Sumbu/DataTable', {
+          start: 0,
+          length: 10000,
+          order: [{ column: 0, dir: "asc" }],
+          columns: [{ data: "Id", name: "Id", searchable: "true", orderable: "true", search: { value: "", regex: "false" } }],
+        });
+        if (Array.isArray(sumbuRes?.data)) setSumbuMaster(sumbuRes.data);
+
+        // Fetch plants config to check tahunpembuatan
+        const plantRes = await fetch("/api/admin/plants");
+        const plantJson = await plantRes.json();
+        if (plantJson.success && Array.isArray(plantJson.data)) {
+          const currentPlant = plantJson.data.find((p: any) => p.company_code === activeCompanyCode);
+          if (currentPlant) {
+            setTahunPembuatanEnabled(!!currentPlant.tahunpembuatan);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load master data", err);
+      }
+    };
+    fetchMasterData();
+  }, [activeCompanyCode, apiTable]);
 
   const allRoles: string[] = ((session?.user as any)?.roles as string[] | undefined) ?? [
     (session?.user as any)?.role,
@@ -203,7 +283,7 @@ export default function ArmadaUploadPage() {
         const wb = XLSX.read(e.target?.result, { type: "array", cellDates: false });
         const ws = wb.Sheets[wb.SheetNames[0]];
         const data = XLSX.utils.sheet_to_json(ws, { defval: "" });
-        const parsed = parseExcelRows(data as any[]);
+        const parsed = parseExcelRows(data as any[], sumbuMaster, tahunPembuatanEnabled);
         setRows(parsed);
         if (parsed.length === 0) {
           addToast({ variant: "warning", title: "File kosong", description: "Tidak ada data yang bisa dibaca dari file." });
@@ -213,7 +293,7 @@ export default function ArmadaUploadPage() {
       }
     };
     reader.readAsArrayBuffer(file);
-  }, [addToast]);
+  }, [addToast, sumbuMaster, tahunPembuatanEnabled]);
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
@@ -440,6 +520,7 @@ export default function ArmadaUploadPage() {
                     <th className="p-2 text-left font-medium">Status</th>
                     <th className="p-2 text-left font-medium">Username</th>
                     <th className="p-2 text-left font-medium">Nopol</th>
+                    <th className="p-2 text-left font-medium">No. Sumbu</th>
                     <th className="p-2 text-left font-medium">Sumbu</th>
                     <th className="p-2 text-left font-medium">Jenis</th>
                     <th className="p-2 text-right font-medium">Qty Max</th>
@@ -474,6 +555,7 @@ export default function ArmadaUploadPage() {
                       </td>
                       <td className="p-2">{row.username}</td>
                       <td className="p-2 font-mono">{row.nopol}</td>
+                      <td className="p-2">{row.idsumbu ?? "-"}</td>
                       <td className="p-2">{row.sumbu}</td>
                       <td className="p-2">{row.jeniskendaraan}</td>
                       <td className="p-2 text-right">{row.qtymax ?? "-"}</td>

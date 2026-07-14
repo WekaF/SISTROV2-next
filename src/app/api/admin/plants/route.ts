@@ -6,7 +6,7 @@ const ASPNET = process.env.ASPNET_API_URL || "https://sistro-dev.pupuk-indonesia
 
 function isAuthorized(session: any): boolean {
   const roles = (session?.user as any)?.roles || [];
-  return !!session?.user && roles.some((r: string) => ["superadmin", "ti"].includes(r.toLowerCase()));
+  return !!session?.user && roles.some((r: string) => ["superadmin", "ti", "admin", "pod", "adminarmada"].includes(r.toLowerCase()));
 }
 
 function getToken(session: any): string {

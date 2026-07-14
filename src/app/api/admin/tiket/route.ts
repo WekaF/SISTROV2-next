@@ -14,40 +14,30 @@ export async function GET(req: Request) {
     if (!isAuthorized(session)) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
 
     const { searchParams } = new URL(req.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = Math.min(parseInt(searchParams.get('limit') || '25'), 100);
-    const search = searchParams.get('search') || '';
-    const plantCode = searchParams.get('plant') || '';
-    const status = searchParams.get('status') || '';
-    const dateFrom = searchParams.get('dateFrom') || '';
-    const dateTo = searchParams.get('dateTo') || '';
+    const bookingno = searchParams.get('bookingno') || '';
+    if (!bookingno) return NextResponse.json({ success: false, error: "Booking number is required" }, { status: 400 });
 
     const token = (session?.user as any)?.aspnetToken as string;
-    const res = await aspnetFetchServer('/api/Tiket/DataTable', token, {
+    const res = await aspnetFetchServer('/api/Tiket/DetailData', token, {
       method: 'POST',
-      body: JSON.stringify({
-        Page: page,
-        Length: limit,
-        Search: search,
-        PlantCode: plantCode,
-        Status: status,
-        DateFrom: dateFrom,
-        DateTo: dateTo
-      })
+      body: JSON.stringify({ bookingno })
     });
 
-    if (!res.ok) throw new Error("Failed to fetch tickets from API");
+    if (!res.ok) {
+      const errText = await res.text();
+      return NextResponse.json({ success: false, error: errText || "Tiket tidak ditemukan" }, { status: res.status });
+    }
     const data = await res.json();
     
+    // ASP.NET might return data wrapped or direct
+    const ticketData = data.data || data;
+    if (!ticketData || !ticketData.bookingno) {
+      return NextResponse.json({ success: false, error: "Tiket tidak ditemukan" }, { status: 404 });
+    }
+
     return NextResponse.json({
       success: true,
-      data: data.data || data,
-      pagination: { 
-        total: data.recordsTotal || data.length, 
-        page, 
-        limit, 
-        totalPages: Math.ceil((data.recordsTotal || data.length) / limit) 
-      }
+      data: ticketData
     });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
@@ -64,14 +54,19 @@ export async function DELETE(req: Request) {
     if (!force) return NextResponse.json({ success: false, error: "Force delete requires ?force=true" }, { status: 400 });
 
     const body = await req.json();
-    const id = body.id;
-    const reason = (body.reason || "").trim();
-    if (!id) return NextResponse.json({ success: false, error: "Tiket ID is required" }, { status: 400 });
+    const bookingno = body.bookingno;
+    if (!bookingno) return NextResponse.json({ success: false, error: "Booking number is required" }, { status: 400 });
 
     const token = (session?.user as any)?.aspnetToken as string;
-    const res = await aspnetFetchServer('/api/Tiket/DeleteData', token, {
+    
+    // Kirim request ke ForceDeleteSP menggunakan form POST
+    const formParams = new URLSearchParams();
+    formParams.append("bookingno", bookingno);
+
+    const res = await aspnetFetchServer('/api/Tiket/ForceDeleteSP', token, {
       method: 'POST',
-      body: JSON.stringify({ id, reason })
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: formParams.toString()
     });
 
     if (!res.ok) {

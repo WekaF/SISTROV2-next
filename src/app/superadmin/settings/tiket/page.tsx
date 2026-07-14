@@ -7,13 +7,13 @@ import {
   Loader2,
   AlertTriangle,
   RefreshCw,
-  Filter,
+  Info,
+  CheckCircle2,
 } from "lucide-react";
-import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Badge from "@/components/ui/badge/Badge";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/components/ui/toast";
 import {
   Dialog,
@@ -24,241 +24,363 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 
-interface TiketRow {
-  id: number;
+interface TicketDetail {
   bookingno: string;
-  tiketno: string;
-  nopol: string;
-  tanggal: string;
-  status: string;
-  plantcode: string;
-  driver: string;
+  tiketno?: string;
+  posto?: string;
+  nopol?: string;
+  driver?: string;
+  qty?: number;
+  asal?: string;
+  tujuan?: string;
+  statuspemuatan?: string;
+  positionString?: string;
+  company?: string;
+  idproduk?: string;
+  produkString?: string;
 }
 
 export default function ForceDeleteTiketPage() {
   const { addToast } = useToast();
-  const queryClient = useQueryClient();
 
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [plant, setPlant] = useState("");
-  const [status, setStatus] = useState("");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
-  const [page, setPage] = useState(1);
-  const limit = 25;
+  const [bookingNoInput, setBookingNoInput] = useState("");
+  const [ticketDetail, setTicketDetail] = useState<TicketDetail | null>(null);
+  
+  const [isSearching, setIsSearching] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [confirmText, setConfirmText] = useState("");
 
-  React.useEffect(() => {
-    const t = setTimeout(() => { setDebouncedSearch(search); setPage(1); }, 500);
-    return () => clearTimeout(t);
-  }, [search]);
-
-  const [deleteTarget, setDeleteTarget] = useState<TiketRow | null>(null);
-  const [deleteReason, setDeleteReason] = useState("");
-
-  const params = new URLSearchParams({
-    page: String(page), limit: String(limit),
-    ...(debouncedSearch && { search: debouncedSearch }),
-    ...(plant && { plant }),
-    ...(status && { status }),
-    ...(dateFrom && { dateFrom }),
-    ...(dateTo && { dateTo }),
-  });
-
-  const { data, isLoading, isFetching } = useQuery({
-    queryKey: ["admin-tiket", debouncedSearch, plant, status, dateFrom, dateTo, page],
-    queryFn: async () => {
-      const res = await fetch(`/api/admin/tiket?${params}`);
-      const json = await res.json();
-      if (!json.success) throw new Error(json.error || "Failed to fetch");
-      return json;
+  const handleSearch = async () => {
+    const query = bookingNoInput.trim();
+    if (!query) {
+      addToast({
+        title: "Peringatan",
+        description: "Masukkan nomor booking atau tiket terlebih dahulu.",
+        variant: "warning",
+      });
+      return;
     }
-  });
 
-  const deleteMutation = useMutation({
-    mutationFn: async ({ id, reason }: { id: number; reason: string }) => {
+    setIsSearching(true);
+    setTicketDetail(null);
+
+    try {
+      const res = await fetch(`/api/admin/tiket?bookingno=${encodeURIComponent(query)}`);
+      const json = await res.json();
+      
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || "Tiket tidak ditemukan atau gagal dimuat.");
+      }
+
+      setTicketDetail(json.data);
+      addToast({
+        title: "Sukses",
+        description: "Detail tiket berhasil ditemukan.",
+        variant: "success",
+      });
+    } catch (err: any) {
+      console.error(err);
+      addToast({
+        title: "Gagal Cek Tiket",
+        description: err.message || "Tiket tidak dikenali atau terjadi kesalahan koneksi.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleForceDelete = async () => {
+    if (!ticketDetail) return;
+    if (confirmText.toUpperCase() !== "SETUJU") {
+      addToast({
+        title: "Verifikasi Gagal",
+        description: 'Anda harus mengetik "SETUJU" untuk melanjutkan.',
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
       const res = await fetch(`/api/admin/tiket?force=true`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, reason }),
+        body: JSON.stringify({ bookingno: ticketDetail.bookingno }),
       });
       const json = await res.json();
-      if (!json.success) throw new Error(json.error);
-      return json;
-    },
-    onSuccess: (_, vars) => {
-      addToast({ title: "Tiket Dihapus Paksa", description: `ID ${vars.id} permanently deleted.`, variant: "success" });
-      setDeleteTarget(null);
-      setDeleteReason("");
-      queryClient.invalidateQueries({ queryKey: ["admin-tiket"] });
-    },
-    onError: (err: any) => addToast({ title: "Gagal Hapus", description: err.message, variant: "destructive" }),
-  });
 
-  const tikets: TiketRow[] = data?.data || [];
-  const pagination = data?.pagination || { total: 0, totalPages: 0 };
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || "Gagal menghapus tiket.");
+      }
 
-  const handleConfirmDelete = () => {
-    if (!deleteTarget) return;
-    if (!deleteReason.trim()) {
-      addToast({ title: "Alasan diperlukan", description: "Masukkan alasan sebelum menghapus.", variant: "destructive" });
-      return;
+      addToast({
+        title: "Berhasil",
+        description: `Tiket ${ticketDetail.bookingno} berhasil dihapus paksa dari sistem.`,
+        variant: "success",
+      });
+
+      // Reset Form
+      setTicketDetail(null);
+      setBookingNoInput("");
+      setIsConfirmOpen(false);
+      setConfirmText("");
+    } catch (err: any) {
+      console.error(err);
+      addToast({
+        title: "Gagal Hapus Paksa",
+        description: err.message || "Gagal menghubungi server untuk menghapus tiket.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
     }
-    deleteMutation.mutate({ id: deleteTarget.id, reason: deleteReason });
+  };
+
+  const handleReset = () => {
+    setTicketDetail(null);
+    setBookingNoInput("");
+    setConfirmText("");
   };
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-4xl mx-auto space-y-8 p-4">
+      {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white uppercase tracking-tight flex items-center gap-2">
-          <Trash2 className="h-6 w-6 text-rose-500" />
-          Force Delete Tiket
+        <h1 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tight flex items-center gap-2">
+          <Trash2 className="h-7 w-7 text-red-500" />
+          Hapus Tiket Paksa (Force Delete)
         </h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Hapus permanen tiket dari database. Tindakan ini tidak dapat dibatalkan.</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+          Hapus tiket di posisi mana pun secara permanen. Tindakan ini memotong validasi standar.
+        </p>
       </div>
 
-      <div className="p-4 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 rounded-xl flex items-start gap-3">
-        <AlertTriangle className="h-5 w-5 text-rose-500 shrink-0 mt-0.5" />
+      {/* Banner Warning */}
+      <div className="p-5 bg-red-50 dark:bg-red-950/20 border-l-4 border-red-500 rounded-r-2xl flex items-start gap-4">
+        <AlertTriangle className="h-6 w-6 text-red-600 shrink-0 mt-0.5" />
         <div>
-          <p className="text-sm font-bold text-rose-700 dark:text-rose-400">Peringatan: Operasi Destruktif</p>
-          <p className="text-xs text-rose-600 dark:text-rose-400 mt-0.5">Force Delete akan menghapus tiket secara permanen dari database dan tidak dapat dibatalkan. Gunakan hanya jika benar-benar diperlukan.</p>
+          <p className="text-sm font-black text-red-700 dark:text-red-400 uppercase tracking-wider">
+            PERINGATAN OPERASI DESTRUKTIF!
+          </p>
+          <p className="text-xs text-red-600 dark:text-red-400 mt-1 leading-relaxed">
+            Force Delete akan menghapus tiket secara fisik dari database utama dan mengembalikan alokasi kuota ke status semula.
+            Tindakan ini <strong>tidak dapat dibatalkan</strong> dan hanya boleh digunakan untuk kasus khusus (double upload, kesalahan data, dll).
+          </p>
         </div>
       </div>
 
-      <Card className="shadow-theme-xs overflow-hidden">
-        <CardHeader className="border-b border-gray-100 dark:border-gray-800 p-4">
-          <div className="flex flex-wrap gap-3">
-            <div className="relative flex-1 min-w-[200px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input className="pl-10" placeholder="Cari bookingno atau nopol..." value={search} onChange={e => setSearch(e.target.value)} />
-              {isFetching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" />}
-            </div>
-            <Input className="w-36" placeholder="Plant Code" value={plant} onChange={e => { setPlant(e.target.value); setPage(1); }} />
-            <Input className="w-32" placeholder="Status" value={status} onChange={e => { setStatus(e.target.value); setPage(1); }} />
-            <Input type="date" className="w-36" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setPage(1); }} />
-            <Input type="date" className="w-36" value={dateTo} onChange={e => { setDateTo(e.target.value); setPage(1); }} />
-            <Button variant="outline" size="sm" onClick={() => queryClient.invalidateQueries({ queryKey: ["admin-tiket"] })}>
-              <RefreshCw className="h-4 w-4" />
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto min-h-[300px]">
-            <table className="w-full text-left">
-              <thead className="bg-gray-50 dark:bg-white/[0.02]">
-                <tr className="border-b border-gray-100 dark:border-gray-800">
-                  <th className="px-4 py-3 text-xs font-black uppercase text-gray-500">Booking No</th>
-                  <th className="px-4 py-3 text-xs font-black uppercase text-gray-500">Nopol</th>
-                  <th className="px-4 py-3 text-xs font-black uppercase text-gray-500">Tanggal</th>
-                  <th className="px-4 py-3 text-xs font-black uppercase text-gray-500">Plant</th>
-                  <th className="px-4 py-3 text-xs font-black uppercase text-gray-500">Status</th>
-                  <th className="px-4 py-3 text-xs font-black uppercase text-gray-500 text-right">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                {isLoading ? (
-                  <tr><td colSpan={6} className="px-4 py-12 text-center">
-                    <div className="flex flex-col items-center gap-2">
-                      <Loader2 className="h-8 w-8 animate-spin text-rose-500" />
-                      <span className="text-sm text-gray-500">Memuat data tiket...</span>
-                    </div>
-                  </td></tr>
-                ) : tikets.length === 0 ? (
-                  <tr><td colSpan={6} className="px-4 py-12 text-center text-gray-400 italic text-sm">
-                    <Ticket className="h-10 w-10 mx-auto mb-2 opacity-30" />
-                    Tidak ada tiket ditemukan.
-                  </td></tr>
-                ) : tikets.map(t => (
-                  <tr key={t.id} className="hover:bg-rose-50/30 dark:hover:bg-rose-500/5 transition-colors">
-                    <td className="px-4 py-3">
-                      <div className="font-mono text-xs font-bold text-gray-900 dark:text-white">{t.bookingno}</div>
-                      <div className="text-[10px] text-gray-400">{t.tiketno}</div>
-                    </td>
-                    <td className="px-4 py-3 font-bold text-sm">{t.nopol || '-'}</td>
-                    <td className="px-4 py-3 text-xs text-gray-600 dark:text-gray-300">{t.tanggal ? new Date(t.tanggal).toLocaleDateString('id-ID') : '-'}</td>
-                    <td className="px-4 py-3">
-                      <Badge color="info" variant="light" className="font-mono text-[10px]">{t.plantcode || '-'}</Badge>
-                    </td>
-                    <td className="px-4 py-3">
-                      <Badge color={t.status ? 'success' : 'warning'} variant="light" size="sm">{t.status || 'N/A'}</Badge>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-rose-500 hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-500/10 text-xs font-bold gap-1"
-                        onClick={() => { setDeleteTarget(t); setDeleteReason(""); }}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                        Force Delete
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {pagination.totalPages > 1 && (
-            <div className="flex items-center justify-between p-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50">
-              <span className="text-xs text-gray-500">
-                Total: <strong>{pagination.total}</strong> tiket
-              </span>
-              <div className="flex items-center gap-1">
-                <Button variant="outline" size="sm" className="h-8 w-8 p-0" disabled={page === 1} onClick={() => setPage(p => p - 1)}>{"<"}</Button>
-                <span className="text-xs px-2 font-bold">{page} / {pagination.totalPages}</span>
-                <Button variant="outline" size="sm" className="h-8 w-8 p-0" disabled={page >= pagination.totalPages} onClick={() => setPage(p => p + 1)}>{">"}</Button>
+      {/* Card Search */}
+      <Card className="border-none shadow-xl bg-white dark:bg-slate-900 rounded-3xl overflow-hidden">
+        <CardContent className="p-8 space-y-6">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+              Input Nomor Booking / Kode SISTRO
+            </label>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="relative flex-1 group">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-primary transition-colors" />
+                <Input
+                  placeholder="Masukkan Nomor Booking / Tiket (SISTRO_XXX...)"
+                  className="pl-12 h-14 text-lg border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 focus-visible:ring-red-500 focus-visible:border-red-500 rounded-xl font-bold uppercase"
+                  value={bookingNoInput}
+                  onChange={(e) => setBookingNoInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                />
               </div>
+              <Button
+                onClick={handleSearch}
+                disabled={isSearching}
+                className="h-14 px-8 font-black rounded-xl bg-slate-900 dark:bg-red-600 text-white hover:bg-slate-800 dark:hover:bg-red-700 shadow-md transition-all active:scale-[0.98] uppercase tracking-wider"
+              >
+                {isSearching ? (
+                  <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                ) : (
+                  <Search className="h-4 w-4 mr-2" />
+                )}
+                Cek Data
+              </Button>
             </div>
-          )}
+          </div>
         </CardContent>
       </Card>
 
-      <Dialog open={!!deleteTarget} onOpenChange={open => { if (!open) { setDeleteTarget(null); setDeleteReason(""); } }}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
+      {/* Detail Card (If Loaded) */}
+      {ticketDetail && (
+        <Card className="border-2 border-red-100 dark:border-red-950/40 shadow-2xl bg-white dark:bg-slate-900 rounded-3xl overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300">
+          <CardHeader className="bg-red-50/50 dark:bg-red-950/10 p-6 border-b border-red-100/50 dark:border-red-950/20">
+            <div className="flex justify-between items-center flex-wrap gap-3">
+              <div>
+                <CardTitle className="text-lg font-black text-slate-800 dark:text-white uppercase">
+                  Data Tiket Ditemukan
+                </CardTitle>
+                <CardDescription className="text-xs font-bold text-slate-500">
+                  Pastikan informasi berikut sesuai sebelum melakukan penghapusan paksa.
+                </CardDescription>
+              </div>
+              <Badge className="bg-red-100 text-red-700 border-none font-black px-4 py-1.5 rounded-full text-xs">
+                {ticketDetail.company || "PLANT"}
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="p-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 text-sm">
+              <div className="space-y-4">
+                <div className="pb-3 border-b dark:border-slate-800">
+                  <span className="text-xs font-bold text-slate-400 block mb-1">Nomor Booking</span>
+                  <span className="font-mono font-black text-slate-800 dark:text-white text-base">
+                    {ticketDetail.bookingno}
+                  </span>
+                </div>
+                {ticketDetail.tiketno && (
+                  <div className="pb-3 border-b dark:border-slate-800">
+                    <span className="text-xs font-bold text-slate-400 block mb-1">Nomor Tiket</span>
+                    <span className="font-mono font-bold text-slate-700 dark:text-slate-300">
+                      {ticketDetail.tiketno}
+                    </span>
+                  </div>
+                )}
+                <div className="pb-3 border-b dark:border-slate-800">
+                  <span className="text-xs font-bold text-slate-400 block mb-1">Nomor POSTO / SO</span>
+                  <span className="font-bold text-slate-700 dark:text-slate-300">
+                    {ticketDetail.posto || "-"}
+                  </span>
+                </div>
+                <div className="pb-3 border-b dark:border-slate-800">
+                  <span className="text-xs font-bold text-slate-400 block mb-1">Nomor Polisi (Nopol)</span>
+                  <span className="inline-block bg-slate-900 text-white font-mono text-xs font-bold px-3 py-1 rounded border border-slate-700">
+                    {ticketDetail.nopol || "-"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="pb-3 border-b dark:border-slate-800">
+                  <span className="text-xs font-bold text-slate-400 block mb-1">Driver</span>
+                  <span className="font-bold text-slate-700 dark:text-slate-300 uppercase">
+                    {ticketDetail.driver || "-"}
+                  </span>
+                </div>
+                <div className="pb-3 border-b dark:border-slate-800">
+                  <span className="text-xs font-bold text-slate-400 block mb-1">Tonase (Qty)</span>
+                  <span className="font-black text-slate-800 dark:text-white">
+                    {ticketDetail.qty} <span className="text-xs font-bold text-slate-500">Ton</span>
+                  </span>
+                </div>
+                <div className="pb-3 border-b dark:border-slate-800">
+                  <span className="text-xs font-bold text-slate-400 block mb-1">Status Pemuatan</span>
+                  <span className="font-black text-red-600 dark:text-red-400">
+                    {ticketDetail.positionString || ticketDetail.statuspemuatan || "-"}
+                  </span>
+                </div>
+                <div className="pb-3 border-b dark:border-slate-800">
+                  <span className="text-xs font-bold text-slate-400 block mb-1">Produk</span>
+                  <span className="font-bold text-slate-700 dark:text-slate-300">
+                    {ticketDetail.produkString || "-"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t dark:border-slate-800">
+              <Button
+                variant="ghost"
+                onClick={handleReset}
+                className="h-12 px-6 rounded-xl font-bold uppercase tracking-wider text-xs"
+              >
+                Batal
+              </Button>
+              <Button
+                onClick={() => setIsConfirmOpen(true)}
+                className="h-12 px-8 rounded-xl bg-red-600 hover:bg-red-700 text-white font-black uppercase tracking-wider text-xs shadow-lg shadow-red-500/20 gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                Hapus Paksa Tiket
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Confirmation Dialog */}
+      <Dialog
+        open={isConfirmOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setIsConfirmOpen(false);
+            setConfirmText("");
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[480px] p-0 overflow-hidden border-none rounded-3xl shadow-2xl">
+          <DialogHeader className="p-8 bg-red-50 dark:bg-red-950/20 border-b border-red-100/50 dark:border-red-950/10">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-rose-100 dark:bg-rose-500/10 rounded-xl">
-                <AlertTriangle className="h-6 w-6 text-rose-500" />
+              <div className="p-3 bg-red-100 dark:bg-red-500/10 rounded-2xl">
+                <AlertTriangle className="h-6 w-6 text-red-600 animate-bounce" />
               </div>
               <div>
-                <DialogTitle className="text-rose-600">Force Delete Tiket</DialogTitle>
-                <DialogDescription>Tiket akan dihapus permanen — tidak dapat dibatalkan.</DialogDescription>
+                <DialogTitle className="text-red-700 dark:text-red-400 font-black uppercase tracking-tight">
+                  Konfirmasi Hapus Paksa
+                </DialogTitle>
+                <DialogDescription className="text-red-600 dark:text-red-400 font-bold text-xs mt-1">
+                  Prosedur ini akan menghapus data secara permanen.
+                </DialogDescription>
               </div>
             </div>
           </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="p-3 bg-gray-50 dark:bg-white/5 rounded-xl space-y-1">
-              <p className="text-[10px] font-black uppercase text-gray-400">Tiket yang akan dihapus</p>
-              <p className="font-mono font-bold text-sm">{deleteTarget?.bookingno}</p>
-              <p className="text-xs text-gray-500">{deleteTarget?.nopol} — {deleteTarget?.plantcode}</p>
+
+          <div className="p-8 space-y-6">
+            <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border dark:border-slate-800 space-y-1">
+              <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider">
+                Tiket yang akan dihapus
+              </p>
+              <p className="font-mono font-black text-sm text-slate-800 dark:text-white">
+                {ticketDetail?.bookingno}
+              </p>
+              <p className="text-xs text-slate-500 font-bold uppercase mt-1">
+                {ticketDetail?.nopol} — QTY {ticketDetail?.qty} TON
+              </p>
             </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase text-gray-500 tracking-widest">
-                Alasan Force Delete <span className="text-rose-500">*</span>
+
+            <div className="space-y-3">
+              <label className="text-[10px] font-black uppercase text-slate-500 tracking-wider block">
+                Ketik <span className="text-red-600 font-black">SETUJU</span> untuk melanjutkan :
               </label>
-              <textarea
-                className="w-full rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-rose-400"
-                rows={3}
-                placeholder="Masukkan alasan yang jelas mengapa tiket ini perlu dihapus paksa..."
-                value={deleteReason}
-                onChange={e => setDeleteReason(e.target.value)}
+              <Input
+                placeholder="SETUJU"
+                className="h-12 text-center text-base font-black tracking-widest border-slate-200 dark:border-slate-800 focus-visible:ring-red-500 rounded-xl"
+                value={confirmText}
+                onChange={(e) => setConfirmText(e.target.value)}
               />
             </div>
-            <div className="p-3 bg-rose-50 dark:bg-rose-500/10 rounded-xl border border-rose-100 dark:border-rose-500/20">
-              <p className="text-xs font-bold text-rose-600 uppercase tracking-wider">Force Delete — Tidak Dapat Dibatalkan</p>
-              <p className="text-xs text-rose-500 mt-1">Data tiket akan hilang selamanya dari database.</p>
-            </div>
           </div>
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => { setDeleteTarget(null); setDeleteReason(""); }}>Batal</Button>
+
+          <DialogFooter className="p-6 bg-slate-50/50 dark:bg-slate-950/20 border-t dark:border-slate-800 gap-2 flex justify-end">
             <Button
-              className="bg-rose-500 hover:bg-rose-600 text-white"
-              onClick={handleConfirmDelete}
-              disabled={deleteMutation.isPending || !deleteReason.trim()}
+              variant="outline"
+              onClick={() => {
+                setIsConfirmOpen(false);
+                setConfirmText("");
+              }}
+              className="h-12 rounded-xl font-bold uppercase tracking-wider text-xs border-slate-200"
             >
-              {deleteMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Ya, Hapus Permanen
+              Batal
+            </Button>
+            <Button
+              onClick={handleForceDelete}
+              disabled={confirmText.toUpperCase() !== "SETUJU" || isDeleting}
+              className="h-12 px-6 rounded-xl bg-red-600 hover:bg-red-700 text-white font-black uppercase tracking-wider text-xs shadow-lg shadow-red-500/20"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Memproses...
+                </>
+              ) : (
+                "Hapus Sekarang"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
