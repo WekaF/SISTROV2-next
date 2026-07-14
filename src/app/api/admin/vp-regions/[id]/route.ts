@@ -102,6 +102,19 @@ export async function DELETE(
       );
     }
 
+    // Check if any manager is still scoped to this region (FK is SET NULL, which would
+    // silently degrade their ManagerScope to tier="vp" with vpRegionId=null)
+    const managerCount = await prismaLog.managerScope.count({
+      where: { vpRegionId: id },
+    });
+
+    if (managerCount > 0) {
+      return NextResponse.json(
+        { error: "Region masih punya manager terpasang, lepas dulu sebelum hapus" },
+        { status: 409 }
+      );
+    }
+
     try {
       await prismaLog.vpRegion.delete({
         where: { id },
