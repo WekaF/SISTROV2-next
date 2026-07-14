@@ -34,6 +34,49 @@ export async function GET() {
   }
 }
 
+// CREATE User for a specific plant (superadmin picks the target company_code)
+export async function POST(req: Request) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!isAdmin(session)) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await req.json();
+    const token = (session?.user as any)?.aspnetToken as string;
+
+    const registerRes = await aspnetFetchServer('/api/UserAccount/Register', token, {
+      method: 'POST',
+      body: JSON.stringify({
+        Username: body.username,
+        Password: body.password,
+        FullName: body.fullName,
+        Email: body.email,
+        CompanyCode: body.companyCode || null,
+        rolename: body.roles && body.roles.length > 0 ? body.roles[0] : "viewer"
+      })
+    });
+
+    if (!registerRes.ok) {
+      const err = await registerRes.text();
+      return NextResponse.json({ success: false, error: err }, { status: registerRes.status });
+    }
+
+    if (body.roles && body.roles.length > 0) {
+      for (const roleName of body.roles) {
+        await aspnetFetchServer('/api/UserAccount/AddtoRole', token, {
+          method: 'POST',
+          body: JSON.stringify({ username: body.username, role: roleName })
+        });
+      }
+    }
+
+    return NextResponse.json({ success: true, message: "User registered successfully" });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
+
 // GET Single User Detail
 // Usage: /api/admin/users/plant?username=xxx
 export async function PATCH(req: Request) {
