@@ -30,6 +30,7 @@ import * as XLSX from 'xlsx';
 import { useApi } from "@/hooks/use-api";
 import { useSession } from "next-auth/react";
 import { useToast } from "@/components/ui/toast";
+import { useCompanySafe } from "@/context/CompanyContext";
 import { cn } from "@/lib/utils";
 
 // --- Interfaces ---
@@ -152,6 +153,8 @@ export default function PostoUploadPage() {
   const { data: session } = useSession();
   const { apiJson, apiFetch, apiTable, token } = useApi();
   const { addToast } = useToast();
+  const companyCtx = useCompanySafe();
+  const activeCompanyCode = companyCtx?.activeCompanyCode ?? null;
 
   const [file, setFile] = useState<File | null>(null);
   const [selectedWilayah, setSelectedWilayah] = useState("");
@@ -167,27 +170,45 @@ export default function PostoUploadPage() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Load Wilayah Options
+  // Reset semua state upload saat company/plant berubah
+  // sehingga data lama tidak nyangkut ke company yang salah
+  const prevCompanyRef = React.useRef<string | null>(null);
+  useEffect(() => {
+    if (prevCompanyRef.current !== null && prevCompanyRef.current !== activeCompanyCode) {
+      // Company berubah — bersihkan semua state upload
+      setFile(null);
+      setParsedRows([]);
+      setValidationResult(null);
+      setUploadcode("");
+      setSummary({ sukses: 0, gagal: 0 });
+      setSubmitDone(false);
+      setSelectedWilayah("");
+      setWilayahOptions([]);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+    prevCompanyRef.current = activeCompanyCode;
+  }, [activeCompanyCode]);
+
+  // Load Wilayah Options — re-fetch ketika token atau activeCompanyCode berubah
+  // (token berubah saat switch company, sehingga DataMappingPOSTO mengembalikan
+  //  wilayah yang sesuai dengan company aktif)
   useEffect(() => {
     if (!token) return;
     const fetchWilayah = async () => {
       try {
         let data = await apiJson('/api/Wilayah/DataMappingPOSTO');
-        // Fallback to all regions if DataMappingPOSTO returns empty list (e.g. for SuperAdmin/TI or unmapped scopes)
+        // Fallback ke semua wilayah jika DataMappingPOSTO kosong
+        // (SuperAdmin/TI atau scope belum terpetakan)
         if (Array.isArray(data) && data.length === 0) {
           data = await apiJson('/api/Wilayah/DataForMapping');
         }
 
         if (Array.isArray(data) && data.length > 0) {
           setWilayahOptions(data);
-
-          // Try to find GP or PKG, otherwise fallback to the first one
-          const defaultOpt = data.find((w: any) =>
-            w.abbrev?.trim().toUpperCase() === "GP" ||
-            w.abbrev?.trim().toUpperCase() === "PKG"
-          ) || data[0];
-
-          setSelectedWilayah(defaultOpt.abbrev);
+          // Default ke opsi pertama yang dikembalikan API.
+          // DataMappingPOSTO sudah company-aware — hasilnya sudah sesuai
+          // dengan active plant user, jadi tidak perlu hardcode "GP"/"PKG".
+          setSelectedWilayah(data[0].abbrev);
         }
       } catch (err) {
         console.error("Failed to load wilayah options", err);
@@ -196,10 +217,10 @@ export default function PostoUploadPage() {
 
     const fetchSumbu = async () => {
       try {
-        // /api/admin/sumbu is role-gated (SuperAdmin/TI/AdminSumbu/AdminArmada) and
-        // returns 401 for the Staff/Transport users who actually upload POSTO/STO.
-        // Hit the ASP.NET Sumbu master list directly instead — same auth model
-        // (Bearer token via /aspnet-proxy) as every other lookup on this page.
+        // /api/admin/sumbu is role-gated (SuperAdmin/TI/AdminSumbu/AdminArmada) dan
+        // mengembalikan 401 untuk user Staff/Transport yang mengupload POSTO/STO.
+        // Hit ASP.NET Sumbu master list langsung — auth model sama
+        // (Bearer token via /aspnet-proxy) seperti lookup lain di halaman ini.
         const res = await apiTable('/api/Sumbu/DataTable', {
           start: 0,
           length: 200,
@@ -214,7 +235,8 @@ export default function PostoUploadPage() {
 
     fetchWilayah();
     fetchSumbu();
-  }, [apiJson, apiTable, token]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, activeCompanyCode]);
 
   // Step 1: Parse Excel
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
