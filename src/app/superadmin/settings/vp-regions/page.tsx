@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import { MapPin, Loader2, X } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import Badge from "@/components/ui/badge/Badge";
@@ -21,6 +21,7 @@ interface VpRegion {
 export default function VpRegionsPage() {
   const { addToast } = useToast();
   const queryClient = useQueryClient();
+  const [pendingWilayah, setPendingWilayah] = useState<string | null>(null);
 
   const { data: regionsData, isLoading: regionsLoading } = useQuery({
     queryKey: ["admin-regions"],
@@ -56,9 +57,11 @@ export default function VpRegionsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["vp-regions"] });
       addToast({ title: "Wilayah ditambahkan", variant: "success" });
+      setPendingWilayah(null);
     },
     onError: (err: any) => {
       addToast({ title: err.message, variant: "destructive" });
+      setPendingWilayah(null);
     },
   });
 
@@ -163,16 +166,19 @@ export default function VpRegionsPage() {
                   onChange={(e) => {
                     const wilayahCode = e.target.value;
                     if (wilayahCode) {
+                      setPendingWilayah(wilayahCode);
                       assignMutation.mutate({ regionId: region.id, wilayahCode });
                     }
                   }}
                 >
                   <option value="">-- Tambah Wilayah --</option>
-                  {unassigned.map((w) => (
-                    <option key={w.code} value={w.code}>
-                      {w.name} ({w.code})
-                    </option>
-                  ))}
+                  {unassigned
+                    .filter((w) => w.code !== pendingWilayah)
+                    .map((w) => (
+                      <option key={w.code} value={w.code}>
+                        {w.name} ({w.code})
+                      </option>
+                    ))}
                 </select>
               </CardContent>
             </Card>
