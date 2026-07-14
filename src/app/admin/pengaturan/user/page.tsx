@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import {
   Users, Edit, X, Loader2, Mail, Check, Lock, Building,
-  ShieldCheck, Fingerprint, Activity, Plus, UserCheck
+  ShieldCheck, Fingerprint, Activity, Plus, UserCheck, Eye, EyeOff,
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,66 @@ export default function AdminUserPage() {
   const queryClient = useQueryClient();
 
   const [showModal, setShowModal] = useState(false);
+
+  // Create modal state
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showCreatePassword, setShowCreatePassword] = useState(false);
+  const emptyCreateForm = {
+    username: "", password: "", fullName: "", email: "",
+    companyCode: "", roles: [] as string[],
+  };
+  const [createForm, setCreateForm] = useState(emptyCreateForm);
+  const resetCreateForm = () => { setCreateForm(emptyCreateForm); setShowCreatePassword(false); };
+
+  const { companies } = useCompany();
+
+  const { data: rolesData } = useQuery({
+    queryKey: ["admin-roles"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/roles");
+      return res.json() as Promise<any[]>;
+    },
+  });
+  const availableRoles = rolesData || [];
+
+  const toggleCreateRole = (code: string) => {
+    setCreateForm((prev) => ({
+      ...prev,
+      roles: prev.roles.includes(code) ? prev.roles.filter((r) => r !== code) : [...prev.roles, code],
+    }));
+  };
+
+  const createMutation = useMutation({
+    mutationFn: async (payload: typeof createForm) => {
+      const res = await fetch("/api/admin/users/plant", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || "Gagal membuat user");
+      return data;
+    },
+    onSuccess: () => {
+      addToast({ title: "User Dibuat", description: "Akun pengguna baru berhasil dibuat.", variant: "success" });
+      setShowCreateModal(false);
+      resetCreateForm();
+      queryClient.invalidateQueries({ queryKey: ["plant-users"] });
+    },
+    onError: (err: any) => addToast({ title: "Gagal Buat User", description: err.message, variant: "destructive" }),
+  });
+
+  const handleCreateSubmit = (e: { preventDefault(): void }) => {
+    e.preventDefault();
+    if (!createForm.username.trim()) return addToast({ title: "Validasi Gagal", description: "Username diperlukan.", variant: "destructive" });
+    if (!createForm.password || createForm.password.length < 8) return addToast({ title: "Validasi Gagal", description: "Password minimal 8 karakter.", variant: "destructive" });
+    if (!createForm.fullName.trim()) return addToast({ title: "Validasi Gagal", description: "Nama lengkap diperlukan.", variant: "destructive" });
+    // Plant/Unit is intentionally optional — leaving it blank creates a
+    // user with no company_code (the backend and the listing endpoint
+    // already handle that case correctly).
+    createMutation.mutate(createForm);
+  };
+
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [adminPassword, setAdminPassword] = useState("");
 
@@ -257,7 +317,16 @@ export default function AdminUserPage() {
             SISTRO NEXT &bull; ADMINISTRASI SISTEM
           </p>
         </div>
-        
+
+        <div className="flex items-center gap-4">
+          <Button
+            className="bg-brand-500 hover:bg-brand-600 rounded-none font-black uppercase tracking-widest text-[10px] h-10 px-6"
+            onClick={() => { resetCreateForm(); setShowCreateModal(true); }}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Tambah User Baru
+          </Button>
+
         <div className="flex gap-4">
           <Card className="rounded-none border-gray-100 dark:border-white/5 shadow-none bg-white dark:bg-white/[0.02] py-3 px-6 flex items-center gap-4 min-w-[160px]">
              <div className="p-2 bg-brand-50 dark:bg-brand-500/10 text-brand-500">
@@ -279,6 +348,7 @@ export default function AdminUserPage() {
              </div>
           </Card>
         </div>
+        </div>
       </div>
 
       {/* DataTable Integration */}
@@ -294,6 +364,106 @@ export default function AdminUserPage() {
           defaultPageSize={25}
         />
       </div>
+
+      {/* Create Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <Card className="w-full max-w-2xl rounded-none border-none bg-white dark:bg-[#1a1c1e] shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-in zoom-in duration-200">
+            <CardHeader className="border-b dark:border-white/5 pb-6 bg-gray-50/50 dark:bg-white/[0.02] p-8">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-xl font-black uppercase tracking-tight">Tambah User Baru</CardTitle>
+                  <CardDescription className="text-[10px] font-black uppercase tracking-widest text-brand-500 mt-1">Buat akun pengguna baru untuk plant manapun</CardDescription>
+                </div>
+                <Button variant="ghost" size="icon" className="rounded-none hover:bg-gray-200 dark:hover:bg-white/10" onClick={() => { setShowCreateModal(false); resetCreateForm(); }}>
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+            </CardHeader>
+            <form onSubmit={handleCreateSubmit}>
+              <div className="overflow-y-auto flex-1 p-8 space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black uppercase text-gray-400">Username <span className="text-rose-500">*</span></label>
+                    <Input
+                      placeholder="john.doe"
+                      value={createForm.username}
+                      onChange={(e) => setCreateForm({ ...createForm, username: e.target.value.trim() })}
+                      autoComplete="off"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black uppercase text-gray-400">Password <span className="text-rose-500">*</span></label>
+                    <div className="relative">
+                      <Input
+                        type={showCreatePassword ? "text" : "password"}
+                        placeholder="Min. 8 karakter"
+                        value={createForm.password}
+                        onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
+                        autoComplete="new-password"
+                        className="pr-10"
+                      />
+                      <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" onClick={() => setShowCreatePassword((s) => !s)}>
+                        {showCreatePassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black uppercase text-gray-400">Nama Lengkap <span className="text-rose-500">*</span></label>
+                    <Input value={createForm.fullName} onChange={(e) => setCreateForm({ ...createForm, fullName: e.target.value })} placeholder="John Doe" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black uppercase text-gray-400">Email Address</label>
+                    <Input type="email" value={createForm.email} onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })} placeholder="john@example.com" />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase text-gray-400">Plant / Unit (Opsional)</label>
+                  <select
+                    value={createForm.companyCode}
+                    onChange={(e) => setCreateForm({ ...createForm, companyCode: e.target.value })}
+                    className="w-full h-10 px-3 border border-gray-200 dark:border-white/10 bg-white dark:bg-transparent text-sm rounded-none"
+                  >
+                    <option value="">Tanpa Plant</option>
+                    {companies.map((c) => (
+                      <option key={c.company_code} value={c.company_code}>{c.company} ({c.company_code})</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black uppercase text-gray-400">Role Selection</label>
+                  <div className="flex flex-wrap gap-2">
+                    {availableRoles.map((role: any, idx: number) => {
+                      const code = role.code || role.Code || role.name || role.Name;
+                      if (!code) return null;
+                      const isSelected = createForm.roles.includes(code);
+                      return (
+                        <button key={`create-role-${code}-${idx}`} type="button" onClick={() => toggleCreateRole(code)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 border ${isSelected ? 'bg-brand-500 text-white border-brand-500 shadow-md shadow-brand-500/20' : 'bg-white text-gray-600 border-gray-200 hover:border-brand-200'}`}>
+                          {isSelected && <Check className="h-3 w-3" />}
+                          {role.name || role.Name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+              <CardFooter className="border-t bg-gray-50/50 p-4 flex justify-end gap-2">
+                <Button variant="ghost" type="button" onClick={() => { setShowCreateModal(false); resetCreateForm(); }}>Batal</Button>
+                <Button type="submit" className="bg-brand-500 hover:bg-brand-600 min-w-[130px]" disabled={createMutation.isPending}>
+                  {createMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                  Buat Akun
+                </Button>
+              </CardFooter>
+            </form>
+          </Card>
+        </div>
+      )}
 
       {/* Edit Modal */}
       {showModal && (
