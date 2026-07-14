@@ -248,6 +248,8 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
           { name: "Role & Menu Group", path: "/superadmin/settings/role-menu" },
           { name: "Menu Per User", path: "/superadmin/settings/user-menu" },
           { name: "Menu per Perusahaan", path: "/superadmin/settings/company-menu" },
+          { name: "Mapping VP Region", path: "/superadmin/settings/vp-regions" },
+          { name: "Manager Scope Assignment", path: "/superadmin/settings/manager-scope" },
         ],
       },
     ],
