@@ -1,8 +1,11 @@
 "use client";
 import React, { useState } from "react";
-import { MapPin, Loader2, X } from "lucide-react";
+import { MapPin, Loader2, X, Plus, Pencil, Trash2, Check } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import Badge from "@/components/ui/badge/Badge";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
@@ -22,6 +25,10 @@ export default function VpRegionsPage() {
   const { addToast } = useToast();
   const queryClient = useQueryClient();
   const [pendingWilayah, setPendingWilayah] = useState<string | null>(null);
+  const [newRegionName, setNewRegionName] = useState("");
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingName, setEditingName] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<VpRegion | null>(null);
 
   const { data: regionsData, isLoading: regionsLoading } = useQuery({
     queryKey: ["admin-regions"],
@@ -84,6 +91,65 @@ export default function VpRegionsPage() {
     },
   });
 
+  const createMutation = useMutation({
+    mutationFn: async (name: string) => {
+      const res = await fetch("/api/admin/vp-regions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal menambahkan VP Region");
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["vp-regions"] });
+      setNewRegionName("");
+      addToast({ title: "VP Region ditambahkan", variant: "success" });
+    },
+    onError: (err: any) => {
+      addToast({ title: err.message, variant: "destructive" });
+    },
+  });
+
+  const renameMutation = useMutation({
+    mutationFn: async ({ id, name }: { id: number; name: string }) => {
+      const res = await fetch(`/api/admin/vp-regions/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal mengubah nama VP Region");
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["vp-regions"] });
+      setEditingId(null);
+      addToast({ title: "Nama VP Region diubah", variant: "success" });
+    },
+    onError: (err: any) => {
+      addToast({ title: err.message, variant: "destructive" });
+    },
+  });
+
+  const deleteRegionMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/admin/vp-regions/${id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal menghapus VP Region");
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["vp-regions"] });
+      setDeleteTarget(null);
+      addToast({ title: "VP Region dihapus", variant: "success" });
+    },
+    onError: (err: any) => {
+      addToast({ title: err.message, variant: "destructive" });
+    },
+  });
+
   const wilayahs = regionsData || [];
   const vpRegions = vpRegionsData || [];
 
@@ -110,6 +176,37 @@ export default function VpRegionsPage() {
         </div>
       </div>
 
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Tambah VP Region</CardTitle>
+          <CardDescription>Buat VP Region baru, mis. &quot;Wilayah Barat&quot;</CardDescription>
+        </CardHeader>
+        <CardContent className="flex gap-2">
+          <Input
+            placeholder="Nama VP Region..."
+            value={newRegionName}
+            onChange={(e) => setNewRegionName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && newRegionName.trim() && !createMutation.isPending) {
+                createMutation.mutate(newRegionName.trim());
+              }
+            }}
+          />
+          <Button
+            size="sm"
+            disabled={!newRegionName.trim() || createMutation.isPending}
+            onClick={() => createMutation.mutate(newRegionName.trim())}
+          >
+            {createMutation.isPending ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Plus className="w-4 h-4" />
+            )}
+            Tambah
+          </Button>
+        </CardContent>
+      </Card>
+
       {unassigned.length > 0 && (
         <Card>
           <CardHeader>
@@ -135,7 +232,58 @@ export default function VpRegionsPage() {
           return (
             <Card key={region.id}>
               <CardHeader>
-                <CardTitle className="text-base">{region.name}</CardTitle>
+                {editingId === region.id ? (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      autoFocus
+                      className="h-7"
+                      value={editingName}
+                      onChange={(e) => setEditingName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && editingName.trim() && !renameMutation.isPending) {
+                          renameMutation.mutate({ id: region.id, name: editingName.trim() });
+                        }
+                        if (e.key === "Escape") setEditingId(null);
+                      }}
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      disabled={!editingName.trim() || renameMutation.isPending}
+                      onClick={() => renameMutation.mutate({ id: region.id, name: editingName.trim() })}
+                    >
+                      {renameMutation.isPending ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Check className="w-3.5 h-3.5" />
+                      )}
+                    </Button>
+                    <Button variant="ghost" size="icon-sm" onClick={() => setEditingId(null)}>
+                      <X className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base">{region.name}</CardTitle>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => { setEditingId(region.id); setEditingName(region.name); }}
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => setDeleteTarget(region)}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
                 <CardDescription>{assignedWilayahs.length} wilayah</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -185,6 +333,18 @@ export default function VpRegionsPage() {
           );
         })}
       </div>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}
+        title="Hapus VP Region"
+        description={`Hapus VP Region "${deleteTarget?.name}"?`}
+        confirmText="Hapus"
+        variant="danger"
+        isLoading={deleteRegionMutation.isPending}
+        onConfirm={() => { if (deleteTarget) deleteRegionMutation.mutate(deleteTarget.id); }}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }
