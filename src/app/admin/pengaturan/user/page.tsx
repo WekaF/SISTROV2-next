@@ -30,8 +30,6 @@ export default function AdminUserPage() {
   const [createForm, setCreateForm] = useState(emptyCreateForm);
   const resetCreateForm = () => { setCreateForm(emptyCreateForm); setShowCreatePassword(false); };
 
-  const { companies } = useCompany();
-
   const { data: rolesData } = useQuery({
     queryKey: ["admin-roles"],
     queryFn: async () => {
@@ -40,6 +38,16 @@ export default function AdminUserPage() {
     },
   });
   const availableRoles = rolesData || [];
+
+  const { data: companiesData } = useQuery({
+    queryKey: ["admin-companies"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/companies");
+      const json = await res.json();
+      return (json.data || []) as { code: string; name: string }[];
+    },
+  });
+  const availableCompanies = companiesData || [];
 
   const toggleCreateRole = (code: string) => {
     setCreateForm((prev) => ({
@@ -429,8 +437,8 @@ export default function AdminUserPage() {
                     className="w-full h-10 px-3 border border-gray-200 dark:border-white/10 bg-white dark:bg-transparent text-sm rounded-none"
                   >
                     <option value="">Tanpa Plant</option>
-                    {companies.map((c) => (
-                      <option key={c.company_code} value={c.company_code}>{c.company} ({c.company_code})</option>
+                    {availableCompanies.map((c) => (
+                      <option key={c.code} value={c.code}>{c.name} ({c.code})</option>
                     ))}
                   </select>
                 </div>
@@ -444,7 +452,7 @@ export default function AdminUserPage() {
                       const isSelected = createForm.roles.includes(code);
                       return (
                         <button key={`create-role-${code}-${idx}`} type="button" onClick={() => toggleCreateRole(code)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 border ${isSelected ? 'bg-brand-500 text-white border-brand-500 shadow-md shadow-brand-500/20' : 'bg-white text-gray-600 border-gray-200 hover:border-brand-200'}`}>
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 border ${isSelected ? 'bg-brand-500 text-white border-brand-500 shadow-md shadow-brand-500/20' : 'bg-white text-gray-600 border-gray-200 hover:border-brand-200 dark:bg-white/5 dark:text-gray-300 dark:border-white/10'}`}>
                           {isSelected && <Check className="h-3 w-3" />}
                           {role.name || role.Name}
                         </button>
@@ -453,9 +461,9 @@ export default function AdminUserPage() {
                   </div>
                 </div>
               </div>
-              <CardFooter className="border-t bg-gray-50/50 p-4 flex justify-end gap-2">
-                <Button variant="ghost" type="button" onClick={() => { setShowCreateModal(false); resetCreateForm(); }}>Batal</Button>
-                <Button type="submit" className="bg-brand-500 hover:bg-brand-600 min-w-[130px]" disabled={createMutation.isPending}>
+              <CardFooter className="border-t dark:border-white/5 bg-gray-50/50 dark:bg-white/[0.01] p-4 flex justify-end gap-2">
+                <Button variant="ghost" type="button" className="rounded-none font-black uppercase tracking-widest text-[10px] h-10 px-6" onClick={() => { setShowCreateModal(false); resetCreateForm(); }}>Batal</Button>
+                <Button type="submit" className="bg-brand-500 hover:bg-brand-600 rounded-none font-black uppercase tracking-widest text-[10px] h-10 px-6 min-w-[130px]" disabled={createMutation.isPending}>
                   {createMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                   Buat Akun
                 </Button>
