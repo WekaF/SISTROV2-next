@@ -26,20 +26,20 @@ interface Company {
 }
 
 interface VpRegion {
-  id: number;
+  id: string;
   name: string;
 }
 
 type Tier = "avp" | "vp" | "direksi";
 
 interface ManagerScope {
-  id: number;
+  id: string;
   userId: string;
   tier: Tier;
   wilayahCode: string | null;
-  vpRegionId: number | null;
+  vpRegionId: string | null;
   companyCode: string | null;
-  vpRegion: { id: number; name: string } | null;
+  vpRegion: { id: string; name: string } | null;
 }
 
 const TIER_LABELS: Record<Tier, string> = {
@@ -123,7 +123,7 @@ export default function ManagerScopePage() {
     mutationFn: async () => {
       const body: Record<string, unknown> = { userId: selectedUser!.id, tier };
       if (tier === "avp") body.wilayahCode = wilayahCode;
-      if (tier === "vp") body.vpRegionId = Number(vpRegionId);
+      if (tier === "vp") body.vpRegionId = vpRegionId;
       if (tier === "direksi") body.companyCode = companyCode;
 
       const res = await fetch("/api/admin/manager-scope", {
@@ -146,7 +146,7 @@ export default function ManagerScopePage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: number) => {
+    mutationFn: async (id: string) => {
       const res = await fetch(`/api/admin/manager-scope?id=${id}`, { method: "DELETE" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Gagal menghapus scope");

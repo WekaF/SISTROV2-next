@@ -1,13 +1,25 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prismaLog } from "@/lib/prisma";
+import { aspnetFetchServer } from "@/lib/api-client";
 
 function isAuthorized(session: any): boolean {
   const roles: string[] = (session?.user as any)?.roles || [];
   return !!session?.user && roles.some((r) =>
     ["superadmin", "ti"].includes(r.toLowerCase())
   );
+}
+
+function toScope(s: any) {
+  return {
+    id: s.Id,
+    userId: s.UserId,
+    tier: s.Tier,
+    wilayahCode: s.WilayahCode,
+    vpRegionId: s.VpRegionId,
+    companyCode: s.CompanyCode,
+    vpRegion: s.VpRegionId ? { id: s.VpRegionId, name: s.VpRegionName } : null,
+  };
 }
 
 export async function GET(request: Request) {
@@ -19,24 +31,20 @@ export async function GET(request: Request) {
 
     const url = new URL(request.url);
     const userId = url.searchParams.get("userId");
-
     if (!userId) {
       return NextResponse.json({ error: "userId wajib diisi" }, { status: 400 });
     }
 
-    const managerScope = await prismaLog.managerScope.findUnique({
-      where: { userId },
-      include: { vpRegion: true },
-    });
+    const token = (session?.user as any)?.aspnetToken as string;
+    const res = await aspnetFetchServer(`/api/ManagerScope/Get?userId=${encodeURIComponent(userId)}`, token);
 
-    if (!managerScope) {
-      return NextResponse.json(
-        { error: "Data tidak ditemukan" },
-        { status: 404 }
-      );
+    if (!res.ok) {
+      const err = await res.text().catch(() => res.statusText);
+      return NextResponse.json({ error: err }, { status: res.status });
     }
 
-    return NextResponse.json({ success: true, data: managerScope });
+    const scope = await res.json();
+    return NextResponse.json({ success: true, data: toScope(scope) });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
@@ -60,91 +68,36 @@ export async function POST(request: Request) {
       userId?: string;
       tier?: string;
       wilayahCode?: string;
-      vpRegionId?: number;
+      vpRegionId?: string;
       companyCode?: string;
     };
 
-    // Validation
     if (!userId || !userId.trim()) {
       return NextResponse.json({ error: "userId wajib diisi" }, { status: 400 });
     }
-
     if (!tier || !tier.trim()) {
       return NextResponse.json({ error: "tier wajib diisi" }, { status: 400 });
     }
 
-    const normalizedTier = tier.trim().toLowerCase();
-    if (!["avp", "vp", "direksi"].includes(normalizedTier)) {
-      return NextResponse.json(
-        { error: "tier harus salah satu dari: avp, vp, direksi" },
-        { status: 400 }
-      );
+    const token = (session?.user as any)?.aspnetToken as string;
+    const res = await aspnetFetchServer("/api/ManagerScope/Save", token, {
+      method: "POST",
+      body: JSON.stringify({
+        UserId: userId.trim(),
+        Tier: tier.trim(),
+        WilayahCode: wilayahCode,
+        VpRegionId: vpRegionId,
+        CompanyCode: companyCode,
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.text().catch(() => res.statusText);
+      return NextResponse.json({ error: err }, { status: res.status });
     }
 
-    // Tier-specific validation and data construction
-    let updateData: any;
-
-    if (normalizedTier === "avp") {
-      if (!wilayahCode || !wilayahCode.trim()) {
-        return NextResponse.json({ error: "wilayahCode wajib diisi untuk tier avp" }, { status: 400 });
-      }
-      updateData = {
-        userId: userId.trim(),
-        tier: normalizedTier,
-        wilayahCode: wilayahCode.trim(),
-        vpRegionId: null,
-        companyCode: null,
-      };
-    } else if (normalizedTier === "vp") {
-      if (vpRegionId === undefined || vpRegionId === null) {
-        return NextResponse.json({ error: "vpRegionId wajib diisi untuk tier vp" }, { status: 400 });
-      }
-      updateData = {
-        userId: userId.trim(),
-        tier: normalizedTier,
-        wilayahCode: null,
-        vpRegionId: vpRegionId,
-        companyCode: null,
-      };
-    } else if (normalizedTier === "direksi") {
-      if (!companyCode || !companyCode.trim()) {
-        return NextResponse.json({ error: "companyCode wajib diisi untuk tier direksi" }, { status: 400 });
-      }
-      updateData = {
-        userId: userId.trim(),
-        tier: normalizedTier,
-        wilayahCode: null,
-        vpRegionId: null,
-        companyCode: companyCode.trim(),
-      };
-    }
-
-    const username = (session?.user as any)?.username ?? "unknown";
-
-    try {
-      const upserted = await prismaLog.managerScope.upsert({
-        where: { userId: userId.trim() },
-        create: {
-          ...updateData,
-          createdBy: username,
-        },
-        update: {
-          ...updateData,
-          updatedBy: username,
-        },
-        include: { vpRegion: true },
-      });
-
-      return NextResponse.json({ success: true, data: upserted }, { status: 201 });
-    } catch (dbError: any) {
-      if (dbError.code === "P2002") {
-        return NextResponse.json(
-          { error: "userId sudah dipakai" },
-          { status: 409 }
-        );
-      }
-      throw dbError;
-    }
+    const scope = await res.json();
+    return NextResponse.json({ success: true, data: toScope(scope) }, { status: 201 });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
@@ -158,32 +111,23 @@ export async function DELETE(request: Request) {
     }
 
     const url = new URL(request.url);
-    const idParam = url.searchParams.get("id");
-
-    if (!idParam) {
+    const id = url.searchParams.get("id");
+    if (!id) {
       return NextResponse.json({ error: "id wajib diisi" }, { status: 400 });
     }
 
-    const id = parseInt(idParam, 10);
-    if (isNaN(id)) {
-      return NextResponse.json({ error: "id harus berupa angka" }, { status: 400 });
+    const token = (session?.user as any)?.aspnetToken as string;
+    const res = await aspnetFetchServer("/api/ManagerScope/Delete", token, {
+      method: "POST",
+      body: JSON.stringify({ Id: id }),
+    });
+
+    if (!res.ok) {
+      const err = await res.text().catch(() => res.statusText);
+      return NextResponse.json({ error: err }, { status: res.status });
     }
 
-    try {
-      await prismaLog.managerScope.delete({
-        where: { id },
-      });
-
-      return NextResponse.json({ success: true });
-    } catch (dbError: any) {
-      if (dbError.code === "P2025") {
-        return NextResponse.json(
-          { error: "Data tidak ditemukan" },
-          { status: 404 }
-        );
-      }
-      throw dbError;
-    }
+    return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }

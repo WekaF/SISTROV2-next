@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prismaLog } from "@/lib/prisma";
+import { aspnetFetchServer } from "@/lib/api-client";
 
 function isAuthorized(session: any): boolean {
   const roles: string[] = (session?.user as any)?.roles || [];
@@ -10,115 +10,64 @@ function isAuthorized(session: any): boolean {
   );
 }
 
-export async function POST(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     if (!isAuthorized(session)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const resolvedParams = await params;
-    const vpRegionId = parseInt(resolvedParams.id, 10);
-
-    if (isNaN(vpRegionId)) {
-      return NextResponse.json({ error: "Invalid id" }, { status: 400 });
+    const { id } = await params;
+    const body = await req.json();
+    if (!body.wilayahCode || typeof body.wilayahCode !== "string") {
+      return NextResponse.json({ error: "wilayahCode required" }, { status: 400 });
     }
 
-    let body: any;
-    try {
-      body = await request.json();
-    } catch {
-      return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-    }
-
-    const { wilayahCode } = body as { wilayahCode: string };
-
-    if (!wilayahCode || !wilayahCode.trim()) {
-      return NextResponse.json({ error: "wilayahCode wajib diisi" }, { status: 400 });
-    }
-
-    // Verify region exists
-    const region = await prismaLog.vpRegion.findUnique({
-      where: { id: vpRegionId },
+    const token = (session?.user as any)?.aspnetToken as string;
+    const res = await aspnetFetchServer("/api/VpRegion/AssignWilayah", token, {
+      method: "POST",
+      body: JSON.stringify({ VpRegionId: id, WilayahCode: body.wilayahCode }),
     });
 
-    if (!region) {
-      return NextResponse.json(
-        { error: "Data tidak ditemukan" },
-        { status: 404 }
-      );
+    if (!res.ok) {
+      const err = await res.text().catch(() => res.statusText);
+      return NextResponse.json({ error: err }, { status: res.status });
     }
 
-    try {
-      const upserted = await prismaLog.vpRegionWilayah.upsert({
-        where: { wilayahCode: wilayahCode.trim() },
-        update: { vpRegionId },
-        create: {
-          vpRegionId,
-          wilayahCode: wilayahCode.trim(),
-        },
-      });
-
-      return NextResponse.json({ success: true, data: upserted }, { status: 201 });
-    } catch (dbError: any) {
-      if (dbError.code === "P2002") {
-        return NextResponse.json(
-          { error: "Wilayah code sudah dipakai" },
-          { status: 409 }
-        );
-      }
-      throw dbError;
-    }
+    const assignment = await res.json();
+    return NextResponse.json({
+      success: true,
+      data: { id: assignment.Id, vpRegionId: assignment.VpRegionId, wilayahCode: assignment.WilayahCode },
+    });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     if (!isAuthorized(session)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const resolvedParams = await params;
-    const vpRegionId = parseInt(resolvedParams.id, 10);
-
-    if (isNaN(vpRegionId)) {
-      return NextResponse.json({ error: "Invalid id" }, { status: 400 });
-    }
-
-    const { searchParams } = new URL(request.url);
+    await params; // region id not needed, wilayahCode is globally unique
+    const { searchParams } = new URL(req.url);
     const wilayahCode = searchParams.get("wilayahCode");
+    if (!wilayahCode) return NextResponse.json({ error: "wilayahCode required" }, { status: 400 });
 
-    if (!wilayahCode || !wilayahCode.trim()) {
-      return NextResponse.json(
-        { error: "Query parameter ?wilayahCode= wajib diisi" },
-        { status: 400 }
-      );
+    const token = (session?.user as any)?.aspnetToken as string;
+    const res = await aspnetFetchServer("/api/VpRegion/UnassignWilayah", token, {
+      method: "POST",
+      body: JSON.stringify({ WilayahCode: wilayahCode }),
+    });
+
+    if (!res.ok) {
+      const err = await res.text().catch(() => res.statusText);
+      return NextResponse.json({ error: err }, { status: res.status });
     }
 
-    try {
-      await prismaLog.vpRegionWilayah.delete({
-        where: { wilayahCode: wilayahCode.trim() },
-      });
-
-      return NextResponse.json({ success: true });
-    } catch (dbError: any) {
-      if (dbError.code === "P2025") {
-        return NextResponse.json(
-          { error: "Data tidak ditemukan" },
-          { status: 404 }
-        );
-      }
-      throw dbError;
-    }
+    return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }

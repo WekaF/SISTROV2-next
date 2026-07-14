@@ -16,9 +16,9 @@ interface Wilayah {
 }
 
 interface VpRegion {
-  id: number;
+  id: string;
   name: string;
-  wilayahs: { id: number; wilayahCode: string }[];
+  wilayahs: { id: string; wilayahCode: string }[];
 }
 
 export default function VpRegionsPage() {
@@ -26,7 +26,7 @@ export default function VpRegionsPage() {
   const queryClient = useQueryClient();
   const [pendingWilayah, setPendingWilayah] = useState<string | null>(null);
   const [newRegionName, setNewRegionName] = useState("");
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<VpRegion | null>(null);
 
@@ -51,7 +51,7 @@ export default function VpRegionsPage() {
   });
 
   const assignMutation = useMutation({
-    mutationFn: async ({ regionId, wilayahCode }: { regionId: number; wilayahCode: string }) => {
+    mutationFn: async ({ regionId, wilayahCode }: { regionId: string; wilayahCode: string }) => {
       const res = await fetch(`/api/admin/vp-regions/${regionId}/wilayah`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -73,7 +73,7 @@ export default function VpRegionsPage() {
   });
 
   const unassignMutation = useMutation({
-    mutationFn: async ({ regionId, wilayahCode }: { regionId: number; wilayahCode: string }) => {
+    mutationFn: async ({ regionId, wilayahCode }: { regionId: string; wilayahCode: string }) => {
       const res = await fetch(
         `/api/admin/vp-regions/${regionId}/wilayah?wilayahCode=${encodeURIComponent(wilayahCode)}`,
         { method: "DELETE" }
@@ -113,7 +113,7 @@ export default function VpRegionsPage() {
   });
 
   const renameMutation = useMutation({
-    mutationFn: async ({ id, name }: { id: number; name: string }) => {
+    mutationFn: async ({ id, name }: { id: string; name: string }) => {
       const res = await fetch(`/api/admin/vp-regions/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -134,7 +134,7 @@ export default function VpRegionsPage() {
   });
 
   const deleteRegionMutation = useMutation({
-    mutationFn: async (id: number) => {
+    mutationFn: async (id: string) => {
       const res = await fetch(`/api/admin/vp-regions/${id}`, { method: "DELETE" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Gagal menghapus VP Region");

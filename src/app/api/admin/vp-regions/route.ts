@@ -1,13 +1,21 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prismaLog } from "@/lib/prisma";
+import { aspnetFetchServer } from "@/lib/api-client";
 
 function isAuthorized(session: any): boolean {
   const roles: string[] = (session?.user as any)?.roles || [];
   return !!session?.user && roles.some((r) =>
     ["superadmin", "ti"].includes(r.toLowerCase())
   );
+}
+
+function toRegion(r: any) {
+  return {
+    id: r.Id,
+    name: r.Name,
+    wilayahs: (r.WilayahCodes || []).map((code: string) => ({ id: code, wilayahCode: code })),
+  };
 }
 
 export async function GET() {
@@ -17,12 +25,15 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const regions = await prismaLog.vpRegion.findMany({
-      include: { wilayahs: true },
-      orderBy: { name: "asc" },
-    });
+    const token = (session?.user as any)?.aspnetToken as string;
+    const res = await aspnetFetchServer("/api/VpRegion/List", token);
+    if (!res.ok) {
+      const body = await res.text().catch(() => res.statusText);
+      throw new Error(`Backend ${res.status}: ${body}`);
+    }
 
-    return NextResponse.json({ success: true, data: regions });
+    const regions: any[] = await res.json();
+    return NextResponse.json({ success: true, data: regions.map(toRegion) });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
@@ -42,33 +53,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
     }
 
-    const { name } = body as { name: string };
+    const token = (session?.user as any)?.aspnetToken as string;
+    const res = await aspnetFetchServer("/api/VpRegion/Create", token, {
+      method: "POST",
+      body: JSON.stringify({ Name: body.name }),
+    });
 
-    if (!name || !name.trim()) {
-      return NextResponse.json({ error: "Nama region wajib diisi" }, { status: 400 });
+    if (!res.ok) {
+      const err = await res.text().catch(() => res.statusText);
+      return NextResponse.json({ error: err }, { status: res.status });
     }
 
-    const username = (session?.user as any)?.username ?? "unknown";
-
-    try {
-      const created = await prismaLog.vpRegion.create({
-        data: {
-          name: name.trim(),
-          createdBy: username,
-        },
-        include: { wilayahs: true },
-      });
-
-      return NextResponse.json({ success: true, data: created }, { status: 201 });
-    } catch (dbError: any) {
-      if (dbError.code === "P2002") {
-        return NextResponse.json(
-          { error: "Nama region sudah dipakai" },
-          { status: 409 }
-        );
-      }
-      throw dbError;
-    }
+    const created = await res.json();
+    return NextResponse.json({ success: true, data: toRegion(created) }, { status: 201 });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }

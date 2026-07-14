@@ -1,8 +1,8 @@
-import { prismaLog } from "@/lib/prisma";
+import { aspnetFetchServer } from "@/lib/api-client";
 
 export type ManagerScopeResult =
   | { tier: "avp"; wilayahCode: string }
-  | { tier: "vp"; vpRegionId: number; wilayahCodes: string[] }
+  | { tier: "vp"; vpRegionId: string; wilayahCodes: string[] }
   | { tier: "direksi"; companyCode: string }
   | { tier: "none" };
 
@@ -10,25 +10,31 @@ export type ManagerScopeResult =
  * Resolve a user's manager scope tier. For tier "vp", also resolves
  * the full list of wilayah codes currently assigned to that region,
  * since VP grouping is superadmin-editable and can change at any time.
+ *
+ * Backed by the ASP.NET ManagerScope/VpRegion controllers (SISTROAWESOME),
+ * so a valid backend bearer token is required — pass `session.user.aspnetToken`.
  */
-export async function getManagerScope(userId: string): Promise<ManagerScopeResult> {
-  const scope = await prismaLog.managerScope.findUnique({ where: { userId } });
-  if (!scope) return { tier: "none" };
+export async function getManagerScope(userId: string, token: string): Promise<ManagerScopeResult> {
+  const scopeRes = await aspnetFetchServer(`/api/ManagerScope/Get?userId=${encodeURIComponent(userId)}`, token);
+  if (scopeRes.status === 404) return { tier: "none" };
+  if (!scopeRes.ok) throw new Error(`Backend ${scopeRes.status}: ${await scopeRes.text().catch(() => scopeRes.statusText)}`);
 
-  if (scope.tier === "avp" && scope.wilayahCode) {
-    return { tier: "avp", wilayahCode: scope.wilayahCode };
+  const scope = await scopeRes.json();
+
+  if (scope.Tier === "avp" && scope.WilayahCode) {
+    return { tier: "avp", wilayahCode: scope.WilayahCode };
   }
 
-  if (scope.tier === "vp" && scope.vpRegionId) {
-    const wilayahs = await prismaLog.vpRegionWilayah.findMany({
-      where: { vpRegionId: scope.vpRegionId },
-      select: { wilayahCode: true },
-    });
-    return { tier: "vp", vpRegionId: scope.vpRegionId, wilayahCodes: wilayahs.map((w) => w.wilayahCode) };
+  if (scope.Tier === "vp" && scope.VpRegionId) {
+    const regionsRes = await aspnetFetchServer("/api/VpRegion/List", token);
+    if (!regionsRes.ok) throw new Error(`Backend ${regionsRes.status}: ${await regionsRes.text().catch(() => regionsRes.statusText)}`);
+    const regions: any[] = await regionsRes.json();
+    const region = regions.find((r) => r.Id === scope.VpRegionId);
+    return { tier: "vp", vpRegionId: scope.VpRegionId, wilayahCodes: region?.WilayahCodes || [] };
   }
 
-  if (scope.tier === "direksi" && scope.companyCode) {
-    return { tier: "direksi", companyCode: scope.companyCode };
+  if (scope.Tier === "direksi" && scope.CompanyCode) {
+    return { tier: "direksi", companyCode: scope.CompanyCode };
   }
 
   return { tier: "none" };
