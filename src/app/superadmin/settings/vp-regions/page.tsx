@@ -31,10 +31,10 @@ export default function VpRegionsPage() {
   const [deleteTarget, setDeleteTarget] = useState<VpRegion | null>(null);
 
   const { data: regionsData, isLoading: regionsLoading } = useQuery({
-    queryKey: ["admin-regions"],
+    queryKey: ["group-companies"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/regions");
-      if (!res.ok) throw new Error("Failed to fetch regions");
+      const res = await fetch("/api/admin/group-companies");
+      if (!res.ok) throw new Error("Failed to fetch group companies");
       const json = await res.json();
       return json.data as Wilayah[];
     },
