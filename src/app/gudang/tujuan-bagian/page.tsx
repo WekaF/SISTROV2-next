@@ -18,14 +18,11 @@ import {
 } from "@/components/ui/dialog";
 
 interface GudangTujuan {
-  id: string;
+  id: number;
   number: number;
   idgudang: string;
   namagudang: string;
-  tipe: string | number;
   kabupaten: string;
-  tonase: string | number;
-  qty?: string | number;
   Action: string;
 }
 
@@ -160,15 +157,9 @@ export default function GudangTujuanBagianPage() {
   const columns: DataTableColumn<GudangTujuan>[] = [
     { key: "number", header: "No", className: "w-12 text-center", render: (_, i) => <span className="text-xs font-bold text-slate-400">{i + 1}</span> },
     { key: "idgudang", header: "Code", className: "font-mono font-bold text-xs" },
-    { key: "namagudang", header: "Gudang Tujuan", className: "font-black uppercase text-slate-800 dark:text-white text-sm tracking-tight" },
-    { key: "tipe", header: "Tipe", className: "text-center font-bold text-slate-500", render: (row) => row.tipe || row.id },
+    { key: "namagudang", header: "Deskripsi Gudang", className: "font-black uppercase text-slate-800 dark:text-white text-sm tracking-tight" },
+    { key: "id", header: "Tipe", className: "text-center font-bold text-slate-500", render: (row) => row.id },
     { key: "kabupaten", header: "Kabupaten", className: "text-xs font-medium" },
-    {
-      key: "tonase",
-      header: "Tonase",
-      className: "text-right",
-      render: (row) => <span className="font-black text-brand-600">{row.qty || row.tonase || row.id} <span className="text-[10px] uppercase">Ton</span></span>
-    },
     {
       key: "Action",
       header: "Aksi",
@@ -185,11 +176,8 @@ export default function GudangTujuanBagianPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white uppercase">Gudang Tujuan Bagian</h1>
-            <Badge color="success" variant="solid" size="sm">KUOTA TONASE</Badge>
-          </div>
-          <p className="text-sm text-slate-500 font-medium">* Kuota dalam satuan ton. Daftar pemetaan gudang tujuan pemuatan.</p>
+          <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white uppercase">Gudang Tujuan Bagian</h1>
+          <p className="text-sm text-slate-500 font-medium">Daftar pemetaan gudang tujuan pemuatan.</p>
         </div>
         {/* {isCandal && (
           <Button className="bg-green-600 hover:bg-green-700 text-white font-black px-6 gap-2 h-11 shadow-lg shadow-green-500/20" onClick={() => setIsAddOpen(true)}>
