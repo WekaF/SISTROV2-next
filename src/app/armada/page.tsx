@@ -185,48 +185,74 @@ export default function ArmadaPage() {
 
   const editMutation = useMutation({
     mutationFn: async (data: any) => {
-      const fd = new FormData();
-      fd.append("ID", editId!);
-      if (isRekanan && armadaDetail?.TransportCode) {
-        fd.append("TransportCode", armadaDetail.TransportCode);
+      if (isRekanan) {
+        // Rekanan: ChangeDataAsyc mengharapkan multipart/form-data (ada upload file)
+        const fd = new FormData();
+        fd.append("ID", editId!);
+        if (armadaDetail?.TransportCode) {
+          fd.append("TransportCode", armadaDetail.TransportCode);
+        }
+        fd.append("nopol", data.Nopol);
+        fd.append("sumbu", data.SumbuId);
+        fd.append("jeniskendaraan", data.JenisKendaraan);
+        fd.append("qtymax", String(data.QtyMax || "0").replace(".", ","));
+        fd.append("jbi", String(data.JBI || "0").replace(".", ","));
+        fd.append("beratkendaraan", String(data.BeratKendaraan || "0").replace(".", ","));
+        fd.append("beratpenumpang", String(data.BeratPenumpang || "0").replace(".", ","));
+        fd.append("tahun_pembuatan", data.TahunPembuatan || "0");
+        fd.append("masa_berlaku_kir", data.MasaBerlakuKir);
+        fd.append("no_rangka_stnk", data.NoRangkaStnk);
+        fd.append("no_mesin_stnk", data.NoMesinStnk);
+        fd.append("no_rangka_kir", data.NoRangkaKir);
+        fd.append("no_mesin_kir", data.NoMesinKir);
+        fd.append("charterString", data.Charter ? "1" : "0");
+
+        if (data.Approver) {
+          fd.append("approver", data.Approver);
+        } else if (armadaDetail?.approver) {
+          fd.append("approver", armadaDetail.approver);
+        }
+
+        if (armadaDetail?.files1) fd.append("file1_before", armadaDetail.files1);
+        if (armadaDetail?.files2) fd.append("file2_before", armadaDetail.files2);
+        if (data.File1) fd.append("file1", data.File1);
+        if (data.File2) fd.append("file2", data.File2);
+
+        const res = await apiFetch("/api/Armada/ChangeDataAsyc", {
+          method: "POST",
+          body: fd,
+        });
+        return res;
+      } else {
+        // Admin / SuperAdmin / AdminArmada:
+        // ChangeDataBaru mengharapkan JSON body (`ArmadaView param`),
+        // bukan FormData — ASP.NET Web API POCO binding hanya bekerja via JSON.
+        const payload: Record<string, any> = {
+          ID: parseInt(editId!, 10),
+          nopol: data.Nopol,
+          sumbu: data.SumbuId,
+          jeniskendaraan: data.JenisKendaraan,
+          qtymax: parseFloat(String(data.QtyMax || "0").replace(",", ".")) || 0,
+          jbi: parseFloat(String(data.JBI || "0").replace(",", ".")) || 0,
+          beratkendaraan: parseFloat(String(data.BeratKendaraan || "0").replace(",", ".")) || 0,
+          beratpenumpang: parseFloat(String(data.BeratPenumpang || "0").replace(",", ".")) || 0,
+          tahun_pembuatan: parseInt(data.TahunPembuatan || "0", 10) || null,
+          masa_berlaku_kir_string: data.MasaBerlakuKir || "",
+          no_rangka_stnk: data.NoRangkaStnk || "",
+          no_mesin_stnk: data.NoMesinStnk || "",
+          no_rangka_kir: data.NoRangkaKir || "",
+          no_mesin_kir: data.NoMesinKir || "",
+          charterString: data.Charter ? "1" : "0",
+          approver: data.Approver || armadaDetail?.approver || "",
+        };
+
+        const res = await apiFetch("/api/Armada/ChangeDataBaru", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        return res;
       }
-      fd.append("nopol", data.Nopol);
-      fd.append("sumbu", data.SumbuId);
-      fd.append("jeniskendaraan", data.JenisKendaraan);
-      fd.append("qtymax", String(data.QtyMax || "0").replace(".", ","));
-      fd.append("jbi", String(data.JBI || "0").replace(".", ","));
-      fd.append("beratkendaraan", String(data.BeratKendaraan || "0").replace(".", ","));
-      fd.append("beratpenumpang", String(data.BeratPenumpang || "0").replace(".", ","));
-      fd.append("tahun_pembuatan", data.TahunPembuatan || "0");
-      fd.append("masa_berlaku_kir", data.MasaBerlakuKir);
-      fd.append("no_rangka_stnk", data.NoRangkaStnk);
-      fd.append("no_mesin_stnk", data.NoMesinStnk);
-      fd.append("no_rangka_kir", data.NoRangkaKir);
-      fd.append("no_mesin_kir", data.NoMesinKir);
-      fd.append("charterString", data.Charter ? "1" : "0");
-
-      // Approver is mandatory for ChangeDataAsyc
-      if (data.Approver) {
-        fd.append("approver", data.Approver);
-      } else if (armadaDetail?.approver) {
-        fd.append("approver", armadaDetail.approver);
-      }
-
-      // Preserve existing files metadata
-      if (armadaDetail?.files1) fd.append("file1_before", armadaDetail.files1);
-      if (armadaDetail?.files2) fd.append("file2_before", armadaDetail.files2);
-
-      // Handle new files
-      if (data.File1) fd.append("file1", data.File1);
-      if (data.File2) fd.append("file2", data.File2);
-
-      const endpoint = isRekanan ? "/api/Armada/ChangeDataAsyc" : "/api/Armada/ChangeDataBaru";
-
-      const res = await apiFetch(endpoint, {
-        method: "POST",
-        body: fd,
-      });
-      return res;
     },
     onSuccess: async (res) => {
       const text = typeof res === "string" ? res : await res.text().catch(() => "");
