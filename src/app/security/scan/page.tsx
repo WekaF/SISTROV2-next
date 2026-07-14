@@ -256,7 +256,11 @@ export default function SecurityScanPage() {
   };
 
   const handlePrint = () => {
-    if (!ticketData?.data?.tiketno) return;
+    // Gunakan tiketno jika tersedia, fallback ke bookingno.
+    // Beberapa company (Cilacap, dll) mungkin belum mengisi tiketno
+    // pada saat Security In — kita tetap bisa print dengan bookingno.
+    const printNo = ticketData?.data?.tiketno || ticketData?.data?.bookingno;
+    if (!printNo) return;
 
     let iframe = document.getElementById('print-iframe') as HTMLIFrameElement;
     if (!iframe) {
@@ -270,7 +274,7 @@ export default function SecurityScanPage() {
       iframe.style.border = '0';
       document.body.appendChild(iframe);
     }
-    iframe.src = `/security/print?bookingno=${ticketData.data.tiketno}`;
+    iframe.src = `/security/print?bookingno=${printNo}`;
   };
 
   const getPositionBadge = (pos: string) => {
@@ -559,26 +563,31 @@ export default function SecurityScanPage() {
               </Button>
             )}
 
-            {/* Print Button (Position 01+ or after verification success) */}
+            {/* Print Button — selalu tampil setelah Security In (position bukan "00")
+                Gunakan tiketno jika ada, fallback ke bookingno.
+                Ini memastikan print tetap bisa dilakukan di semua company
+                termasuk Cilacap dan company lain yang mungkin
+                tidak langsung mengisi tiketno saat checkin. */}
             {ticketData.data.position !== "00" && (
                <Button 
                 variant="outline"
                 size="lg" 
                 className="h-16 px-10 text-lg border-slate-400"
                 onClick={handlePrint}
-                disabled={isChecking || !ticketData.data.tiketno}
+                disabled={isChecking}
               >
                 <Printer className="mr-2 h-6 w-6" />
                 🖨 Print Security Pass
               </Button>
             )}
 
-            {/* No actions for other positions */}
-            {!["00", "01", "06", "07"].includes(ticketData.data.position) && (
-              <div className="text-center p-4 bg-muted rounded-lg border w-full">
-                <p className="text-muted-foreground font-medium italic">
-                  Tiket ini sedang dalam proses. Tidak ada aksi yang tersedia.
+            {/* Posisi in-process (01-05): tampilkan info status tanpa menyembunyikan print */}
+            {["01", "02", "03", "04", "05"].includes(ticketData.data.position) && (
+              <div className="text-center p-3 bg-blue-50 text-blue-700 rounded-lg border border-blue-100 w-full">
+                <p className="font-bold text-sm">
+                  Tiket sedang dalam proses: {ticketData.data.positionString || `Posisi ${ticketData.data.position}`}
                 </p>
+                <p className="text-xs text-blue-500 mt-1">Cetak Security Pass tetap tersedia di atas.</p>
               </div>
             )}
             

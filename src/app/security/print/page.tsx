@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 
 interface TicketData {
   data: {
+    bookingno: string;
     tiketno: string;
     nopol: string;
     driver: string;
@@ -61,8 +62,9 @@ function SecurityPrintContent() {
   }, [bookingno, apiFetch]);
 
   useEffect(() => {
-    if (data?.data?.tiketno && barcodeRef.current) {
-      JsBarcode(barcodeRef.current, data.data.tiketno, {
+    const ticketNo = data?.data?.tiketno || data?.data?.bookingno || bookingno || "";
+    if (ticketNo && barcodeRef.current) {
+      JsBarcode(barcodeRef.current, ticketNo, {
         format: "CODE128",
         width: 2,
         height: 50,
@@ -75,7 +77,7 @@ function SecurityPrintContent() {
       }, 800);
       return () => clearTimeout(timer);
     }
-  }, [data]);
+  }, [data, bookingno]);
 
   if (isLoading) {
     return (
@@ -95,6 +97,7 @@ function SecurityPrintContent() {
   }
 
   const { data: t } = data;
+  const ticketNo = t.tiketno || t.bookingno || bookingno || "";
 
   const getModa = (wilayah: string) => {
     switch (wilayah) {
@@ -147,7 +150,7 @@ function SecurityPrintContent() {
         {/* QR Code */}
         <div className="py-2">
           <QRCodeCanvas 
-            value={t.tiketno} 
+            value={ticketNo} 
             size={190} 
             level="H"
             includeMargin={true}
@@ -168,7 +171,7 @@ function SecurityPrintContent() {
           <tbody>
             <tr className="border-b-2 border-black">
               <td className="py-1 pr-2 whitespace-nowrap">Nomor Tiket</td>
-              <td className="py-1">: {t.tiketno}</td>
+              <td className="py-1">: {ticketNo}</td>
             </tr>
             <tr className="border-b-2 border-black">
               <td className="py-1 pr-2 whitespace-nowrap">Nomor Polisi</td>
