@@ -13,6 +13,7 @@ interface Wilayah {
   id: string;
   code: string;
   name: string;
+  isCustom?: boolean;
 }
 
 interface VpRegion {
@@ -29,6 +30,7 @@ export default function VpRegionsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<VpRegion | null>(null);
+  const [newWilayahName, setNewWilayahName] = useState("");
 
   const { data: regionsData, isLoading: regionsLoading } = useQuery({
     queryKey: ["group-companies"],
@@ -150,6 +152,43 @@ export default function VpRegionsPage() {
     },
   });
 
+  const createWilayahMutation = useMutation({
+    mutationFn: async (name: string) => {
+      const res = await fetch("/api/admin/group-companies", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal menambahkan wilayah");
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["group-companies"] });
+      setNewWilayahName("");
+      addToast({ title: "Wilayah custom ditambahkan", variant: "success" });
+    },
+    onError: (err: any) => {
+      addToast({ title: err.message, variant: "destructive" });
+    },
+  });
+
+  const deleteWilayahMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/admin/group-companies?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal menghapus wilayah");
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["group-companies"] });
+      addToast({ title: "Wilayah custom dihapus", variant: "success" });
+    },
+    onError: (err: any) => {
+      addToast({ title: err.message, variant: "destructive" });
+    },
+  });
+
   const wilayahs = regionsData || [];
   const vpRegions = vpRegionsData || [];
 
@@ -207,6 +246,39 @@ export default function VpRegionsPage() {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Tambah Wilayah Custom</CardTitle>
+          <CardDescription>
+            Wilayah tambahan di luar data groupcompany yang sudah ada, mis. &quot;Kalbar&quot;
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex gap-2">
+          <Input
+            placeholder="Nama wilayah..."
+            value={newWilayahName}
+            onChange={(e) => setNewWilayahName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && newWilayahName.trim() && !createWilayahMutation.isPending) {
+                createWilayahMutation.mutate(newWilayahName.trim());
+              }
+            }}
+          />
+          <Button
+            size="sm"
+            disabled={!newWilayahName.trim() || createWilayahMutation.isPending}
+            onClick={() => createWilayahMutation.mutate(newWilayahName.trim())}
+          >
+            {createWilayahMutation.isPending ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Plus className="w-4 h-4" />
+            )}
+            Tambah
+          </Button>
+        </CardContent>
+      </Card>
+
       {unassigned.length > 0 && (
         <Card>
           <CardHeader>
@@ -215,8 +287,17 @@ export default function VpRegionsPage() {
           </CardHeader>
           <CardContent className="flex flex-wrap gap-2">
             {unassigned.map((w) => (
-              <Badge key={w.code} color="warning" variant="outline">
+              <Badge key={w.code} color="warning" variant="outline" className="flex items-center gap-1">
                 {w.name} ({w.code})
+                {w.isCustom && (
+                  <button
+                    onClick={() => deleteWilayahMutation.mutate(w.id)}
+                    disabled={deleteWilayahMutation.isPending}
+                    className="hover:text-destructive"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
               </Badge>
             ))}
           </CardContent>
