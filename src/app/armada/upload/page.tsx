@@ -12,6 +12,7 @@ import {
   Download,
   Truck,
   XCircle,
+  Save,
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
@@ -487,17 +488,22 @@ export default function ArmadaUploadPage() {
             <div className="flex items-center justify-between flex-wrap gap-2">
               <CardTitle className="text-base">Preview Data</CardTitle>
               {!submitDone && (
-                <Button
-                  onClick={handleSubmit}
-                  disabled={validCount === 0 || isSubmitting}
-                  size="sm"
-                >
-                  {isSubmitting ? (
-                    <><Loader2 className="h-4 w-4 mr-1 animate-spin" />Menyimpan...</>
-                  ) : (
-                    <>Simpan {validCount} Armada Valid</>
-                  )}
-                </Button>
+                <div className="flex gap-3">
+                  <Button variant="outline" className="h-10 px-4 font-bold border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg" onClick={() => { setRows([]); setFileName(""); }}>
+                    Batal
+                  </Button>
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={validCount === 0 || isSubmitting}
+                    className="h-10 px-4 bg-brand-500 hover:bg-brand-600 text-white font-bold rounded-lg shadow-md shadow-brand-500/20"
+                  >
+                    {isSubmitting ? (
+                      <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Menyimpan...</>
+                    ) : (
+                      <><Save className="h-4 w-4 mr-2" />Simpan {validCount} Armada Valid</>
+                    )}
+                  </Button>
+                </div>
               )}
               {submitDone && (
                 <div className="flex gap-2">

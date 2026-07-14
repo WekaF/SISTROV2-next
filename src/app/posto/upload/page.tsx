@@ -610,15 +610,29 @@ export default function PostoUploadPage() {
                   </div>
                 </div>
 
-                {summary.sukses > 0 && (
-                  <Button
-                    className="w-full h-12 bg-brand-500 hover:bg-brand-600 text-white font-bold rounded-xl shadow-lg shadow-brand-500/20"
-                    onClick={handleSubmit}
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? <Loader2 className="h-5 w-5 mr-2 animate-spin" /> : <Save className="h-5 w-5 mr-2" />}
-                    Simpan {summary.sukses} Data Valid
-                  </Button>
+                {!submitDone && summary && summary.sukses > 0 && (
+                  <div className="flex flex-col sm:flex-row w-full gap-3 mt-4">
+                    <Button
+                      variant="outline"
+                      className="w-full sm:w-1/3 h-12 font-bold rounded-xl border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                      onClick={() => {
+                        setValidationResult(null);
+                        setSummary({ sukses: 0, gagal: 0 });
+                        setUploadcode("");
+                        setFile(null);
+                      }}
+                    >
+                      Batal
+                    </Button>
+                    <Button
+                      className="w-full sm:w-2/3 h-12 bg-brand-500 hover:bg-brand-600 text-white font-bold rounded-xl shadow-lg shadow-brand-500/20"
+                      onClick={handleSubmit}
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? <Loader2 className="h-5 w-5 mr-2 animate-spin" /> : <Save className="h-5 w-5 mr-2" />}
+                      Simpan {summary.sukses} Data Valid
+                    </Button>
+                  </div>
                 )}
               </div>
             )}
