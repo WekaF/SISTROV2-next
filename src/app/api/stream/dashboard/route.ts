@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { aspnetFetchServer } from "@/lib/api-client";
 import { resolveScopeCompanies } from "@/lib/manager-scope";
 
-const VIEWER_ROLES = ["superadmin", "ti", "admin", "pod", "viewer", "adminarmada", "adminsumbu"];
+const VIEWER_ROLES = ["superadmin", "ti", "admin", "pod", "viewer", "adminarmada", "adminsumbu", "manager"];
 
 function isAuthorized(session: any): boolean {
   const roles = (session?.user as any)?.roles || [];

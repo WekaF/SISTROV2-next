@@ -778,7 +778,7 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
 
   manager: {
     nav: [
-      { icon: <LayoutGrid className="h-5 w-5" />, name: "Dashboard", path: "/manager" },
+      { icon: <LayoutGrid className="h-5 w-5" />, name: "Dashboard", path: "/dashboard" },
       {
         icon: <Ticket className="h-5 w-5" />,
         name: "Dashboard Tiket",
