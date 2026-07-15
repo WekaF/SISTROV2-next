@@ -24,6 +24,7 @@ const MENU_GROUPS = [
   { value: "jembatan_timbang", label: "Jembatan Timbang" },
   { value: "pod",              label: "POD / AdminArmada" },
   { value: "pkd",              label: "PKD / Pelabuhan" },
+  { value: "manager",          label: "Manager (AVP/VP/Direksi)" },
   { value: "eksternal",        label: "Eksternal (akses minimal)" },
 ];
 
@@ -39,6 +40,7 @@ const GROUP_COLOR: Record<string, string> = {
   jembatan_timbang: "bg-cyan-100 text-cyan-800",
   pod:              "bg-indigo-100 text-indigo-800",
   pkd:              "bg-lime-100 text-lime-800",
+  manager:          "bg-emerald-100 text-emerald-800",
   eksternal:        "bg-gray-100 text-gray-600",
 };
 
