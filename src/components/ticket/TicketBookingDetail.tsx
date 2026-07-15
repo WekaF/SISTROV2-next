@@ -429,7 +429,7 @@ export function TicketBookingDetail({ guid }: TicketBookingDetailProps) {
                     start: p.start,
                     length: p.length,
                     search: p.search || "",
-                    order: p.order?.length ? p.order : [{ column: 1, dir: "desc" }],
+                    order: p.order?.length ? p.order : [{ column: 7, dir: "desc" }],
                     posto: guid,
                     cmd: 'refresh',
                     columns: [
