@@ -111,7 +111,11 @@ export default function ViewerDashboard() {
 
   const { data: streamData, status: streamStatus, lastUpdated: streamLastUpdated } = useDashboardStream(period, selectedMonth, selectedYear);
   const [isSimulated, setIsSimulated] = useState(false);
-  const [mapPlants, setMapPlants] = useState<any[]>([]);
+  // null = stream hasn't resolved yet (show loading/demo placeholder); an array
+  // (even empty) = a real, already-scoped answer from the backend — must never
+  // be treated as "no data provided" downstream, or the map falls back to an
+  // unscoped fetch that ignores AVP/VP/Direksi company restrictions.
+  const [mapPlants, setMapPlants] = useState<any[] | null>(null);
   const [mounted, setMounted] = useState(false);
   const [dockCompanies, setDockCompanies] = useState<{ company_code: string; company: string }[]>([
     { company_code: "PKG", company: "Petrokimia Gresik" },
@@ -465,6 +469,9 @@ export default function ViewerDashboard() {
     });
 
     // ── Map Data ──────────────────────────────────────────────────────────────
+    // Always resolve to a definitive array once the stream has responded — even
+    // an empty one — so a genuinely-empty (but correctly scoped) result is never
+    // mistaken for "not loaded yet" and routed into an unscoped fallback fetch.
     if (mapDataRes?.Success && Array.isArray(mapDataRes.data) && mapDataRes.data.length > 0) {
       const parsedMap = mapDataRes.data.map((p: any) => {
         let cleanLat = (p.lat || "0").toString();
@@ -483,6 +490,8 @@ export default function ViewerDashboard() {
         };
       });
       setMapPlants(parsedMap);
+    } else {
+      setMapPlants([]);
     }
   }, [streamData]);
 
@@ -1182,7 +1191,7 @@ export default function ViewerDashboard() {
           <div className="grid grid-cols-1 xl:grid-cols-12">
             {/* The Map itself */}
             <div className="xl:col-span-9 h-[500px] w-full relative overflow-hidden">
-              <InteractiveLeafletMap externalData={mapPlants.length > 0 ? mapPlants : undefined} />
+              <InteractiveLeafletMap externalData={mapPlants ?? undefined} />
             </div>
 
             {/* Side summary panel for high-tech look */}

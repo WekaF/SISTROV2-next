@@ -31,6 +31,7 @@ const ROLE_MAP: Record<string, string> = {
   pkg:                    "viewer",
   viewerposto:            "viewer",
   viewerarmada:           "viewer",
+  manager:                "manager",
   transport:              "transport",
   transportsuraljalan:    "transport",
   rekanan:                "rekanan",

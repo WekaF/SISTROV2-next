@@ -3,8 +3,6 @@ import React, { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-import { useApi } from "@/hooks/use-api";
-
 // Standard fix for Leaflet marker icon paths in Next.js/Webpack
 const fixLeafletIcon = () => {
   // @ts-ignore
@@ -44,84 +42,36 @@ const FALLBACK_PLANTS: PlantMarker[] = [
 ];
 
 function InteractiveLeafletMap({ externalData }: InteractiveLeafletMapProps) {
-  const { apiJson, token } = useApi();
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
   const [plants, setPlants] = useState<PlantMarker[]>(FALLBACK_PLANTS);
-  const [isSimulated, setIsSimulated] = useState(false);
+  const [isSimulated, setIsSimulated] = useState(true);
 
+  // This component has no data of its own — it only ever renders what the
+  // parent (ViewerDashboard) passes in via `externalData`, which is already
+  // scoped to the logged-in user's AVP/VP/Direksi company restrictions. It
+  // used to fall back to fetching /api/Home/MonitorMapData directly when
+  // externalData was empty, which bypassed that scoping entirely and leaked
+  // every company's data to a restricted user whenever their real (correct)
+  // result was legitimately empty. `externalData === undefined` means "parent
+  // hasn't resolved yet" (show the demo placeholder); any array, including an
+  // empty one, is the real answer and must be shown as-is.
   useEffect(() => {
     fixLeafletIcon();
 
-    // If parent provides SSE-driven map data, skip internal fetch
-    if (externalData && externalData.length > 0) {
-      setPlants(prev => {
-        if (JSON.stringify(prev) === JSON.stringify(externalData)) return prev;
-        return externalData;
-      });
-      setIsSimulated(false);
+    if (externalData === undefined) {
+      setPlants(FALLBACK_PLANTS);
+      setIsSimulated(true);
       return;
     }
 
-    // Fetch plant coordinate markers from the backend
-    const fetchMarkers = async () => {
-      try {
-        const resObj = await apiJson("/api/Home/MonitorMapData");
-        
-        if (resObj && resObj.Success && Array.isArray(resObj.data)) {
-          const parsedPlants: PlantMarker[] = resObj.data.map((p: any) => {
-            let cleanLat = p.lat || "0";
-            let cleanLng = p.lng || "0";
-            
-            // Robust parsing for European/Indonesian decimal comma vs thousand separator
-            if (cleanLat.includes(",") && cleanLat.includes(".")) {
-              cleanLat = cleanLat.replace(/,/g, "");
-            } else if (cleanLat.includes(",")) {
-              cleanLat = cleanLat.replace(/,/g, ".");
-            }
-            
-            if (cleanLng.includes(",") && cleanLng.includes(".")) {
-              cleanLng = cleanLng.replace(/,/g, "");
-            } else if (cleanLng.includes(",")) {
-              cleanLng = cleanLng.replace(/,/g, ".");
-            }
-            
-            // Phase coloring: if there's a queue, mark as Phase 1 (indigo pulse), otherwise Phase 2 (green pulse)
-            const phaseNum = p.antrian > 0 ? 1 : 2;
-
-            return {
-              name: p.name || p.company_code,
-              lat: cleanLat,
-              lng: cleanLng,
-              address: `Antrian Aktif: ${p.antrian} Truk`,
-              kodePlant: p.company_code || "UNKNOWN",
-              phase: phaseNum
-            };
-          });
-
-          if (parsedPlants.length > 0) {
-            setPlants(parsedPlants);
-            setIsSimulated(false);
-          } else {
-            setPlants(FALLBACK_PLANTS);
-            setIsSimulated(true);
-          }
-        } else {
-          setPlants(FALLBACK_PLANTS);
-          setIsSimulated(true);
-        }
-      } catch (err) {
-        console.warn("Failed to fetch map markers from API. Using simulated high-fidelity fallbacks.", err);
-        setPlants(FALLBACK_PLANTS);
-        setIsSimulated(true);
-      }
-    };
-
-    if (!token) return; // Wait for session token before fetching
-
-    fetchMarkers();
-  }, [apiJson, token, externalData]);
+    setPlants(prev => {
+      if (JSON.stringify(prev) === JSON.stringify(externalData)) return prev;
+      return externalData;
+    });
+    setIsSimulated(false);
+  }, [externalData]);
 
   // Initialize and update the leaflet map
   useEffect(() => {
