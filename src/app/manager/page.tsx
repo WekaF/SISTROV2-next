@@ -4,9 +4,7 @@ import dynamic from "next/dynamic";
 import { LayoutGrid, Truck, CheckCircle, Ban, AlertTriangle, Clock, Layers, Loader2 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
-import { useSession } from "next-auth/react";
 import { useTheme } from "@/context/ThemeContext";
-import { API_BASE } from "@/lib/api-client";
 
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
@@ -19,7 +17,6 @@ const PERIOD_LABELS: Record<Period, string> = {
 };
 
 interface GetStatsResult {
-  companyCode: string;
   antriAktif: number;
   proses: number;
   selesai: number;
@@ -31,7 +28,6 @@ interface GetStatsResult {
 }
 
 interface ManagerStats {
-  companyCode: string;
   trend: { tanggal: string; total: number; selesai: number; dibatalkan: number }[];
 }
 
@@ -61,33 +57,21 @@ function KpiCard({ label, value, sub, icon, highlight }: {
 }
 
 export default function ManagerDashboardPage() {
-  const { data: session } = useSession();
   const [period, setPeriod] = useState<Period>("week");
-  const token = (session?.user as any)?.aspnetToken as string;
-  const companyCode = (session?.user as any)?.companyCode || "";
   const { theme } = useTheme();
 
-  const { data: liveStats, isLoading: liveLoading } = useQuery<GetStatsResult>({
-    queryKey: ["manager-live-stats"],
+  const { data, isLoading } = useQuery<{ stats: GetStatsResult; trend: ManagerStats; scopeLabel: string | null }>({
+    queryKey: ["manager-dashboard-stats", period],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE}/api/CompanyDashboard/GetStats`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error("Gagal memuat data antrian");
+      const res = await fetch(`/api/manager/dashboard-stats?period=${period}`);
+      if (!res.ok) throw new Error("Gagal memuat data dashboard");
       return res.json();
     },
-    enabled: !!token,
     refetchInterval: 30_000,
   });
 
-  const { data: trendStats, isLoading: trendLoading } = useQuery<ManagerStats>({
-    queryKey: ["manager-trend", period],
-    queryFn: async () => {
-      const res = await fetch(`/api/manager/stats?period=${period}`);
-      if (!res.ok) throw new Error("Gagal memuat trend");
-      return res.json();
-    },
-  });
+  const liveStats = data?.stats;
+  const trendStats = data?.trend;
 
   const gudangOptions: ApexCharts.ApexOptions = {
     chart: { type: "bar", toolbar: { show: false } },
@@ -123,16 +107,16 @@ export default function ManagerDashboardPage() {
     chart: { type: "area", toolbar: { show: false }, animations: { enabled: false } },
     stroke: { curve: "smooth", width: 2 },
     fill: { type: "gradient", gradient: { opacityFrom: 0.3, opacityTo: 0 } },
-    xaxis: { 
+    xaxis: {
       categories: trendStats?.trend.map(t => t.tanggal) || [],
       labels: { style: { colors: theme === "dark" ? "#cbd5e1" : "#475569" } }
     },
     colors: ["#3b82f6", "#22c55e", "#ef4444"],
     legend: { position: "top", labels: { colors: theme === "dark" ? "#cbd5e1" : "#475569" } },
     tooltip: { shared: true, intersect: false },
-    yaxis: { 
-      min: 0, 
-      labels: { style: { colors: theme === "dark" ? "#cbd5e1" : "#475569" } } 
+    yaxis: {
+      min: 0,
+      labels: { style: { colors: theme === "dark" ? "#cbd5e1" : "#475569" } }
     },
     theme: { mode: theme },
   };
@@ -147,23 +131,23 @@ export default function ManagerDashboardPage() {
 
   return (
     <div className="p-6 space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
           <LayoutGrid className="w-6 h-6 text-primary dark:text-indigo-400" />
           <div>
             <h1 className="text-xl font-bold text-gray-900 dark:text-white">Dashboard Pimpinan</h1>
-            <p className="text-sm text-muted-foreground dark:text-gray-400">{companyCode} — Update tiap 30 detik</p>
+            <p className="text-sm text-muted-foreground dark:text-gray-400">
+              {data?.scopeLabel ?? "—"} — Update tiap 30 detik
+            </p>
           </div>
         </div>
-        {liveLoading && (
+        {isLoading && (
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground dark:text-gray-400">
             <Loader2 className="w-3 h-3 animate-spin" /> Memuat...
           </div>
         )}
       </div>
 
-      {/* KPI Antrian Real-time */}
       <div>
         <p className="text-xs font-semibold text-muted-foreground dark:text-gray-400 uppercase tracking-wider mb-3">Status Antrian Hari Ini</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -184,7 +168,6 @@ export default function ManagerDashboardPage() {
         </div>
       </div>
 
-      {/* Gudang + Shift Breakdown */}
       {liveStats && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card className="bg-white dark:bg-gray-800 border-gray-150 dark:border-gray-700 shadow-sm">
@@ -228,7 +211,6 @@ export default function ManagerDashboardPage() {
         </div>
       )}
 
-      {/* Trend Chart */}
       <Card className="bg-white dark:bg-gray-800 border-gray-150 dark:border-gray-700 shadow-sm">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
@@ -251,14 +233,14 @@ export default function ManagerDashboardPage() {
           </div>
         </CardHeader>
         <CardContent>
-          {trendLoading && (
+          {isLoading && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground dark:text-gray-400 py-4">
               <Loader2 className="w-4 h-4 animate-spin" /> Memuat...
             </div>
           )}
           {trendStats && trendStats.trend.length > 0 ? (
             <Chart type="area" series={trendSeries} options={trendOptions} height={220} />
-          ) : !trendLoading && (
+          ) : !isLoading && (
             <p className="text-center text-sm text-muted-foreground dark:text-gray-400 py-8">Tidak ada data trend</p>
           )}
         </CardContent>
