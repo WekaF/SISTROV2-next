@@ -2,8 +2,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Ticket, Loader2, Search, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { useSession } from "next-auth/react";
-import { API_BASE } from "@/lib/api-client";
 import { useTheme } from "@/context/ThemeContext";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -100,7 +98,7 @@ function Pagination({
 
 // ─── Tiket Datatable ──────────────────────────────────────────────────────────
 
-function TiketTable({ token }: { token: string }) {
+function TiketTable() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [search, setSearch] = useState("");
@@ -111,7 +109,6 @@ function TiketTable({ token }: { token: string }) {
   const drawRef = useRef(0);
 
   const fetch_ = useCallback(async () => {
-    if (!token) return;
     setLoading(true);
     drawRef.current += 1;
     const draw = drawRef.current;
@@ -125,11 +122,7 @@ function TiketTable({ token }: { token: string }) {
       "columns[0][name]": "tanggal",
     });
     try {
-      const res = await fetch(`${API_BASE}/api/Tiket/DataTableFilterLegacy`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/x-www-form-urlencoded" },
-        body: body.toString(),
-      });
+      const res = await fetch(`/api/manager/tiket-list?${body.toString()}`);
       if (!res.ok) throw new Error();
       const json: DtResponse<TiketRow> = await res.json();
       if (Number(json.draw) >= draw) {
@@ -139,7 +132,7 @@ function TiketTable({ token }: { token: string }) {
     } catch { /* silent */ } finally {
       setLoading(false);
     }
-  }, [token, page, pageSize, search]);
+  }, [page, pageSize, search]);
 
   useEffect(() => { fetch_(); }, [fetch_]);
 
@@ -218,7 +211,7 @@ function TiketTable({ token }: { token: string }) {
 
 const SHIFT_LABEL: Record<number, string> = { 1: "Pagi (06–14)", 2: "Siang (14–22)", 3: "Malam (22–06)" };
 
-function KuotaTable({ token }: { token: string }) {
+function KuotaTable() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [search, setSearch] = useState("");
@@ -229,7 +222,6 @@ function KuotaTable({ token }: { token: string }) {
   const drawRef = useRef(0);
 
   const fetch_ = useCallback(async () => {
-    if (!token) return;
     setLoading(true);
     drawRef.current += 1;
     const draw = drawRef.current;
@@ -243,11 +235,7 @@ function KuotaTable({ token }: { token: string }) {
       "columns[0][name]": "tanggal",
     });
     try {
-      const res = await fetch(`${API_BASE}/api/KuotaLevel4/DataTable`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/x-www-form-urlencoded" },
-        body: body.toString(),
-      });
+      const res = await fetch(`/api/manager/kuota-list?${body.toString()}`);
       if (!res.ok) throw new Error();
       const json: DtResponse<KuotaRow> = await res.json();
       if (Number(json.draw) >= draw) {
@@ -257,7 +245,7 @@ function KuotaTable({ token }: { token: string }) {
     } catch { /* silent */ } finally {
       setLoading(false);
     }
-  }, [token, page, pageSize, search]);
+  }, [page, pageSize, search]);
 
   useEffect(() => { fetch_(); }, [fetch_]);
 
@@ -328,8 +316,6 @@ function KuotaTable({ token }: { token: string }) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function ManagerTiketPage() {
-  const { data: session } = useSession();
-  const token = (session?.user as any)?.aspnetToken as string;
   const { theme } = useTheme();
 
   return (
@@ -347,11 +333,7 @@ export default function ManagerTiketPage() {
           <CardTitle className="text-base text-gray-900 dark:text-white">Data Tiket</CardTitle>
         </CardHeader>
         <CardContent>
-          {token ? <TiketTable token={token} /> : (
-            <div className="flex items-center gap-2 text-muted-foreground dark:text-gray-400 py-6">
-              <Loader2 className="w-4 h-4 animate-spin" /> Memuat sesi...
-            </div>
-          )}
+          <TiketTable />
         </CardContent>
       </Card>
 
@@ -360,11 +342,7 @@ export default function ManagerTiketPage() {
           <CardTitle className="text-base text-gray-900 dark:text-white">Datatable Kuota per Shift</CardTitle>
         </CardHeader>
         <CardContent>
-          {token ? <KuotaTable token={token} /> : (
-            <div className="flex items-center gap-2 text-muted-foreground dark:text-gray-400 py-6">
-              <Loader2 className="w-4 h-4 animate-spin" /> Memuat sesi...
-            </div>
-          )}
+          <KuotaTable />
         </CardContent>
       </Card>
     </div>
