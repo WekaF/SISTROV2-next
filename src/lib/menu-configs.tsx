@@ -778,21 +778,16 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
 
   manager: {
     nav: [
-      { icon: <LayoutGrid className="h-5 w-5" />, name: "Dashboard", path: "/dashboard" },
+      { icon: <LayoutGrid className="h-5 w-5" />, name: "Dashboard Utama", path: "/manager" },
       {
         icon: <Ticket className="h-5 w-5" />,
-        name: "Dashboard Tiket",
+        name: "Data Tiket",
         path: "/manager/tiket",
       },
       {
         icon: <BarChart3 className="h-5 w-5" />,
         name: "Antrian",
         path: "/manager/antrian",
-      },
-      {
-        icon: <FileText className="h-5 w-5" />,
-        name: "Laporan",
-        path: "/manager/laporan",
       },
     ],
     admin: [],
