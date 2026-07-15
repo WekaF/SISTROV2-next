@@ -36,6 +36,7 @@ interface TicketData {
   JamMasuk?: string;
   updatedonString?: string;
   qty?: number;
+  percepatan?: string;
 }
 
 function RekananTicketContent() {
@@ -50,6 +51,7 @@ function RekananTicketContent() {
     const endpoint = postoFilter ? "/api/Tiket/DataTablePeriodeTiket" : "/api/Tiket/DataTableFilterLegacy";
 
     const result = await apiTable(endpoint, {
+
       draw: params.draw,
       start: params.start,
       length: params.length,
@@ -82,11 +84,13 @@ function RekananTicketContent() {
     };
   };
 
+
   const columns: DataTableColumn<TicketData>[] = [
     {
       key: "action",
       header: "Aksi",
       render: (t) => (
+
         <TicketActions
           bookingNo={t.bookingno}
           statuspemuatan={t.statuspemuatan}
@@ -99,12 +103,20 @@ function RekananTicketContent() {
       ),
     },
     {
+
       key: "bookingno",
       header: "No Booking",
       sortColumn: 0,
       render: (t) => (
-        <div className="font-bold text-gray-900 dark:text-white font-mono text-sm tracking-tight">
-          {t.bookingno ?? "-"}
+        <div className="flex flex-col gap-1">
+          <div className="font-bold text-gray-900 dark:text-white font-mono text-sm tracking-tight">
+            {t.bookingno ?? "-"}
+          </div>
+          {(t.percepatan && String(t.percepatan).toUpperCase().includes("PERCEPATAN")) && (
+            <Badge color="warning" size="sm" variant="light" className="w-fit font-bold text-[9px] uppercase px-1.5 py-0 h-4">
+              Percepatan
+            </Badge>
+          )}
         </div>
       ),
     },

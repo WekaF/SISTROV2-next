@@ -155,9 +155,23 @@ export function TicketBookingDetail({ guid }: TicketBookingDetailProps) {
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="space-y-4">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-none bg-white/10 border border-white/10 backdrop-blur-md text-[10px] font-black uppercase tracking-[0.2em]">
-              <div className="h-1.5 w-1.5 rounded-none bg-emerald-400 animate-pulse" />
-              Pemesanan Tiket Aktif
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-none bg-white/10 border border-white/10 backdrop-blur-md text-[10px] font-black uppercase tracking-[0.2em]">
+                <div className="h-1.5 w-1.5 rounded-none bg-emerald-400 animate-pulse" />
+                Pemesanan Tiket Aktif
+              </div>
+              
+              {postoStats.noposto && (
+                (!String(postoStats.noposto).startsWith("5")) ? (
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-none bg-amber-500/20 border border-amber-500/30 text-amber-300 backdrop-blur-md text-[10px] font-black uppercase tracking-[0.2em]">
+                    SALES ORDER (SO)
+                  </div>
+                ) : (
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-none bg-purple-500/20 border border-purple-500/30 text-purple-300 backdrop-blur-md text-[10px] font-black uppercase tracking-[0.2em]">
+                    POSTO
+                  </div>
+                )
+              )}
             </div>
             <h1 className="text-4xl md:text-5xl font-black tracking-tighter">
               {postoStats.noposto || "..."}
@@ -616,7 +630,7 @@ export function TicketBookingDetail({ guid }: TicketBookingDetailProps) {
                 <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
                   NO PLAT TRUK :
                 </label>
-                {postoStats.poso === "PO" && (postoStats.wilayah2 === "DW1_GP" || postoStats.wilayah2 === "DW2_INBAG") ? (
+                {postoStats.tipe !== "SO" && !(postoStats.noposto && String(postoStats.noposto).startsWith("5")) && postoStats.poso === "PO" && (postoStats.wilayah2 === "DW1_GP" || postoStats.wilayah2 === "DW2_INBAG") ? (
                   <div className="relative">
                     <div
                       className="w-full h-11 px-4 rounded-none font-bold bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 flex items-center justify-between cursor-pointer group hover:border-brand-500 transition-all"

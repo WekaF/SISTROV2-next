@@ -145,12 +145,19 @@ export default function SOPage() {
       header: "No SO",
       sortColumn: 4,
       render: (p) => (
-        <div>
-          <span className="font-mono font-bold text-brand-600 dark:text-brand-400">{p.noposto}</span>
-          {p.charter === "1" && (
-            <span className="ml-2 text-[9px] font-black uppercase tracking-widest bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded">
-              Charter
-            </span>
+        <div className="flex flex-col gap-1">
+          <div>
+            <span className="font-mono font-bold text-brand-600 dark:text-brand-400">{p.noposto}</span>
+            {p.charter === "1" && (
+              <span className="ml-2 text-[9px] font-black uppercase tracking-widest bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded">
+                Charter
+              </span>
+            )}
+          </div>
+          {(p.percepatan && String(p.percepatan).toUpperCase().includes("PERCEPATAN")) && (
+            <Badge color="warning" size="sm" variant="light" className="w-fit font-bold text-[9px] uppercase px-1.5 py-0 h-4">
+              Percepatan
+            </Badge>
           )}
         </div>
       ),

@@ -247,7 +247,16 @@ export default function PostoPage() {
       header: "No POSTO",
       searchable: true,
       sortColumn: 4,
-      render: (p) => <span className="font-mono font-bold text-xs">{p.noposto || p.id}</span>,
+      render: (p) => (
+        <div className="flex flex-col gap-1">
+          <span className="font-mono font-bold text-xs">{p.noposto || p.id}</span>
+          {(p.percepatan && String(p.percepatan).toUpperCase().includes("PERCEPATAN")) && (
+            <Badge color="warning" size="sm" variant="light" className="w-fit font-bold text-[9px] uppercase px-1.5 py-0 h-4">
+              Percepatan
+            </Badge>
+          )}
+        </div>
+      ),
     },
     {
       key: "tanggalString",
@@ -399,15 +408,7 @@ export default function PostoPage() {
       sortColumn: 19,
       render: (p) => <span className="text-xs text-gray-500 dark:text-gray-400">{p.updatedby || "-"}</span>,
     },
-    {
-      key: "percepatan",
-      header: "Mekanisme",
-      render: (p) => (
-        <span className={`text-[10px] font-bold uppercase ${p.percepatan === "PERCEPATAN" ? "text-orange-500" : "text-gray-400"}`}>
-          {p.percepatan || "-"}
-        </span>
-      ),
-    },
+
     {
       key: "gruptruk",
       header: "Grup Truk",

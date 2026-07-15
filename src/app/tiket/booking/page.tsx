@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { useApi } from "@/hooks/use-api";
 import { DataTable, type DataTableParams } from "@/components/ui/DataTable";
+import Badge from "@/components/ui/badge/Badge";
 
 export default function TicketBookingPage() {
   const { apiTable } = useApi();
@@ -146,6 +147,11 @@ export default function TicketBookingPage() {
                       <div className="text-[10px] font-bold text-amber-500 uppercase flex items-center gap-1">
                         <Tag className="h-2 w-2" /> Charter
                       </div>
+                    )}
+                    {(row.percepatan && String(row.percepatan).toUpperCase().includes("PERCEPATAN")) && (
+                      <Badge color="warning" size="sm" variant="light" className="w-fit font-bold text-[9px] uppercase px-1.5 py-0 h-4 mt-1">
+                        Percepatan
+                      </Badge>
                     )}
                   </div>
                 )

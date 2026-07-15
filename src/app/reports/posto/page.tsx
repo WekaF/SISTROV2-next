@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Package, Search } from "lucide-react";
+import Badge from "@/components/ui/badge/Badge";
 
 interface PostoRow {
   number: number;
@@ -145,7 +146,21 @@ export default function LaporanPostoPage() {
 
   const columns: DataTableColumn<PostoRow>[] = [
     { key: "number", header: "No", render: (r) => <span>{r.number}</span> },
-    { key: "noposto", header: "No POSTO", sortColumn: 1, render: (r) => <span className="font-mono text-xs">{r.noposto}</span> },
+    { 
+      key: "noposto", 
+      header: "No POSTO", 
+      sortColumn: 1, 
+      render: (r) => (
+        <div className="flex flex-col gap-1">
+          <span className="font-mono text-xs">{r.noposto}</span>
+          {((r as any).percepatan && String((r as any).percepatan).toUpperCase().includes("PERCEPATAN")) && (
+            <Badge color="warning" size="sm" variant="light" className="w-fit font-bold text-[9px] uppercase px-1.5 py-0 h-4 mt-1">
+              Percepatan
+            </Badge>
+          )}
+        </div>
+      )
+    },
     { key: "tglposto", header: "Tgl POSTO", sortColumn: 2, render: (r) => <span className="text-xs">{r.tglposto}</span> },
     { key: "tgljatuhtempo", header: "Jatuh Tempo", sortColumn: 3, render: (r) => <span className="text-xs">{r.tgljatuhtempo}</span> },
     { key: "qty", header: "Qty (ton)", sortColumn: 4, render: (r) => <span className="text-right block">{r.qty?.toLocaleString("id-ID")}</span> },
