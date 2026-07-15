@@ -20,7 +20,7 @@ export default function TicketBookingPage() {
       start: params.start,
       length: params.length,
       search: params.search || "",
-      order: params.order?.length ? params.order : [{ column: 4, dir: "asc" }],
+      order: params.order?.length ? params.order : [{ column: 4, dir: "desc" }],
       cmd: 'refresh',
       columns: [
         { data: "numberString", name: "", searchable: false, orderable: false },
@@ -148,7 +148,10 @@ export default function TicketBookingPage() {
                         <Tag className="h-2 w-2" /> Charter
                       </div>
                     )}
-                    {(row.percepatan && String(row.percepatan).toUpperCase().includes("PERCEPATAN")) && (
+                    {(
+                      (row.percepatan && String(row.percepatan).toUpperCase().includes("PERCEPATAN")) ||
+                      (row.numberString && String(row.numberString).toLowerCase().includes("percepatan"))
+                    ) && (
                       <Badge color="warning" size="sm" variant="light" className="w-fit font-bold text-[9px] uppercase px-1.5 py-0 h-4 mt-1">
                         Percepatan
                       </Badge>

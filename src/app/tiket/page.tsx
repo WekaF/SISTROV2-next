@@ -37,6 +37,7 @@ interface TicketData {
   updatedonString?: string;
   qty?: number;
   percepatan?: string;
+  numberString?: string;
 }
 
 function RekananTicketContent() {
@@ -112,7 +113,10 @@ function RekananTicketContent() {
           <div className="font-bold text-gray-900 dark:text-white font-mono text-sm tracking-tight">
             {t.bookingno ?? "-"}
           </div>
-          {(t.percepatan && String(t.percepatan).toUpperCase().includes("PERCEPATAN")) && (
+          {(
+            (t.percepatan && String(t.percepatan).toUpperCase().includes("PERCEPATAN")) ||
+            (t.numberString && String(t.numberString).toLowerCase().includes("percepatan"))
+          ) && (
             <Badge color="warning" size="sm" variant="light" className="w-fit font-bold text-[9px] uppercase px-1.5 py-0 h-4">
               Percepatan
             </Badge>
