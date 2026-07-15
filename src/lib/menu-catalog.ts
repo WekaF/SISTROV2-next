@@ -98,9 +98,9 @@ export const MENU_CATALOG: CatalogGroup[] = [
   {
     category: "Manager",
     items: [
-      { path: "/manager", label: "Dashboard Manager" },
-      { path: "/manager/tiket", label: "Dashboard Tiket" },
-      { path: "/manager/laporan", label: "Laporan" },
+      { path: "/manager", label: "Dashboard Utama" },
+      { path: "/manager/tiket", label: "Data Tiket" },
+      { path: "/manager/antrian", label: "Antrian" },
     ],
   },
   {
