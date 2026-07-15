@@ -30,7 +30,7 @@ export default function UserDropdown() {
           <Image
             width={40}
             height={40}
-            src="/images/user/user-01.jpg" // Using an available image
+            src="/images/logo/avatar.jpg" // Using an available image
             alt="User"
             className="object-cover"
           />
