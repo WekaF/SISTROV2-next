@@ -1,9 +1,7 @@
 "use client";
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { BarChart3, Loader2, RefreshCw } from "lucide-react";
-import { useSession } from "next-auth/react";
 import { useTheme } from "@/context/ThemeContext";
-import { API_BASE } from "@/lib/api-client";
 
 interface Truck {
   nopol: string;
@@ -26,8 +24,7 @@ interface Section {
 
 interface ReportQ2Response {
   Success: boolean;
-  company: string;
-  company_code: string;
+  companies: string[];
   date: string;
   sections: Section[];
 }
@@ -118,9 +115,6 @@ function SectionAccordion({ section, defaultOpen }: { section: Section; defaultO
 }
 
 export default function ManagerAntrianPage() {
-  const { data: session } = useSession();
-  const token = (session?.user as any)?.aspnetToken as string;
-  const companyCode = (session?.user as any)?.companyCode as string;
   const { theme } = useTheme();
 
   const [report, setReport] = useState<ReportQ2Response | null>(null);
@@ -130,14 +124,10 @@ export default function ManagerAntrianPage() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const fetchReport = useCallback(async () => {
-    if (!token || !companyCode) return;
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(
-        `${API_BASE}/api/Antrian/ReportHorizontalQ2?company=${companyCode}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const res = await fetch(`/api/manager/antrian`);
       if (!res.ok) throw new Error("Gagal mengambil data antrian");
       const data: ReportQ2Response = await res.json();
       if (data.Success) {
@@ -151,14 +141,13 @@ export default function ManagerAntrianPage() {
     } finally {
       setLoading(false);
     }
-  }, [token, companyCode]);
+  }, []);
 
   useEffect(() => {
-    if (!token || !companyCode) return;
     fetchReport();
     timerRef.current = setInterval(fetchReport, 30_000);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [fetchReport, token, companyCode]);
+  }, [fetchReport]);
 
   return (
     <div className="p-6 space-y-4">
@@ -169,7 +158,7 @@ export default function ManagerAntrianPage() {
           <div>
             <h1 className="text-xl font-bold text-gray-900 dark:text-white">Monitor Antrian</h1>
             <p className="text-sm text-muted-foreground dark:text-gray-400">
-              {report?.company ?? companyCode ?? "—"} — update tiap 30 detik
+              {report?.companies?.join(", ") ?? "—"} — update tiap 30 detik
             </p>
           </div>
         </div>
