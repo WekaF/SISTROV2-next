@@ -236,29 +236,11 @@ export default function TicketBookingPage() {
               {
                 key: "gruptruk",
                 header: "Grup Truk",
-                render: (row: any) => {
-                  const getGrupTrukName = (id: number) => {
-                    switch (id) {
-                      case 1: return "Colt Diesel (CDD)";
-                      case 2: return "Engkel/Fuso";
-                      case 3: return "Trintin";
-                      case 4: return "Tronton";
-                      case 5: return "Gandengan";
-                      case 6: return "Trinton";
-                      case 7: return "Trintin Gandengan";
-                      case 8:
-                      case 9: return "Trailler 20 Ft";
-                      case 10:
-                      case 11: return "Trailler 40 Ft";
-                      default: return row.gruptruk || "All Grup";
-                    }
-                  };
-                  return (
-                    <div className="font-bold text-gray-400 font-mono text-[10px] whitespace-nowrap uppercase">
-                      {getGrupTrukName(row.IdGrupTruk)}
-                    </div>
-                  );
-                }
+                render: (row: any) => (
+                  <div className="font-bold text-gray-400 font-mono text-[10px] whitespace-nowrap uppercase">
+                    {row.gruptrukString || "-"}
+                  </div>
+                )
               },
               {
                 key: "tanggaljatuhtempoString",
