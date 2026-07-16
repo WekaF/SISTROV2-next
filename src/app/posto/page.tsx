@@ -412,7 +412,7 @@ export default function PostoPage() {
     {
       key: "gruptruk",
       header: "Grup Truk",
-      render: (p) => <span className="text-xs">{p.gruptruk || "-"}</span>,
+      render: (p) => <span className="text-xs">{p.gruptrukString || "-"}</span>,
     },
     {
       key: "statusString",
