@@ -630,7 +630,7 @@ export function TicketBookingDetail({ guid }: TicketBookingDetailProps) {
                 <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
                   NO PLAT TRUK :
                 </label>
-                {postoStats.tipe !== "SO" && !(postoStats.noposto && String(postoStats.noposto).startsWith("5")) && postoStats.poso === "PO" && (postoStats.wilayah2 === "DW1_GP" || postoStats.wilayah2 === "DW2_INBAG") ? (
+                {(!postoStats.noposto || String(postoStats.noposto).startsWith("5")) ? (
                   <div className="relative">
                     <div
                       className="w-full h-11 px-4 rounded-none font-bold bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 flex items-center justify-between cursor-pointer group hover:border-brand-500 transition-all"
