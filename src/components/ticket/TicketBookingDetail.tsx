@@ -589,7 +589,7 @@ export function TicketBookingDetail({ guid }: TicketBookingDetailProps) {
 
       {/* Booking Modal */}
       <Dialog open={isBookingModalOpen} onOpenChange={setIsBookingModalOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 overflow-hidden border-none shadow-2xl rounded-none">
+        <DialogContent className="sm:max-w-[700px] p-0 border-none shadow-2xl rounded-none">
           <DialogHeader className="p-8 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
             <DialogTitle className="text-xl font-black uppercase tracking-tight text-gray-900 dark:text-white">
               Form Pemesanan Kuota
@@ -653,7 +653,11 @@ export function TicketBookingDetail({ guid }: TicketBookingDetailProps) {
                             autoFocus
                           />
                         </div>
-                        <div className="max-h-[250px] overflow-y-auto p-2 space-y-1">
+                        <div 
+                          className="max-h-[250px] overflow-y-auto p-2 space-y-1"
+                          onWheel={(e) => e.stopPropagation()}
+                          onTouchMove={(e) => e.stopPropagation()}
+                        >
                           {loadingFleet ? (
                             <div className="p-4 text-center">
                               <Loader2 className="h-5 w-5 animate-spin text-brand-500 mx-auto" />

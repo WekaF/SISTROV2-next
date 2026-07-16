@@ -58,6 +58,25 @@ const getDaysUntil = (dateStr: string) => {
   }
 };
 
+const toDateInputFormat = (dateStr: string) => {
+  if (!dateStr) return "";
+  if (dateStr.match(/^\d{4}-\d{2}-\d{2}/)) return dateStr.substring(0, 10);
+  const parts = dateStr.substring(0, 10).split("-");
+  if (parts.length === 3 && parts[2].length === 4) {
+    return `${parts[2]}-${parts[1]}-${parts[0]}`;
+  }
+  return dateStr.substring(0, 10);
+};
+
+const toDisplayFormat = (dateStr: string) => {
+  if (!dateStr) return "";
+  const parts = dateStr.split("-");
+  if (parts.length === 3 && parts[0].length === 4) {
+    return `${parts[2]}-${parts[1]}-${parts[0]}`;
+  }
+  return dateStr;
+};
+
 export default function ArmadaPage() {
   const { data: session } = useSession();
   const { apiJson, apiFetch, apiTable } = useApi();
@@ -694,10 +713,11 @@ export default function ArmadaPage() {
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase text-gray-500 tracking-widest ml-1">Masa Berlaku KIR (DD-MM-YYYY)</label>
                 <Input
+                  type="date"
                   placeholder="DD-MM-YYYY"
-                  value={formData.MasaBerlakuKir}
-                  onChange={(e) => setFormData({ ...formData, MasaBerlakuKir: e.target.value })}
-                  className="h-10 rounded-lg"
+                  value={toDateInputFormat(formData.MasaBerlakuKir)}
+                  onChange={(e) => setFormData({ ...formData, MasaBerlakuKir: toDisplayFormat(e.target.value) })}
+                  className="h-10 rounded-lg block w-full"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -816,7 +836,7 @@ export default function ArmadaPage() {
           </div>
           <DialogFooter className="border-t pt-4">
             <Button variant="outline" onClick={() => setIsSubmitOpen(false)}>Batal</Button>
-            <Button className="bg-brand-500" onClick={() => submitMutation.mutate(formData)} disabled={submitMutation.isPending}>
+            <Button className="bg-brand-500 text-white hover:bg-brand-600" onClick={() => submitMutation.mutate(formData)} disabled={submitMutation.isPending}>
               {submitMutation.isPending ? "Mengajukan..." : "Ajukan Unit Baru"}
             </Button>
           </DialogFooter>
@@ -871,7 +891,7 @@ export default function ArmadaPage() {
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase text-gray-500 tracking-widest ml-1">Masa Berlaku KIR (DD-MM-YYYY)</label>
-                  <Input value={editFormData.MasaBerlakuKir || ""} onChange={(e) => setEditFormData({ ...editFormData, MasaBerlakuKir: e.target.value })} className="h-10" />
+                  <Input type="date" value={toDateInputFormat(editFormData.MasaBerlakuKir || "")} onChange={(e) => setEditFormData({ ...editFormData, MasaBerlakuKir: toDisplayFormat(e.target.value) })} className="h-10 block w-full" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -1043,7 +1063,7 @@ export default function ArmadaPage() {
 
           <DialogFooter className="mt-6 border-t pt-4">
             <Button variant="outline" onClick={() => setEditId(null)}>Batal</Button>
-            <Button className="bg-brand-600 hover:bg-brand-700" onClick={() => editMutation.mutate(editFormData)} disabled={editMutation.isPending || isLoadingDetail}>
+            <Button className="bg-brand-600 text-white hover:bg-brand-700" onClick={() => editMutation.mutate(editFormData)} disabled={editMutation.isPending || isLoadingDetail}>
               {editMutation.isPending ? "Menyimpan..." : "Simpan Perubahan"}
             </Button>
           </DialogFooter>
