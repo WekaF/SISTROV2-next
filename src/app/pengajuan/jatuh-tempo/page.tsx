@@ -524,55 +524,107 @@ export default function PengajuanJatuhTempoPage() {
   const fetcherAktif = useCallback(
     async (params: DataTableParams) => {
       try {
-        const result = await apiTable("/api/Apg/DatatablePengajuanJapo", {
-          draw: params.draw,
-          start: params.start,
-          length: params.length,
-          search: { value: params.search },
-          cmd: "refresh",
-          columns: [
-            { data: "NoPosto", name: "NoPosto", searchable: true, orderable: true }
-          ]
+        // Backend endpoint (ApgController.DatatablePengajuanJapo) ignores start/length/search
+        // and always returns the full dataset (can be thousands of rows) — fetch it once via
+        // a stable React Query cache key instead of re-hitting the network on every page click
+        // or search keystroke, then filter/page it here client-side.
+        const allData: PengajuanJapoItem[] = await queryClient.fetchQuery({
+          // Nested under ["japo-aktif", ...] so DataTable's own refresh button and the
+          // post-edit invalidateQueries(["japo-aktif"]) below both bust this cache too
+          // (React Query invalidates by key prefix).
+          queryKey: ["japo-aktif", "raw"],
+          queryFn: async () => {
+            const result = await apiTable("/api/Apg/DatatablePengajuanJapo", {
+              draw: params.draw,
+              start: params.start,
+              length: params.length,
+              search: { value: params.search },
+              cmd: "refresh",
+              columns: [
+                { data: "NoPosto", name: "NoPosto", searchable: true, orderable: true }
+              ]
+            });
+            return result?.data ?? [];
+          },
+          staleTime: 60_000,
         });
-        const data: PengajuanJapoItem[] = result?.data ?? [];
-        return { 
-          data, 
-          recordsTotal: result?.recordsTotal ?? data.length, 
-          recordsFiltered: result?.recordsFiltered ?? data.length 
+
+        let filtered = allData;
+        if (params.search) {
+          const lowerSearch = params.search.toLowerCase();
+          filtered = filtered.filter((item) =>
+            Object.values(item).some(
+              (val) => val !== null && val !== undefined && String(val).toLowerCase().includes(lowerSearch)
+            )
+          );
+        }
+
+        const paginated = filtered.slice(params.start, params.start + params.length);
+
+        return {
+          data: paginated,
+          recordsTotal: allData.length,
+          recordsFiltered: filtered.length,
         };
       } catch (err: any) {
         addToast({ title: "Error", description: "Gagal memuat data pengajuan", variant: "destructive" });
         return { data: [], recordsTotal: 0, recordsFiltered: 0 };
       }
     },
-    [apiTable, addToast]
+    [apiTable, addToast, queryClient]
   );
 
   const fetcherRiwayat = useCallback(
     async (params: DataTableParams) => {
       try {
-        const result = await apiTable("/api/Apg/DatatableRiwayatPengajuanJapo", {
-          draw: params.draw,
-          start: params.start,
-          length: params.length,
-          search: { value: params.search },
-          cmd: "refresh",
-          columns: [
-            { data: "NoPosto", name: "NoPosto", searchable: true, orderable: true }
-          ]
+        // Backend endpoint (ApgController.DatatableRiwayatPengajuanJapo) ignores
+        // start/length/search and always returns the full dataset (can be thousands of
+        // rows) — fetch it once via a stable React Query cache key instead of re-hitting
+        // the network on every page click or search keystroke, then filter/page it here.
+        const allData: RiwayatJapoItem[] = await queryClient.fetchQuery({
+          // Nested under ["japo-riwayat", ...] so DataTable's own refresh button and the
+          // post-edit invalidateQueries(["japo-riwayat"]) below both bust this cache too
+          // (React Query invalidates by key prefix).
+          queryKey: ["japo-riwayat", "raw"],
+          queryFn: async () => {
+            const result = await apiTable("/api/Apg/DatatableRiwayatPengajuanJapo", {
+              draw: params.draw,
+              start: params.start,
+              length: params.length,
+              search: { value: params.search },
+              cmd: "refresh",
+              columns: [
+                { data: "NoPosto", name: "NoPosto", searchable: true, orderable: true }
+              ]
+            });
+            return result?.data ?? [];
+          },
+          staleTime: 60_000,
         });
-        const data: RiwayatJapoItem[] = result?.data ?? [];
-        return { 
-          data, 
-          recordsTotal: result?.recordsTotal ?? data.length, 
-          recordsFiltered: result?.recordsFiltered ?? data.length 
+
+        let filtered = allData;
+        if (params.search) {
+          const lowerSearch = params.search.toLowerCase();
+          filtered = filtered.filter((item) =>
+            Object.values(item).some(
+              (val) => val !== null && val !== undefined && String(val).toLowerCase().includes(lowerSearch)
+            )
+          );
+        }
+
+        const paginated = filtered.slice(params.start, params.start + params.length);
+
+        return {
+          data: paginated,
+          recordsTotal: allData.length,
+          recordsFiltered: filtered.length,
         };
       } catch (err: any) {
         addToast({ title: "Error", description: "Gagal memuat riwayat pengajuan", variant: "destructive" });
         return { data: [], recordsTotal: 0, recordsFiltered: 0 };
       }
     },
-    [apiTable, addToast]
+    [apiTable, addToast, queryClient]
   );
 
   // ── Columns — Tab Aktif ──────────────────────────────────────────────────────
