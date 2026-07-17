@@ -58,6 +58,8 @@ function AdminTicketsContent() {
     {
       key: "tanggalString",
       header: "Tanggal",
+      searchable: true,
+      searchType: "date",
       className: "text-[11px] font-bold",
       sortColumn: 2,
     },
@@ -89,12 +91,14 @@ function AdminTicketsContent() {
     {
       key: "produkString",
       header: "Produk",
+      searchable: true,
       className: "text-[11px] font-bold text-gray-900 dark:text-white",
       sortColumn: 6,
     },
     {
       key: "transportString",
       header: "Transportir",
+      searchable: true,
       className: "text-[10px] font-bold text-gray-500 uppercase tracking-tight truncate max-w-[150px]",
       sortColumn: 7,
     },
@@ -111,6 +115,7 @@ function AdminTicketsContent() {
     {
       key: "positionString",
       header: "Status",
+      searchable: true,
       sortColumn: 9,
       render: (row: any) => {
         const pos = row.position || "00";
@@ -186,14 +191,14 @@ function AdminTicketsContent() {
                 columns: [
                   { data: "bookingno", name: "bookingno", searchable: true, orderable: true, search: { value: p.columnFilters?.bookingno || "" } },
                   { data: "posto", name: "posto", searchable: true, orderable: true, search: { value: p.columnFilters?.posto || "" } },
-                  { data: "tanggalString", name: "tanggal", searchable: true, orderable: true },
+                  { data: "tanggalString", name: "tanggal", searchable: true, orderable: true, search: { value: p.columnFilters?.tanggalString || "" } },
                   { data: "shift", name: "idshift", searchable: true, orderable: true },
                   { data: "nopol", name: "nopol", searchable: true, orderable: true, search: { value: p.columnFilters?.nopol || "" } },
                   { data: "driver", name: "driver", searchable: true, orderable: true, search: { value: p.columnFilters?.driver || "" } },
-                  { data: "produkString", name: "idproduk", searchable: true, orderable: true },
-                  { data: "transportString", name: "idtransport", searchable: true, orderable: true },
+                  { data: "produkString", name: "idproduk", searchable: true, orderable: true, search: { value: p.columnFilters?.produkString || "" } },
+                  { data: "transportString", name: "idtransport", searchable: true, orderable: true, search: { value: p.columnFilters?.transportString || "" } },
                   { data: "qty", name: "qty", searchable: true, orderable: true },
-                  { data: "positionString", name: "positionString", searchable: true, orderable: true },
+                  { data: "positionString", name: "positionString", searchable: true, orderable: true, search: { value: p.columnFilters?.positionString || "" } },
                   { data: "position", name: "position", searchable: true, orderable: true },
                   { data: "id", name: "id", searchable: false, orderable: true } // hidden sort key, keep as last column
                 ]
