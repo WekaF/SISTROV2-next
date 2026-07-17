@@ -348,6 +348,8 @@ export default function PostoUploadPage() {
     const isSO = item.tipe === "SOALL" || item.tipe === "SOCLUSTER";
     const now = new Date();
     const jatuhTempo = new Date(item.tgljatuhtempo);
+    const timeTglAkhir = new Date(item.tglakhir);
+    const timeTglPosto = new Date(item.tglposto);
 
     const hasFatalError =
       item.cekTransportir <= 0 ||
@@ -356,7 +358,8 @@ export default function PostoUploadPage() {
       item.qty <= 0 ||
       item.produkString === "" ||
       item.duplicate > 0 ||
-      jatuhTempo < now;
+      jatuhTempo < now ||
+      timeTglAkhir < timeTglPosto;
 
     if (isSO) {
       return hasFatalError || item.cekDistributor <= 0 || item.cekSO <= 0;
@@ -528,6 +531,17 @@ export default function PostoUploadPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Upload Control Section */}
         <Card className="lg:col-span-4 border-none shadow-xl shadow-brand-500/5 bg-white/50 dark:bg-gray-900/50 backdrop-blur-xl border border-white/20">
+          {activeCompanyCode && (
+            <div className="mx-6 mt-6 p-4 rounded-xl border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 flex items-start gap-3 shadow-sm">
+              <Info className="h-5 w-5 mt-0.5 shrink-0 text-blue-500" />
+              <div>
+                <p className="font-semibold text-sm">Informasi Plant Aktif</p>
+                <p className="text-xs opacity-90 mt-1">
+                  Anda akan mengupload POSTO/SO ini ke Plant <strong className="font-black text-blue-700 dark:text-blue-400">{activeCompanyCode}</strong>.
+                </p>
+              </div>
+            </div>
+          )}
           <CardHeader>
             <CardTitle className="text-lg font-bold flex items-center gap-2">
               <Upload className="h-5 w-5 text-brand-500" />
@@ -797,7 +811,12 @@ export default function PostoUploadPage() {
                               {item.noposto}
                               {item.duplicate > 0 && <span className="block text-[8px] uppercase font-black text-red-500">Duplikat</span>}
                             </td>
-                            <td className="px-3 py-3 whitespace-nowrap">{item.tglakhirString}</td>
+                            <td className={cn("px-3 py-3 whitespace-nowrap", new Date(item.tglakhir) < new Date(item.tglposto) ? "bg-red-100/10 dark:bg-red-950/40 text-red-600 dark:text-red-400" : "")}>
+                              {item.tglakhirString}
+                              {new Date(item.tglakhir) < new Date(item.tglposto) && (
+                                <span className="block text-[10px] uppercase font-black text-red-500 mt-1 leading-tight">Tgl Akhir &lt; Tgl POSTO</span>
+                              )}
+                            </td>
                             <td className={cn("px-3 py-3 min-w-[120px]", item.cekAsal <= 0 ? "bg-red-100/10 dark:bg-red-950/40 text-red-600 dark:text-red-400" : "")}>
                               <span className="font-bold">{item.asal}</span>
                               <span className="block text-[10px] text-muted-foreground truncate">{item.asal_des}</span>
