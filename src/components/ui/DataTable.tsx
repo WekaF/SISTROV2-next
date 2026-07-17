@@ -12,6 +12,7 @@ export interface DataTableColumn<T> {
   className?: string;
   headerClassName?: string;
   searchable?: boolean; // New: enable column search
+  searchType?: "text" | "date"; // "date" renders a native date picker instead of free text
   sortColumn?: number; // Backend DataTables column index to sort by when this header is clicked. Omit to make the column unsortable.
   render?: (row: T, index: number) => React.ReactNode;
 }
@@ -219,8 +220,9 @@ export function DataTable<T>({
                   <th key={`search-${col.key}`} className="px-2 py-2">
                     {col.searchable ? (
                       <Input
+                        type={col.searchType === "date" ? "date" : "text"}
                         className="h-8 text-[11px] font-bold rounded-none border-gray-100 dark:border-gray-800 bg-gray-50/30 dark:bg-white/[0.01] focus:border-brand-500 transition-all"
-                        placeholder={`Cari ${col.header}...`}
+                        placeholder={col.searchType === "date" ? undefined : `Cari ${col.header}...`}
                         value={columnFilters[col.key] || ""}
                         onChange={(e) => handleColumnFilterChange(col.key, e.target.value)}
                       />
