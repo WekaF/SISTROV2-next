@@ -212,15 +212,15 @@ export default function TiketDashboardPage() {
       position: appliedPosition === "all" ? "" : appliedPosition,
       order: params.order?.length ? params.order : [{ column: 10, dir: "desc" }],
       columns: [
-        { data: "bookingno", name: "bookingno", searchable: true, orderable: true },
-        { data: "posto", name: "posto", searchable: true, orderable: true },
-        { data: "tanggalString", name: "tanggal", searchable: true, orderable: true },
-        { data: "nopol", name: "nopol", searchable: true, orderable: true },
-        { data: "driver", name: "driver", searchable: true, orderable: true },
-        { data: "produkString", name: "idproduk", searchable: true, orderable: true },
-        { data: "transportString", name: "idtransport", searchable: true, orderable: true },
-        { data: "tujuan", name: "tujuan", searchable: true, orderable: true },
-        { data: "positionString", name: "positionString", searchable: true, orderable: true },
+        { data: "bookingno", name: "bookingno", searchable: true, orderable: true, search: { value: params.columnFilters?.bookingno || "" } },
+        { data: "posto", name: "posto", searchable: true, orderable: true, search: { value: params.columnFilters?.posto || "" } },
+        { data: "tanggalString", name: "tanggal", searchable: true, orderable: true, search: { value: params.columnFilters?.tanggalString || "" } },
+        { data: "nopol", name: "nopol", searchable: true, orderable: true, search: { value: params.columnFilters?.nopol || "" } },
+        { data: "driver", name: "driver", searchable: true, orderable: true, search: { value: params.columnFilters?.driver || "" } },
+        { data: "produkString", name: "idproduk", searchable: true, orderable: true, search: { value: params.columnFilters?.produkString || "" } },
+        { data: "transportString", name: "idtransport", searchable: true, orderable: true, search: { value: params.columnFilters?.transportString || "" } },
+        { data: "tujuan", name: "tujuan", searchable: true, orderable: true, search: { value: params.columnFilters?.tujuan || "" } },
+        { data: "positionString", name: "positionString", searchable: true, orderable: true, search: { value: params.columnFilters?.positionString || "" } },
         { data: "position", name: "position", searchable: true, orderable: true },
         { data: "updatedon", name: "updatedon", searchable: true, orderable: true },
       ],
@@ -244,6 +244,7 @@ export default function TiketDashboardPage() {
     {
       key: "posto",
       header: "POSTO",
+      searchable: true,
       className: "font-semibold text-gray-800 dark:text-gray-200",
       headerClassName: "w-[150px] py-3 text-left font-black uppercase text-gray-400 text-[10px] tracking-wider",
       sortColumn: 1,
@@ -270,6 +271,8 @@ export default function TiketDashboardPage() {
     {
       key: "tanggalString",
       header: "Tanggal",
+      searchable: true,
+      searchType: "date",
       className: "text-slate-500",
       headerClassName: "w-[150px] py-3 text-left font-black uppercase text-gray-400 text-[10px] tracking-wider",
       sortColumn: 2,
@@ -287,12 +290,14 @@ export default function TiketDashboardPage() {
     {
       key: "produkString",
       header: "Produk",
+      searchable: true,
       headerClassName: "w-[220px] py-3 text-left font-black uppercase text-gray-400 text-[10px] tracking-wider",
       sortColumn: 5,
     },
     {
       key: "transportString",
       header: "Transportir",
+      searchable: true,
       headerClassName: "w-[200px] py-3 text-left font-black uppercase text-gray-400 text-[10px] tracking-wider",
       sortColumn: 6,
     },
@@ -304,6 +309,7 @@ export default function TiketDashboardPage() {
     {
       key: "tujuan",
       header: "Tujuan",
+      searchable: true,
       headerClassName: "w-[180px] py-3 text-left font-black uppercase text-gray-400 text-[10px] tracking-wider",
       sortColumn: 7,
     },
@@ -315,6 +321,7 @@ export default function TiketDashboardPage() {
     {
       key: "nopol",
       header: "Nopol",
+      searchable: true,
       className: "font-bold text-gray-800 dark:text-gray-200",
       headerClassName: "w-[120px] py-3 text-left font-black uppercase text-gray-400 text-[10px] tracking-wider",
       sortColumn: 3,
@@ -322,6 +329,7 @@ export default function TiketDashboardPage() {
     {
       key: "driver",
       header: "Driver",
+      searchable: true,
       headerClassName: "w-[120px] py-3 text-left font-black uppercase text-gray-400 text-[10px] tracking-wider",
       sortColumn: 4,
     },
@@ -333,6 +341,7 @@ export default function TiketDashboardPage() {
     {
       key: "positionString",
       header: "Posisi",
+      searchable: true,
       render: (row) => row.positionString ? (
         <Badge
           color={POSITION_BADGE[row.position ?? ""] ?? "default"}
@@ -390,6 +399,7 @@ export default function TiketDashboardPage() {
     {
       key: "bookingno",
       header: "Kode SISTRO",
+      searchable: true,
       className: "font-bold text-blue-600 dark:text-blue-400 font-mono",
       headerClassName: "w-[150px] py-3 text-left font-black uppercase text-gray-400 text-[10px] tracking-wider",
       sortColumn: 0,
