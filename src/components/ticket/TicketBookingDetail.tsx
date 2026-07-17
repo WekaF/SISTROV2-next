@@ -185,6 +185,13 @@ export function TicketBookingDetail({ guid }: TicketBookingDetailProps) {
                 <Calendar className="h-4 w-4 text-brand-300" />
                 {postoStats.tanggalString || "..."}
               </div>
+              {postoStats.gruptruk && (
+                <div className="flex items-center gap-2">
+                  <Truck className="h-4 w-4 text-brand-300" />
+                  Maks Kendaraan: {postoStats.gruptrukString || "..."} 
+                  (Maks {postoStats.gruptruk === 1 ? '7.7' : postoStats.gruptruk === 2 ? '15.2' : postoStats.gruptruk === 3 ? '28.1' : postoStats.gruptruk === 4 ? '38.25' : '?'} TON)
+                </div>
+              )}
             </div>
           </div>
 
