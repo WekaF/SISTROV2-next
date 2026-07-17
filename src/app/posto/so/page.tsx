@@ -45,6 +45,8 @@ export default function SOPage() {
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   const fetcher = async (params: DataTableParams) => {
+    const cf = params.columnFilters ?? {};
+    const cs = (key: string) => ({ value: cf[key] || "", regex: "false" });
     const payload: any = {
       draw: params.draw,
       start: params.start,
@@ -57,20 +59,20 @@ export default function SOPage() {
         { data: "charter", name: "charter", searchable: false, orderable: false, search: { value: "", regex: "false" } },
         { data: "numberString", name: "numberString", searchable: false, orderable: false, search: { value: "", regex: "false" } },
         { data: "wilayah", name: "wilayah", searchable: true, orderable: true, search: { value: "", regex: "false" } },
-        { data: "tanggalString", name: "tglposto", searchable: true, orderable: true, search: { value: "", regex: "false" } },
-        { data: "noposto", name: "noposto", searchable: true, orderable: true, search: { value: "", regex: "false" } },
+        { data: "tanggalString", name: "tglposto", searchable: true, orderable: true, search: cs("tanggalString") },
+        { data: "noposto", name: "noposto", searchable: true, orderable: true, search: cs("noposto") },
         { data: "tglakhirString", name: "tglakhir", searchable: true, orderable: true, search: { value: "", regex: "false" } },
-        { data: "asalString", name: "asal", searchable: true, orderable: true, search: { value: "", regex: "false" } },
+        { data: "asalString", name: "asal", searchable: true, orderable: true, search: cs("asalString") },
         { data: "tujuanString", name: "tujuan", searchable: true, orderable: true, search: { value: "", regex: "false" } },
-        { data: "bagian", name: "bagian", searchable: true, orderable: true, search: { value: "", regex: "false" } },
-        { data: "transportString", name: "transport", searchable: true, orderable: true, search: { value: "", regex: "false" } },
-        { data: "produkString", name: "produk", searchable: true, orderable: true, search: { value: "", regex: "false" } },
-        { data: "qty", name: "qty", searchable: true, orderable: true, search: { value: "", regex: "false" } },
-        { data: "qtyrencana", name: "qtyrencana", searchable: true, orderable: true, search: { value: "", regex: "false" } },
+        { data: "bagian", name: "bagian", searchable: true, orderable: true, search: cs("bagian") },
+        { data: "transportString", name: "transport", searchable: true, orderable: true, search: cs("transportString") },
+        { data: "produkString", name: "produk", searchable: true, orderable: true, search: cs("produkString") },
+        { data: "qty", name: "qty", searchable: true, orderable: true, search: cs("qty") },
+        { data: "qtyrencana", name: "qtyrencana", searchable: true, orderable: true, search: cs("qtyrencana") },
         { data: "qtysisaBooking", name: "qtysisaBooking", searchable: false, orderable: false, search: { value: "", regex: "false" } },
-        { data: "qtyrealisasi", name: "qtyrealisasi", searchable: true, orderable: true, search: { value: "", regex: "false" } },
+        { data: "qtyrealisasi", name: "qtyrealisasi", searchable: true, orderable: true, search: cs("qtyrealisasi") },
         { data: "qtysisaRealisasi", name: "qtysisaRealisasi", searchable: false, orderable: false, search: { value: "", regex: "false" } },
-        { data: "cutoff", name: "cutoff", searchable: true, orderable: false, search: { value: "", regex: "false" } },
+        { data: "cutoff", name: "cutoff", searchable: true, orderable: false, search: cs("cutoff") },
         { data: "kapal", name: "kapal", searchable: true, orderable: true, search: { value: "", regex: "false" } },
         { data: "kotatujuan", name: "kotatujuan", searchable: true, orderable: true, search: { value: "", regex: "false" } },
         { data: "updatedby", name: "updatedby", searchable: true, orderable: false, search: { value: "", regex: "false" } },
@@ -143,6 +145,7 @@ export default function SOPage() {
     {
       key: "noposto",
       header: "No SO",
+      searchable: true,
       sortColumn: 4,
       render: (p) => (
         <div className="flex flex-col gap-1">
@@ -165,6 +168,8 @@ export default function SOPage() {
     {
       key: "tanggalString",
       header: "Tgl SO",
+      searchable: true,
+      searchType: "date",
       sortColumn: 3,
       render: (p) => (
         <div className="text-xs font-mono text-gray-500">
@@ -178,6 +183,7 @@ export default function SOPage() {
     {
       key: "transportString",
       header: "Transportir",
+      searchable: true,
       sortColumn: 9,
       render: (p) => (
         <div>
@@ -191,6 +197,7 @@ export default function SOPage() {
     {
       key: "produkString",
       header: "Produk",
+      searchable: true,
       sortColumn: 10,
       render: (p) => (
         <div className="flex items-center gap-2">
@@ -202,6 +209,7 @@ export default function SOPage() {
     {
       key: "qty",
       header: "Kuantitas",
+      searchable: true,
       sortColumn: 11,
       headerClassName: "text-right",
       className: "text-right",
@@ -215,6 +223,7 @@ export default function SOPage() {
     {
       key: "qtyrencana",
       header: "Booking",
+      searchable: true,
       sortColumn: 12,
       headerClassName: "text-right",
       className: "text-right",
@@ -231,6 +240,7 @@ export default function SOPage() {
     {
       key: "qtyrealisasi",
       header: "Realisasi",
+      searchable: true,
       sortColumn: 14,
       headerClassName: "text-right",
       className: "text-right",
@@ -247,6 +257,7 @@ export default function SOPage() {
     {
       key: "asalString",
       header: "Asal / Tujuan",
+      searchable: true,
       sortColumn: 6,
       render: (p) => (
         <div className="text-xs">
@@ -258,6 +269,7 @@ export default function SOPage() {
     {
       key: "bagian",
       header: "Area",
+      searchable: true,
       sortColumn: 8,
       render: (p) => (
         <div className="text-xs">
@@ -269,6 +281,7 @@ export default function SOPage() {
     {
       key: "cutoff",
       header: "Cut Off",
+      searchable: true,
       headerClassName: "text-center",
       className: "text-center",
       render: (p) => {
