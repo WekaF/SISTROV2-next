@@ -577,11 +577,27 @@ export default function PengajuanJatuhTempoPage() {
             { data: "NoPosto", name: "NoPosto", searchable: true, orderable: true }
           ]
         });
-        const data: RiwayatJapoItem[] = result?.data ?? [];
-        return { 
-          data, 
-          recordsTotal: result?.recordsTotal ?? data.length, 
-          recordsFiltered: result?.recordsFiltered ?? data.length 
+        const allData: RiwayatJapoItem[] = result?.data ?? [];
+
+        // Backend endpoint (ApgController.DatatableRiwayatPengajuanJapo) ignores
+        // start/length/search and always returns the full dataset — filter and page
+        // it here instead, same workaround as fetcherDO in ModalDetailDO below.
+        let filtered = allData;
+        if (params.search) {
+          const lowerSearch = params.search.toLowerCase();
+          filtered = filtered.filter((item) =>
+            Object.values(item).some(
+              (val) => val !== null && val !== undefined && String(val).toLowerCase().includes(lowerSearch)
+            )
+          );
+        }
+
+        const paginated = filtered.slice(params.start, params.start + params.length);
+
+        return {
+          data: paginated,
+          recordsTotal: allData.length,
+          recordsFiltered: filtered.length,
         };
       } catch (err: any) {
         addToast({ title: "Error", description: "Gagal memuat riwayat pengajuan", variant: "destructive" });
