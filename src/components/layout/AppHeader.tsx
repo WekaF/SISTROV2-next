@@ -7,6 +7,7 @@ import { ThemeToggleButton } from "../common/ThemeToggleButton";
 import NotificationDropdown from "../header/NotificationDropdown";
 import UserDropdown from "../header/UserDropdown";
 import CompanySwitcher from "../header/CompanySwitcher";
+import NetworkStatusBadge from "../header/NetworkStatusBadge";
 import { Search, Menu, X, Command } from "lucide-react";
 
 const AppHeader: React.FC = () => {
@@ -92,7 +93,10 @@ const AppHeader: React.FC = () => {
 
         <div className="flex items-center gap-2 px-4 py-2 lg:gap-4 lg:px-0 lg:py-0">
           <div className="flex items-center gap-3">
-            <CompanySwitcher />
+            <div className="flex flex-col items-end gap-1">
+              <NetworkStatusBadge />
+              <CompanySwitcher />
+            </div>
             <ThemeToggleButton />
             <NotificationDropdown />
           </div>
