@@ -119,10 +119,17 @@ padding `px-2.5 py-1`, matching the existing header badge sizing conventions.
 
 ## Testing
 
-- Hook: one `use-network-latency.test.ts` with `vitest` mocking `global.fetch` to
-  verify the three classification branches (fast response → `good`, delayed response
-  → `slow`, rejected/aborted → `offline`) and that `offline`/`online` window events
-  update state without waiting for the interval.
+This repo has no test framework installed (no vitest, jest, or similar) — confirmed by
+checking `package.json`. Adding one just for this feature would violate the "no new
+dependencies" constraint above, so the classification logic is checked without a
+framework:
+
+- The three-way branch (`good`/`slow`/`offline`) lives in a pure, exported function
+  `classifyNetworkStatus(latencyMs, isOnline)` — no React, no DOM.
+- A dependency-free self-check script (`use-network-latency.selfcheck.mts`) asserts the
+  boundary values (149/150/499/500ms, `null`, and `isOnline=false`) using Node's built-in
+  `node:assert/strict`, run via `node --experimental-strip-types` (Node 22.6+ built-in
+  TypeScript support — no ts-node, no tsx, no new dependency).
 - No test for `NetworkStatusBadge` itself — it's a pure render of the hook's output,
   covered visually by manual check in the browser (`npm run dev`).
 
