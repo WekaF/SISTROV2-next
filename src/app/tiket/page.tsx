@@ -50,6 +50,8 @@ function RekananTicketContent() {
   const fetcher = async (params: DataTableParams) => {
     // Use DataTablePeriodeTiket if filtering by POSTO, otherwise use Legacy
     const endpoint = postoFilter ? "/api/Tiket/DataTablePeriodeTiket" : "/api/Tiket/DataTableFilterLegacy";
+    const cf = params.columnFilters ?? {};
+    const cs = (key: string) => ({ value: cf[key] || "" });
 
     const result = await apiTable(endpoint, {
 
@@ -63,16 +65,16 @@ function RekananTicketContent() {
       cmd: 'refresh',
       order: params.order?.length ? params.order : [{ column: 2, dir: "desc" }], // 2 = "tanggal"
       columns: [
-        { data: "bookingno", name: "bookingno", searchable: true, orderable: true },
-        { data: "posto", name: "posto", searchable: true, orderable: true },
-        { data: "tanggalString", name: "tanggal", searchable: true, orderable: true },
+        { data: "bookingno", name: "bookingno", searchable: true, orderable: true, search: cs("bookingno") },
+        { data: "posto", name: "posto", searchable: true, orderable: true, search: cs("posto") },
+        { data: "tanggalString", name: "tanggal", searchable: true, orderable: true, search: cs("tanggalString") },
         { data: "shift", name: "idshift", searchable: true, orderable: true },
-        { data: "produkString", name: "idproduk", searchable: true, orderable: true },
-        { data: "nopol", name: "nopol", searchable: true, orderable: true },
-        { data: "driver", name: "driver", searchable: true, orderable: true },
+        { data: "produkString", name: "idproduk", searchable: true, orderable: true, search: cs("produkString") },
+        { data: "nopol", name: "nopol", searchable: true, orderable: true, search: cs("nopol") },
+        { data: "driver", name: "driver", searchable: true, orderable: true, search: cs("driver") },
         { data: "transportString", name: "idtransport", searchable: true, orderable: true },
         { data: "tujuan", name: "tujuan", searchable: true, orderable: true },
-        { data: "positionString", name: "positionString", searchable: true, orderable: true },
+        { data: "positionString", name: "positionString", searchable: true, orderable: true, search: cs("positionString") },
         { data: "position", name: "position", searchable: true, orderable: true },
         { data: "status", name: "statuspemuatan", searchable: true, orderable: true },
         { data: "createdat", name: "tanggal", searchable: true, orderable: true }
@@ -107,6 +109,7 @@ function RekananTicketContent() {
 
       key: "bookingno",
       header: "No Booking",
+      searchable: true,
       sortColumn: 0,
       render: (t) => (
         <div className="flex flex-col gap-1">
@@ -127,6 +130,7 @@ function RekananTicketContent() {
     {
       key: "posto",
       header: "POSTO / SO",
+      searchable: true,
       sortColumn: 1,
       render: (t) => (
         <div className="font-bold text-gray-900 dark:text-white font-mono text-sm tracking-tight">
@@ -137,6 +141,8 @@ function RekananTicketContent() {
     {
       key: "tanggalString",
       header: "Tanggal Muat",
+      searchable: true,
+      searchType: "date",
       sortColumn: 2,
       render: (t) => (
         <div className="font-bold text-gray-900 dark:text-white font-mono text-sm tracking-tight">
@@ -157,6 +163,7 @@ function RekananTicketContent() {
     {
       key: "produkString",
       header: "Produk",
+      searchable: true,
       sortColumn: 4,
       render: (t) => (
         <div>
@@ -170,6 +177,7 @@ function RekananTicketContent() {
     {
       key: "nopol",
       header: "Armada",
+      searchable: true,
       sortColumn: 5,
       render: (t) => (
         <div className="bg-gray-900 text-white px-2 py-1 rounded font-mono text-xs font-bold inline-block">
@@ -180,6 +188,7 @@ function RekananTicketContent() {
     {
       key: "driver",
       header: "Driver",
+      searchable: true,
       sortColumn: 6,
       render: (t) => (
         <div className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase">
@@ -199,6 +208,7 @@ function RekananTicketContent() {
     {
       key: "positionString",
       header: "Posisi / Status",
+      searchable: true,
       sortColumn: 9,
       render: (t) => (
         <div className="flex flex-col gap-1">
