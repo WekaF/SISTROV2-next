@@ -356,7 +356,7 @@ interface ModalDetailDOProps {
 }
 
 function ModalDetailDO({ noPosto, onClose }: ModalDetailDOProps) {
-  const { apiFetch } = useApi();
+  const { apiFetch, apiTable } = useApi();
   const { addToast } = useToast();
   const [doList, setDoList] = useState<DOItem[]>([]);
   const [totalDenda, setTotalDenda] = useState(0);
@@ -364,27 +364,59 @@ function ModalDetailDO({ noPosto, onClose }: ModalDetailDOProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isPrinting, setIsPrinting] = useState(false);
 
-  React.useEffect(() => {
-    const loadDO = async () => {
-      setIsLoading(true);
-      try {
-        const res = await apiFetch("/api/Apg/DatatableDoPengajuanJapo", {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: `noposto=${encodeURIComponent(noPosto)}`,
-        });
-        const json = await res.json();
-        setDoList(json?.data ?? []);
-        setTotalDenda(json?.totaldenda ?? 0);
-        setIsCanPrint(json?.iscanprint ?? false);
-      } catch {
-        addToast({ title: "Error", description: "Gagal memuat detail DO", variant: "destructive" });
-      } finally {
-        setIsLoading(false);
+  // Use a client-side fetcher wrapper for the DataTable component
+  const fetcherDO = useCallback(async (params: DataTableParams) => {
+    try {
+      const res = await apiFetch("/api/Apg/DatatableDoPengajuanJapo", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: `noposto=${encodeURIComponent(noPosto)}`,
+      });
+      const json = await res.json();
+      
+      setTotalDenda(json?.totaldenda ?? 0);
+      setIsCanPrint(json?.iscanprint ?? false);
+      
+      const allData: DOItem[] = json?.data ?? [];
+      
+      // Client-side filtering if search is used
+      let filtered = allData;
+      if (params.search) {
+        const lowerSearch = params.search.toLowerCase();
+        filtered = filtered.filter(item => 
+          Object.values(item).some(val => 
+            val !== null && val !== undefined && String(val).toLowerCase().includes(lowerSearch)
+          )
+        );
       }
-    };
-    loadDO();
-  }, [noPosto]);
+      
+      // Client-side pagination
+      const paginated = filtered.slice(params.start, params.start + params.length);
+      
+      return { 
+        data: paginated, 
+        recordsTotal: allData.length, 
+        recordsFiltered: filtered.length 
+      };
+    } catch (err: any) {
+      addToast({ title: "Error", description: "Gagal memuat detail DO", variant: "destructive" });
+      return { data: [], recordsTotal: 0, recordsFiltered: 0 };
+    }
+  }, [noPosto, apiFetch, addToast]);
+
+  const columnsDO: DataTableColumn<DOItem>[] = [
+    { key: "index", header: "No.", render: (row, i) => i + 1 },
+    { key: "NoDo", header: "Do", className: "font-bold text-blue-600 dark:text-blue-400 whitespace-nowrap" },
+    { key: "KuantumDo", header: "Kuantum", className: "text-right", render: (row) => formatAngka(row.KuantumDo) },
+    { key: "TanggalDo", header: "Tanggal", className: "whitespace-nowrap", render: (row) => row.TanggalDoStr || formatTanggal(row.TanggalDo) },
+    { key: "TglJatuhTempo", header: "Tanggal Jatuh Tempo", className: "text-orange-600 dark:text-orange-400 whitespace-nowrap", render: (row) => row.TglJatuhTempoStr || formatTanggal(row.TglJatuhTempo) },
+    { key: "TanggalGr", header: "Tanggal Realisasi", className: "whitespace-nowrap", render: (row) => row.TanggalGrStr || formatTanggal(row.TanggalGr) },
+    { key: "SisaPo", header: "Outstanding Kuantum Terlambat", className: "text-right", render: (row) => formatAngka(row.SisaPo, 2) },
+    { key: "TotalGr", header: "Realisasi Kuantum", className: "text-right", render: (row) => formatAngka(row.TotalGr) },
+    { key: "Telat", header: "Waktu/Hari", render: (row) => row.Telat ? <Badge color="error" size="sm">Terlambat</Badge> : <Badge color="success" size="sm">Tepat Waktu</Badge> },
+    { key: "Denda", header: "Denda Rp/Ton/Hari", className: "font-bold text-right", render: (row) => formatAngka(row.Denda) },
+    { key: "TotalDenda", header: "Total Klaim (Rp)", className: "font-bold text-red-600 dark:text-red-400 text-right", render: (row) => formatAngka(row.TotalDenda) },
+  ];
 
   const handlePrint = async () => {
     setIsPrinting(true);
@@ -425,57 +457,18 @@ function ModalDetailDO({ noPosto, onClose }: ModalDetailDOProps) {
         </div>
 
         {/* Table */}
-        <div className="flex-1 overflow-auto">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-20">
-              <Loader2 className="h-10 w-10 animate-spin text-blue-500 opacity-30" />
-            </div>
-          ) : doList.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-gray-400">
-              <Info className="h-10 w-10 mb-3 opacity-30" />
-              <p className="text-sm font-medium">Tidak ada data DO</p>
-            </div>
-          ) : (
-            <table className="w-full text-left text-sm border-collapse">
-              <thead className="bg-gray-50 dark:bg-white/[0.02] sticky top-0 z-10">
-                <tr className="border-b border-gray-100 dark:border-gray-800">
-                  {[
-                    "No.", "Do", "Kuantum", "Tanggal",
-                    "Tanggal Jatuh Tempo", "Tanggal Realisasi",
-                    "Outstanding Kuantum Terlambat", "Realisasi Kuantum",
-                    "Waktu/Hari", "Denda Rp/Ton/Hari", "Total Klaim (Rp)"
-                  ].map((h) => (
-                    <th key={h} className="px-3 py-3 text-[10px] font-black uppercase text-gray-400 tracking-widest whitespace-nowrap text-center">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
-                {doList.map((do_, i) => (
-                  <tr key={do_.NoDo || i} className="transition-colors hover:bg-blue-50/30 dark:hover:bg-blue-500/5 text-center">
-                    <td className="px-3 py-3 text-[11px] text-gray-400 font-medium">{i + 1}</td>
-                    <td className="px-3 py-3 text-[12px] font-bold text-blue-600 dark:text-blue-400 whitespace-nowrap">{do_.NoDo}</td>
-                    <td className="px-3 py-3 text-[12px] font-medium text-right">{formatAngka(do_.KuantumDo)}</td>
-                    <td className="px-3 py-3 text-[12px] whitespace-nowrap">{do_.TanggalDoStr || formatTanggal(do_.TanggalDo)}</td>
-                    <td className="px-3 py-3 text-[12px] text-orange-600 dark:text-orange-400 whitespace-nowrap">{do_.TglJatuhTempoStr || formatTanggal(do_.TglJatuhTempo)}</td>
-                    <td className="px-3 py-3 text-[12px] whitespace-nowrap">{do_.TanggalGrStr || formatTanggal(do_.TanggalGr)}</td>
-                    <td className="px-3 py-3 text-[12px] text-right">{formatAngka(do_.SisaPo, 2)}</td>
-                    <td className="px-3 py-3 text-[12px] text-right">{formatAngka(do_.TotalGr)}</td>
-                    <td className="px-3 py-3 text-[12px]">
-                      {do_.Telat ? (
-                        <Badge color="error" size="sm">Terlambat</Badge>
-                      ) : (
-                        <Badge color="success" size="sm">Tepat Waktu</Badge>
-                      )}
-                    </td>
-                    <td className="px-3 py-3 text-[12px] font-bold text-right">{formatAngka(do_.Denda)}</td>
-                    <td className="px-3 py-3 text-[12px] font-bold text-red-600 dark:text-red-400 text-right">{formatAngka(do_.TotalDenda)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+        <div className="flex-1 overflow-auto p-4 bg-gray-50/30 dark:bg-gray-900/50">
+          <DataTable<DOItem>
+            columns={columnsDO}
+            queryKey={["do-detail", noPosto]}
+            fetcher={fetcherDO}
+            rowKey={(row) => row.NoDo}
+            searchPlaceholder="Cari DO..."
+            emptyText="Tidak ada data DO"
+            defaultPageSize={10}
+            striped
+            compact
+          />
         </div>
 
         {/* Footer: total denda + cetak */}
@@ -517,7 +510,7 @@ function ModalDetailDO({ noPosto, onClose }: ModalDetailDOProps) {
 type TabKey = "aktif" | "riwayat";
 
 export default function PengajuanJatuhTempoPage() {
-  const { apiFetch } = useApi();
+  const { apiTable } = useApi();
   const { addToast } = useToast();
   const queryClient = useQueryClient();
 
@@ -530,42 +523,56 @@ export default function PengajuanJatuhTempoPage() {
 
   const fetcherAktif = useCallback(
     async (params: DataTableParams) => {
-      const body = new URLSearchParams({ draw: String(params.draw), start: String(params.start), length: String(params.length), cmd: "refresh" });
       try {
-        const res = await apiFetch("/api/Apg/DatatablePengajuanJapo", {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: body.toString(),
+        const result = await apiTable("/api/Apg/DatatablePengajuanJapo", {
+          draw: params.draw,
+          start: params.start,
+          length: params.length,
+          search: { value: params.search },
+          cmd: "refresh",
+          columns: [
+            { data: "NoPosto", name: "NoPosto", searchable: true, orderable: true }
+          ]
         });
-        const json = await res.json();
-        const data: PengajuanJapoItem[] = json?.data ?? [];
-        return { data, recordsTotal: data.length, recordsFiltered: data.length };
+        const data: PengajuanJapoItem[] = result?.data ?? [];
+        return { 
+          data, 
+          recordsTotal: result?.recordsTotal ?? data.length, 
+          recordsFiltered: result?.recordsFiltered ?? data.length 
+        };
       } catch (err: any) {
         addToast({ title: "Error", description: "Gagal memuat data pengajuan", variant: "destructive" });
         return { data: [], recordsTotal: 0, recordsFiltered: 0 };
       }
     },
-    [apiFetch]
+    [apiTable, addToast]
   );
 
   const fetcherRiwayat = useCallback(
     async (params: DataTableParams) => {
-      const body = new URLSearchParams({ draw: String(params.draw), start: String(params.start), length: String(params.length), cmd: "refresh" });
       try {
-        const res = await apiFetch("/api/Apg/DatatableRiwayatPengajuanJapo", {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: body.toString(),
+        const result = await apiTable("/api/Apg/DatatableRiwayatPengajuanJapo", {
+          draw: params.draw,
+          start: params.start,
+          length: params.length,
+          search: { value: params.search },
+          cmd: "refresh",
+          columns: [
+            { data: "NoPosto", name: "NoPosto", searchable: true, orderable: true }
+          ]
         });
-        const json = await res.json();
-        const data: RiwayatJapoItem[] = json?.data ?? [];
-        return { data, recordsTotal: data.length, recordsFiltered: data.length };
+        const data: RiwayatJapoItem[] = result?.data ?? [];
+        return { 
+          data, 
+          recordsTotal: result?.recordsTotal ?? data.length, 
+          recordsFiltered: result?.recordsFiltered ?? data.length 
+        };
       } catch (err: any) {
         addToast({ title: "Error", description: "Gagal memuat riwayat pengajuan", variant: "destructive" });
         return { data: [], recordsTotal: 0, recordsFiltered: 0 };
       }
     },
-    [apiFetch]
+    [apiTable, addToast]
   );
 
   // ── Columns — Tab Aktif ──────────────────────────────────────────────────────
