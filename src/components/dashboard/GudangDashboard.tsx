@@ -80,10 +80,10 @@ export default function GudangDashboard() {
         order: params.order?.length ? params.order : [{ column: 0, dir: "desc" }],
         columns: [
           { data: "tanggal", name: "tanggal", searchable: false, orderable: true },
-          { data: "bookingno", name: "bookingno", searchable: true, orderable: true },
-          { data: "nopol", name: "nopol", searchable: true, orderable: true },
-          { data: "driver", name: "driver", searchable: true, orderable: true },
-          { data: "produkString", name: "idproduk", searchable: true, orderable: true },
+          { data: "bookingno", name: "bookingno", searchable: true, orderable: true, search: { value: params.columnFilters?.bookingno || "" } },
+          { data: "nopol", name: "nopol", searchable: true, orderable: true, search: { value: params.columnFilters?.nopol || "" } },
+          { data: "driver", name: "driver", searchable: true, orderable: true, search: { value: params.columnFilters?.driver || "" } },
+          { data: "produkString", name: "idproduk", searchable: true, orderable: true, search: { value: params.columnFilters?.produkString || "" } },
         ]
       });
 
@@ -102,6 +102,7 @@ export default function GudangDashboard() {
     {
       key: "bookingno",
       header: "No Booking / Tiket",
+      searchable: true,
       sortColumn: 0,
       render: (t) => (
         <div className="flex flex-col">
@@ -113,18 +114,21 @@ export default function GudangDashboard() {
     {
       key: "nopol",
       header: "Plat Nomor",
+      searchable: true,
       sortColumn: 1,
       render: (t) => <span className="font-bold font-mono text-gray-800 dark:text-gray-200">{t.nopol}</span>,
     },
     {
       key: "driver",
       header: "Driver",
+      searchable: true,
       sortColumn: 2,
       render: (t) => <span className="text-gray-600 dark:text-gray-400">{t.driver}</span>,
     },
     {
       key: "produkString",
       header: "Produk",
+      searchable: true,
       sortColumn: 3,
       render: (t) => <span className="font-semibold text-brand-600 dark:text-brand-400">{t.produkString}</span>,
     },

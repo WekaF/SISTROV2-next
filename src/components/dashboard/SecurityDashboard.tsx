@@ -52,10 +52,10 @@ export default function SecurityDashboard() {
         order: [{ column: 0, dir: "desc" }],
         columns: [
           { data: "tanggal", name: "tanggal", searchable: false, orderable: true },
-          { data: "bookingno", name: "bookingno", searchable: true, orderable: true },
-          { data: "nopol", name: "nopol", searchable: true, orderable: true },
-          { data: "driver", name: "driver", searchable: true, orderable: true },
-          { data: "produkString", name: "idproduk", searchable: true, orderable: true },
+          { data: "bookingno", name: "bookingno", searchable: true, orderable: true, search: { value: params.columnFilters?.bookingno || "" } },
+          { data: "nopol", name: "nopol", searchable: true, orderable: true, search: { value: params.columnFilters?.nopol || "" } },
+          { data: "driver", name: "driver", searchable: true, orderable: true, search: { value: params.columnFilters?.driver || "" } },
+          { data: "produkString", name: "idproduk", searchable: true, orderable: true, search: { value: params.columnFilters?.produkString || "" } },
         ]
       });
 
@@ -74,6 +74,7 @@ export default function SecurityDashboard() {
     {
       key: "bookingno",
       header: "No Booking / Tiket",
+      searchable: true,
       render: (t) => (
         <div className="flex flex-col font-mono text-xs">
           <span className="font-bold text-gray-900 dark:text-white">{t.bookingno}</span>
@@ -84,16 +85,19 @@ export default function SecurityDashboard() {
     {
       key: "nopol",
       header: "Plat Nomor",
+      searchable: true,
       render: (t) => <span className="font-bold font-mono text-gray-800 dark:text-gray-200 text-xs">{t.nopol}</span>,
     },
     {
       key: "driver",
       header: "Driver",
+      searchable: true,
       render: (t) => <span className="text-gray-600 dark:text-gray-400 text-xs">{t.driver}</span>,
     },
     {
       key: "produkString",
       header: "Produk",
+      searchable: true,
       render: (t) => <span className="font-semibold text-slate-700 dark:text-slate-300 text-xs">{t.produkString}</span>,
     },
     {
