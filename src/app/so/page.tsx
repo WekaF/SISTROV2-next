@@ -129,6 +129,8 @@ export default function SOPage() {
     const colIndices: Record<string, number> = {
       wilayah: 2, tanggalString: 3, noposto: 4, asalString: 6,
       tujuanString: 7, bagian: 8, transportString: 9, produkString: 10,
+      qty: 11, qtyrealisasi: 14, cutoff: 16, kapal: 17,
+      kotatujuan: 18, updatedby: 19, tanggaljatuhtempoString: 20,
     };
     if (params.columnFilters) {
       Object.entries(params.columnFilters).forEach(([key, val]) => {
@@ -308,16 +310,21 @@ export default function SOPage() {
     {
       key: "tanggalString",
       header: "Tanggal",
+      searchable: true,
+      searchType: "date",
       render: (p) => <span className="text-gray-500 font-mono text-xs">{p.tanggalString}</span>,
     },
     {
       key: "tanggaljatuhtempoString",
       header: "Jatuh Tempo",
+      searchable: true,
+      searchType: "date",
       render: (p) => <span className="text-gray-500 dark:text-gray-400 font-mono text-xs whitespace-nowrap">{p.tanggaljatuhtempoString || "-"}</span>,
     },
     {
       key: "transportString",
       header: "Transportir",
+      searchable: true,
       render: (p) => (
         <div>
           <div className="text-sm font-medium">{p.transportString || "-"}</div>
@@ -330,6 +337,7 @@ export default function SOPage() {
     {
       key: "produkString",
       header: "Produk",
+      searchable: true,
       render: (p) => (
         <div className="flex items-center gap-2">
           <Package className="h-4 w-4 text-brand-500 shrink-0" />
@@ -342,6 +350,7 @@ export default function SOPage() {
       header: "Qty (Ton)",
       headerClassName: "text-right",
       className: "text-right font-bold",
+      searchable: true,
       render: (p) => (p.qty || 0).toLocaleString(),
     },
     {
@@ -370,21 +379,22 @@ export default function SOPage() {
         </div>
       ),
     },
-    { key: "asalString", header: "Asal", render: (p) => p.asalString || "-" },
-    { key: "tujuanString", header: "Tujuan", render: (p) => p.tujuanString || "-" },
-    { key: "wilayah", header: "Wilayah", render: (p) => <span className="font-medium">{p.wilayah || "-"}</span> },
+    { key: "asalString", header: "Asal", searchable: true, render: (p) => p.asalString || "-" },
+    { key: "tujuanString", header: "Tujuan", searchable: true, render: (p) => p.tujuanString || "-" },
+    { key: "wilayah", header: "Wilayah", searchable: true, render: (p) => <span className="font-medium">{p.wilayah || "-"}</span> },
     {
       key: "cutoff",
       header: "CutOff",
+      searchable: true,
       render: (p) => (
         <span className={`text-xs font-medium ${(p.cutoff || "").includes("Cut Off (") ? "text-red-500" : "text-gray-400"}`}>
           {p.cutoff || "Belum Cut Off"}
         </span>
       ),
     },
-    { key: "kapal", header: "Kapal", render: (p) => <span className="text-xs">{p.kapal || "-"}</span> },
-    { key: "kotatujuan", header: "Kota Tujuan", render: (p) => <span className="text-xs">{p.kotatujuan || "-"}</span> },
-    { key: "updatedby", header: "PIC", render: (p) => <span className="text-[10px] uppercase font-bold text-gray-400">{p.updatedby || "-"}</span> },
+    { key: "kapal", header: "Kapal", searchable: true, render: (p) => <span className="text-xs">{p.kapal || "-"}</span> },
+    { key: "kotatujuan", header: "Kota Tujuan", searchable: true, render: (p) => <span className="text-xs">{p.kotatujuan || "-"}</span> },
+    { key: "updatedby", header: "PIC", searchable: true, render: (p) => <span className="text-[10px] uppercase font-bold text-gray-400">{p.updatedby || "-"}</span> },
 
     { key: "gruptruk", header: "Grup Truk", render: (p) => <span className="text-xs">{p.gruptruk || "-"}</span> },
     {
