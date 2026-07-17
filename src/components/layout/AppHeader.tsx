@@ -93,10 +93,8 @@ const AppHeader: React.FC = () => {
 
         <div className="flex items-center gap-2 px-4 py-2 lg:gap-4 lg:px-0 lg:py-0">
           <div className="flex items-center gap-3">
-            <div className="flex flex-col items-end gap-1">
-              <NetworkStatusBadge />
-              <CompanySwitcher />
-            </div>
+            <CompanySwitcher />
+            <NetworkStatusBadge />
             <ThemeToggleButton />
             <NotificationDropdown />
           </div>
