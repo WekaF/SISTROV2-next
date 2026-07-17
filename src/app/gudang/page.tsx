@@ -80,7 +80,7 @@ export default function GudangListPage() {
 
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isTambahStokOpen, setIsTambahStokOpen] = useState(false);
-  const [tambahanStok, setTambahanStok] = useState<number>(0);
+  const [tambahanStok, setTambahanStok] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
 
@@ -171,9 +171,9 @@ export default function GudangListPage() {
   const handleOpenTambahStok = async (row: GudangData) => {
     const realId = getRealId(row);
     setSelectedGudang(row);
+    setTambahanStok(""); // reset input saat modal dibuka
     setIsLoadingDetail(true);
     setIsTambahStokOpen(true);
-    setTambahanStok(0);
     try {
       const res = await apiJson("/api/Gudang/DetailData", {
         method: "POST",
@@ -188,12 +188,13 @@ export default function GudangListPage() {
   };
 
   const handleSaveStok = async () => {
-    if (!gudangDetail || tambahanStok < 0) return;
+    const stokValue = parseFloat(tambahanStok);
+    if (!gudangDetail || isNaN(stokValue) || stokValue <= 0) return;
     setIsSaving(true);
     try {
       await apiJson("/api/Gudang/UpdateData", {
         method: "POST",
-        body: JSON.stringify({ id: gudangDetail.id, value: tambahanStok })
+        body: JSON.stringify({ id: gudangDetail.id, value: stokValue })
       });
       addToast({ title: "Sukses", description: "Stok gudang berhasil ditambahkan", variant: "success" });
       setIsTambahStokOpen(false);
@@ -573,7 +574,7 @@ export default function GudangListPage() {
                   min="0"
                   placeholder="0.00"
                   value={tambahanStok}
-                  onChange={(e) => setTambahanStok(Number(e.target.value))}
+                  onChange={(e) => setTambahanStok(e.target.value)}
                   className="h-16 pl-20 text-2xl font-black border-2 focus:ring-brand-500 rounded-2xl bg-slate-50/50 dark:bg-slate-900/50 text-slate-900 dark:text-white border-slate-200 dark:border-slate-800"
                   autoFocus
                 />
@@ -602,7 +603,7 @@ export default function GudangListPage() {
               <Button
                 className="flex-2 h-14 font-black bg-brand-600 hover:bg-brand-700 text-white shadow-lg shadow-brand-500/20 rounded-2xl px-12 transition-all active:scale-95 disabled:opacity-50"
                 onClick={handleSaveStok}
-                disabled={isSaving || tambahanStok <= 0}
+                disabled={isSaving || !(parseFloat(tambahanStok) > 0)}
               >
                 {isSaving ? (
                   <div className="flex items-center gap-2">

@@ -98,7 +98,7 @@ function AntrianContent() {
   const isSuperAdmin = hasRole("superadmin") || hasRole("ti");
   const isStaffArea = hasRole("staffarea");
   const isGudang = hasRole("gudang");
-  
+
   const isGudangFull = isSuperAdmin || isStaffArea || isGudang || hasGudangAccess(userRole, roles);
   const isReadOnly = isReadOnlyRole(userRole, roles) && !isSuperAdmin && !isStaffArea;
 
@@ -349,9 +349,9 @@ function AntrianContent() {
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white uppercase">Management Antrian</h1>
-            <Badge color={isGudangFull ? "success" : "info"} variant="solid" size="sm" className="font-black">
+            {/* <Badge color={isGudangFull ? "success" : "info"} variant="solid" size="sm" className="font-black">
               {isGudangFull ? "ADMINISTRATIVE ACCESS" : "READ ONLY"}
-            </Badge>
+            </Badge> */}
           </div>
           <p className="text-sm text-slate-500 font-medium tracking-tight">Monitoring pergerakan armada dan pengelolaan antrian gudang muat secara real-time.</p>
           {streamStatus === "live" && (
@@ -365,9 +365,9 @@ function AntrianContent() {
           )}
         </div>
         <div className="flex items-center gap-2">
-           <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             className="h-10 bg-white dark:bg-slate-900 border-2 font-bold uppercase text-[10px] tracking-widest"
             onClick={() => {
               queryClient.invalidateQueries({ queryKey: ["antrian"] });
@@ -395,12 +395,12 @@ function AntrianContent() {
                 <p className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] mb-1">{stat.label}</p>
                 <p className="text-2xl font-black text-slate-900 dark:text-white">{stat.value}</p>
               </div>
-              <div className={cn("p-3 rounded-2xl", 
+              <div className={cn("p-3 rounded-2xl",
                 stat.color === "blue" ? "bg-blue-50 text-blue-600" :
-                stat.color === "orange" ? "bg-orange-50 text-orange-600" :
-                stat.color === "amber" ? "bg-amber-50 text-amber-600" :
-                stat.color === "indigo" ? "bg-indigo-50 text-indigo-600" :
-                "bg-emerald-50 text-emerald-600"
+                  stat.color === "orange" ? "bg-orange-50 text-orange-600" :
+                    stat.color === "amber" ? "bg-amber-50 text-amber-600" :
+                      stat.color === "indigo" ? "bg-indigo-50 text-indigo-600" :
+                        "bg-emerald-50 text-emerald-600"
               )}>
                 <stat.icon className="h-6 w-6" />
               </div>
@@ -423,27 +423,28 @@ function AntrianContent() {
             {gudangOptions.map((g: any) => {
               const antrianCount = streamData?.warehouseCounts?.[g.idgudang] ?? streamData?.warehouseCounts?.[g.namagudang] ?? g.antriangudang ?? 0;
               return (
-              <Card key={g.idgudang} className="min-w-[200px] border-none ring-0 shadow-sm flex-shrink-0 bg-white dark:bg-slate-900 border-l-4 border-l-brand-500 overflow-visible">
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <span className="text-xs font-black text-slate-700 dark:text-slate-200 uppercase truncate max-w-[120px]">{g.namagudang}</span>
-                    <Warehouse className="h-4 w-4 text-slate-300" />
-                  </div>
-                  <div className="flex items-end justify-between">
-                    <div>
-                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Antrian</p>
-                      <p className="text-xl font-black text-brand-600">{antrianCount}</p>
+                <Card key={g.idgudang} className="min-w-[200px] border-none ring-0 shadow-sm flex-shrink-0 bg-white dark:bg-slate-900 border-l-4 border-l-brand-500 overflow-visible">
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <span className="text-xs font-black text-slate-700 dark:text-slate-200 uppercase truncate max-w-[120px]">{g.namagudang}</span>
+                      <Warehouse className="h-4 w-4 text-slate-300" />
                     </div>
-                    <div className="text-right">
-                       <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Status</p>
-                       <Badge color={antrianCount > 10 ? "warning" : "success"} size="sm" variant="light" className="px-1.5 py-0">
-                        {antrianCount > 10 ? "Padat" : "Lancar"}
-                       </Badge>
+                    <div className="flex items-end justify-between">
+                      <div>
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Antrian</p>
+                        <p className="text-xl font-black text-brand-600">{antrianCount}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Status</p>
+                        <Badge color={antrianCount > 10 ? "warning" : "success"} size="sm" variant="light" className="px-1.5 py-0">
+                          {antrianCount > 10 ? "Padat" : "Lancar"}
+                        </Badge>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )})}
+                  </CardContent>
+                </Card>
+              )
+            })}
           </div>
         </div>
       )}
@@ -637,7 +638,7 @@ function AntrianContent() {
 
           <div className="p-6 space-y-6">
             <div className="grid grid-cols-2 gap-3">
-               <div className="bg-slate-50 dark:bg-slate-900 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+              <div className="bg-slate-50 dark:bg-slate-900 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Status Saat Ini</p>
                 <div className="flex items-center gap-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
