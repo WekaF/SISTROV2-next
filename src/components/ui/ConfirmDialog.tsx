@@ -23,6 +23,7 @@ interface ConfirmDialogProps {
   cancelText?: string
   variant?: "danger" | "warning" | "info" | "success"
   isLoading?: boolean
+  children?: React.ReactNode
 }
 
 const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
@@ -36,6 +37,7 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   cancelText = "Cancel",
   variant = "info",
   isLoading = false,
+  children,
 }) => {
   const getIcon = () => {
     switch (variant) {
@@ -87,6 +89,7 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
             </DialogDescription>
           </div>
         </DialogHeader>
+        {children && <div className="px-1">{children}</div>}
         <DialogFooter className="mt-4 sm:justify-center gap-2">
           <Button
             variant="ghost"
