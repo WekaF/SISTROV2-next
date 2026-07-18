@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { Plus, FileEdit, Trash2, ExternalLink, Eye, FileText, Download, AlertCircle, X, Loader2 } from "lucide-react";
+import { Plus, FileEdit, Trash2, ExternalLink, Eye, FileText, Download, AlertCircle, X, Loader2, Ban, Unlock } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Badge from "@/components/ui/badge/Badge";
@@ -8,6 +8,7 @@ import { useSession } from "next-auth/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useApi } from "@/hooks/use-api";
 import { useToast } from "@/components/ui/toast";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { useCompany } from "@/context/CompanyContext";
 import { API_BASE } from "@/lib/api-client";
 import {
@@ -33,6 +34,10 @@ interface FleetData {
   IsVerified: boolean | number;
   ExpiryDate?: string;
   TglDaftar?: string;
+  ID?: number;
+  IsBlocked?: boolean;
+  BlockedReason?: string;
+  BlockedOn?: string;
 }
 
 const formatNopol = (val: string) => {
@@ -110,6 +115,9 @@ export default function ArmadaPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteReason, setDeleteReason] = useState<string>("33");
   const [isExporting, setIsExporting] = useState(false);
+
+  const [blokirTarget, setBlokirTarget] = useState<{ id: number; nextIsBlocked: boolean } | null>(null);
+  const [blokirReason, setBlokirReason] = useState("");
 
   const [editId, setEditId] = useState<string | null>(null);
   const [editFormData, setEditFormData] = useState<any>({});
@@ -367,6 +375,30 @@ export default function ArmadaPage() {
     },
   });
 
+  const blokirMutation = useMutation({
+    mutationFn: async ({ id, isBlocked, reason }: { id: number; isBlocked: boolean; reason: string }) => {
+      const res = await apiFetch("/api/Armada/ToggleBlokir", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ID: id, IsBlocked: isBlocked, Reason: reason }),
+      });
+      return res;
+    },
+    onSuccess: (_res: any, variables) => {
+      setBlokirTarget(null);
+      setBlokirReason("");
+      addToast({
+        title: "Berhasil",
+        description: variables.isBlocked ? "Armada telah diblokir." : "Blokir armada telah dibuka.",
+        variant: "default",
+      });
+      queryClient.invalidateQueries({ queryKey: ["armada"] });
+    },
+    onError: (err: any) => {
+      addToast({ title: "Error", description: err.message, variant: "destructive" });
+    },
+  });
+
   const fetcher = async (params: DataTableParams) => {
     const expiryColIndex = columns.findIndex(c => c.key === "Expiry");
     const payload: any = {
@@ -556,6 +588,18 @@ export default function ArmadaPage() {
       },
     },
     {
+      key: "Blokir",
+      header: "Blokir",
+      render: (f: any) => {
+        const isBlocked = f.isBlocked ?? f.IsBlocked ?? false;
+        return (
+          <Badge color={isBlocked ? "error" : "success"} size="sm" variant="light" className="whitespace-nowrap">
+            {isBlocked ? "Diblokir" : "Aktif"}
+          </Badge>
+        );
+      },
+    },
+    {
       key: "Approver",
       header: "Approver",
       render: (f: any) => <span className="text-xs uppercase font-bold text-gray-500">{f.approver || "-"}</span>,
@@ -599,8 +643,10 @@ export default function ArmadaPage() {
 
         const editId = editMatch ? editMatch[1] : null;
         const deleteId = deleteMatch ? deleteMatch[1] : null;
+        const armadaId: number | null = f.ID ?? f.id ?? null;
+        const isBlocked = f.isBlocked ?? f.IsBlocked ?? false;
 
-        if (!editId && !deleteId) return <span className="text-gray-400 italic text-xs">No Action</span>;
+        if (!editId && !deleteId && !armadaId) return <span className="text-gray-400 italic text-xs">No Action</span>;
 
         return (
           <div className="flex items-center justify-end gap-1">
@@ -622,6 +668,19 @@ export default function ArmadaPage() {
                 onClick={() => setDeleteId(deleteId)}
               >
                 <Trash2 className="h-3 w-3 mr-1" /> Hapus
+              </Button>
+            )}
+            {!isRekanan && armadaId != null && (
+              <Button
+                variant="outline"
+                size="sm"
+                className={isBlocked
+                  ? "text-emerald-600 border-emerald-200 hover:bg-emerald-50 bg-white dark:bg-transparent h-7 px-2"
+                  : "text-gray-600 border-gray-200 hover:bg-gray-50 bg-white dark:bg-transparent h-7 px-2"}
+                onClick={() => setBlokirTarget({ id: armadaId, nextIsBlocked: !isBlocked })}
+              >
+                {isBlocked ? <Unlock className="h-3 w-3 mr-1" /> : <Ban className="h-3 w-3 mr-1" />}
+                {isBlocked ? "Buka Blokir" : "Blokir"}
               </Button>
             )}
           </div>
@@ -870,6 +929,32 @@ export default function ArmadaPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Blokir/Unblock Confirm Dialog */}
+      <ConfirmDialog
+        open={!!blokirTarget}
+        onOpenChange={(open) => { if (!open) { setBlokirTarget(null); setBlokirReason(""); } }}
+        title={blokirTarget?.nextIsBlocked ? "Blokir Armada" : "Buka Blokir Armada"}
+        description={blokirTarget?.nextIsBlocked
+          ? "Armada yang diblokir tidak akan bisa dipilih saat pembuatan tiket baru."
+          : "Armada ini akan bisa dipilih kembali saat pembuatan tiket baru."}
+        onConfirm={() => { if (blokirTarget) blokirMutation.mutate({ id: blokirTarget.id, isBlocked: blokirTarget.nextIsBlocked, reason: blokirReason }); }}
+        confirmText={blokirMutation.isPending ? "Memproses..." : blokirTarget?.nextIsBlocked ? "Ya, Blokir" : "Ya, Buka Blokir"}
+        cancelText="Batal"
+        variant={blokirTarget?.nextIsBlocked ? "danger" : "warning"}
+        isLoading={blokirMutation.isPending}
+      >
+        {blokirTarget?.nextIsBlocked && (
+          <div>
+            <label className="text-[10px] font-black uppercase text-gray-500 tracking-widest ml-1 mb-2 block">Alasan Blokir</label>
+            <Input
+              value={blokirReason}
+              onChange={(e) => setBlokirReason(e.target.value)}
+              placeholder="Contoh: KIR bermasalah, unit rusak, dsb."
+            />
+          </div>
+        )}
+      </ConfirmDialog>
 
       {/* Edit Modal */}
       <Dialog open={!!editId} onOpenChange={(open) => !open && setEditId(null)}>
