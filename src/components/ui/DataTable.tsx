@@ -48,7 +48,7 @@ interface DataTableProps<T> {
   striped?: boolean;
   compact?: boolean;
   hideGlobalSearch?: boolean; // New prop to hide global search
-  initialSearch?: string; // Seeds the search box on mount (e.g. from a ?nopol= deep link)
+  initialSearch?: string; // Seeds the search box on mount (e.g. from a ?nopol= deep link). Mount-only: not controlled, later prop changes are ignored.
 }
 
 export function DataTable<T>({
