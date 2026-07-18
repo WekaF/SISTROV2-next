@@ -12,6 +12,8 @@ import {
   X,
   ShieldCheck,
   Layers,
+  Ban,
+  Unlock,
 } from "lucide-react";
 import { Card, CardHeader, CardContent, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -49,6 +51,9 @@ interface ArmadaRow {
   statusArmada: string;
   mappingCount: number;
   plants: string;
+  isBlocked: boolean;
+  blockedOn: string | null;
+  blockedReason: string | null;
 }
 
 interface ArmadaMappingDetail {
@@ -97,6 +102,9 @@ export default function FleetSettingsPage() {
   const [loadingMappings, setLoadingMappings] = useState(false);
   const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
   const [showDeleteMappingConfirm, setShowDeleteMappingConfirm] = useState(false);
+
+  const [blokirTarget, setBlokirTarget] = useState<{ id: number; nextIsBlocked: boolean } | null>(null);
+  const [blokirReason, setBlokirReason] = useState("");
   const [targetDeleteMappingId, setTargetDeleteMappingId] = useState<number | null>(null);
 
   const {
@@ -191,6 +199,31 @@ export default function FleetSettingsPage() {
     },
     onError: (err: Error) => {
       addToast({ title: "Gagal Menghapus", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const blokirMutation = useMutation({
+    mutationFn: async ({ id, isBlocked, reason }: { id: number; isBlocked: boolean; reason: string }) => {
+      const res = await fetch("/api/admin/armada/toggle-blokir", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, isBlocked, reason }),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error);
+    },
+    onSuccess: (_data, variables) => {
+      setBlokirTarget(null);
+      setBlokirReason("");
+      addToast({
+        title: "Berhasil",
+        description: variables.isBlocked ? "Armada telah diblokir." : "Blokir armada telah dibuka.",
+        variant: "success",
+      });
+      queryClient.invalidateQueries({ queryKey: ["superadmin-armada"] });
+    },
+    onError: (err: Error) => {
+      addToast({ title: "Gagal", description: err.message, variant: "destructive" });
     },
   });
 
@@ -317,13 +350,14 @@ export default function FleetSettingsPage() {
                   <th className={thClass}>Updated By</th>
                   <th className={thClass}>Updated On</th>
                   <th className={thClass}>Mapping</th>
+                  <th className={thClass}>Blokir</th>
                   <th className={thClass + " text-right"}>Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={25} className="px-6 py-12 text-center text-gray-500">
+                    <td colSpan={26} className="px-6 py-12 text-center text-gray-500">
                       <div className="flex flex-col items-center gap-2">
                         <Loader2 className="h-8 w-8 animate-spin text-brand-500" />
                         Memuat data armada...
@@ -332,7 +366,7 @@ export default function FleetSettingsPage() {
                   </tr>
                 ) : isError ? (
                   <tr>
-                    <td colSpan={25} className="px-6 py-12 text-center text-rose-500">
+                    <td colSpan={26} className="px-6 py-12 text-center text-rose-500">
                       <div className="flex flex-col items-center gap-2">
                         <X className="h-8 w-8" />
                         Gagal memuat: {(error as Error)?.message}
@@ -344,7 +378,7 @@ export default function FleetSettingsPage() {
                   </tr>
                 ) : armada.length === 0 ? (
                   <tr>
-                    <td colSpan={25} className="px-6 py-12 text-center text-gray-400 italic">
+                    <td colSpan={26} className="px-6 py-12 text-center text-gray-400 italic">
                       Tidak ada data armada.
                     </td>
                   </tr>
@@ -422,16 +456,32 @@ export default function FleetSettingsPage() {
                             <span className="text-[10px] text-gray-400 italic">Belum di-map</span>
                           )}
                         </td>
+                        <td className={tdClass}>
+                          <Badge color={a.isBlocked ? "error" : "success"} size="sm" variant="light">
+                            {a.isBlocked ? "Diblokir" : "Aktif"}
+                          </Badge>
+                        </td>
                         <td className={tdClass + " text-right"}>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            title="Kelola Mapping"
-                            className="text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/10"
-                            onClick={() => { setSelectedArmada(a); setShowMappingModal(true); }}
-                          >
-                            <ArrowRightLeft className="h-4 w-4" />
-                          </Button>
+                          <div className="flex items-center justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              title="Kelola Mapping"
+                              className="text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/10"
+                              onClick={() => { setSelectedArmada(a); setShowMappingModal(true); }}
+                            >
+                              <ArrowRightLeft className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              title={a.isBlocked ? "Buka Blokir" : "Blokir"}
+                              className={a.isBlocked ? "text-emerald-600 hover:bg-emerald-50" : "text-gray-500 hover:bg-gray-100"}
+                              onClick={() => setBlokirTarget({ id: a.id, nextIsBlocked: !a.isBlocked })}
+                            >
+                              {a.isBlocked ? <Unlock className="h-4 w-4" /> : <Ban className="h-4 w-4" />}
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -578,6 +628,38 @@ export default function FleetSettingsPage() {
         cancelText="Batal"
         variant="danger"
       />
+
+      <ConfirmDialog
+        open={!!blokirTarget}
+        onOpenChange={(open) => { if (!open) { setBlokirTarget(null); setBlokirReason(""); } }}
+        title={blokirTarget?.nextIsBlocked ? "Blokir Armada" : "Buka Blokir Armada"}
+        description={blokirTarget?.nextIsBlocked
+          ? "Armada yang diblokir tidak akan bisa dipilih saat pembuatan tiket baru."
+          : "Armada ini akan bisa dipilih kembali saat pembuatan tiket baru."}
+        onConfirm={async () => {
+          if (!blokirTarget) return;
+          try {
+            await blokirMutation.mutateAsync({ id: blokirTarget.id, isBlocked: blokirTarget.nextIsBlocked, reason: blokirReason });
+          } catch {
+            // swallow — already reported via onError toast
+          }
+        }}
+        confirmText={blokirMutation.isPending ? "Memproses..." : blokirTarget?.nextIsBlocked ? "Ya, Blokir" : "Ya, Buka Blokir"}
+        cancelText="Batal"
+        variant={blokirTarget?.nextIsBlocked ? "danger" : "warning"}
+        isLoading={blokirMutation.isPending}
+      >
+        {blokirTarget?.nextIsBlocked && (
+          <div>
+            <label className="text-[10px] font-black uppercase text-gray-500 tracking-widest ml-1 mb-2 block">Alasan Blokir</label>
+            <Input
+              value={blokirReason}
+              onChange={(e) => setBlokirReason(e.target.value)}
+              placeholder="Contoh: KIR bermasalah, unit rusak, dsb."
+            />
+          </div>
+        )}
+      </ConfirmDialog>
     </div>
   );
 }
