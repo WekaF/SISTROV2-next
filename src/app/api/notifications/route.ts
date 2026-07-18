@@ -6,11 +6,11 @@ import { normalizeRole } from "@/lib/role-utils";
 import { syncTransportirNotifications } from "@/lib/notifications/sync-transportir";
 import { syncStaffareaNotifications } from "@/lib/notifications/sync-staffarea";
 
-export async function GET(_req: NextRequest) {
+export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
   const user = session?.user as any;
   if (!user?.username || !user?.aspnetToken) {
-    return NextResponse.json({ data: [], unreadCount: 0 }, { status: 401 });
+    return NextResponse.json({ data: [], unreadCount: 0, nextCursor: null }, { status: 401 });
   }
 
   const role = normalizeRole(user.role);
@@ -31,14 +31,24 @@ export async function GET(_req: NextRequest) {
     // Fall through and still return whatever notifications already exist.
   }
 
+  const { searchParams } = new URL(req.url);
+  const cursor = searchParams.get("cursor");
+  const unreadOnly = searchParams.get("unreadOnly") === "1";
+  const take = Math.min(Number(searchParams.get("take")) || 30, 100);
+
   const notifications = await prismaLog.notification.findMany({
-    where: { userId: user.username },
+    where: {
+      userId: user.username,
+      ...(unreadOnly ? { isRead: false } : {}),
+    },
     orderBy: { createdAt: "desc" },
-    take: 30,
+    take,
+    ...(cursor ? { skip: 1, cursor: { id: Number(cursor) } } : {}),
   });
   const unreadCount = await prismaLog.notification.count({
     where: { userId: user.username, isRead: false },
   });
+  const nextCursor = notifications.length === take ? notifications[notifications.length - 1].id : null;
 
-  return NextResponse.json({ data: notifications, unreadCount });
+  return NextResponse.json({ data: notifications, unreadCount, nextCursor });
 }
