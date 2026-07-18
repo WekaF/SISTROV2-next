@@ -74,9 +74,18 @@ export async function syncTransportirNotifications(session: SyncSession) {
   );
   if (postoRes.ok) {
     const { data } = (await postoRes.json()) as { data: PostoRow[] };
+    // Posto has no natural "status" to transition, so "new" (never-seen source id)
+    // is the only signal available — but on a user's very first sync EVERY row is
+    // simultaneously "new", which must NOT flood-notify. Distinguish cold start at
+    // the (user, sourceType) level: if this user has no prior posto source-state
+    // rows at all, this is their baseline sync — seed silently. Otherwise a "new"
+    // row really is a newly-appeared posto since their last sync — notify.
+    const hasPriorPostoSync = (await prismaLog.notificationSourceState.count({
+      where: { userId, sourceType: "posto" },
+    })) > 0;
     for (const row of data) {
       const result = await seedOrDiff(userId, "posto", String(row.id), "seen");
-      if (result === "new") {
+      if (result === "new" && hasPriorPostoSync) {
         await createNotificationOnce(
           userId,
           "POSTO_BARU",
