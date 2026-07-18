@@ -42,15 +42,16 @@ model CompanyMenuTemplate {
 }
 
 model Notification {
-  id        Int      @id @default(autoincrement())
-  userId    String   // session.user.username
-  type      String   // "POSTO_BARU" | "ARMADA_APPROVED" | "ARMADA_REJECTED" | "ARMADA_BLOCKED" | "ARMADA_UNBLOCKED" | "PENGAJUAN_BARU"
-  title     String
-  message   String
-  sourceId  String   // backend entity id (posto id / armada review id), for display/debugging
-  dedupeKey String   @unique // `${userId}:${type}:${sourceId}`
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
+  id           Int      @id @default(autoincrement())
+  userId       String   // session.user.username
+  type         String   // "POSTO_BARU" | "ARMADA_APPROVED" | "ARMADA_REJECTED" | "ARMADA_BLOCKED" | "ARMADA_UNBLOCKED" | "PENGAJUAN_BARU"
+  title        String
+  message      String
+  sourceId     String   // backend entity id: Posto.guid for POSTO_BARU, ArmadaReview.ID or Armada.ID (as string) otherwise
+  sourceLabel  String?  // human-facing identifier the target page's detail view needs: noposto, or nopol
+  dedupeKey    String   @unique // `${userId}:${type}:${sourceId}`
+  isRead       Boolean  @default(false)
+  createdAt    DateTime @default(now())
 
   @@index([userId, isRead])
   @@index([userId, createdAt])
