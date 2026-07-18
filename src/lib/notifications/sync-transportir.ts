@@ -28,20 +28,23 @@ async function seedOrDiff(
   const existing = await prismaLog.notificationSourceState.findUnique({
     where: { userId_sourceType_sourceId: { userId, sourceType, sourceId } },
   });
-  if (!existing) {
-    await prismaLog.notificationSourceState.create({
-      data: { userId, sourceType, sourceId, lastStatus: currentStatus },
-    });
-    return "new";
-  }
-  if (existing.lastStatus !== currentStatus) {
-    await prismaLog.notificationSourceState.update({
+  const result: "new" | "changed" | "unchanged" = !existing
+    ? "new"
+    : existing.lastStatus !== currentStatus
+      ? "changed"
+      : "unchanged";
+
+  if (result !== "unchanged") {
+    // ponytail: upsert (not create/update) so a concurrent poll for the same
+    // (userId, sourceType, sourceId) can't throw P2002 on the losing write.
+    await prismaLog.notificationSourceState.upsert({
       where: { userId_sourceType_sourceId: { userId, sourceType, sourceId } },
-      data: { lastStatus: currentStatus },
+      create: { userId, sourceType, sourceId, lastStatus: currentStatus },
+      update: { lastStatus: currentStatus },
     });
-    return "changed";
   }
-  return "unchanged";
+
+  return result;
 }
 
 async function createNotificationOnce(
@@ -73,7 +76,8 @@ export async function syncTransportirNotifications(session: SyncSession) {
     },
   );
   if (postoRes.ok) {
-    const { data } = (await postoRes.json()) as { data: PostoRow[] };
+    let { data } = (await postoRes.json()) as { data: PostoRow[] };
+    if (!Array.isArray(data)) data = [];
     // Posto has no natural "status" to transition, so "new" (never-seen source id)
     // is the only signal available — but on a user's very first sync EVERY row is
     // simultaneously "new", which must NOT flood-notify. Distinguish cold start at
@@ -109,7 +113,8 @@ export async function syncTransportirNotifications(session: SyncSession) {
     },
   );
   if (reviewRes.ok) {
-    const { data } = (await reviewRes.json()) as { data: ArmadaReviewRow[] };
+    let { data } = (await reviewRes.json()) as { data: ArmadaReviewRow[] };
+    if (!Array.isArray(data)) data = [];
     for (const row of data) {
       const result = await seedOrDiff(
         userId,
@@ -145,7 +150,8 @@ export async function syncTransportirNotifications(session: SyncSession) {
     session.aspnetToken,
   );
   if (statusRes.ok) {
-    const rows = (await statusRes.json()) as ArmadaStatusRow[];
+    let rows = (await statusRes.json()) as ArmadaStatusRow[];
+    if (!Array.isArray(rows)) rows = [];
     for (const row of rows) {
       const statusKey = row.IsBlocked ? "blocked" : "active";
       const result = await seedOrDiff(
