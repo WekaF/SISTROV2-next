@@ -40,3 +40,30 @@ model CompanyMenuTemplate {
 
   @@index([companyCode])
 }
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    String   // session.user.username
+  type      String   // "POSTO_BARU" | "ARMADA_APPROVED" | "ARMADA_REJECTED" | "ARMADA_BLOCKED" | "ARMADA_UNBLOCKED" | "PENGAJUAN_BARU"
+  title     String
+  message   String
+  sourceId  String   // backend entity id (posto id / armada review id), for display/debugging
+  dedupeKey String   @unique // `${userId}:${type}:${sourceId}`
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+}
+
+model NotificationSourceState {
+  id         Int      @id @default(autoincrement())
+  userId     String
+  sourceType String   // "posto" | "armada_review" | "armada_blocked"
+  sourceId   String
+  lastStatus String   // last-seen status string used to detect transitions
+  updatedAt  DateTime @updatedAt
+
+  @@unique([userId, sourceType, sourceId])
+}
+
