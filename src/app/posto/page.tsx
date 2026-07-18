@@ -1,5 +1,6 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { Plus, Eye, FileEdit, Trash2, Calendar, Package, Ticket, Printer } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,7 +15,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { DataTable, type DataTableColumn, type DataTableParams } from "@/components/ui/DataTable";
 
-export default function PostoPage() {
+function PostoPageContent() {
+  const searchParams = useSearchParams();
   const { data: session } = useSession();
   const { apiJson, apiFetch, apiTable, token } = useApi();
   const { addToast } = useToast();
@@ -131,6 +133,15 @@ export default function PostoPage() {
       addToast({ title: "Error", description: "Gagal memuat detail POSTO", variant: "destructive" });
     }
   };
+
+  // Deep link from a notification: /posto?id=<guid>&noposto=<noposto>
+  useEffect(() => {
+    const id = searchParams.get("id");
+    if (id) {
+      handleView(id, searchParams.get("noposto") ?? undefined);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleEditInit = async (id: string, noposto?: string) => {
     try {
@@ -670,6 +681,14 @@ export default function PostoPage() {
         variant="danger"
       />
     </div>
+  );
+}
+
+export default function PostoPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-gray-400">Memuat data posto...</div>}>
+      <PostoPageContent />
+    </Suspense>
   );
 }
 
