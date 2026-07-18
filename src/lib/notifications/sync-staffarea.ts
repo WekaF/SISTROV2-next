@@ -18,7 +18,12 @@ export async function syncStaffareaNotifications(session: SyncSession) {
     {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: "draw=1&start=0&length=50&search[value]=",
+      // ArmadaController.DataTableReview() builds a dynamic `OrderBy(columns[order[0][column]].name + " " + order[0][dir])`
+      // from these params — omitting them makes it `OrderBy("  ")`, which throws
+      // (caught by that action's try/catch, silently returning an empty list
+      // instead of erroring) — so this call always came back with 0 rows without
+      // these. "ID" matches ArmadaReview.cs's actual (uppercase) property name.
+      body: "draw=1&start=0&length=50&search[value]=&columns[0][name]=ID&order[0][column]=0&order[0][dir]=asc",
     },
   );
   if (!reviewRes.ok) return;
