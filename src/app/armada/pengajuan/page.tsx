@@ -1,5 +1,6 @@
 "use client";
-import { useState, useRef, useCallback, useMemo } from "react";
+import { useState, useRef, useCallback, useMemo, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Truck,
   Search,
@@ -235,7 +236,8 @@ function FileUploadZone({
 
 // ─────────────── Main Page ────────────────────────────────────────────────────
 
-export default function ArmadaPengajuanPage() {
+function ArmadaPengajuanPageContent() {
+  const searchParams = useSearchParams();
   const { data: session } = useSession();
   const { apiFetch, apiTable } = useApi();
   const { addToast } = useToast();
@@ -271,6 +273,16 @@ export default function ArmadaPengajuanPage() {
   // ── edit modal ──
   const [editId, setEditId] = useState<number | null>(null);
   const [isViewMode, setIsViewMode] = useState(false);
+
+  // Deep link from a notification: /armada/pengajuan?id=<ArmadaReview.ID>
+  useEffect(() => {
+    const id = searchParams.get("id");
+    if (id) {
+      setIsViewMode(true);
+      setEditId(Number(id));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [editForm, setEditForm] = useState(emptyForm());
   const setEF = (patch: Partial<ReturnType<typeof emptyForm>>) => setEditForm((p) => ({ ...p, ...patch }));
   const [editExistingFile1, setEditExistingFile1] = useState("");
@@ -1247,5 +1259,13 @@ export default function ArmadaPengajuanPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+export default function ArmadaPengajuanPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-gray-400">Memuat data pengajuan...</div>}>
+      <ArmadaPengajuanPageContent />
+    </Suspense>
   );
 }
