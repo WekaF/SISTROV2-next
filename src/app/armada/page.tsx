@@ -1,5 +1,6 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { Plus, FileEdit, Trash2, ExternalLink, Eye, FileText, Download, AlertCircle, X, Loader2, Ban, Unlock } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -82,7 +83,9 @@ const toDisplayFormat = (dateStr: string) => {
   return dateStr;
 };
 
-export default function ArmadaPage() {
+function ArmadaPageContent() {
+  const searchParams = useSearchParams();
+  const initialNopolSearch = searchParams.get("nopol") ?? undefined;
   const { data: session } = useSession();
   const { apiJson, apiFetch, apiTable } = useApi();
   const { addToast } = useToast();
@@ -729,6 +732,7 @@ export default function ArmadaPage() {
             fetcher={fetcher}
             rowKey={(f) => f.__key}
             searchPlaceholder={isRekanan ? "Cari Nopol..." : "Cari Nopol atau Transporter..."}
+            initialSearch={initialNopolSearch}
             toolbar={
               <div className="flex items-center gap-2">
                 <Button
@@ -1168,5 +1172,13 @@ export default function ArmadaPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+export default function ArmadaPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-gray-400">Memuat data armada...</div>}>
+      <ArmadaPageContent />
+    </Suspense>
   );
 }
