@@ -41,7 +41,10 @@ export async function GET(req: NextRequest) {
       userId: user.username,
       ...(unreadOnly ? { isRead: false } : {}),
     },
-    orderBy: { createdAt: "desc" },
+    // id tiebreaker: createdAt alone isn't unique (TIMESTAMP(3), millisecond
+    // precision — same-millisecond rows are possible), which cursor pagination
+    // needs to stay stable across page boundaries.
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     take,
     ...(cursor ? { skip: 1, cursor: { id: Number(cursor) } } : {}),
   });
