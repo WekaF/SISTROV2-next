@@ -12,7 +12,7 @@ export async function PATCH(req: NextRequest) {
 
   const body = await req.json().catch(() => ({}));
 
-  if (body.all) {
+  if (body.all === true) {
     await prismaLog.notification.updateMany({
       where: { userId: user.username, isRead: false },
       data: { isRead: true },
@@ -21,7 +21,7 @@ export async function PATCH(req: NextRequest) {
   }
 
   const id = Number(body.id);
-  if (!id) {
+  if (!Number.isInteger(id)) {
     return NextResponse.json({ error: "id required" }, { status: 400 });
   }
   await prismaLog.notification.updateMany({
