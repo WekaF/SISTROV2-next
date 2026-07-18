@@ -1,22 +1,28 @@
 "use client";
 import React from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { Bell, X } from "lucide-react";
+import { getNotificationHref } from "@/lib/notifications/href";
 
 interface NotificationItem {
   id: number;
   type: string;
   title: string;
   message: string;
+  sourceId: string;
+  sourceLabel: string | null;
   isRead: boolean;
   createdAt: string;
 }
 
 export default function NotificationDropdown() {
   const [isOpen, setIsOpen] = React.useState(false);
+  const router = useRouter();
   const queryClient = useQueryClient();
 
   const { data } = useQuery({
@@ -33,29 +39,29 @@ export default function NotificationDropdown() {
   const unreadCount = data?.unreadCount ?? 0;
   const notifying = unreadCount > 0;
 
-  const markAllRead = useMutation({
-    mutationFn: async () => {
+  const markRead = useMutation({
+    mutationFn: async (id: number) => {
       await fetch("/api/notifications/read", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ all: true }),
+        body: JSON.stringify({ id }),
       });
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notifications"] }),
   });
 
   function toggleDropdown() {
-    setIsOpen((prev) => {
-      const next = !prev;
-      if (next && unreadCount > 0) {
-        markAllRead.mutate();
-      }
-      return next;
-    });
+    setIsOpen((prev) => !prev);
   }
 
   function closeDropdown() {
     setIsOpen(false);
+  }
+
+  function handleItemClick(n: NotificationItem) {
+    if (!n.isRead) markRead.mutate(n.id);
+    closeDropdown();
+    router.push(getNotificationHref(n.type, n.sourceId, n.sourceLabel));
   }
 
   return (
@@ -98,7 +104,7 @@ export default function NotificationDropdown() {
             notifications.map((n) => (
               <li key={n.id}>
                 <DropdownItem
-                  onItemClick={closeDropdown}
+                  onItemClick={() => handleItemClick(n)}
                   className="flex gap-3 rounded-lg border-b border-gray-50 p-3 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-white/5"
                 >
                   <div className="flex flex-col text-left">
@@ -118,6 +124,14 @@ export default function NotificationDropdown() {
             ))
           )}
         </ul>
+
+        <Link
+          href="/notifications"
+          onClick={closeDropdown}
+          className="block px-4 py-2 mt-auto text-xs font-medium text-center text-brand-500 hover:text-brand-600 dark:text-brand-400"
+        >
+          View All Notifications
+        </Link>
       </Dropdown>
     </div>
   );
