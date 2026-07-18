@@ -19,27 +19,19 @@ export async function GET(req: Request) {
     const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 200);
 
     const token = (session?.user as any)?.aspnetToken as string;
-    const res = await aspnetFetchServer('/api/SuperadminArmada/List', token);
+    const res = await aspnetFetchServer(`/api/SuperadminArmada/List?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`, token);
     if (!res.ok) {
       const errText = await res.text().catch(() => res.statusText);
       throw new Error(`API error: ${res.status} ${errText}`);
     }
 
-    let allData: any[] = await res.json();
-    if (!Array.isArray(allData)) allData = [];
+    const json = await res.json();
+    const total = json?.total || 0;
+    let paginated = json?.data || [];
+    if (!Array.isArray(paginated)) paginated = [];
 
-    if (search) {
-      allData = allData.filter((a: any) =>
-        (a.Nopol || '').toLowerCase().includes(search) ||
-        (a.TransportCode || '').toLowerCase().includes(search) ||
-        (a.JenisKendaraan || '').toLowerCase().includes(search) ||
-        (a.StatusArmada || '').toLowerCase().includes(search)
-      );
-    }
-
-    const total = allData.length;
     const offset = (page - 1) * limit;
-    const paginated = allData.slice(offset, offset + limit).map((a: any, i: number) => ({
+    paginated = paginated.map((a: any, i: number) => ({
       no: offset + i + 1,
       id: a.Id,
       transportCode: a.TransportCode || '',
