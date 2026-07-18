@@ -48,6 +48,7 @@ interface DataTableProps<T> {
   striped?: boolean;
   compact?: boolean;
   hideGlobalSearch?: boolean; // New prop to hide global search
+  initialSearch?: string; // Seeds the search box on mount (e.g. from a ?nopol= deep link)
 }
 
 export function DataTable<T>({
@@ -66,10 +67,11 @@ export function DataTable<T>({
   striped = false,
   compact = false,
   hideGlobalSearch = false, // Default to false
+  initialSearch,
 }: DataTableProps<T>) {
   const queryClient = useQueryClient();
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [search, setSearch] = useState(initialSearch ?? "");
+  const [debouncedSearch, setDebouncedSearch] = useState(initialSearch ?? "");
   const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
   const [debouncedColumnFilters, setDebouncedColumnFilters] = useState<Record<string, string>>({});
   const [page, setPage] = useState(0);
