@@ -1,20 +1,57 @@
 "use client";
-import Image from "next/image";
-import Link from "next/link";
-import React, { useState } from "react";
+import React from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { formatDistanceToNow } from "date-fns";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { Bell, X } from "lucide-react";
 
+interface NotificationItem {
+  id: number;
+  type: string;
+  title: string;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
 export default function NotificationDropdown() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [notifying, setNotifying] = useState(true);
+  const [isOpen, setIsOpen] = React.useState(false);
+  const queryClient = useQueryClient();
+
+  const { data } = useQuery({
+    queryKey: ["notifications"],
+    queryFn: async () => {
+      const res = await fetch("/api/notifications");
+      if (!res.ok) return { data: [] as NotificationItem[], unreadCount: 0 };
+      return res.json() as Promise<{ data: NotificationItem[]; unreadCount: number }>;
+    },
+    refetchInterval: 30_000,
+  });
+
+  const notifications = data?.data ?? [];
+  const unreadCount = data?.unreadCount ?? 0;
+  const notifying = unreadCount > 0;
+
+  const markAllRead = useMutation({
+    mutationFn: async () => {
+      await fetch("/api/notifications/read", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ all: true }),
+      });
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notifications"] }),
+  });
 
   function toggleDropdown() {
-    setIsOpen(!isOpen);
-    if (isOpen === false) {
-      setNotifying(false);
-    }
+    setIsOpen((prev) => {
+      const next = !prev;
+      if (next && unreadCount > 0) {
+        markAllRead.mutate();
+      }
+      return next;
+    });
   }
 
   function closeDropdown() {
@@ -53,62 +90,34 @@ export default function NotificationDropdown() {
         </div>
 
         <ul className="flex flex-col h-auto overflow-y-auto no-scrollbar">
-          <li>
-            <DropdownItem
-              onItemClick={closeDropdown}
-              className="flex gap-3 rounded-lg border-b border-gray-50 p-3 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-white/5"
-            >
-              <div className="relative h-10 w-10 flex-shrink-0">
-                <Image
-                  width={40}
-                  height={40}
-                  src="/images/user/user-02.jpg"
-                  alt="User"
-                  className="rounded-full object-cover"
-                />
-                <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-green-500 dark:border-gray-900"></span>
-              </div>
-
-              <div className="flex flex-col text-left">
-                <p className="text-theme-sm text-gray-800 dark:text-gray-200">
-                  <span className="font-semibold">Budi Santoso</span> created a new ticket
-                </p>
-                <p className="text-theme-xs text-gray-500">Gudang Lini 1 • 5 min ago</p>
-              </div>
-            </DropdownItem>
-          </li>
-          <li>
-            <DropdownItem
-              onItemClick={closeDropdown}
-              className="flex gap-3 rounded-lg border-b border-gray-50 p-3 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-white/5"
-            >
-              <div className="relative h-10 w-10 flex-shrink-0">
-                <Image
-                  width={40}
-                  height={40}
-                  src="/images/user/user-03.jpg"
-                  alt="User"
-                  className="rounded-full object-cover"
-                />
-                <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-orange-500 dark:border-gray-900"></span>
-              </div>
-
-              <div className="flex flex-col text-left">
-                <p className="text-theme-sm text-gray-800 dark:text-gray-200">
-                  <span className="font-semibold">SISTRO Bot</span> warned about low stock
-                </p>
-                <p className="text-theme-xs text-gray-500">Warehouse Alert • 1 hr ago</p>
-              </div>
-            </DropdownItem>
-          </li>
+          {notifications.length === 0 ? (
+            <li className="py-8 text-center text-xs text-gray-400 italic">
+              Tidak ada notifikasi.
+            </li>
+          ) : (
+            notifications.map((n) => (
+              <li key={n.id}>
+                <DropdownItem
+                  onItemClick={closeDropdown}
+                  className="flex gap-3 rounded-lg border-b border-gray-50 p-3 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-white/5"
+                >
+                  <div className="flex flex-col text-left">
+                    <p className="text-theme-sm text-gray-800 dark:text-gray-200">
+                      <span className="font-semibold">{n.title}</span>
+                    </p>
+                    <p className="text-theme-xs text-gray-500">{n.message}</p>
+                    <p className="text-theme-xs text-gray-400 mt-0.5">
+                      {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}
+                    </p>
+                  </div>
+                  {!n.isRead && (
+                    <span className="ml-auto mt-1 h-2 w-2 flex-shrink-0 rounded-full bg-brand-500" />
+                  )}
+                </DropdownItem>
+              </li>
+            ))
+          )}
         </ul>
-
-        <Link
-          href="/notifications"
-          className="block px-4 py-2 mt-auto text-xs font-medium text-center text-brand-500 hover:text-brand-600 dark:text-brand-400"
-        >
-          View All Notifications
-        </Link>
       </Dropdown>
     </div>
   );
