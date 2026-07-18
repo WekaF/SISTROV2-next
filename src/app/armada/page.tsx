@@ -382,6 +382,10 @@ export default function ArmadaPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ID: id, IsBlocked: isBlocked, Reason: reason }),
       });
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        throw new Error(text || "Gagal memperbarui status blokir armada");
+      }
       return res;
     },
     onSuccess: (_res: any, variables) => {
@@ -938,7 +942,16 @@ export default function ArmadaPage() {
         description={blokirTarget?.nextIsBlocked
           ? "Armada yang diblokir tidak akan bisa dipilih saat pembuatan tiket baru."
           : "Armada ini akan bisa dipilih kembali saat pembuatan tiket baru."}
-        onConfirm={() => { if (blokirTarget) blokirMutation.mutate({ id: blokirTarget.id, isBlocked: blokirTarget.nextIsBlocked, reason: blokirReason }); }}
+        onConfirm={async () => {
+          if (!blokirTarget) return;
+          try {
+            await blokirMutation.mutateAsync({ id: blokirTarget.id, isBlocked: blokirTarget.nextIsBlocked, reason: blokirReason });
+          } catch {
+            // Already reported via blokirMutation's onError toast; swallow here so
+            // ConfirmDialog's unguarded `await onConfirm()` doesn't surface an
+            // unhandled rejection.
+          }
+        }}
         confirmText={blokirMutation.isPending ? "Memproses..." : blokirTarget?.nextIsBlocked ? "Ya, Blokir" : "Ya, Buka Blokir"}
         cancelText="Batal"
         variant={blokirTarget?.nextIsBlocked ? "danger" : "warning"}
