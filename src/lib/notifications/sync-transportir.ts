@@ -72,7 +72,11 @@ export async function syncTransportirNotifications(session: SyncSession) {
     {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: "draw=1&start=0&length=50&search[value]=",
+      // POSTOController.DataTable() builds a dynamic `OrderBy("pos." + columns[order[0][column]].name + " " + order[0][dir])`
+      // from these params — omitting them makes it `OrderBy("pos.  ")`, which throws
+      // (uncaught, no try/catch in that action) and the request comes back non-ok.
+      // "id" matches POSTO.cs's actual (lowercase) property name.
+      body: "draw=1&start=0&length=50&search[value]=&columns[0][name]=id&order[0][column]=0&order[0][dir]=asc",
     },
   );
   if (postoRes.ok) {
@@ -109,7 +113,11 @@ export async function syncTransportirNotifications(session: SyncSession) {
     {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: "draw=1&start=0&length=50&search[value]=",
+      // Same dynamic-OrderBy requirement as POSTO/DataTable above — this action
+      // does have a try/catch, so a missing sort column doesn't 500, it silently
+      // returns an empty list instead (equally broken, just a different failure
+      // shape). "ID" matches ArmadaReview.cs's actual (uppercase) property name.
+      body: "draw=1&start=0&length=50&search[value]=&columns[0][name]=ID&order[0][column]=0&order[0][dir]=asc",
     },
   );
   if (reviewRes.ok) {
@@ -144,7 +152,13 @@ export async function syncTransportirNotifications(session: SyncSession) {
     }
   }
 
-  // 3. Armada blokir/buka-blokir — first sighting seeds state without notifying.
+  // 3. Armada blokir/buka-blokir — a real transition ("changed") always notifies.
+  //    Unlike posto/pengajuan, first sighting of an ALREADY-blocked vehicle also
+  //    notifies (no cold-start suppression here): a blocked vehicle is actionable
+  //    info the owner needs regardless of whether they missed the actual toggle
+  //    event, and a transportir's own fleet is small enough that this can't flood
+  //    the way "every historical posto" could. First sighting of an already-ACTIVE
+  //    vehicle stays quiet, same as before — nobody wants a "still fine" notice.
   const statusRes = await aspnetFetchServer(
     "/api/Armada/GetOwnArmadaStatus",
     session.aspnetToken,
@@ -160,7 +174,7 @@ export async function syncTransportirNotifications(session: SyncSession) {
         String(row.ID),
         statusKey,
       );
-      if (result === "changed") {
+      if (result === "changed" || (result === "new" && row.IsBlocked)) {
         if (row.IsBlocked) {
           await createNotificationOnce(
             userId,
