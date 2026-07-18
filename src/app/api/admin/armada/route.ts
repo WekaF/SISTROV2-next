@@ -66,6 +66,9 @@ export async function GET(req: Request) {
       statusArmada: a.StatusArmada || '',
       mappingCount: a.MappingCount || 0,
       plants: a.Plants || '',
+      isBlocked: a.IsBlocked ?? false,
+      blockedOn: a.BlockedOn || null,
+      blockedReason: a.BlockedReason || null,
     }));
 
     return NextResponse.json({
