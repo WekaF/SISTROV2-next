@@ -80,6 +80,7 @@ export async function syncStaffareaNotifications(session: SyncSession) {
         title: "Pengajuan armada baru",
         message: `${row.transportir} mengajukan armada ${row.nopol} untuk disetujui.`,
         sourceId,
+        sourceLabel: row.nopol,
         dedupeKey,
       },
     });

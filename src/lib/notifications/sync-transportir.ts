@@ -4,6 +4,7 @@ import type { SyncSession } from "./types";
 
 interface PostoRow {
   id: number;
+  guid: string;
   noposto: string;
 }
 
@@ -53,12 +54,13 @@ async function createNotificationOnce(
   title: string,
   message: string,
   sourceId: string,
+  sourceLabel: string | null,
 ) {
   const dedupeKey = `${userId}:${type}:${sourceId}`;
   await prismaLog.notification.upsert({
     where: { dedupeKey },
     update: {},
-    create: { userId, type, title, message, sourceId, dedupeKey },
+    create: { userId, type, title, message, sourceId, sourceLabel, dedupeKey },
   });
 }
 
@@ -92,14 +94,15 @@ export async function syncTransportirNotifications(session: SyncSession) {
       where: { userId, sourceType: "posto" },
     })) > 0;
     for (const row of data) {
-      const result = await seedOrDiff(userId, "posto", String(row.id), "seen");
+      const result = await seedOrDiff(userId, "posto", row.guid, "seen");
       if (result === "new" && hasPriorPostoSync) {
         await createNotificationOnce(
           userId,
           "POSTO_BARU",
           "Posto baru",
           `Posto baru ${row.noposto} telah dibuat untuk Anda.`,
-          String(row.id),
+          row.guid,
+          row.noposto,
         );
       }
     }
@@ -138,6 +141,7 @@ export async function syncTransportirNotifications(session: SyncSession) {
             "Armada disetujui",
             `Pengajuan armada ${row.nopol} telah disetujui.`,
             String(row.ID),
+            row.nopol,
           );
         } else if (row.aprrovestatus === "Ditolak/Revisi") {
           await createNotificationOnce(
@@ -146,6 +150,7 @@ export async function syncTransportirNotifications(session: SyncSession) {
             "Armada ditolak",
             `Pengajuan armada ${row.nopol} ditolak / perlu revisi.`,
             String(row.ID),
+            row.nopol,
           );
         }
       }
@@ -182,6 +187,7 @@ export async function syncTransportirNotifications(session: SyncSession) {
             "Armada diblokir",
             `Armada ${row.nopol} telah diblokir.`,
             String(row.ID),
+            row.nopol,
           );
         } else {
           await createNotificationOnce(
@@ -190,6 +196,7 @@ export async function syncTransportirNotifications(session: SyncSession) {
             "Armada dibuka blokirnya",
             `Armada ${row.nopol} tidak lagi diblokir.`,
             String(row.ID),
+            row.nopol,
           );
         }
       }
