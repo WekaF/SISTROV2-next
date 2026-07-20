@@ -471,28 +471,34 @@ export function TransportDashboard() {
   });
 
   if (isLoading) return (
-    <div className="space-y-6 animate-pulse">
-      <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="h-24 bg-gray-100 dark:bg-gray-800 rounded-2xl" />
-        ))}
+    <>
+      <PhoneNumberModal />
+      <div className="space-y-6 animate-pulse">
+        <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="h-24 bg-gray-100 dark:bg-gray-800 rounded-2xl" />
+          ))}
+        </div>
+        <div className="h-64 bg-gray-100 dark:bg-gray-800 rounded-2xl" />
+        <div className="grid grid-cols-2 gap-4">
+          <div className="h-40 bg-gray-100 dark:bg-gray-800 rounded-2xl" />
+          <div className="h-40 bg-gray-100 dark:bg-gray-800 rounded-2xl" />
+        </div>
       </div>
-      <div className="h-64 bg-gray-100 dark:bg-gray-800 rounded-2xl" />
-      <div className="grid grid-cols-2 gap-4">
-        <div className="h-40 bg-gray-100 dark:bg-gray-800 rounded-2xl" />
-        <div className="h-40 bg-gray-100 dark:bg-gray-800 rounded-2xl" />
-      </div>
-    </div>
+    </>
   );
 
   if (isError) return (
-    <div className="flex flex-col items-center justify-center py-24 text-center gap-4">
-      <AlertCircle className="h-12 w-12 text-red-400" />
-      <p className="text-gray-500">Gagal memuat data dashboard. Pastikan koneksi ke server.</p>
-      <button onClick={() => refetch()} className="px-4 py-2 bg-brand-500 text-white rounded-lg text-sm font-medium hover:bg-brand-600">
-        Coba Lagi
-      </button>
-    </div>
+    <>
+      <PhoneNumberModal />
+      <div className="flex flex-col items-center justify-center py-24 text-center gap-4">
+        <AlertCircle className="h-12 w-12 text-red-400" />
+        <p className="text-gray-500">Gagal memuat data dashboard. Pastikan koneksi ke server.</p>
+        <button onClick={() => refetch()} className="px-4 py-2 bg-brand-500 text-white rounded-lg text-sm font-medium hover:bg-brand-600">
+          Coba Lagi
+        </button>
+      </div>
+    </>
   );
 
   const c = data?.counts ?? {};
@@ -508,64 +514,65 @@ export function TransportDashboard() {
   ];
 
   return (
-    <div className="space-y-6">
+    <>
       <PhoneNumberModal />
+      <div className="space-y-6">
+        {/* Refresh button */}
+        <div className="flex justify-end">
+          <button
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`} />
+            Refresh
+          </button>
+        </div>
 
-      {/* Refresh button */}
-      <div className="flex justify-end">
-        <button
-          onClick={() => refetch()}
-          disabled={isFetching}
-          className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-        >
-          <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`} />
-          Refresh
-        </button>
+        {/* Row 1 — KPI Cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+          {kpiCards.map((card) => <KpiCard key={card.label} {...card} />)}
+        </div>
+
+        {/* Row 1.5 — JAPO warning */}
+        <JapoWarningCard />
+
+        {/* Row 2 — Trend chart + Fleet Health */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <TrendChart stats={data?.stats} days={days} onDaysChange={setDays} />
+          <FleetHealth fleet={data?.fleet} />
+        </div>
+
+        {/* Row 3 — Tiket Performance */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <PerformanceCard
+            tiket={data?.tiketTercepat}
+            label="Tiket Tercepat"
+            icon={Zap}
+            color="bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20"
+          />
+          <PerformanceCard
+            tiket={data?.tiketTerlama}
+            label="Tiket Terlama"
+            icon={Timer}
+            color="bg-red-50 text-red-600 dark:bg-red-900/20"
+          />
+        </div>
+
+        {/* Row 4 — POSTO Analytics */}
+        <div>
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+            <Package className="h-4 w-4" /> POSTO Analytics
+          </h3>
+          <PostoAnalytics
+            postoAnalytics={data?.postoAnalytics ?? []}
+            postoSummary={data?.postoSummary}
+          />
+        </div>
+
+        {/* Row 5 — Tiket Table */}
+        <TiketTable tikets={data?.tikets ?? []} />
       </div>
-
-      {/* Row 1 — KPI Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-        {kpiCards.map((card) => <KpiCard key={card.label} {...card} />)}
-      </div>
-
-      {/* Row 1.5 — JAPO warning */}
-      <JapoWarningCard />
-
-      {/* Row 2 — Trend chart + Fleet Health */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <TrendChart stats={data?.stats} days={days} onDaysChange={setDays} />
-        <FleetHealth fleet={data?.fleet} />
-      </div>
-
-      {/* Row 3 — Tiket Performance */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <PerformanceCard
-          tiket={data?.tiketTercepat}
-          label="Tiket Tercepat"
-          icon={Zap}
-          color="bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20"
-        />
-        <PerformanceCard
-          tiket={data?.tiketTerlama}
-          label="Tiket Terlama"
-          icon={Timer}
-          color="bg-red-50 text-red-600 dark:bg-red-900/20"
-        />
-      </div>
-
-      {/* Row 4 — POSTO Analytics */}
-      <div>
-        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-          <Package className="h-4 w-4" /> POSTO Analytics
-        </h3>
-        <PostoAnalytics
-          postoAnalytics={data?.postoAnalytics ?? []}
-          postoSummary={data?.postoSummary}
-        />
-      </div>
-
-      {/* Row 5 — Tiket Table */}
-      <TiketTable tikets={data?.tikets ?? []} />
-    </div>
+    </>
   );
 }
