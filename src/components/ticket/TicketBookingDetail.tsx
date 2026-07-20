@@ -73,6 +73,8 @@ export function TicketBookingDetail({ guid }: TicketBookingDetailProps) {
 
   const postoStats = postoDetails?.response || (postoDetails?.noposto ? postoDetails : {});
 
+  const [hasOpenedDropdown, setHasOpenedDropdown] = useState(false);
+
   const { data: armadaPaginationRaw, isLoading: loadingFleet } = useQuery({
     queryKey: ['armada-pagination', guid, postoStats.percepatan, debouncedArmadaSearch],
     queryFn: () => {
@@ -81,9 +83,11 @@ export function TicketBookingDetail({ guid }: TicketBookingDetailProps) {
         : `/api/Armada/DataPagination`;
       return apiJson(`${endpoint}?posto=${guid}&start=0&length=100&cmd=refresh&q=${debouncedArmadaSearch}`);
     },
-    enabled: !!guid && !!postoStats.noposto,
-    refetchInterval: 10000,
+    enabled: !!guid && !!postoStats.noposto && hasOpenedDropdown,
+    refetchInterval: false,
+    staleTime: 0,
   });
+
 
   const verifiedFleet = Array.isArray(armadaPaginationRaw?.data)
     ? armadaPaginationRaw.data.map((f: any) => ({
@@ -193,18 +197,28 @@ export function TicketBookingDetail({ guid }: TicketBookingDetailProps) {
                     {(!postoStats.gruptrukString || postoStats.gruptrukString === "All Grup") ? (
                       <>
                         <strong>Semua Jenis Kendaraan</strong>
-                        <span className="ml-1 opacity-70">
-                          (Maksimal tonase kendaraan yang dimuat)
-                        </span>
+                        {postoStats.percepatan === "1" && postoStats.gruptrukMuatanPercepatan != null ? (
+                          <span className="ml-1 opacity-70">
+                            (Maks Percepatan: {Number(postoStats.gruptrukMuatanPercepatan).toLocaleString("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TON)
+                          </span>
+                        ) : (
+                          <span className="ml-1 opacity-70">
+                            (Maksimal tonase kendaraan yang dimuat)
+                          </span>
+                        )}
                       </>
                     ) : (
                       <>
                         <strong>{postoStats.gruptrukString}</strong>
-                        {postoStats.gruptrukMuatan != null && (
+                        {postoStats.percepatan === "1" && postoStats.gruptrukMuatanPercepatan != null ? (
+                          <span className="ml-1 opacity-70">
+                            (Maks Percepatan: {Number(postoStats.gruptrukMuatanPercepatan).toLocaleString("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TON)
+                          </span>
+                        ) : postoStats.gruptrukMuatan != null ? (
                           <span className="ml-1 opacity-70">
                             (Maks {Number(postoStats.gruptrukMuatan).toLocaleString("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TON)
                           </span>
-                        )}
+                        ) : null}
                       </>
                     )}
                   </span>
@@ -659,7 +673,11 @@ export function TicketBookingDetail({ guid }: TicketBookingDetailProps) {
                   <div className="relative">
                     <div
                       className="w-full h-11 px-4 rounded-none font-bold bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 flex items-center justify-between cursor-pointer group hover:border-brand-500 transition-all"
-                      onClick={() => setIsArmadaDropdownOpen(!isArmadaDropdownOpen)}
+                      onClick={() => {
+                        if (!isArmadaDropdownOpen) setHasOpenedDropdown(true);
+                        setIsArmadaDropdownOpen(!isArmadaDropdownOpen);
+                      }}
+
                     >
                       <span className={formData.Nopol ? "text-gray-900 dark:text-white" : "text-gray-400"}>
                         {formData.Nopol || "Pilih Armada..."}
