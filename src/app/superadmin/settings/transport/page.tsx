@@ -7,6 +7,7 @@ import {
   Search,
   Plus,
   Pencil,
+  KeyRound,
   Loader2,
   Users,
   CheckCircle2,
@@ -117,6 +118,10 @@ export default function TransportMasterPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<"add" | "edit">("add");
   const [formData, setFormData] = useState<Partial<TransportData>>({});
+  const [isPasswordOpen, setIsPasswordOpen] = useState(false);
+  const [passwordTarget, setPasswordTarget] = useState<{ guid: string; nama: string; username: string } | null>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   const { data: transportsResult, isLoading, isFetching } = useQuery({
     queryKey: ["transports", debouncedSearch, page],
@@ -129,9 +134,9 @@ export default function TransportMasterPage() {
   });
 
   const { data: usersResult } = useQuery({
-    queryKey: ["transport-users-count"],
+    queryKey: ["transport-users-list"],
     queryFn: async () => {
-      const res = await fetch(`/api/admin/transport/users?page=1&limit=1`);
+      const res = await fetch(`/api/admin/transport/users?page=1&limit=500`);
       const data = await res.json();
       if (!data.success) throw new Error(data.error);
       return data;
@@ -178,10 +183,38 @@ export default function TransportMasterPage() {
     onError: (e: any) => addToast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
+  const passwordMutation = useMutation({
+    mutationFn: async ({ guid, newpassword }: { guid: string; newpassword: string }) => {
+      const res = await fetch("/api/admin/transport/users", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ guid, newpassword }),
+      });
+      const d = await res.json();
+      if (!d.success) throw new Error(d.error);
+      return d;
+    },
+    onSuccess: () => {
+      addToast({ title: "Password diperbarui", variant: "success" });
+      setIsPasswordOpen(false);
+      setNewPassword("");
+      setConfirmPassword("");
+    },
+    onError: (e: any) => addToast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
   const transports = transportsResult?.data || [];
   const pagination = transportsResult?.pagination || { total: 0, totalPages: 0 };
   const userTotal = usersResult?.pagination?.total ?? 0;
   const charterCount = transports.filter((t: TransportData) => t.isCharter).length;
+
+  const guidByUsername = React.useMemo(() => {
+    const map = new Map<string, string>();
+    (usersResult?.data || []).forEach((u: any) => {
+      if (u.username && u.guid) map.set(String(u.username).toLowerCase(), u.guid);
+    });
+    return map;
+  }, [usersResult]);
 
   return (
     <div className="space-y-6">
@@ -361,6 +394,21 @@ export default function TransportMasterPage() {
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
+                          {t.username && guidByUsername.get(t.username.toLowerCase()) && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-500/10"
+                              onClick={() => {
+                                setPasswordTarget({ guid: guidByUsername.get(t.username!.toLowerCase())!, nama: t.nama, username: t.username! });
+                                setNewPassword("");
+                                setConfirmPassword("");
+                                setIsPasswordOpen(true);
+                              }}
+                            >
+                              <KeyRound className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -437,6 +485,42 @@ export default function TransportMasterPage() {
               onClick={() => formMode === "add" ? createMutation.mutate(formData) : updateMutation.mutate(formData)}
             >
               {(formMode === "add" ? createMutation.isPending : updateMutation.isPending) && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              Simpan
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Password Modal */}
+      <Dialog open={isPasswordOpen} onOpenChange={setIsPasswordOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Ganti Password</DialogTitle>
+            <DialogDescription>
+              {passwordTarget?.nama} ({passwordTarget?.username})
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Password Baru</label>
+              <Input className="mt-1" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+            </div>
+            <div>
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Ulangi Password</label>
+              <Input className="mt-1" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+              {confirmPassword && newPassword !== confirmPassword && (
+                <p className="mt-1 text-[11px] text-red-500 font-semibold">Password tidak cocok</p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsPasswordOpen(false)}>Batal</Button>
+            <Button
+              className="bg-brand-500 hover:bg-brand-600"
+              disabled={passwordMutation.isPending || !newPassword || newPassword !== confirmPassword}
+              onClick={() => passwordTarget && passwordMutation.mutate({ guid: passwordTarget.guid, newpassword: newPassword })}
+            >
+              {passwordMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
               Simpan
             </Button>
           </DialogFooter>
