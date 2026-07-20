@@ -6,6 +6,7 @@ import {
   UserCheck,
   Search,
   Plus,
+  Pencil,
   Loader2,
   Users,
   CheckCircle2,
@@ -113,7 +114,8 @@ export default function TransportMasterPage() {
 
   const [selected, setSelected] = useState<TransportData | null>(null);
   const [isViewOpen, setIsViewOpen] = useState(false);
-  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [formMode, setFormMode] = useState<"add" | "edit">("add");
   const [formData, setFormData] = useState<Partial<TransportData>>({});
 
   const { data: transportsResult, isLoading, isFetching } = useQuery({
@@ -149,7 +151,27 @@ export default function TransportMasterPage() {
     },
     onSuccess: () => {
       addToast({ title: "Transportir ditambahkan", variant: "success" });
-      setIsAddOpen(false);
+      setIsFormOpen(false);
+      setFormData({});
+      queryClient.invalidateQueries({ queryKey: ["transports"] });
+    },
+    onError: (e: any) => addToast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async (data: Partial<TransportData>) => {
+      const res = await fetch("/api/admin/transport", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const d = await res.json();
+      if (!d.success) throw new Error(d.error);
+      return d;
+    },
+    onSuccess: () => {
+      addToast({ title: "Transportir diperbarui", variant: "success" });
+      setIsFormOpen(false);
       setFormData({});
       queryClient.invalidateQueries({ queryKey: ["transports"] });
     },
@@ -175,7 +197,7 @@ export default function TransportMasterPage() {
         </div>
         <Button
           className="bg-brand-500 hover:bg-brand-600 shadow-lg shadow-brand-500/20"
-          onClick={() => { setFormData({}); setIsAddOpen(true); }}
+          onClick={() => { setFormMode("add"); setFormData({}); setIsFormOpen(true); }}
         >
           <Plus className="h-4 w-4 mr-2" />
           Tambah Vendor
@@ -322,14 +344,24 @@ export default function TransportMasterPage() {
                         )}
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/10"
-                          onClick={() => { setSelected(t); setIsViewOpen(true); }}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/10"
+                            onClick={() => { setSelected(t); setIsViewOpen(true); }}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10"
+                            onClick={() => { setFormMode("edit"); setFormData({ ...t }); setIsFormOpen(true); }}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -347,12 +379,14 @@ export default function TransportMasterPage() {
         </CardContent>
       </Card>
 
-      {/* Add Modal */}
-      <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+      {/* Add / Edit Modal */}
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Tambah Transportir</DialogTitle>
-            <DialogDescription>Masukkan data vendor transportir baru.</DialogDescription>
+            <DialogTitle>{formMode === "add" ? "Tambah Transportir" : "Edit Transportir"}</DialogTitle>
+            <DialogDescription>
+              {formMode === "add" ? "Masukkan data vendor transportir baru." : "Perbarui data vendor transportir."}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div>
@@ -372,7 +406,13 @@ export default function TransportMasterPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Username (Login)</label>
-                <Input className="mt-1" placeholder="Username" value={formData.username || ""} onChange={(e) => setFormData({ ...formData, username: e.target.value })} />
+                <Input
+                  className="mt-1 disabled:opacity-60"
+                  placeholder="Username"
+                  value={formData.username || ""}
+                  disabled={formMode === "edit"}
+                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                />
               </div>
               <div>
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Email</label>
@@ -390,13 +430,13 @@ export default function TransportMasterPage() {
             </label>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddOpen(false)}>Batal</Button>
+            <Button variant="outline" onClick={() => setIsFormOpen(false)}>Batal</Button>
             <Button
               className="bg-brand-500 hover:bg-brand-600"
-              disabled={createMutation.isPending || !formData.nama || !formData.kode}
-              onClick={() => createMutation.mutate(formData)}
+              disabled={(formMode === "add" ? createMutation.isPending : updateMutation.isPending) || !formData.nama || !formData.kode}
+              onClick={() => formMode === "add" ? createMutation.mutate(formData) : updateMutation.mutate(formData)}
             >
-              {createMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              {(formMode === "add" ? createMutation.isPending : updateMutation.isPending) && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
               Simpan
             </Button>
           </DialogFooter>
