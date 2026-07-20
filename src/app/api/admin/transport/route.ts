@@ -94,3 +94,34 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
+
+export async function PUT(req: Request) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!isAuthorized(session)) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+
+    const body = await req.json();
+    const { ID, nama, kode, singkatan, email, isCharter } = body;
+    if (!ID || !nama || !kode) {
+      return NextResponse.json({ success: false, error: "ID, nama, dan kode wajib diisi" }, { status: 400 });
+    }
+
+    const res = await fetch(`${ASPNET}/api/Transportir/UpdateData`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${getToken(session)}`,
+      },
+      body: JSON.stringify({ ID, nama, kode, singkatan, email, isCharter: isCharter || false }),
+    });
+
+    if (!res.ok) {
+      const msg = await res.text().catch(() => res.statusText);
+      return NextResponse.json({ success: false, error: msg }, { status: res.status });
+    }
+
+    return NextResponse.json({ success: true, message: "Transportir berhasil diperbarui" });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
