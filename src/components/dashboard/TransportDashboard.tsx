@@ -8,6 +8,8 @@ import {
   ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
+import { JapoWarningCard } from "./JapoWarningCard";
+import { PhoneNumberModal } from "./PhoneNumberModal";
 
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
@@ -507,6 +509,8 @@ export function TransportDashboard() {
 
   return (
     <div className="space-y-6">
+      <PhoneNumberModal />
+
       {/* Refresh button */}
       <div className="flex justify-end">
         <button
@@ -523,6 +527,9 @@ export function TransportDashboard() {
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
         {kpiCards.map((card) => <KpiCard key={card.label} {...card} />)}
       </div>
+
+      {/* Row 1.5 — JAPO warning */}
+      <JapoWarningCard />
 
       {/* Row 2 — Trend chart + Fleet Health */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
