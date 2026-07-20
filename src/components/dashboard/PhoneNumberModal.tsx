@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -69,9 +70,9 @@ export function PhoneNumberModal() {
             <Phone className="h-6 w-6 text-amber-500" />
           </div>
           <DialogTitle className="text-center">Informasi Akun Diperlukan</DialogTitle>
-          <p className="text-center text-sm text-muted-foreground">
+          <DialogDescription className="text-center">
             Kami memerlukan nomor telepon Anda untuk melanjutkan.
-          </p>
+          </DialogDescription>
         </DialogHeader>
         <Input
           type="tel"
