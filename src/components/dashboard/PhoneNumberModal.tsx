@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import { useQuery } from "@tanstack/react-query";
 import { Phone } from "lucide-react";
 import {
@@ -19,6 +20,9 @@ import { useToast } from "@/components/ui/toast";
 export function PhoneNumberModal() {
   const { apiJson, apiFetch } = useApi();
   const { addToast } = useToast();
+  const { data: session } = useSession();
+  const role = (session?.user as any)?.role;
+  const isTransportRole = role === "transport";
   const [open, setOpen] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [phone, setPhone] = useState("");
@@ -28,12 +32,14 @@ export function PhoneNumberModal() {
     queryKey: ["phone-number-modal"],
     queryFn: () => apiJson<{ PhoneNumber: string | null }>("/api/Home/PhoneNumberForModal"),
     staleTime: 1000 * 60 * 5,
+    enabled: isTransportRole,
   });
 
   useEffect(() => {
+    if (!isTransportRole) return;
     if (!data || dismissed) return;
     if (!data.PhoneNumber) setOpen(true);
-  }, [data, dismissed]);
+  }, [data, dismissed, isTransportRole]);
 
   const handleOpenChange = (next: boolean) => {
     setOpen(next);
