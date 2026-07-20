@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { Bell, CheckCircle2, Copy, ChevronRight } from "lucide-react";
+import { Bell, CheckCircle2, Copy, ChevronRight, AlertCircle } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { useApi } from "@/hooks/use-api";
 import { useToast } from "@/components/ui/toast";
@@ -24,7 +24,7 @@ export function JapoWarningCard() {
   const { apiJson } = useApi();
   const { addToast } = useToast();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["japo-notif"],
     queryFn: () => apiJson<{ data: JapoNotifItem[] }>("/api/Apg/getDataNotif"),
     staleTime: 1000 * 60 * 3,
@@ -43,6 +43,31 @@ export function JapoWarningCard() {
         <CardContent className="p-5 animate-pulse">
           <div className="h-5 w-40 bg-gray-100 dark:bg-gray-800 rounded mb-4" />
           <div className="h-16 bg-gray-100 dark:bg-gray-800 rounded-xl" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (isError) {
+    return (
+      <Card className="shadow-theme-xs">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-sm">
+            <Bell className="h-4 w-4 text-amber-500" />
+            Notifikasi Jatuh Tempo
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
+            <AlertCircle className="h-10 w-10 text-red-400" />
+            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Gagal memuat notifikasi jatuh tempo.</p>
+            <button
+              onClick={() => refetch()}
+              className="px-3 py-1.5 bg-brand-500 text-white rounded-lg text-xs font-medium hover:bg-brand-600"
+            >
+              Coba Lagi
+            </button>
+          </div>
         </CardContent>
       </Card>
     );
