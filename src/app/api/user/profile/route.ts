@@ -20,6 +20,7 @@ export async function GET() {
       email: userObj.email || userObj.Email || data.email || "",
       fullname: userObj.fullname || userObj.FullName || userObj.Nama || data.fullname || "",
       fullName: userObj.fullname || userObj.FullName || userObj.Nama || data.fullname || "",
+      phoneNumber: userObj.PhoneNumber || userObj.phoneNumber || data.phoneNumber || "",
       department: userObj.department || userObj.Department || data.department || "",
       bagian: userObj.bagian || userObj.Bagian || data.bagian || "",
       nik: userObj.nik || userObj.NIK || data.nik || "",
