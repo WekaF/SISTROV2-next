@@ -185,16 +185,27 @@ export function TicketBookingDetail({ guid }: TicketBookingDetailProps) {
                 <Calendar className="h-4 w-4 text-brand-300" />
                 {postoStats.tanggalString || "..."}
               </div>
-              {postoStats.gruptruk && (
+              {postoStats.gruptruk !== undefined && (
                 <div className="flex items-center gap-2">
                   <Truck className="h-4 w-4 text-brand-300" />
                   <span>
                     Jenis Kendaraan:{" "}
-                    <strong>{postoStats.gruptrukString || `ID #${postoStats.gruptruk}`}</strong>
-                    {postoStats.gruptrukMuatan != null && (
-                      <span className="ml-1 opacity-70">
-                        (Maks {Number(postoStats.gruptrukMuatan).toLocaleString("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TON)
-                      </span>
+                    {(!postoStats.gruptrukString || postoStats.gruptrukString === "All Grup") ? (
+                      <>
+                        <strong>Semua Jenis Kendaraan</strong>
+                        <span className="ml-1 opacity-70">
+                          (Maksimal tonase kendaraan yang dimuat)
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <strong>{postoStats.gruptrukString}</strong>
+                        {postoStats.gruptrukMuatan != null && (
+                          <span className="ml-1 opacity-70">
+                            (Maks {Number(postoStats.gruptrukMuatan).toLocaleString("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TON)
+                          </span>
+                        )}
+                      </>
                     )}
                   </span>
                 </div>
