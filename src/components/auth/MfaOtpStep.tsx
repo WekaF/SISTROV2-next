@@ -107,6 +107,8 @@ export default function MfaOtpStep({ username, companycode, onVerified, onBack }
             <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">Kode OTP</label>
             <input
               type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
               value={otpCode}
               onChange={(e) => setOtpCode(e.target.value)}
               placeholder="Masukkan kode OTP"
