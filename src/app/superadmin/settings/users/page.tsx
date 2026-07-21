@@ -48,6 +48,11 @@ export default function UserConfigPage() {
     isActive: true, roles: [] as string[], sapVendorCode: ""
   };
   const [formData, setFormData] = useState(emptyForm);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordTarget, setPasswordTarget] = useState<any>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
 
   const resetForm = () => { setFormData(emptyForm); setIsEditing(false); setSelectedUser(null); setShowPassword(false); };
 
@@ -138,6 +143,27 @@ export default function UserConfigPage() {
     onError: (err: any) => addToast({ title: "Gagal Hapus", description: err.message, variant: "destructive" })
   });
 
+  const passwordMutation = useMutation({
+    mutationFn: async ({ guid, newpassword }: { guid: string; newpassword: string }) => {
+      const res = await fetch("/api/admin/transport/users", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ guid, newpassword }),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: () => {
+      addToast({ title: "Password Diperbarui", description: "Password pengguna berhasil diganti.", variant: "success" });
+      setShowPasswordModal(false);
+      setPasswordTarget(null);
+      setNewPassword("");
+      setConfirmPassword("");
+    },
+    onError: (err: any) => addToast({ title: "Gagal Ganti Password", description: err.message, variant: "destructive" }),
+  });
+
   const columns: DataTableColumn<any>[] = [
     {
       key: "fullname",
@@ -202,6 +228,9 @@ export default function UserConfigPage() {
         <div className="flex items-center justify-end gap-1">
           <Button variant="ghost" size="icon" className="hover:text-brand-500 hover:bg-brand-50" onClick={() => handleEditClick(u)}>
             <Edit className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" className="hover:text-amber-500 hover:bg-amber-50" onClick={() => { setPasswordTarget(u); setNewPassword(""); setConfirmPassword(""); setShowPasswordModal(true); }}>
+            <Key className="h-4 w-4" />
           </Button>
           <Button variant="ghost" size="icon" className="hover:text-rose-500 hover:bg-rose-50" onClick={() => { setSelectedUser(u); setShowDeleteConfirm(true); }}>
             <Trash2 className="h-4 w-4" />
@@ -434,6 +463,57 @@ export default function UserConfigPage() {
                 </Button>
               </CardFooter>
             </form>
+          </Card>
+        </div>
+      )}
+
+      {showPasswordModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 animate-in fade-in duration-200">
+          <Card className="w-full max-w-sm shadow-2xl border-none bg-white dark:bg-gray-900">
+            <CardHeader className="flex flex-row items-center justify-between border-b pb-4">
+              <div>
+                <CardTitle>Ganti Password</CardTitle>
+                <CardDescription>@{passwordTarget?.username}</CardDescription>
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => setShowPasswordModal(false)}><X className="h-4 w-4" /></Button>
+            </CardHeader>
+            <CardContent className="p-6 space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase text-gray-400">Password Baru</label>
+                <div className="relative">
+                  <Input
+                    type={showNewPassword ? "text" : "password"}
+                    placeholder="Min. 8 karakter"
+                    value={newPassword}
+                    onChange={e => setNewPassword(e.target.value)}
+                    autoComplete="new-password"
+                    className="pr-10"
+                  />
+                  <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" onClick={() => setShowNewPassword(s => !s)}>
+                    {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase text-gray-400">Ulangi Password</label>
+                <Input type={showNewPassword ? "text" : "password"} placeholder="Ulangi password baru" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} autoComplete="new-password" />
+                {confirmPassword && newPassword !== confirmPassword && (
+                  <p className="text-[11px] text-rose-500 font-semibold">Password tidak cocok.</p>
+                )}
+              </div>
+            </CardContent>
+            <CardFooter className="border-t bg-gray-50/50 p-4 flex justify-end gap-2">
+              <Button variant="ghost" type="button" onClick={() => setShowPasswordModal(false)}>Batal</Button>
+              <Button
+                type="button"
+                className="bg-brand-500 hover:bg-brand-600 min-w-[130px]"
+                disabled={passwordMutation.isPending || !newPassword || newPassword.length < 8 || newPassword !== confirmPassword}
+                onClick={() => passwordTarget && passwordMutation.mutate({ guid: passwordTarget.id, newpassword: newPassword })}
+              >
+                {passwordMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                Simpan
+              </Button>
+            </CardFooter>
           </Card>
         </div>
       )}
