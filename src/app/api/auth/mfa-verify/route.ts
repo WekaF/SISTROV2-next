@@ -34,10 +34,16 @@ export function verifyMfaToken(token: string, username: string, companycode: str
 }
 
 export async function POST(request: Request) {
-  const { username, companycode, code } = await request.json();
+  let body: { username?: string; companycode?: string; code?: string };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ success: false, message: "Permintaan tidak valid." }, { status: 400 });
+  }
 
+  const { username, companycode, code } = body;
   if (!username || !code) {
-    return NextResponse.json({ success: false, error: "username dan code wajib" }, { status: 400 });
+    return NextResponse.json({ success: false, message: "username dan code wajib" }, { status: 400 });
   }
 
   try {
@@ -46,6 +52,11 @@ export async function POST(request: Request) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ Username: username, Code: code }),
     });
+
+    if (!res.ok) {
+      return NextResponse.json({ success: false, message: "Layanan verifikasi OTP sedang bermasalah. Coba lagi." });
+    }
+
     const data = await res.json();
 
     if (!data.Success) {
@@ -55,6 +66,6 @@ export async function POST(request: Request) {
     const mfaToken = signMfaToken(username, companycode ?? "");
     return NextResponse.json({ success: true, mfaToken });
   } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+    return NextResponse.json({ success: false, message: err.message ?? "Tidak dapat memverifikasi OTP." }, { status: 500 });
   }
 }
