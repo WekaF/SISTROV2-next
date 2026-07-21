@@ -14,6 +14,7 @@ import {
   AlertDialogDescription,
 } from "@/components/ui/alert-dialog";
 import { API_BASE } from "@/lib/api-client";
+import MfaOtpStep from "@/components/auth/MfaOtpStep";
 
 export default function SignInForm() {
   const [showPassword, setShowPassword] = useState(false);
@@ -28,6 +29,8 @@ export default function SignInForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [showFullPageLoading, setShowFullPageLoading] = useState(false);
   const [isChecked, setIsChecked] = useState(false);
+  const [phase, setPhase] = useState<"login" | "mfa">("login");
+  const [companycode, setCompanycode] = useState("");
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams?.get("callbackUrl") || "/";
@@ -67,38 +70,71 @@ export default function SignInForm() {
         `${API_BASE}/api/Company/GetUserCompanies?username=${encodeURIComponent(username.trim().toLowerCase())}`
       );
       const companies: { company_code: string }[] = res.ok ? await res.json() : [];
-      const companycode = companies.length > 0 ? companies[0].company_code : "";
+      const resolvedCompanycode = companies.length > 0 ? companies[0].company_code : "";
+      setCompanycode(resolvedCompanycode);
 
-      const result = await signIn("credentials", {
-        redirect: false,
-        username: username.trim().toLowerCase(),
-        password,
-        companycode,
-        callbackUrl,
-      });
-
-      if (result?.error) {
-        const lowerError = result.error.toLowerCase();
-        const isSystemError =
-          lowerError.includes("network") ||
-          lowerError.includes("timeout") ||
-          lowerError.includes("fetch failed") ||
-          lowerError.includes("econnrefused") ||
-          lowerError.includes("kesalahan sistem");
-        setError(isSystemError ? "Terjadi kesalahan sistem, silakan coba lagi." : "Akun tidak terdaftar");
-        setIsLoading(false);
-      } else if (result?.ok) {
-        setShowFullPageLoading(true);
-        router.push(callbackUrl);
-      } else {
-        setError("Terjadi kesalahan. Silakan coba lagi.");
-        setIsLoading(false);
-      }
+      await doSignIn(resolvedCompanycode);
     } catch {
       setError("Terjadi kesalahan. Silakan coba lagi.");
       setIsLoading(false);
     }
   };
+
+  async function doSignIn(cc: string, mfaToken?: string) {
+    const result = await signIn("credentials", {
+      redirect: false,
+      username: username.trim().toLowerCase(),
+      password,
+      companycode: cc,
+      callbackUrl,
+      ...(mfaToken ? { mfaToken } : {}),
+    });
+
+    if (result?.error) {
+      if (result.error === "MFA_REQUIRED") {
+        setPhase("mfa");
+        setIsLoading(false);
+        return;
+      }
+      const lowerError = result.error.toLowerCase();
+      const isSystemError =
+        lowerError.includes("network") ||
+        lowerError.includes("timeout") ||
+        lowerError.includes("fetch failed") ||
+        lowerError.includes("econnrefused") ||
+        lowerError.includes("kesalahan sistem");
+      setError(isSystemError ? "Terjadi kesalahan sistem, silakan coba lagi." : "Akun tidak terdaftar");
+      setIsLoading(false);
+    } else if (result?.ok) {
+      setShowFullPageLoading(true);
+      router.push(callbackUrl);
+    } else {
+      setError("Terjadi kesalahan. Silakan coba lagi.");
+      setIsLoading(false);
+    }
+  }
+
+  async function handleMfaVerified(mfaToken: string) {
+    setIsLoading(true);
+    setError("");
+    try {
+      await doSignIn(companycode, mfaToken);
+    } catch {
+      setError("Terjadi kesalahan. Silakan coba lagi.");
+      setIsLoading(false);
+    }
+  }
+
+  if (phase === "mfa") {
+    return (
+      <MfaOtpStep
+        username={username.trim().toLowerCase()}
+        companycode={companycode}
+        onVerified={handleMfaVerified}
+        onBack={() => setPhase("login")}
+      />
+    );
+  }
 
   return (
     <>
