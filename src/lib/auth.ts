@@ -162,11 +162,15 @@ export const authOptions: NextAuthOptions = {
               if (mfaData.IsMfaRequired === true) {
                 throw new Error("MFA_REQUIRED");
               }
+            } else {
+              console.error(`[auth] /api/mfa/login returned ${mfaRes.status} — failing open to normal login`);
             }
           } catch (err: any) {
             if (err.message === "MFA_REQUIRED") throw err;
             // MFA provider unreachable/erroring — fail open to normal login rather than
-            // locking every user out because a third-party service is down.
+            // locking every user out because a third-party service is down. Logged so an
+            // outage or a bug in this check is visible instead of silently bypassing MFA.
+            console.error("[auth] MFA check failed, failing open:", err);
           }
         }
 
