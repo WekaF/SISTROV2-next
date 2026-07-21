@@ -92,6 +92,9 @@ export default function SignInForm() {
 
     if (result?.error) {
       if (result.error === "MFA_REQUIRED") {
+        if (mfaToken) {
+          setError("Kode OTP tidak valid atau kedaluwarsa, silakan coba lagi.");
+        }
         setPhase("mfa");
         setIsLoading(false);
         return;
