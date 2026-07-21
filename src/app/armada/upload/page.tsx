@@ -13,6 +13,7 @@ import {
   Truck,
   XCircle,
   Save,
+  Info,
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
@@ -226,7 +227,10 @@ export default function ArmadaUploadPage() {
   const { addToast } = useToast();
   const { apiJson, apiTable } = useApi();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { activeCompanyCode } = useCompany();
+  const { activeCompanyCode, companies } = useCompany();
+
+  // Nama lengkap company aktif
+  const activeCompanyName = companies.find((c) => c.company_code === activeCompanyCode)?.company ?? activeCompanyCode;
 
   const [isDragging, setIsDragging] = useState(false);
   const [rows, setRows] = useState<ArmadaRow[]>([]);
@@ -237,6 +241,18 @@ export default function ArmadaUploadPage() {
   // Master data for validation
   const [sumbuMaster, setSumbuMaster] = useState<any[]>([]);
   const [tahunPembuatanEnabled, setTahunPembuatanEnabled] = useState(false);
+
+  // Reset state saat company berubah agar data file lama tidak nyangkut
+  const prevCompanyRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (prevCompanyRef.current !== null && prevCompanyRef.current !== activeCompanyCode) {
+      setRows([]);
+      setFileName("");
+      setSubmitDone(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+    prevCompanyRef.current = activeCompanyCode;
+  }, [activeCompanyCode]);
 
   useEffect(() => {
     const fetchMasterData = async () => {
@@ -406,6 +422,26 @@ export default function ArmadaUploadPage() {
           <p className="text-sm text-muted-foreground">Import data armada baru dari file Excel</p>
         </div>
       </div>
+
+      {/* Company indicator */}
+      {activeCompanyCode && (
+        <div className="p-4 rounded-xl border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 flex items-start gap-3 shadow-sm">
+          <Info className="h-5 w-5 mt-0.5 shrink-0 text-blue-500" />
+          <div>
+            <p className="font-semibold text-sm">Plant Aktif</p>
+            <p className="text-xs opacity-90 mt-0.5">
+              Anda akan mengupload armada ke Plant{" "}
+              <strong className="font-black text-blue-700 dark:text-blue-400">
+                {activeCompanyName}
+              </strong>
+              {activeCompanyName !== activeCompanyCode && (
+                <span className="ml-1 text-blue-500">({activeCompanyCode})</span>
+              )}
+              . Ganti plant melalui menu di pojok kanan atas.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Upload Zone */}
       <Card>

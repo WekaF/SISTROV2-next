@@ -196,8 +196,11 @@ function AntrianContent() {
       addToast({ title: "Berhasil", description: "Gudang muat berhasil dipindahkan", variant: "success" });
       setIsPindahOpen(false);
       queryClient.invalidateQueries({ queryKey: ["antrian-data"] });
-    } catch (err) {
-      addToast({ title: "Error", description: "Gagal memindahkan gudang", variant: "destructive" });
+    } catch (err: any) {
+      // apiJson throws Error dengan format "[status] pesan" — strip prefix statusnya
+      const raw: string = err?.message ?? "Gagal memindahkan gudang";
+      const description = raw.replace(/^\[\d+\]\s*/, "");
+      addToast({ title: "Gagal memindahkan gudang", description, variant: "destructive" });
     } finally {
       setIsSaving(false);
     }
