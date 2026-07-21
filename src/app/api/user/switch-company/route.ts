@@ -22,15 +22,6 @@ export const POST = withAudit(async function(request: NextRequest) {
       return NextResponse.json({ success: false, error: "companyCode required" }, { status: 400 });
     }
 
-    // Set the active company cookie regardless
-    const cookieStore = await cookies();
-    cookieStore.set("sistro_active_company", companyCode, {
-      httpOnly: false,
-      path: "/",
-      maxAge: 60 * 60 * 24 * 30,
-      sameSite: "lax",
-    });
-
     // Try to get raw JWT to access _pw for re-auth
     const rawToken = await getToken({ req: request, secret: NEXTAUTH_SECRET });
     const rawUsername = rawToken?.username as string | undefined;
@@ -44,16 +35,14 @@ export const POST = withAudit(async function(request: NextRequest) {
       ? rawUsername.slice(0, lastUnderscore)
       : rawUsername;
 
-    // If session was created before _pw was stored (old session),
-    // return success with cookie set but no new ASP.NET token.
-    // Full token sync will happen on next login.
+    // Session created before _pw was stored (old session) — can't re-auth
+    // without the password. Fail closed instead of switching the cookie to
+    // a company the token was never actually authenticated against.
     if (!username || !encodedPw) {
       return NextResponse.json({
-        success: true,
-        activeCompany: companyCode,
-        aspnetToken: null,
-        needsRelogin: true, // hint to client that token is not synced
-      });
+        success: false,
+        error: "Sesi Anda perlu diperbarui. Silakan logout dan login kembali sebelum berganti plant.",
+      }, { status: 409 });
     }
 
     // Re-auth to ASP.NET with new companyCode to get fresh token
@@ -73,16 +62,12 @@ export const POST = withAudit(async function(request: NextRequest) {
 
     if (!tokenRes.ok) {
       const text = await tokenRes.text().catch(() => tokenRes.statusText);
-      let errMsg = "Gagal berganti plant";
-      try { errMsg = JSON.parse(text)?.error_description || text || errMsg; } catch {}
-      // Even if ASP.NET re-auth fails, cookie is already set — return partial success
+      let errMsg = "Akun Anda tidak terdaftar pada plant ini.";
+      try { errMsg = JSON.parse(text)?.error_description || errMsg; } catch {}
       console.error("[switch-company] ASP.NET re-auth failed:", errMsg);
-      return NextResponse.json({
-        success: true,
-        activeCompany: companyCode,
-        aspnetToken: null,
-        needsRelogin: true,
-      });
+      // Re-auth failed — the cookie was never set (Step 1), so the active
+      // company stays exactly where it was before this request.
+      return NextResponse.json({ success: false, error: errMsg }, { status: 409 });
     }
 
     const data = await tokenRes.json();
@@ -108,6 +93,16 @@ export const POST = withAudit(async function(request: NextRequest) {
         resolvedMenuItems = userMenuItems ?? companyTemplate.menuItems;
       }
     }
+
+    // Re-auth confirmed the account exists on the target company — only now
+    // is it safe to persist the cookie, so cookie and token can never disagree.
+    const cookieStore = await cookies();
+    cookieStore.set("sistro_active_company", companyCode, {
+      httpOnly: false,
+      path: "/",
+      maxAge: 60 * 60 * 24 * 30,
+      sameSite: "lax",
+    });
 
     return NextResponse.json({
       success: true,
