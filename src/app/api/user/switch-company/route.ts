@@ -62,9 +62,9 @@ export const POST = withAudit(async function(request: NextRequest) {
 
     if (!tokenRes.ok) {
       const text = await tokenRes.text().catch(() => tokenRes.statusText);
-      let errMsg = "Akun Anda tidak terdaftar pada plant ini.";
+      let errMsg = "Gagal berganti plant. Akun Anda mungkin tidak terdaftar pada plant ini.";
       try { errMsg = JSON.parse(text)?.error_description || errMsg; } catch {}
-      console.error("[switch-company] ASP.NET re-auth failed:", errMsg);
+      console.error("[switch-company] ASP.NET re-auth failed:", errMsg, "| raw:", text);
       // Re-auth failed — the cookie was never set (Step 1), so the active
       // company stays exactly where it was before this request.
       return NextResponse.json({ success: false, error: errMsg }, { status: 409 });
