@@ -91,6 +91,7 @@ function PostoPageContent() {
         { data: "tanggaljatuhtempoString", name: "tgljatuhtempo", searchable: true, orderable: true, search: cs("tanggaljatuhtempoString") },
         { data: "percepatan", name: "percepatan", searchable: false, orderable: true },
         { data: "gruptruk", name: "gruptruk", searchable: false, orderable: true },
+        { data: "charter", name: "charter", searchable: false, orderable: false },
       ]
     };
 
@@ -264,6 +265,11 @@ function PostoPageContent() {
           {(p.percepatan && String(p.percepatan).toUpperCase().includes("PERCEPATAN")) && (
             <Badge color="warning" size="sm" variant="light" className="w-fit font-bold text-[9px] uppercase px-1.5 py-0 h-4">
               Percepatan
+            </Badge>
+          )}
+          {p.charter === "1" && (
+            <Badge color="indigo" size="sm" variant="light" className="w-fit font-bold text-[9px] uppercase px-1.5 py-0 h-4">
+              Charter
             </Badge>
           )}
         </div>

@@ -180,12 +180,7 @@ export function TicketPrintDocument({ id }: TicketPrintDocumentProps) {
           className="border border-slate-900 p-1 bg-white"
         >
           <div className="border border-slate-900 relative bg-white flex flex-col p-10 min-h-[700px]">
-            {/* Professional Charter Stamp */}
-            {data.charter === "1" && (
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rotate-[-15deg] border-[10px] border-emerald-600/10 text-emerald-600/10 px-12 py-6 font-black text-8xl opacity-20 pointer-events-none uppercase italic tracking-tighter z-0">
-                Charter
-              </div>
-            )}
+            {/* Professional Charter Stamp (Moved to header) */}
 
             {/* Header Section */}
             <div className="flex justify-between items-center mb-16 relative z-10">
@@ -196,6 +191,11 @@ export function TicketPrintDocument({ id }: TicketPrintDocumentProps) {
             <div className="mb-10 relative z-10">
               <div className="flex justify-between items-end mb-2">
                 <h2 className="text-5xl font-black uppercase tracking-tighter text-slate-900 leading-none">Tiket Pemuatan</h2>
+                {data.charter === "1" && (
+                  <div className="rotate-[-15deg] border-[6px] border-emerald-600 text-emerald-600 px-6 py-1 font-black text-4xl uppercase tracking-[0.2em] shadow-[inset_0_0_0_3px_white,0_0_0_3px_rgb(5,150,105)] bg-white/90">
+                    CHARTER
+                  </div>
+                )}
               </div>
               <div className="h-1.5 bg-slate-900 w-full" />
             </div>
