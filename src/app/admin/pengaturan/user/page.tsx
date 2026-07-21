@@ -99,11 +99,14 @@ export default function AdminUserPage() {
     email: "",
     companyCode: "",
     deskripsi: "",
-    password: "",
     isIdentik: false,
     mfaRemember: false,
   };
   const [formData, setFormData] = useState(emptyForm);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordTarget, setPasswordTarget] = useState<{ username: string; guid: string } | null>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
 
   const resetForm = () => {
     setFormData(emptyForm);
@@ -232,14 +235,24 @@ export default function AdminUserPage() {
       headerClassName: "text-right",
       className: "text-right",
       render: (u) => (
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={() => openEdit(u)}
-          className="text-gray-300 hover:text-brand-500 hover:bg-brand-500/5 rounded-none h-8 w-8 p-0"
-        >
-          <Edit className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center justify-end gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => openEdit(u)}
+            className="text-gray-300 hover:text-brand-500 hover:bg-brand-500/5 rounded-none h-8 w-8 p-0"
+          >
+            <Edit className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => openPasswordModal(u)}
+            className="text-gray-300 hover:text-amber-500 hover:bg-amber-500/5 rounded-none h-8 w-8 p-0"
+          >
+            <Lock className="h-4 w-4" />
+          </Button>
+        </div>
       ),
     },
   ];
@@ -267,6 +280,43 @@ export default function AdminUserPage() {
       addToast({ title: "Gagal Update", description: err.message, variant: "destructive" }),
   });
 
+  const passwordMutation = useMutation({
+    mutationFn: async ({ guid, newpassword }: { guid: string; newpassword: string }) => {
+      const res = await fetch("/api/admin/transport/users", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ guid, newpassword }),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: () => {
+      addToast({ title: "Password Diperbarui", description: "Password pengguna berhasil diganti.", variant: "success" });
+      setShowPasswordModal(false);
+      setPasswordTarget(null);
+      setNewPassword("");
+      setConfirmNewPassword("");
+    },
+    onError: (err: any) => addToast({ title: "Gagal Ganti Password", description: err.message, variant: "destructive" }),
+  });
+
+  const openPasswordModal = async (user: any) => {
+    const username = user.username || user.UserName;
+    try {
+      const res = await fetch(`/api/admin/users/plant?username=${encodeURIComponent(username)}`, { method: 'PATCH' });
+      const detail = await res.json();
+      const guid = detail?.data?.Id || detail?.data?.id;
+      if (!detail.success || !guid) throw new Error(detail.message || "Gagal mengambil data pengguna");
+      setPasswordTarget({ username, guid });
+      setNewPassword("");
+      setConfirmNewPassword("");
+      setShowPasswordModal(true);
+    } catch (err: any) {
+      addToast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
   const openEdit = async (user: any) => {
     try {
       const res = await fetch(`/api/admin/users/plant?username=${user.username || user.UserName}`, { method: 'PATCH' });
@@ -284,7 +334,6 @@ export default function AdminUserPage() {
         email: d.email || d.Email || "",
         companyCode: d.company_code || "",
         deskripsi: d.deskripsi || "",
-        password: "",
         isIdentik: d.IsIdentik === true,
         mfaRemember: d.MfaRemember === true,
       });
@@ -569,19 +618,6 @@ export default function AdminUserPage() {
                 </div>
               </div>
 
-              <div className="p-6 bg-rose-500/[0.03] dark:bg-rose-500/[0.02] border border-rose-500/10">
-                <div className="flex items-center gap-2 text-rose-500 mb-4">
-                  <Lock className="h-4 w-4" />
-                  <span className="text-[10px] font-black uppercase tracking-widest">Credential Update</span>
-                </div>
-                <Input 
-                  type="password"
-                  placeholder="NEW PASSWORD (OPTIONAL)"
-                  value={formData.password}
-                  onChange={e => setFormData({...formData, password: e.target.value})}
-                  className="h-10 bg-white dark:bg-transparent border-gray-100 dark:border-white/5 focus:ring-rose-500/20 text-center font-mono tracking-[0.3em] rounded-none"
-                />
-              </div>
             </div>
 
             <CardFooter className="flex justify-end gap-4 p-8 border-t dark:border-white/5 bg-gray-50/50 dark:bg-white/[0.01]">
@@ -593,6 +629,50 @@ export default function AdminUserPage() {
                 className="bg-brand-500 hover:bg-brand-600 font-black uppercase tracking-widest text-[10px] px-10 h-10 shadow-xl shadow-brand-500/30 rounded-none transition-all active:scale-95"
               >
                 COMMIT CHANGES
+              </Button>
+            </CardFooter>
+          </Card>
+        </div>
+      )}
+
+      {/* Password Modal */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <Card className="w-full max-w-sm rounded-none border-none bg-white dark:bg-[#1a1c1e] shadow-2xl overflow-hidden animate-in zoom-in duration-200">
+            <CardHeader className="border-b dark:border-white/5 pb-6 bg-gray-50/50 dark:bg-white/[0.02] p-8">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-xl font-black uppercase tracking-tight">Ganti Password</CardTitle>
+                  <CardDescription className="text-[10px] font-black uppercase tracking-widest text-brand-500 mt-1">{passwordTarget?.username}</CardDescription>
+                </div>
+                <Button variant="ghost" size="icon" className="rounded-none hover:bg-gray-200 dark:hover:bg-white/10" onClick={() => setShowPasswordModal(false)}>
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+            </CardHeader>
+            <div className="p-8 space-y-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Password Baru</label>
+                <Input type="password" placeholder="Min. 8 karakter" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="h-10 rounded-none" autoComplete="new-password" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Ulangi Password</label>
+                <Input type="password" placeholder="Ulangi password baru" value={confirmNewPassword} onChange={e => setConfirmNewPassword(e.target.value)} className="h-10 rounded-none" autoComplete="new-password" />
+                {confirmNewPassword && newPassword !== confirmNewPassword && (
+                  <p className="text-[11px] text-rose-500 font-semibold">Password tidak cocok.</p>
+                )}
+              </div>
+            </div>
+            <CardFooter className="flex justify-end gap-4 p-8 border-t dark:border-white/5 bg-gray-50/50 dark:bg-white/[0.01]">
+              <Button variant="ghost" className="font-black uppercase tracking-widest text-[10px] text-gray-500 h-10 px-6 rounded-none" onClick={() => setShowPasswordModal(false)}>
+                BATAL
+              </Button>
+              <Button
+                className="bg-brand-500 hover:bg-brand-600 font-black uppercase tracking-widest text-[10px] px-10 h-10 rounded-none"
+                disabled={passwordMutation.isPending || !newPassword || newPassword.length < 8 || newPassword !== confirmNewPassword}
+                onClick={() => passwordTarget && passwordMutation.mutate({ guid: passwordTarget.guid, newpassword: newPassword })}
+              >
+                {passwordMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "SIMPAN"}
               </Button>
             </CardFooter>
           </Card>
