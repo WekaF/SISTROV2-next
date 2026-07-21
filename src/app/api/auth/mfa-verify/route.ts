@@ -59,8 +59,8 @@ export async function POST(request: Request) {
 
     const data = await res.json();
 
-    if (!data.Success) {
-      return NextResponse.json({ success: false, message: data.Message ?? "Kode OTP tidak valid." });
+    if (!data.success) {
+      return NextResponse.json({ success: false, message: data.message ?? "Kode OTP tidak valid." });
     }
 
     const mfaToken = signMfaToken(username, companycode ?? "");
