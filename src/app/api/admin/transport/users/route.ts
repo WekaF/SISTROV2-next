@@ -9,6 +9,11 @@ function isAuthorized(session: any): boolean {
   return !!session?.user && roles.some((r: string) => ["superadmin", "ti"].includes(r.toLowerCase()));
 }
 
+function isAuthorizedForPasswordReset(session: any): boolean {
+  const roles = (session?.user as any)?.roles || [];
+  return !!session?.user && roles.some((r: string) => ["superadmin", "ti", "admin"].includes(r.toLowerCase()));
+}
+
 function getToken(session: any): string {
   return (session?.user as any)?.aspnetToken || "";
 }
@@ -111,7 +116,7 @@ export async function POST(req: Request) {
 export async function PUT(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!isAuthorized(session)) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    if (!isAuthorizedForPasswordReset(session)) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
 
     const { guid, newpassword } = await req.json();
     if (!guid || !newpassword) {
