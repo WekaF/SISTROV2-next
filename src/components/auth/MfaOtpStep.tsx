@@ -8,9 +8,11 @@ interface Props {
   companycode: string;
   onVerified: (mfaToken: string) => void;
   onBack: () => void;
+  externalError?: string;
+  retrying?: boolean;
 }
 
-export default function MfaOtpStep({ username, companycode, onVerified, onBack }: Props) {
+export default function MfaOtpStep({ username, companycode, onVerified, onBack, externalError, retrying }: Props) {
   const [method, setMethod]       = useState<"email" | "sms" | null>(null);
   const [otpCode, setOtpCode]     = useState("");
   const [error, setError]         = useState("");
@@ -73,9 +75,9 @@ export default function MfaOtpStep({ username, companycode, onVerified, onBack }
         <p className="text-sm text-gray-500 dark:text-gray-400">Pilih metode untuk menerima kode OTP.</p>
       </div>
 
-      {error && (
+      {(externalError || error) && (
         <div className="p-3 mb-4 text-sm text-red-700 bg-red-50 border border-red-200 dark:text-red-400 dark:bg-red-900/30 dark:border-red-500/30 rounded-md">
-          {error}
+          {externalError || error}
         </div>
       )}
 
@@ -119,10 +121,10 @@ export default function MfaOtpStep({ username, companycode, onVerified, onBack }
           <button
             type="button"
             onClick={verifyOtp}
-            disabled={verifying || otpCode.length < 4}
+            disabled={verifying || retrying || otpCode.length < 4}
             className="w-full py-3 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-700 hover:to-brand-600 text-white font-semibold text-sm rounded-xl disabled:opacity-70"
           >
-            {verifying ? "Memverifikasi..." : "Verifikasi & Masuk"}
+            {verifying || retrying ? "Memverifikasi..." : "Verifikasi & Masuk"}
           </button>
           <button
             type="button"

@@ -106,6 +106,7 @@ export default function SignInForm() {
       setError(isSystemError ? "Terjadi kesalahan sistem, silakan coba lagi." : "Akun tidak terdaftar");
       setIsLoading(false);
     } else if (result?.ok) {
+      setPhase("login");
       setShowFullPageLoading(true);
       router.push(callbackUrl);
     } else {
@@ -131,7 +132,9 @@ export default function SignInForm() {
         username={username.trim().toLowerCase()}
         companycode={companycode}
         onVerified={handleMfaVerified}
-        onBack={() => setPhase("login")}
+        onBack={() => { setError(""); setPhase("login"); }}
+        externalError={error}
+        retrying={isLoading}
       />
     );
   }
