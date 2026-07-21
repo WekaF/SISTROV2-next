@@ -2,6 +2,7 @@ import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { logEvent } from "@/lib/audit-logger";
 import { resolveCompanyMenuTemplate } from "@/lib/company-menu";
+import { verifyMfaToken } from "@/app/api/auth/mfa-verify/route";
 
 if (typeof window === 'undefined') {
   process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
@@ -97,6 +98,7 @@ export const authOptions: NextAuthOptions = {
         username:    { label: "Username", type: "text" },
         password:    { label: "Password", type: "password" },
         companycode: { label: "Company Code", type: "text" },
+        mfaToken:    { label: "MFA Token", type: "text" },
       },
       async authorize(credentials) {
         if (!credentials?.username || !credentials?.password) {
@@ -141,6 +143,31 @@ export const authOptions: NextAuthOptions = {
             });
           }
           throw new Error(err?.message || "Tidak dapat terhubung ke server");
+        }
+
+        // MFA check — skip if a freshly-verified, signed mfaToken was supplied.
+        const mfaTokenValid = credentials.mfaToken
+          ? verifyMfaToken(credentials.mfaToken, credentials.username, credentials.companycode ?? "")
+          : false;
+
+        if (!mfaTokenValid) {
+          try {
+            const mfaRes = await fetch(`${ASPNET_API_URL}/api/mfa/login`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ Username: credentials.username, Password: credentials.password }),
+            });
+            if (mfaRes.ok) {
+              const mfaData = await mfaRes.json();
+              if (mfaData.IsMfaRequired === true) {
+                throw new Error("MFA_REQUIRED");
+              }
+            }
+          } catch (err: any) {
+            if (err.message === "MFA_REQUIRED") throw err;
+            // MFA provider unreachable/erroring — fail open to normal login rather than
+            // locking every user out because a third-party service is down.
+          }
         }
 
         const roles: string[] = data.role
