@@ -464,6 +464,57 @@ export default function ArmadaUploadPage() {
         </div>
       )}
 
+      {/* Sumbu Master Reference */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Info className="h-4 w-4 text-blue-500" />
+            Referensi Master Sumbu{latestSumbuYear > 0 ? ` (Tahun ${latestSumbuYear})` : ""}
+          </CardTitle>
+          <CardDescription>
+            Kombinasi No. Sumbu, Jenis Kendaraan, dan Tonase Max yang berlaku untuk validasi upload. Isi kolom &quot;sumbu&quot;, &quot;jeniskendaraan&quot;, dan &quot;TonaseMax&quot; pada file Excel sesuai salah satu baris di bawah ini.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead className="bg-muted/50">
+                <tr className="border-b">
+                  <th className="p-2 text-left font-medium">No. Sumbu</th>
+                  <th className="p-2 text-left font-medium">Sumbu</th>
+                  <th className="p-2 text-left font-medium">Jenis Kendaraan</th>
+                  <th className="p-2 text-right font-medium">Tonase Max</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sumbuLoading ? (
+                  <tr>
+                    <td colSpan={4} className="p-4 text-center text-muted-foreground">
+                      Memuat referensi sumbu...
+                    </td>
+                  </tr>
+                ) : activeSumbuList.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="p-4 text-center text-muted-foreground">
+                      Data master sumbu belum tersedia.
+                    </td>
+                  </tr>
+                ) : (
+                  activeSumbuList.map((s) => (
+                    <tr key={s.Id ?? s.id} className="border-b">
+                      <td className="p-2 font-mono">{s.Id ?? s.id}</td>
+                      <td className="p-2">{s.nama}</td>
+                      <td className="p-2">{s.jenistruk}</td>
+                      <td className="p-2 text-right">{s.muatan} Ton</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Upload Zone */}
       <Card>
         <CardHeader>
@@ -507,57 +558,6 @@ export default function ArmadaUploadPage() {
               <Download className="h-4 w-4 mr-1" />
               Download Template
             </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Sumbu Master Reference */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Info className="h-4 w-4 text-blue-500" />
-            Referensi Master Sumbu{latestSumbuYear > 0 ? ` (Tahun ${latestSumbuYear})` : ""}
-          </CardTitle>
-          <CardDescription>
-            Kombinasi No. Sumbu, Jenis Kendaraan, dan Tonase Max yang berlaku untuk validasi upload. Isi kolom &quot;sumbu&quot;, &quot;jeniskendaraan&quot;, dan &quot;TonaseMax&quot; pada file Excel sesuai salah satu baris di bawah ini.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="max-h-64 overflow-y-auto overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead className="sticky top-0 bg-muted/50">
-                <tr className="border-b">
-                  <th className="p-2 text-left font-medium">No. Sumbu</th>
-                  <th className="p-2 text-left font-medium">Sumbu</th>
-                  <th className="p-2 text-left font-medium">Jenis Kendaraan</th>
-                  <th className="p-2 text-right font-medium">Tonase Max</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sumbuLoading ? (
-                  <tr>
-                    <td colSpan={4} className="p-4 text-center text-muted-foreground">
-                      Memuat referensi sumbu...
-                    </td>
-                  </tr>
-                ) : activeSumbuList.length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className="p-4 text-center text-muted-foreground">
-                      Data master sumbu belum tersedia.
-                    </td>
-                  </tr>
-                ) : (
-                  activeSumbuList.map((s) => (
-                    <tr key={s.Id ?? s.id} className="border-b">
-                      <td className="p-2 font-mono">{s.Id ?? s.id}</td>
-                      <td className="p-2">{s.nama}</td>
-                      <td className="p-2">{s.jenistruk}</td>
-                      <td className="p-2 text-right">{s.muatan} Ton</td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
           </div>
         </CardContent>
       </Card>
