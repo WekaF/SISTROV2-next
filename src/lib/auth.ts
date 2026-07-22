@@ -124,11 +124,13 @@ export const authOptions: NextAuthOptions = {
             const text = await res.text().catch(() => res.statusText);
             let errMsg = "Login gagal";
             try { errMsg = JSON.parse(text)?.error_description || text || errMsg; } catch {}
-            await logEvent({
-              eventType: "LOGIN_FAILED",
-              username:  credentials.username,
-              metadata:  { reason: errMsg },
-            });
+            if (errMsg !== "MFA_REQUIRED") {
+              await logEvent({
+                eventType: "LOGIN_FAILED",
+                username:  credentials.username,
+                metadata:  { reason: errMsg },
+              });
+            }
             throw new Error(errMsg);
           }
           data = await res.json();
