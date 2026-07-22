@@ -308,7 +308,6 @@ export default function ArmadaUploadPage() {
       .sort((a, b) => (a.Id ?? a.id ?? 0) - (b.Id ?? b.id ?? 0));
   }, [sumbuMaster, latestSumbuYear]);
 
-
   const handleFile = useCallback((file: File) => {
     if (!file.name.match(/\.(xlsx|xls)$/i)) {
       addToast({ variant: "destructive", title: "Format salah", description: "Hanya file .xlsx atau .xls yang diterima." });
