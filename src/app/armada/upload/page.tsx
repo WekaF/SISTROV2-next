@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import {
@@ -240,6 +240,7 @@ export default function ArmadaUploadPage() {
 
   // Master data for validation
   const [sumbuMaster, setSumbuMaster] = useState<any[]>([]);
+  const [sumbuLoading, setSumbuLoading] = useState(true);
   const [tahunPembuatanEnabled, setTahunPembuatanEnabled] = useState(false);
 
   // Reset state saat company berubah agar data file lama tidak nyangkut
@@ -256,6 +257,7 @@ export default function ArmadaUploadPage() {
 
   useEffect(() => {
     const fetchMasterData = async () => {
+      setSumbuLoading(true);
       try {
         const sumbuRes = await apiTable('/api/Sumbu/DataTable', {
           start: 0,
@@ -276,6 +278,8 @@ export default function ArmadaUploadPage() {
         }
       } catch (err) {
         console.error("Failed to load master data", err);
+      } finally {
+        setSumbuLoading(false);
       }
     };
     fetchMasterData();
@@ -285,6 +289,24 @@ export default function ArmadaUploadPage() {
     (session?.user as any)?.role,
   ].filter(Boolean);
   const canAccess = allRoles.some((r) => ALLOWED_ROLES.includes(normalizeRole(r)));
+
+  // Mirrors the latest-`tahun` filter validateRow() uses to match rows against
+  // the master table, so this reference list shows exactly what's enforced.
+  const latestSumbuYear = useMemo(() => {
+    let latest = 0;
+    for (const s of sumbuMaster) {
+      const ty = parseInt(s.tahun) || 0;
+      if (ty > latest) latest = ty;
+    }
+    return latest;
+  }, [sumbuMaster]);
+
+  const activeSumbuList = useMemo(() => {
+    if (latestSumbuYear === 0) return [];
+    return sumbuMaster
+      .filter((s) => (parseInt(s.tahun) || 0) === latestSumbuYear)
+      .sort((a, b) => (a.Id ?? a.id ?? 0) - (b.Id ?? b.id ?? 0));
+  }, [sumbuMaster, latestSumbuYear]);
 
 
   const handleFile = useCallback((file: File) => {
@@ -486,6 +508,57 @@ export default function ArmadaUploadPage() {
               <Download className="h-4 w-4 mr-1" />
               Download Template
             </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Sumbu Master Reference */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Info className="h-4 w-4 text-blue-500" />
+            Referensi Master Sumbu{latestSumbuYear > 0 ? ` (Tahun ${latestSumbuYear})` : ""}
+          </CardTitle>
+          <CardDescription>
+            Kombinasi No. Sumbu, Jenis Kendaraan, dan Tonase Max yang berlaku untuk validasi upload. Isi kolom &quot;sumbu&quot;, &quot;jeniskendaraan&quot;, dan &quot;TonaseMax&quot; pada file Excel sesuai salah satu baris di bawah ini.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="max-h-64 overflow-y-auto overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead className="sticky top-0 bg-muted/50">
+                <tr className="border-b">
+                  <th className="p-2 text-left font-medium">No. Sumbu</th>
+                  <th className="p-2 text-left font-medium">Sumbu</th>
+                  <th className="p-2 text-left font-medium">Jenis Kendaraan</th>
+                  <th className="p-2 text-right font-medium">Tonase Max</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sumbuLoading ? (
+                  <tr>
+                    <td colSpan={4} className="p-4 text-center text-muted-foreground">
+                      Memuat referensi sumbu...
+                    </td>
+                  </tr>
+                ) : activeSumbuList.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="p-4 text-center text-muted-foreground">
+                      Data master sumbu belum tersedia.
+                    </td>
+                  </tr>
+                ) : (
+                  activeSumbuList.map((s) => (
+                    <tr key={s.Id ?? s.id} className="border-b">
+                      <td className="p-2 font-mono">{s.Id ?? s.id}</td>
+                      <td className="p-2">{s.nama}</td>
+                      <td className="p-2">{s.jenistruk}</td>
+                      <td className="p-2 text-right">{s.muatan} Ton</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </CardContent>
       </Card>
