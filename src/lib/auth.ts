@@ -2,7 +2,6 @@ import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { logEvent } from "@/lib/audit-logger";
 import { resolveCompanyMenuTemplate } from "@/lib/company-menu";
-import { verifyMfaToken } from "@/app/api/auth/mfa-verify/route";
 
 if (typeof window === 'undefined') {
   process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
@@ -98,7 +97,6 @@ export const authOptions: NextAuthOptions = {
         username:    { label: "Username", type: "text" },
         password:    { label: "Password", type: "password" },
         companycode: { label: "Company Code", type: "text" },
-        mfaToken:    { label: "MFA Token", type: "text" },
       },
       async authorize(credentials) {
         if (!credentials?.username || !credentials?.password) {
@@ -135,7 +133,12 @@ export const authOptions: NextAuthOptions = {
           }
           data = await res.json();
         } catch (err: any) {
-          if (err.message && !err.message.startsWith("Login gagal") && !(err.message.includes("error_description"))) {
+          if (
+            err.message &&
+            err.message !== "MFA_REQUIRED" &&
+            !err.message.startsWith("Login gagal") &&
+            !(err.message.includes("error_description"))
+          ) {
             await logEvent({
               eventType: "LOGIN_FAILED",
               username:  credentials.username,
@@ -143,35 +146,6 @@ export const authOptions: NextAuthOptions = {
             });
           }
           throw new Error(err?.message || "Tidak dapat terhubung ke server");
-        }
-
-        // MFA check — skip if a freshly-verified, signed mfaToken was supplied.
-        const mfaTokenValid = credentials.mfaToken
-          ? verifyMfaToken(credentials.mfaToken, credentials.username, credentials.companycode ?? "")
-          : false;
-
-        if (!mfaTokenValid) {
-          try {
-            const mfaRes = await fetch(`${ASPNET_API_URL}/api/mfa/login`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ Username: credentials.username, Password: credentials.password }),
-            });
-            if (mfaRes.ok) {
-              const mfaData = await mfaRes.json();
-              if (mfaData.IsMfaRequired === true) {
-                throw new Error("MFA_REQUIRED");
-              }
-            } else {
-              console.error(`[auth] /api/mfa/login returned ${mfaRes.status} — failing open to normal login`);
-            }
-          } catch (err: any) {
-            if (err.message === "MFA_REQUIRED") throw err;
-            // MFA provider unreachable/erroring — fail open to normal login rather than
-            // locking every user out because a third-party service is down. Logged so an
-            // outage or a bug in this check is visible instead of silently bypassing MFA.
-            console.error("[auth] MFA check failed, failing open:", err);
-          }
         }
 
         const roles: string[] = data.role
