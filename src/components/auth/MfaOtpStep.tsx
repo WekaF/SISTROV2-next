@@ -97,13 +97,13 @@ export default function MfaOtpStep({ username, companycode, onVerified, onBack, 
             disabled={sending}
             className="flex-1 py-3 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-700 hover:to-brand-600 text-white font-semibold text-sm rounded-xl disabled:opacity-70"
           >
-            {sending && method === "sms" ? "Mengirim..." : "Kirim ke SMS"}
+            {sending && method === "sms" ? "Mengirim..." : "Kirim ke WhatsApp"}
           </button>
         </div>
       ) : (
         <div className="space-y-4">
           <p className="text-sm text-green-600 dark:text-green-400">
-            Kode OTP telah dikirim via {method === "email" ? "Email" : "SMS"}.
+            Kode OTP telah dikirim via {method === "email" ? "Email" : "WhatsApp"}.
           </p>
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">Kode OTP</label>
