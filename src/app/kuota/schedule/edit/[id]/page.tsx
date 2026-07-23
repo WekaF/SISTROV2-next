@@ -77,7 +77,14 @@ export default function EditQuotaWizard() {
           const resQuota = await fetch(`/api/pod/kuota/${id}`);
           const dataQuota = await resQuota.json();
           if (dataQuota.success) {
-            setFormData(dataQuota.data);
+            const sc = Math.max(1, dataLookup.shiftCount);
+            const raw = dataQuota.data;
+            const shifts: Record<string, Record<number, number>> = {};
+            for (const [aId, sm] of Object.entries(raw.shifts || {})) {
+              shifts[aId] = {};
+              for (let n = 1; n <= sc; n++) shifts[aId][n] = (sm as any)[n] ?? 0;
+            }
+            setFormData({ ...raw, shifts });
           } else {
             addToast({ variant: "destructive", title: "Gagal memuat data", description: dataQuota.error || "Data kuota tidak ditemukan." });
           }
