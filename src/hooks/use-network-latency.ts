@@ -45,20 +45,22 @@ export function useNetworkLatency(): NetworkLatencyState {
     let cancelled = false;
 
     async function check() {
-      const isOnline = navigator.onLine;
-      const latencyMs = isOnline ? await measurePingLatency() : null;
+      const latencyMs = await measurePingLatency();
       if (!cancelled) {
-        setState({ latencyMs, status: classifyNetworkStatus(latencyMs, isOnline) });
+        setState({ latencyMs, status: classifyNetworkStatus(latencyMs, true) });
       }
     }
 
     check();
     const interval = setInterval(check, POLL_INTERVAL_MS);
 
-    function handleOffline() {
-      if (!cancelled) setState({ status: "offline", latencyMs: null });
-    }
+    // Re-check via ping on any connectivity event rather than trusting the
+    // navigator.onLine flag — on LAN-only networks (no internet route) the
+    // browser reports offline even though the app server is reachable.
     function handleOnline() {
+      check();
+    }
+    function handleOffline() {
       check();
     }
 
