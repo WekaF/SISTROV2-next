@@ -224,7 +224,7 @@ function ModalPengajuan({ item, onClose, onSuccess }: ModalPengajuanProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="relative w-full max-w-lg bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-4">
@@ -438,7 +438,7 @@ function ModalDetailDO({ noPosto, onClose }: ModalDetailDOProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="relative w-full max-w-6xl bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 flex items-center justify-between flex-shrink-0">
@@ -635,6 +635,20 @@ export default function PengajuanJatuhTempoPage() {
 
   const columnsAktif: DataTableColumn<PengajuanJapoItem>[] = [
     {
+      key: "actions",
+      header: "Action",
+      render: (row) => (
+        <Button
+          size="sm"
+          className="rounded-lg bg-amber-500 hover:bg-amber-600 text-white border-0 text-[11px] h-7 px-3 whitespace-nowrap"
+          onClick={() => { setSelectedItem(row); setIsModalOpen(true); }}
+        >
+          <FilePlus className="h-3.5 w-3.5 mr-1" />
+          Edit
+        </Button>
+      ),
+    },
+    {
       key: "NoPosto",
       header: "POSTO",
       render: (row) => (
@@ -731,20 +745,6 @@ export default function PengajuanJatuhTempoPage() {
       key: "PlantTujuanDesc",
       header: "Plant Tujuan",
       render: (row) => <span className="text-[12px] whitespace-nowrap">{row.PlantTujuanDesc || row.PlantTujuan}</span>,
-    },
-    {
-      key: "actions",
-      header: "Action",
-      render: (row) => (
-        <Button
-          size="sm"
-          className="rounded-lg bg-amber-500 hover:bg-amber-600 text-white border-0 text-[11px] h-7 px-3 whitespace-nowrap"
-          onClick={() => { setSelectedItem(row); setIsModalOpen(true); }}
-        >
-          <FilePlus className="h-3.5 w-3.5 mr-1" />
-          Edit
-        </Button>
-      ),
     },
   ];
 

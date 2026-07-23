@@ -41,7 +41,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     const token = (session?.user as any)?.aspnetToken as string;
     const { id } = await params;
 
-    const res = await aspnetFetchServer('/api/SuperadminGudang/Delete', token, {
+    const res = await aspnetFetchServer('/api/SuperadminGudang/DeleteGudang', token, {
       method: 'POST',
       body: JSON.stringify({ id }),
     });

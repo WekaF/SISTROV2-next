@@ -72,7 +72,8 @@ if (typeof window !== "undefined" && !(window as any).__fetchIntercepted) {
           // Hindari loop jika sudah di halaman login
           const isAuthPage =
             window.location.pathname === "/login" ||
-            window.location.pathname === "/register";
+            window.location.pathname === "/register" ||
+            window.location.pathname.startsWith("/security/print");
 
           if (!isAuthPage) {
             // Tandai agar tidak trigger berkali-kali

@@ -115,6 +115,8 @@ export default function ProductMasterPage() {
   const [showSyncConfirm, setShowSyncConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [targetDeleteMapping, setTargetDeleteMapping] = useState<number | null>(null);
+  const [showDeleteProductConfirm, setShowDeleteProductConfirm] = useState(false);
+  const [targetDeleteProduct, setTargetDeleteProduct] = useState<Product | null>(null);
 
   const fetchMappings = async (productId: number) => {
     setLoadingMappings(true);
@@ -227,6 +229,24 @@ export default function ProductMasterPage() {
     }
   });
 
+  const deleteProductMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/admin/products/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (data: any) => {
+      addToast({ title: "Produk Dihapus", description: data.message || "Produk berhasil dihapus.", variant: "success" });
+      setShowDeleteProductConfirm(false);
+      setTargetDeleteProduct(null);
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+    },
+    onError: (error: any) => {
+      addToast({ title: "Gagal Menghapus", description: error.message, variant: "destructive" });
+    }
+  });
+
   const deleteMappingMutation = useMutation({
     mutationFn: async (id: number) => {
       const res = await fetch(`/api/admin/products/mapping?id=${id}`, { method: 'DELETE' });
@@ -257,6 +277,10 @@ export default function ProductMasterPage() {
     if (!targetDeleteMapping) return;
     deleteMappingMutation.mutate(targetDeleteMapping);
     setTargetDeleteMapping(null);
+  };
+  const handleDeleteProduct = () => {
+    if (!targetDeleteProduct) return;
+    deleteProductMutation.mutate(targetDeleteProduct.id);
   };
 
   return (
@@ -455,7 +479,15 @@ export default function ProductMasterPage() {
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="sm" className="text-gray-400 hover:text-rose-500">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-gray-400 hover:text-rose-500 hover:bg-rose-50"
+                          onClick={() => {
+                            setTargetDeleteProduct(prd);
+                            setShowDeleteProductConfirm(true);
+                          }}
+                        >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -719,6 +751,22 @@ export default function ProductMasterPage() {
         confirmText="Hapus"
         cancelText="Batal"
         variant="danger"
+        isLoading={deleteMappingMutation.isPending}
+      />
+
+      <ConfirmDialog
+        open={showDeleteProductConfirm}
+        onOpenChange={(open) => {
+          setShowDeleteProductConfirm(open);
+          if (!open) setTargetDeleteProduct(null);
+        }}
+        title="Hapus Produk?"
+        description={`Anda yakin ingin menghapus produk "${targetDeleteProduct?.name}" (${targetDeleteProduct?.code})? Tindakan ini tidak dapat dibatalkan dan akan menghapus semua mapping terkait.`}
+        onConfirm={handleDeleteProduct}
+        confirmText="Ya, Hapus Produk"
+        cancelText="Batal"
+        variant="danger"
+        isLoading={deleteProductMutation.isPending}
       />
     </div>
   );

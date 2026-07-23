@@ -106,7 +106,7 @@ export default function SignInForm() {
         lowerError.includes("fetch failed") ||
         lowerError.includes("econnrefused") ||
         lowerError.includes("kesalahan sistem");
-      setError(isSystemError ? "Terjadi kesalahan sistem, silakan coba lagi." : "Akun tidak terdaftar");
+      setError(isSystemError ? "Terjadi kesalahan sistem, silakan coba lagi." : (result.error || "Akun tidak terdaftar"));
       setIsLoading(false);
     } else if (result?.ok) {
       setPhase("login");

@@ -35,13 +35,18 @@ interface TicketData {
 function SecurityPrintContent() {
   const searchParams = useSearchParams();
   const bookingno = searchParams.get("bookingno");
-  const { apiFetch } = useApi();
-  
+  const { apiFetch, sessionStatus } = useApi();
+
   const [data, setData] = useState<TicketData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const barcodeRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
+    // Wait until NextAuth session is fully loaded before fetching.
+    // Without this guard, opening in a new tab sends a request without a token
+    // (session still loading) → backend returns 401 → global 401 guard auto-logouts.
+    if (sessionStatus === "loading") return;
+
     async function fetchData() {
       if (!bookingno) return;
       try {
@@ -60,7 +65,7 @@ function SecurityPrintContent() {
       }
     }
     fetchData();
-  }, [bookingno, apiFetch]);
+  }, [bookingno, apiFetch, sessionStatus]);
 
   useEffect(() => {
     const ticketNo = data?.data?.tiketno || data?.data?.bookingno || bookingno || "";
@@ -80,7 +85,7 @@ function SecurityPrintContent() {
     }
   }, [data, bookingno]);
 
-  if (isLoading) {
+  if (isLoading || sessionStatus === "loading") {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="animate-spin w-8 h-8 text-primary" />

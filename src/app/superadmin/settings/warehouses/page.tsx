@@ -147,6 +147,8 @@ export default function WarehouseMasterPage() {
   const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
   const [activeMappings, setActiveMappings] = useState<any[]>([]);
   const [loadingMapData, setLoadingMapData] = useState(false);
+  const [isDeleteMappingOpen, setIsDeleteMappingOpen] = useState(false);
+  const [targetDeleteMapping, setTargetDeleteMapping] = useState<{ type: 'tujuan'; id: string } | null>(null);
 
   const { data: warehousesResult, isLoading, isFetching, error: queryError } = useQuery({
     queryKey: ['warehouses', debouncedSearch, page, limit],
@@ -651,11 +653,14 @@ export default function WarehouseMasterPage() {
                              </div>
                           </div>
                           <Button
-                           variant="ghost"
-                           size="icon"
-                           className="h-8 w-8 text-rose-500 hover:bg-rose-50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                           onClick={() => deleteMappingMutation.mutate({ type: 'tujuan', id: m.Id })}
-                          >
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-rose-500 hover:bg-rose-50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => {
+                              setTargetDeleteMapping({ type: 'tujuan', id: m.Id });
+                              setIsDeleteMappingOpen(true);
+                            }}
+                           >
                              <Trash2 className="h-4 w-4" />
                           </Button>
                        </div>
@@ -684,8 +689,30 @@ export default function WarehouseMasterPage() {
           title="Hapus Gudang?"
           description={`Anda yakin ingin menghapus gudang ${selectedWarehouse.Deskripsi} (#${selectedWarehouse.ID})? Tindakan ini tidak dapat dibatalkan.`}
           variant="danger"
+          confirmText="Ya, Hapus Gudang"
+          cancelText="Batal"
+          isLoading={deleteMutation.isPending}
         />
       )}
+
+      <ConfirmDialog
+        open={isDeleteMappingOpen}
+        onOpenChange={(open) => {
+          setIsDeleteMappingOpen(open);
+          if (!open) setTargetDeleteMapping(null);
+        }}
+        onConfirm={() => {
+          if (targetDeleteMapping) {
+            deleteMappingMutation.mutate(targetDeleteMapping);
+          }
+        }}
+        title="Hapus Mapping Tujuan?"
+        description="Apakah Anda yakin ingin menghapus mapping gudang tujuan ini? Tindakan ini tidak dapat dibatalkan."
+        variant="danger"
+        confirmText="Hapus"
+        cancelText="Batal"
+        isLoading={deleteMappingMutation.isPending}
+      />
     </div>
     </TooltipProvider>
   );

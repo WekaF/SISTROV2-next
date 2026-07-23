@@ -14,7 +14,7 @@ import { API_BASE } from "@/lib/api-client";
  *   const data = await apiJson("/api/Armada/GetList");
  */
 export function useApi() {
-  const { data: session } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
   const companyCtx = useCompanySafe();
 
   // Prefer CompanyContext token (updated immediately on switch)
@@ -102,7 +102,7 @@ export function useApi() {
     [apiFetch]
   );
 
-  return { apiFetch, apiJson, apiTable, token };
+  return { apiFetch, apiJson, apiTable, token, sessionStatus };
 }
 
 import { useState, useEffect } from "react";

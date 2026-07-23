@@ -217,9 +217,9 @@ function TrackingContent() {
   };
 
   const handlePrint = () => {
-    const printNo = ticketData?.tiketno || ticketData?.bookingno;
+    const printNo = ticketData?.bookingno;
     if (!printNo) return;
-    window.open(`/security/print?bookingno=${printNo}`);
+    window.open(`/tiket/print/${printNo}`);
   };
 
   // Progress Stepper Config
