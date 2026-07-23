@@ -176,9 +176,13 @@ function SecurityPrintContent() {
 
         {/* Data Table */}
         <table className="w-full text-left text-[12px] border-collapse">
+          <colgroup>
+            <col className="w-[30%]" />
+            <col />
+          </colgroup>
           <tbody>
             <tr>
-              <td className="py-1 pr-2 whitespace-nowrap w-[30%]">Nomor Tiket</td>
+              <td className="py-1 pr-2 whitespace-nowrap">Nomor Tiket</td>
               <td className="py-1">: {ticketNo}</td>
             </tr>
             {t.revised && (
