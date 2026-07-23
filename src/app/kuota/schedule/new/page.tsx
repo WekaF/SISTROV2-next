@@ -40,6 +40,7 @@ export default function NewQuotaWizard() {
     products: [] as LookupItem[],
     wilayah: [] as LookupItem[],
     areas: [] as LookupItem[],
+    shiftCount: 0,
   });
 
   const [formData, setFormData] = useState({
@@ -65,6 +66,7 @@ export default function NewQuotaWizard() {
             products: data.products,
             wilayah: data.wilayah,
             areas: data.areas,
+            shiftCount: data.shiftCount,
           });
         }
       } catch (error) {
@@ -90,6 +92,7 @@ export default function NewQuotaWizard() {
   // Math Validations
   const totalWilayah = Object.values(formData.wilayah).reduce((a, b) => a + b, 0);
   const totalAreas = Object.values(formData.areas).reduce((a, b) => a + b, 0);
+  const shiftNumbers = Array.from({ length: Math.max(1, lookup.shiftCount) }, (_, i) => i + 1);
 
   const shiftErrors: string[] = Object.entries(formData.areas)
     .filter(([, kuota]) => Number(kuota) > 0)
@@ -402,8 +405,11 @@ export default function NewQuotaWizard() {
                             <Badge color="light" size="sm">Kuota: {formData.areas[a.id]} Ton</Badge>
                           </div>
                        </div>
-                       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                          {[1, 2, 3].map(sNum => (
+                       <div
+                          className="grid grid-cols-1 md:grid-cols-[repeat(var(--shift-cols),minmax(0,1fr))] gap-6"
+                          style={{ "--shift-cols": shiftNumbers.length } as React.CSSProperties}
+                       >
+                          {shiftNumbers.map(sNum => (
                             <div key={sNum} className="space-y-2">
                                <label className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Shift {sNum}</label>
                                <Input
