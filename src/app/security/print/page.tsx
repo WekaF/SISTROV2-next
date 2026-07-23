@@ -177,65 +177,71 @@ function SecurityPrintContent() {
         {/* Data Table */}
         <table className="w-full text-left text-[12px] border-collapse">
           <tbody>
-            <tr className="border-b-2 border-black">
-              <td className="py-1 pr-2 whitespace-nowrap">Nomor Tiket</td>
+            <tr>
+              <td className="py-1 pr-2 whitespace-nowrap w-[30%]">Nomor Tiket</td>
               <td className="py-1">: {ticketNo}</td>
             </tr>
-            <tr className="border-b-2 border-black">
+            {t.revised && (
+              <tr>
+                <td className="py-1 pr-2 whitespace-nowrap">Tiket direvisi</td>
+                <td className="py-1">: YA</td>
+              </tr>
+            )}
+            <tr>
               <td className="py-1 pr-2 whitespace-nowrap">Nomor Polisi</td>
-              <td className="py-1 font-black text-[18px]">: {t.nopol}</td>
+              <td className="py-1">: <strong className="text-[16px]">{t.nopol}</strong></td>
             </tr>
-            <tr className="border-b-2 border-black">
+            <tr>
               <td className="py-1 pr-2 whitespace-nowrap">Nama Driver</td>
-              <td className="py-1 font-black text-[18px]">: {t.driver}</td>
+              <td className="py-1">: <strong className="text-[16px]">{t.driver}</strong></td>
             </tr>
-            <tr className="border-b border-black">
+            <tr>
               <td className="py-1 pr-2 whitespace-nowrap">Moda</td>
-              <td className="py-1">: {getModa(t.postowilayah)}</td>
+              <td className="py-1">: <strong>{getModa(t.postowilayah)}</strong></td>
             </tr>
-            <tr className="border-b border-black">
+            <tr>
               <td className="py-1 pr-2 whitespace-nowrap">Qty (Ton)</td>
-              <td className="py-1">: {t.qty}</td>
+              <td className="py-1">: {Number(t.qty).toLocaleString("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
             </tr>
-            <tr className="border-b border-black">
+            <tr>
               <td className="py-1 pr-2 whitespace-nowrap">Asal</td>
               <td className="py-1">: {t.asal}</td>
             </tr>
-            <tr className="border-b border-black">
+            <tr>
               <td className="py-1 pr-2 whitespace-nowrap">GP Tujuan</td>
               <td className="py-1">: {t.tujuan}</td>
             </tr>
-            <tr className="border-b border-black">
+            <tr>
               <td className="py-1 pr-2 whitespace-nowrap">Tgl (Shift)</td>
               <td className="py-1">: {t.tanggalString} (Shift {t.shift})</td>
             </tr>
-            <tr className="border-b border-black">
+            <tr>
               <td className="py-1 pr-2 whitespace-nowrap">Transport</td>
               <td className="py-1">: {t.transportString}</td>
             </tr>
-            <tr className="border-b border-black">
+            <tr>
               <td className="py-1 pr-2 whitespace-nowrap">POSTO</td>
               <td className="py-1">: {t.posto}</td>
             </tr>
-            <tr className="border-b border-black">
+            <tr>
               <td className="py-1 pr-2 whitespace-nowrap">Produk</td>
               <td className="py-1">: {t.produkString}</td>
             </tr>
             {t.gudangtujuan && (
-              <tr className="border-b-2 border-black">
-                <td className="py-1 pr-2 whitespace-nowrap font-bold">Gudang Muat</td>
-                <td className="py-1 font-black">: {t.gudangtujuan}</td>
+              <tr>
+                <td className="py-1 pr-2 whitespace-nowrap">Gudang Muat</td>
+                <td className="py-1">: <strong className="text-[14px]">{t.gudangtujuan}</strong></td>
               </tr>
             )}
             {t.company === "PKC" && t.labelantrian && (
-              <tr className="border-b border-black">
+              <tr>
                 <td className="py-1 pr-2 whitespace-nowrap">Antrian</td>
-                <td className="py-1 font-bold">: {t.labelantrian}</td>
+                <td className="py-1">: <strong className="text-[16px]">{t.labelantrian}</strong></td>
               </tr>
             )}
-            <tr className="border-b border-black">
+            <tr>
               <td className="py-1 pr-2 whitespace-nowrap">Pemuatan</td>
-              <td className="py-1">: {t.percepatan}</td>
+              <td className="py-1">: <strong className="text-[16px]">{t.percepatan === "1" ? "PERCEPATAN" : "ZERO ODOL"}</strong></td>
             </tr>
           </tbody>
         </table>
