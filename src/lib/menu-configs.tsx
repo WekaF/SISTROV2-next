@@ -96,10 +96,31 @@ export function mergeNavItems(itemsList: NavItem[][]): NavItem[] {
       const key = item.name.toLowerCase();
       if (resultMap.has(key)) {
         const existing = resultMap.get(key)!;
-        if (existing.subItems && item.subItems) {
-          const existingPaths = new Set(existing.subItems.map((s) => s.path));
-          const newSubs = item.subItems.filter((s) => !existingPaths.has(s.path));
-          existing.subItems = [...existing.subItems, ...newSubs];
+        if (existing.subItems || item.subItems) {
+          const combinedSubs = [...(existing.subItems || []), ...(item.subItems || [])];
+          // deduplicate combinedSubs by path
+          const uniqueSubsMap = new Map<string, { name: string; path: string; pro?: boolean; new?: boolean }>();
+          for (const sub of combinedSubs) {
+            uniqueSubsMap.set(sub.path, sub);
+          }
+          const mergedSubItems = Array.from(uniqueSubsMap.values());
+          
+          // Sort subItems to ensure standard ordering (e.g. Data Tiket -> Booking Tiket -> Track)
+          mergedSubItems.sort((a, b) => {
+            const order: Record<string, number> = {
+              "/tiket": 1,
+              "/tiket/booking": 2,
+              "/tiket/dashboard": 3,
+              "/tiket/track-do": 4,
+            };
+            const valA = order[a.path] || 99;
+            const valB = order[b.path] || 99;
+            return valA - valB;
+          });
+
+          existing.subItems = mergedSubItems;
+          // delete existing.path because it's now a dropdown!
+          delete existing.path;
         }
       } else {
         resultMap.set(key, {
@@ -489,6 +510,7 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
         subItems: [
           { name: "Data Tiket", path: "/tiket" },
           { name: "Booking Tiket", path: "/tiket/booking" },
+          { name: "Track Tiket Integrasi DO", path: "/tiket/track-do" },
         ],
       },
       {
@@ -526,6 +548,7 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
         subItems: [
           { name: "Data Tiket", path: "/tiket" },
           { name: "Booking Tiket", path: "/tiket/booking" },
+          { name: "Track Tiket Integrasi DO", path: "/tiket/track-do" },
         ],
       },
       {
