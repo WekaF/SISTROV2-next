@@ -64,6 +64,22 @@ async function createNotificationOnce(
   });
 }
 
+export async function createArmadaRejectedNotification(
+  userId: string,
+  armadaReviewId: number,
+  nopol: string,
+) {
+  await seedOrDiff(userId, "armada_review", String(armadaReviewId), "Ditolak/Revisi");
+  await createNotificationOnce(
+    userId,
+    "ARMADA_REJECTED",
+    "Armada ditolak",
+    `Pengajuan armada ${nopol} ditolak / perlu revisi.`,
+    String(armadaReviewId),
+    nopol,
+  );
+}
+
 export async function syncTransportirNotifications(session: SyncSession) {
   const userId = session.username;
 
@@ -144,14 +160,7 @@ export async function syncTransportirNotifications(session: SyncSession) {
             row.nopol,
           );
         } else if (row.aprrovestatus === "Ditolak/Revisi") {
-          await createNotificationOnce(
-            userId,
-            "ARMADA_REJECTED",
-            "Armada ditolak",
-            `Pengajuan armada ${row.nopol} ditolak / perlu revisi.`,
-            String(row.ID),
-            row.nopol,
-          );
+          await createArmadaRejectedNotification(userId, row.ID, row.nopol);
         }
       }
     }
