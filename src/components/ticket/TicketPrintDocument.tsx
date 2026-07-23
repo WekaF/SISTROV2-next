@@ -224,7 +224,7 @@ export function TicketPrintDocument({ id }: TicketPrintDocumentProps) {
                       <td className="py-4 px-1 text-slate-400 font-black uppercase text-[10px] tracking-widest">Nopol Armada</td>
                       <td className="py-4 px-1 font-black uppercase text-lg tracking-tighter text-slate-900">
                         {data.nopol}
-                        {data.wilayah === "DW2_KONTAINER" && <span className="bg-rose-500 text-white px-2 py-0.5 ml-3 text-[10px] tracking-normal font-black uppercase align-middle">Container</span>}
+                        {data.postowilayah === "DW2_KONTAINER" && <span className="bg-rose-500 text-white px-2 py-0.5 ml-3 text-[10px] tracking-normal font-black uppercase align-middle">Container</span>}
                       </td>
                     </tr>
                     <tr className="border-b-2 border-slate-200">
