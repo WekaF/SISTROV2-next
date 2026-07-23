@@ -14,7 +14,7 @@ interface TicketData {
     tiketno: string;
     nopol: string;
     driver: string;
-    wilayah: string;
+    postowilayah: string;
     qty: number;
     asal: string;
     tujuan: string;
@@ -28,6 +28,7 @@ interface TicketData {
     percepatan?: string;
     emergencystatus?: string;
     company?: string;
+    revised?: string;
   };
 }
 
@@ -99,12 +100,12 @@ function SecurityPrintContent() {
   const { data: t } = data;
   const ticketNo = t.tiketno || t.bookingno || bookingno || "";
 
-  const getModa = (wilayah: string) => {
-    switch (wilayah) {
-      case "DW1_GP": return "TRUK KE GP";
-      case "DW2_INBAG": return "INBAG";
-      case "DW2_KONTAINER": return "CONTAINER";
-      default: return wilayah || "-";
+  const getModa = (postowilayah: string) => {
+    switch (postowilayah) {
+      case "DW2_KONTAINER": return "*CONTAINER*";
+      case "DW1_GP": return "* TRUK KE GP *";
+      case "DW2_INBAG": return "* INBAG *";
+      default: return "-";
     }
   };
 
@@ -183,7 +184,7 @@ function SecurityPrintContent() {
             </tr>
             <tr className="border-b border-black">
               <td className="py-1 pr-2 whitespace-nowrap">Moda</td>
-              <td className="py-1">: {getModa(t.wilayah)}</td>
+              <td className="py-1">: {getModa(t.postowilayah)}</td>
             </tr>
             <tr className="border-b border-black">
               <td className="py-1 pr-2 whitespace-nowrap">Qty (Ton)</td>
