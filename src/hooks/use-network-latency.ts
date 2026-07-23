@@ -24,18 +24,19 @@ export function classifyNetworkStatus(
 }
 
 async function measurePingLatency(): Promise<number | null> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-  const start = performance.now();
-  try {
-    const res = await fetch("/api/ping", { cache: "no-store", signal: controller.signal });
-    if (!res.ok) return null;
-    return performance.now() - start;
-  } catch {
-    return null;
-  } finally {
-    clearTimeout(timeout);
-  }
+  // ponytail: XHR instead of fetch — Chrome blocks fetch() on LAN-only networks
+  // (navigator.onLine=false / no internet route) even for same-origin requests;
+  // XHR bypasses that flag. Upgrade to fetch if Chrome fixes this behaviour.
+  return new Promise((resolve) => {
+    const xhr = new XMLHttpRequest();
+    const start = performance.now();
+    const timer = setTimeout(() => { xhr.abort(); resolve(null); }, FETCH_TIMEOUT_MS);
+    xhr.open("GET", "/api/ping?_=" + start, true);
+    xhr.onload = () => { clearTimeout(timer); resolve(xhr.status < 400 ? performance.now() - start : null); };
+    xhr.onerror = () => { clearTimeout(timer); resolve(null); };
+    xhr.onabort = () => { clearTimeout(timer); resolve(null); };
+    xhr.send();
+  });
 }
 
 export function useNetworkLatency(): NetworkLatencyState {
