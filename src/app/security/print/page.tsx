@@ -110,7 +110,7 @@ function SecurityPrintContent() {
   };
 
   return (
-    <div className="print-container bg-white text-black font-mono min-h-screen p-2 mx-auto max-w-[80mm]">
+    <div className="print-container bg-white text-black font-sans min-h-screen p-2 mx-auto max-w-[80mm]">
       <style jsx global>{`
         @media print {
           @page {
