@@ -10,9 +10,14 @@ assert.equal(classifyNetworkStatus(149, true), "good");
 assert.equal(classifyNetworkStatus(150, true), "slow");
 assert.equal(classifyNetworkStatus(499, true), "slow");
 
-// offline: 500ms or more, or no measurement, or browser reports offline
-assert.equal(classifyNetworkStatus(500, true), "offline");
+// weak: 500ms or more, but the ping still succeeded and browser is online
+assert.equal(classifyNetworkStatus(500, true), "weak");
+assert.equal(classifyNetworkStatus(5000, true), "weak");
+
+// offline: only when there's no measurement (fetch failed/timed out) or the
+// browser itself reports no connection — never for a merely slow response
 assert.equal(classifyNetworkStatus(null, true), "offline");
 assert.equal(classifyNetworkStatus(20, false), "offline");
+assert.equal(classifyNetworkStatus(5000, false), "offline");
 
 console.log("use-network-latency self-check: all assertions passed");

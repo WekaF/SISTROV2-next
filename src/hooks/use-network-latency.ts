@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 
-export type NetworkStatus = "good" | "slow" | "offline";
+export type NetworkStatus = "good" | "slow" | "weak" | "offline";
 
 export interface NetworkLatencyState {
   status: NetworkStatus;
@@ -20,7 +20,7 @@ export function classifyNetworkStatus(
   if (!isOnline || latencyMs === null) return "offline";
   if (latencyMs < GOOD_THRESHOLD_MS) return "good";
   if (latencyMs < SLOW_THRESHOLD_MS) return "slow";
-  return "offline";
+  return "weak";
 }
 
 async function measurePingLatency(): Promise<number | null> {

@@ -5,6 +5,7 @@ import { useNetworkLatency } from "@/hooks/use-network-latency";
 const STATUS_STYLES: Record<string, string> = {
   good: "bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400",
   slow: "bg-yellow-100 text-yellow-700 dark:bg-yellow-500/10 dark:text-yellow-400",
+  weak: "bg-orange-100 text-orange-700 dark:bg-orange-500/10 dark:text-orange-400",
   offline: "bg-red-100 text-red-600 dark:bg-red-500/10 dark:text-red-400",
 };
 
