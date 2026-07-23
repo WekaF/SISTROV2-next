@@ -1,5 +1,6 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import { cookies } from "next/headers";
 import { logEvent } from "@/lib/audit-logger";
 import { resolveCompanyMenuTemplate } from "@/lib/company-menu";
 
@@ -301,6 +302,15 @@ export const authOptions: NextAuthOptions = {
         role:        (user as any).role,
         companyCode: (user as any).companyCode,
       });
+      // Fresh login — drop any stale plant cookie from a previous session on this
+      // browser/device. Without this, active-company/route.ts's cookie-wins-first
+      // priority can silently override the plant just authenticated against with
+      // a leftover value from a different user (or a different plant) on shared
+      // hardware. Company-switch sets its own fresh cookie value right after this,
+      // so it's unaffected; relogin/route.ts intentionally still reads the cookie
+      // as a same-user re-auth fallback, which this does not touch.
+      const cookieStore = await cookies();
+      cookieStore.delete("sistro_active_company");
     },
     async signOut({ token }) {
       await logEvent({
