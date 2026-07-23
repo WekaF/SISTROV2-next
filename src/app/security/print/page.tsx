@@ -146,6 +146,13 @@ function SecurityPrintContent() {
       `}</style>
 
       <div className="flex flex-col items-center text-center space-y-4">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/images/logo/logocompany.png"
+          alt="Pupuk Indonesia Holding Company"
+          style={{ width: "60mm", paddingTop: "5mm" }}
+          className="block mx-auto"
+        />
         <h1 className="text-[30px] font-bold leading-tight">SECURITY PASS</h1>
         
         {/* QR Code */}
