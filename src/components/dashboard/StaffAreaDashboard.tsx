@@ -9,6 +9,7 @@ import {
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import dynamic from "next/dynamic";
 import OverdueTicketsModal from "@/components/dashboard/OverdueTicketsModal";
+import NetworkStatusBadge from "@/components/header/NetworkStatusBadge";
 
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
@@ -199,17 +200,7 @@ export default function StaffAreaDashboard() {
             Operasional{stats?.companyCode ? ` — ${stats.companyCode}` : ""}
           </h2>
           <div className="flex items-center gap-2 mt-1.5">
-            <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${
-              streamStatus === "live" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400"
-              : streamStatus === "error" ? "bg-red-100 text-red-600 dark:bg-red-500/10 dark:text-red-400"
-              : "bg-gray-100 text-gray-500 dark:bg-white/5 dark:text-gray-400"
-            }`}>
-              <span className={`h-1.5 w-1.5 rounded-full ${
-                streamStatus === "live" ? "bg-emerald-500 animate-pulse"
-                : streamStatus === "error" ? "bg-red-500" : "bg-gray-400 animate-pulse"
-              }`} />
-              {streamStatus === "live" ? "Live" : streamStatus === "error" ? "Offline" : "Connecting..."}
-            </span>
+            <NetworkStatusBadge />
             {mounted && streamLastUpdated && (
               <span className="text-xs text-gray-400">Update: {streamLastUpdated.toLocaleTimeString("id-ID")}</span>
             )}

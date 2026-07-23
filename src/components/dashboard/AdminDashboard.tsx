@@ -8,6 +8,7 @@ import {
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { useDashboardStream } from "@/hooks/use-dashboard-stream";
 import ActivityMonitorPanel from "@/components/dashboard/ActivityMonitorPanel";
+import NetworkStatusBadge from "@/components/header/NetworkStatusBadge";
 
 const InteractiveLeafletMap = dynamic(() => import("./InteractiveLeafletMap"), {
   ssr: false,
@@ -348,15 +349,7 @@ export const AdminDashboard = () => {
             Monitoring global seluruh plant, antrian, kinerja logistik, dan log sistem.
           </p>
           <div className="flex items-center gap-2 mt-2">
-            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${streamStatus === "live" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400"
-              : streamStatus === "error" ? "bg-red-100 text-red-600 dark:bg-red-500/10 dark:text-red-400"
-                : "bg-gray-100 text-gray-500 dark:bg-white/5 dark:text-gray-400"
-              }`}>
-              <span className={`h-1.5 w-1.5 rounded-full ${streamStatus === "live" ? "bg-emerald-500 animate-pulse"
-                : streamStatus === "error" ? "bg-red-500" : "bg-gray-400 animate-pulse"
-                }`} />
-              {streamStatus === "live" ? "Live" : streamStatus === "error" ? "Offline" : "Connecting..."}
-            </span>
+            <NetworkStatusBadge />
             {mounted && lastUpdated && (
               <span className="text-xs text-gray-400">Update: {lastUpdated.toLocaleTimeString("id-ID")}</span>
             )}
