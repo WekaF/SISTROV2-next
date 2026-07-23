@@ -68,7 +68,7 @@ function SecurityPrintContent() {
       JsBarcode(barcodeRef.current, ticketNo, {
         format: "CODE128",
         width: 2,
-        height: 50,
+        height: 100,
         displayValue: true,
       });
       
@@ -253,6 +253,30 @@ function SecurityPrintContent() {
         {/* Barcode */}
         <div className="w-full flex justify-center py-4 overflow-hidden">
           <svg ref={barcodeRef} className="max-w-full"></svg>
+        </div>
+
+        {/* Divider + SISTRO footer logo */}
+        <div className="w-full border-b border-black"></div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/images/logo/logotiket.jpg"
+          alt="SISTRO - Sistem Scheduling Truck Online"
+          style={{ width: "40mm", paddingTop: "3mm" }}
+          className="block mx-auto"
+        />
+
+        {/* Printed-at timestamp */}
+        <div className="w-full text-left text-[0.6rem]">
+          Printed from sistro website v2 at{" "}
+          {new Date()
+            .toLocaleString("id-ID", {
+              day: "2-digit",
+              month: "long",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+            .replace(" pukul ", " ")}
         </div>
 
         {/* Manual Print Button (Hidden on print) */}
