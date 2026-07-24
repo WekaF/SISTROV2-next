@@ -92,26 +92,27 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     const areaIds: Record<string, number> = {}
     const areaScopes: Record<string, string> = {}
     areaRows.forEach((a: any) => {
-      areas[a.bagian] = Number(a.kuota) || 0
-      areaGuids[a.bagian] = a.guid
-      areaIds[a.bagian] = Number(a.id)
-      areaScopes[a.bagian] = a._wilayahAbbrev
+      const uniqueId = `${a._wilayahAbbrev}::${a.bagian}`
+      areas[uniqueId] = Number(a.kuota) || 0
+      areaGuids[uniqueId] = a.guid
+      areaIds[uniqueId] = Number(a.id)
+      areaScopes[uniqueId] = a._wilayahAbbrev
     })
 
     const shifts: Record<string, Record<number, number>> = {}
     const shiftNumericIds: Record<string, Record<string, number>> = {}
     const shiftCounts: Record<string, number> = {}
     level4Results.forEach((res, i) => {
-      const bagianAbbrev = areaRows[i].bagian
+      const uniqueId = `${areaRows[i]._wilayahAbbrev}::${areaRows[i].bagian}`
       const shiftRows: any[] = res.data || []
       shiftRows.forEach((s: any) => {
-        if (!shifts[bagianAbbrev]) shifts[bagianAbbrev] = {}
-        if (!shiftNumericIds[bagianAbbrev]) shiftNumericIds[bagianAbbrev] = {}
+        if (!shifts[uniqueId]) shifts[uniqueId] = {}
+        if (!shiftNumericIds[uniqueId]) shiftNumericIds[uniqueId] = {}
         const sNum = Number(s.shift)
-        shifts[bagianAbbrev][sNum] = Number(s.kuota) || 0
-        shiftNumericIds[bagianAbbrev][String(sNum)] = Number(s.id)
+        shifts[uniqueId][sNum] = Number(s.kuota) || 0
+        shiftNumericIds[uniqueId][String(sNum)] = Number(s.id)
       })
-      shiftCounts[bagianAbbrev] = shiftRows.length
+      shiftCounts[uniqueId] = shiftRows.length
     })
 
     const tanggal = parseAspDate(level1Data.tanggal)
@@ -160,7 +161,19 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const areaIds: Record<string, number> = _meta?.areaIds || {}
     const areaScopes: Record<string, string> = _meta?.areaScopes || {}
     const shiftNumericIds: Record<string, Record<string, number>> = _meta?.shiftNumericIds || {}
-    const shiftCounts: Record<string, number> = _meta?.shiftCounts || {}
+
+    // Fetch area scopes from ASP.NET to map area abbrev -> wilayah abbrev and tipe
+    const bagianRes = await fetch(`${ASPNET}/api/Kuota/DataBagian`, {
+      headers: { "Authorization": `Bearer ${token}` },
+    })
+    if (!bagianRes.ok) {
+      return NextResponse.json({ success: false, error: "Gagal memuat data area/shift" }, { status: 502 })
+    }
+    const bagianData = await bagianRes.json()
+    // NOTE: M_BagianDetail.tipe is a category label (POALL/POCLUSTER/SOALL/SOCLUSTER),
+    // never a shift count -- Number(tipe) is always NaN. The real per-company shift
+    // count is bagianData.shift (same field /api/kuota/lookup forwards as shiftCount).
+    const shiftCount = Math.max(1, Number(bagianData?.shift) || 0)
 
     // Validate totals before sending to server
     const totalWilayah = Object.values(wilayah as Record<string, number>).reduce((a, b) => a + b, 0)
@@ -168,13 +181,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       return NextResponse.json({ success: false, error: "Total moda transportasi tidak sama dengan kuota harian" }, { status: 400 })
     }
 
-    for (const [areaAbbrev, areaKuota] of Object.entries(areas as Record<string, number>)) {
-      const areaShifts = (shifts as Record<string, Record<number, number>>)[areaAbbrev] || {}
+    for (const [uniqueId, areaKuota] of Object.entries(areas as Record<string, number>)) {
+      const areaShifts = (shifts as Record<string, Record<number, number>>)[uniqueId] || {}
       const shiftTotal = Object.values(areaShifts).reduce((a: number, b: number) => a + b, 0)
       if (areaKuota > 0 && Math.abs(shiftTotal - areaKuota) > 0.01) {
         return NextResponse.json({
           success: false,
-          error: `Total shift area ${areaAbbrev} (${shiftTotal}) tidak sama dengan kuota area (${areaKuota})`
+          error: `Total shift area ${uniqueId} (${shiftTotal}) tidak sama dengan kuota area (${areaKuota})`
         }, { status: 400 })
       }
     }
@@ -187,22 +200,25 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       value: Number(kuota),
     }))
 
-    const bagianPayload = Object.entries(areas as Record<string, number>).map(([abbrev, kuota]) => ({
-      id: String(areaIds[abbrev] || ""),
-      id_area: abbrev,
-      scope: areaScopes[abbrev] || "",
-      value: Number(kuota),
-    }))
+    const bagianPayload = Object.entries(areas as Record<string, number>).map(([uniqueId, kuota]) => {
+      let parts = uniqueId.split('::')
+      const abbrev = parts.length > 1 ? parts.slice(1).join('::') : uniqueId
+      return {
+        id: String(areaIds[uniqueId] || ""),
+        id_area: abbrev,
+        scope: areaScopes[uniqueId] || "",
+        value: Number(kuota),
+      }
+    })
 
-    const shiftPayload = Object.entries(areas as Record<string, number>)
-      .filter(([, kuota]) => Number(kuota) > 0)
-      .map(([abbrev]) => {
-        const areaShifts = (shifts as Record<string, Record<number, number>>)[abbrev] || {}
-        const numericIds = shiftNumericIds[abbrev] || {}
-        const count = shiftCounts[abbrev] || 3
+    const shiftPayload = Object.entries(areas as Record<string, number>).map(([uniqueId, kuota]) => {
+      let parts = uniqueId.split('::')
+      const abbrev = parts.length > 1 ? parts.slice(1).join('::') : uniqueId
+      const areaShifts = (shifts as Record<string, Record<number, number>>)[uniqueId] || {}
+      const numericIds = shiftNumericIds[uniqueId] || {}
         return {
           id_area: abbrev,
-          count,
+          count: shiftCount,
           idShift1: numericIds["1"] || 0,
           idShift2: numericIds["2"] || 0,
           idShift3: numericIds["3"] || 0,
