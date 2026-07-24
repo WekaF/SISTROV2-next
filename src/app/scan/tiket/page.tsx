@@ -18,6 +18,7 @@ import { useToast } from "@/components/ui/toast";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { useSession } from "next-auth/react";
+import { normalizeRole } from "@/lib/role-utils";
 import { Html5Qrcode } from "html5-qrcode";
 import { QRCodeCanvas } from "qrcode.react";
 import JsBarcode from "jsbarcode";
@@ -97,6 +98,17 @@ export default function ScanTiketPage() {
   const { apiFetch } = useApi();
   const { addToast } = useToast();
   const { data: session } = useSession();
+
+  // Role detection: Security (or Admin / SuperAdmin)
+  const userRole = normalizeRole((session?.user as any)?.role);
+  const userRoles: string[] = ((session?.user as any)?.roles as string[] | undefined ?? []).map(normalizeRole);
+  const isSecurityUser =
+    userRole === "security" ||
+    userRoles.includes("security") ||
+    userRole === "superadmin" ||
+    userRoles.includes("superadmin") ||
+    userRole === "admin" ||
+    userRoles.includes("admin");
 
   // Handle camera toggle
   useEffect(() => {
@@ -548,8 +560,8 @@ export default function ScanTiketPage() {
                   </div>
 
                   <div className="w-full sm:w-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                    {/* Print Button - ONLY for Position 01 */}
-                    {ticket.position === "01" && (
+                    {/* Print Button - Available for Security/Admin roles for any ticket after Security In (position !== "00") */}
+                    {isSecurityUser && ticket.position !== "00" && (
                       <Button
                         variant="outline"
                         size="lg"
@@ -815,6 +827,35 @@ export default function ScanTiketPage() {
         @media print {
           @page { size: 80mm auto; margin: 0; }
           html, body { margin: 0; padding: 0; background: white; }
+          aside, header { display: none !important; }
+          /* Layout shell (AppSidebar/AppHeader wrappers) uses h-screen + overflow
+             hidden/auto, which clips print output taller than one viewport.
+             Reset it so long receipts (emergency banner + all optional rows) print in full. */
+          div.flex.h-screen.overflow-hidden {
+            display: block !important;
+            height: auto !important;
+            overflow: visible !important;
+            background: transparent !important;
+          }
+          div.relative.flex.flex-col.flex-1 {
+            margin-left: 0 !important;
+            padding-left: 0 !important;
+            position: static !important;
+            display: block !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            height: auto !important;
+            overflow: visible !important;
+            transition: none !important;
+          }
+          main {
+            padding: 0 !important;
+            margin: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            display: block !important;
+            overflow: visible !important;
+          }
           #security-pass-print-area {
             display: block !important;
             width: 80mm !important;
