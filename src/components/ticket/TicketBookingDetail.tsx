@@ -482,7 +482,7 @@ export function TicketBookingDetail({ guid }: TicketBookingDetailProps) {
                     start: p.start,
                     length: p.length,
                     search: p.search || "",
-                    order: p.order?.length ? p.order : [{ column: 7, dir: "desc" }],
+                    order: p.order?.length ? p.order : [{ column: 11, dir: "desc" }],
                     posto: guid,
                     cmd: 'refresh',
                     columns: [
@@ -496,7 +496,8 @@ export function TicketBookingDetail({ guid }: TicketBookingDetailProps) {
                       { data: "updatedonString", name: "updatedon", searchable: true, orderable: true },
                       { data: "statuspemuatan", name: "statuspemuatan", searchable: false, orderable: false },
                       { data: "position", name: "position", searchable: false, orderable: false },
-                      { data: "posto", name: "posto", searchable: false, orderable: false }
+                      { data: "posto", name: "posto", searchable: false, orderable: false },
+                      { data: "id", name: "id", searchable: false, orderable: true }
                     ]
                   };
                   return apiTable(`/api/Tiket/DataTablePeriodeTiket`, payload);

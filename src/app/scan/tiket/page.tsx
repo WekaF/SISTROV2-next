@@ -513,7 +513,7 @@ export default function ScanTiketPage() {
                         <ArrowRight className="h-4 w-4 text-slate-300 dark:text-slate-600 shrink-0" />
                         <div className="flex-1">
                           <div className="text-[10px] text-slate-400 font-bold uppercase">Tujuan</div>
-                          <div className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate" title={ticket.tujuan}>{ticket.tujuan}</div>
+                          <div className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate" title={ticket.posto?.startsWith('5') ? ticket.tujuan : ticket.transportString}>{ticket.posto?.startsWith('5') ? ticket.tujuan : ticket.transportString}</div>
                         </div>
                       </div>
                       <div className="flex gap-2 items-center pt-1 flex-wrap">
@@ -743,9 +743,9 @@ export default function ScanTiketPage() {
                 <td style={{ padding: "1px 0" }}>{ticket.asal}</td>
               </tr>
               <tr>
-                <td style={{ padding: "1px 0" }}>GP Tujuan</td>
+                <td style={{ padding: "1px 0" }}>{ticket.posto?.startsWith('5') ? 'GP Tujuan' : 'Tujuan'}</td>
                 <td style={{ padding: "1px 0" }}>:</td>
-                <td style={{ padding: "1px 0" }}>{ticket.tujuan}</td>
+                <td style={{ padding: "1px 0" }}>{ticket.posto?.startsWith('5') ? ticket.tujuan : ticket.transportString}</td>
               </tr>
               <tr>
                 <td style={{ padding: "1px 0" }}>Tgl (Shift)</td>

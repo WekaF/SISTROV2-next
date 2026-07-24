@@ -133,6 +133,12 @@ export function mergeNavItems(itemsList: NavItem[][]): NavItem[] {
 
   const merged = Array.from(resultMap.values());
 
+  // Force Dashboard/Tiket to the top regardless of which role's array first
+  // contributed the key (merge order otherwise depends on MENU_CONFIGS
+  // declaration order, not any role's intended layout).
+  const topLevelOrder: Record<string, number> = { dashboard: 1, tiket: 2 };
+  merged.sort((a, b) => (topLevelOrder[a.name.toLowerCase()] ?? 99) - (topLevelOrder[b.name.toLowerCase()] ?? 99));
+
   // Collect all paths that exist inside subItems of any dropdown menu
   const subItemPaths = new Set<string>();
   for (const item of merged) {
@@ -496,21 +502,21 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
     nav: [
       { icon: <LayoutGrid className="h-5 w-5" />, name: "Dashboard", path: "/" },
       {
-        icon: <Package className="h-5 w-5" />,
-        name: "Posto",
-        subItems: [
-          { name: "Data Posto", path: "/posto" },
-          { name: "Data So", path: "/so" },
-          { name: "Pengajuan Jatuh Tempo", path: "/pengajuan/jatuh-tempo" },
-        ],
-      },
-      {
         icon: <ClipboardList className="h-5 w-5" />,
         name: "Tiket",
         subItems: [
           { name: "Data Tiket", path: "/tiket" },
           { name: "Booking Tiket", path: "/tiket/booking" },
           { name: "Track Tiket Integrasi DO", path: "/tiket/track-do" },
+        ],
+      },
+      {
+        icon: <Package className="h-5 w-5" />,
+        name: "Posto",
+        subItems: [
+          { name: "Data Posto", path: "/posto" },
+          { name: "Data So", path: "/so" },
+          { name: "Pengajuan Jatuh Tempo", path: "/pengajuan/jatuh-tempo" },
         ],
       },
       {
@@ -547,7 +553,6 @@ export const MENU_CONFIGS: Record<string, { nav: NavItem[]; admin: NavItem[] }> 
         name: "Tiket",
         subItems: [
           { name: "Data Tiket", path: "/tiket" },
-          { name: "Booking Tiket", path: "/tiket/booking" },
           { name: "Track Tiket Integrasi DO", path: "/tiket/track-do" },
         ],
       },

@@ -377,11 +377,10 @@ export default function QuotaSchedulePage() {
                         setFilterMode(mode)
                         setFilterValue("")
                       }}
-                      className={`px-2.5 h-8 text-xs font-semibold capitalize transition-colors ${
-                        filterMode === mode
+                      className={`px-2.5 h-8 text-xs font-semibold capitalize transition-colors ${filterMode === mode
                           ? "bg-brand-500 text-white"
                           : "bg-white dark:bg-gray-800 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700"
-                      }`}
+                        }`}
                     >
                       {mode}
                     </button>

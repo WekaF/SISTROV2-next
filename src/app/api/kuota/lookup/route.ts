@@ -34,12 +34,16 @@ export async function GET() {
 
     const bagianList = Array.isArray(bagianData?.bagian) ? bagianData.bagian : Array.isArray(bagianData) ? bagianData : []
     const areas = bagianList.map((a: any) => ({
-      id: a.abbrev ?? "",
+      id: `${a.scope}::${a.abbrev}`,
       name: a.keterangan ?? "",
       wilayahId: a.scope ?? "",
+      abbrev: a.abbrev ?? "",
+      tipe: a.tipe ?? "3",
     }))
 
-    return NextResponse.json({ success: true, products, wilayah, areas })
+    const shiftCount = Number(bagianData?.shift) || 0
+
+    return NextResponse.json({ success: true, products, wilayah, areas, shiftCount })
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 })
   }
