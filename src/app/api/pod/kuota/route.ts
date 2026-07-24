@@ -20,27 +20,31 @@ export async function POST(req: NextRequest) {
 
     const { header, wilayah, areas, shifts } = await req.json()
 
+    const bagianRes = await fetch(`${ASPNET}/api/Kuota/DataBagian`, {
+      headers: { "Authorization": `Bearer ${token}` },
+    })
+    if (!bagianRes.ok) {
+      return NextResponse.json({ success: false, error: "Gagal memuat data area/shift" }, { status: 502 })
+    }
+    const bagianData = await bagianRes.json()
+
+    // NOTE: M_BagianDetail.tipe is a category label (POALL/POCLUSTER/SOALL/SOCLUSTER),
+    // never a shift count -- Number(tipe) is always NaN. The real per-company shift
+    // count is bagianData.shift (same field /api/kuota/lookup forwards as shiftCount).
+    const shiftCount = Math.max(1, Number(bagianData?.shift) || 0)
+
     // Validate shift totals match area quotas
-    for (const [areaAbbrev, areaKuota] of Object.entries(areas as Record<string, number>)) {
+    for (const [uniqueId, areaKuota] of Object.entries(areas as Record<string, number>)) {
       if (Number(areaKuota) <= 0) continue
-      const areaShifts = (shifts as Record<string, Record<number, number>>)[areaAbbrev] || {}
+      const areaShifts = (shifts as Record<string, Record<number, number>>)[uniqueId] || {}
       const shiftTotal = Object.values(areaShifts).reduce((a: number, b: unknown) => a + Number(b), 0)
       if (Math.abs(shiftTotal - Number(areaKuota)) > 0.01) {
         return NextResponse.json({
           success: false,
-          error: `Total shift area ${areaAbbrev} (${shiftTotal}) tidak sama dengan kuota area (${areaKuota})`,
+          error: `Total shift area ${uniqueId} (${shiftTotal}) tidak sama dengan kuota area (${areaKuota})`,
         }, { status: 400 })
       }
     }
-
-    // Fetch area scopes from ASP.NET to map area abbrev → wilayah abbrev
-    const bagianRes = await fetch(`${ASPNET}/api/Kuota/DataBagian`, {
-      headers: { "Authorization": `Bearer ${token}` },
-    })
-    const bagianData = await bagianRes.json()
-    const bagianList: any[] = Array.isArray(bagianData?.bagian) ? bagianData.bagian : Array.isArray(bagianData) ? bagianData : []
-    const areaScopes: Record<string, string> = {}
-    for (const b of bagianList) areaScopes[b.abbrev] = b.scope || ""
 
     const wilayahPayload = Object.entries(wilayah as Record<string, number>)
       .filter(([, v]) => Number(v) > 0)
@@ -53,20 +57,27 @@ export async function POST(req: NextRequest) {
 
     const bagianPayload = Object.entries(areas as Record<string, number>)
       .filter(([, v]) => Number(v) > 0)
-      .map(([abbrev, kuota]) => ({
-        id: "0",
-        id_area: abbrev,
-        scope: areaScopes[abbrev] || "",
-        value: Number(kuota),
-      }))
+      .map(([uniqueId, kuota]) => {
+        let parts = uniqueId.split('::')
+        const scope = parts[0]
+        const abbrev = parts.length > 1 ? parts.slice(1).join('::') : uniqueId
+        return {
+          id: "0",
+          id_area: abbrev,
+          scope: scope,
+          value: Number(kuota),
+        }
+      })
 
     const shiftPayload = Object.entries(areas as Record<string, number>)
       .filter(([, kuota]) => Number(kuota) > 0)
-      .map(([abbrev]) => {
-        const areaShifts = (shifts as Record<string, Record<number, number>>)[abbrev] || {}
+      .map(([uniqueId]) => {
+        let parts = uniqueId.split('::')
+        const abbrev = parts.length > 1 ? parts.slice(1).join('::') : uniqueId
+        const areaShifts = (shifts as Record<string, Record<number, number>>)[uniqueId] || {}
         return {
           id_area: abbrev,
-          count: 3,
+          count: shiftCount,
           idShift1: 0,
           idShift2: 0,
           idShift3: 0,
